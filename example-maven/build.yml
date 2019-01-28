@@ -1,6 +1,6 @@
 build:
   image: maven:3.3.3
-  command: mvn -Dprofile=foobar package
+  command: mvn -Dprofile=foobar 
   sandbox: true
   artifacts:
     - target/my-app-1.0-SNAPSHOT.jar

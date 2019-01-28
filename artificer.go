@@ -14,9 +14,21 @@ import (
 	"strings"
 )
 
+type BuildContext struct {
+	DockerClient *docker.Client
+	Id           *uuid.UUID
+	Instructions BuildInstructions
+}
+
 type BuildInstructions struct {
 	Build     BuildPhase     `yaml:"build"`
 	Container ContainerPhase `yaml:"container"`
+	Exec      ExecPhase      `yaml:"exec"`
+}
+
+type ExecPhase struct {
+	Image   string `yaml:"image"`
+	Command string `yaml:"command"`
 }
 
 type BuildPhase struct {
@@ -96,31 +108,27 @@ func archiveDirectory(source, target, prefix string) error {
 		})
 }
 
-func main() {
-	dockerClient, _ := docker.NewClient("unix:///var/run/docker.sock")
+func listImages() {
+	/*
+		imgs, _ := dockerClient.ListImages(docker.ListImagesOptions{All: true})
+		for _, img := range imgs {
+			fmt.Println("ID: ", img.ID)
+			fmt.Println("RepoTags: ", img.RepoTags)
+			fmt.Println("Created: ", img.Created)
+			fmt.Println("Size: ", img.Size)
+			fmt.Println("VirtualSize: ", img.VirtualSize)
+			fmt.Println("ParentId: ", img.ParentID)
+		}
+	*/
+	return
+}
 
-	imgs, _ := dockerClient.ListImages(docker.ListImagesOptions{All: true})
-	for _, img := range imgs {
-		fmt.Println("ID: ", img.ID)
-		fmt.Println("RepoTags: ", img.RepoTags)
-		fmt.Println("Created: ", img.Created)
-		fmt.Println("Size: ", img.Size)
-		fmt.Println("VirtualSize: ", img.VirtualSize)
-		fmt.Println("ParentId: ", img.ParentID)
-	}
+func (ctx *BuildContext) doBuild() (bool, error) {
+	fmt.Printf("Building in context id: %s\n", ctx.Id)
+	containerName := fmt.Sprintf("machinist-%s", ctx.Id)
+	instructions := ctx.Instructions
+	dockerClient := ctx.DockerClient
 
-	instructions := BuildInstructions{}
-
-	buildyaml, _ := ioutil.ReadFile("build.yml")
-
-	err := yaml.Unmarshal([]byte(buildyaml), &instructions)
-	if err != nil {
-		log.Fatalf("error: %v", err)
-	}
-	fmt.Printf("--- i:\n%v\n\n", instructions)
-
-	u, err := uuid.NewV4()
-	containerName := fmt.Sprintf("machinist-%s", u)
 	imageName := instructions.Build.Image
 
 	auth := docker.AuthConfiguration{}
@@ -233,4 +241,35 @@ func main() {
 
 	archiveArtifacts(dir, "artifacts.tar")
 
+	return true, nil
+}
+
+func NewContext(dockerClient *docker.Client, id *uuid.UUID, projectDir string) BuildContext {
+	ctx := BuildContext{}
+	ctx.DockerClient = dockerClient
+	ctx.Id = id
+	ctx.Instructions = BuildInstructions{}
+
+	buildyaml, _ := ioutil.ReadFile("build.yml")
+	err := yaml.Unmarshal([]byte(buildyaml), &ctx.Instructions)
+	if err != nil {
+		log.Fatalf("error: %v", err)
+	}
+	fmt.Printf("--- i:\n%v\n\n", ctx.Instructions)
+
+	return ctx
+}
+
+func main() {
+	command := os.Args[1]
+	dockerClient, _ := docker.NewClient("unix:///var/run/docker.sock")
+	ctxId, err := uuid.NewV4()
+	pwd, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		fmt.Errorf("Can't get PWD!\n")
+	}
+	ctx := NewContext(dockerClient, ctxId, pwd)
+	if command == "build" {
+		ctx.doBuild()
+	}
 }
