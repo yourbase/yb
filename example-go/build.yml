@@ -1,0 +1,6 @@
+build:
+  image: golang:1.6.3
+  command: sh ./build.sh
+  sandbox: true
+  artifacts:
+    - artificer/artificer

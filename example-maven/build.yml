@@ -4,8 +4,6 @@ build:
   sandbox: true
   artifacts:
     - target/my-app-1.0-SNAPSHOT.jar
-container:
-  base_image: java:8
-  command: java -jar /application/service-1.0.0.jar
-  artifacts:
-    - target/service-1.0.0.jar
+exec:
+  image: java:8-jre-alpine
+  command: java -jar my-app-1.0-SNAPSHOT.jar

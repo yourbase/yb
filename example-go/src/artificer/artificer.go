@@ -144,7 +144,6 @@ func main() {
 			Image:        instructions.Build.Image,
 			Cmd:          strings.Split(instructions.Build.Command, " "),
 			AttachStdout: true,
-			AttachStderr: true,
 			WorkingDir:   "/workspace",
 		},
 		HostConfig: &docker.HostConfig{},
@@ -163,7 +162,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	//defer os.RemoveAll(dir) // clean up
+	defer os.RemoveAll(dir) // clean up
 	tmpfile, err := os.OpenFile(fmt.Sprintf("%s/src.tar", dir), os.O_CREATE|os.O_RDWR|os.O_APPEND, 0660)
 	if err != nil {
 		log.Fatal(err)
@@ -192,7 +191,6 @@ func main() {
 	logsOpts := docker.LogsOptions{
 		Container:    container.ID,
 		OutputStream: os.Stdout,
-		ErrorStream:  os.Stdout,
 		Stdout:       true,
 		Stderr:       true,
 		Follow:       true,
