@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/subcommands"
+	"github.com/johnewart/subcommands"
 )
 
 type printCmd struct {

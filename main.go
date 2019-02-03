@@ -3,21 +3,23 @@ package main
 import (
 	"context"
 	"flag"
+	"github.com/johnewart/subcommands"
 	"os"
-
-	"github.com/google/subcommands"
+	"path"
 )
 
 func main() {
-	subcommands.Register(subcommands.HelpCommand(), "")
-	subcommands.Register(subcommands.FlagsCommand(), "")
-	subcommands.Register(subcommands.CommandsCommand(), "")
-	subcommands.Register(&buildCmd{}, "")
-	subcommands.Register(&printCmd{}, "print")
-	//subcommands.Register(&workspaceCmd{}, "workspace")
-	subcommands.Register(&workspaceCreateCmd{}, "workspace")
+	cmdr := subcommands.NewCommander(flag.CommandLine, path.Base(os.Args[0]))
+	cmdr.Register(cmdr.HelpCommand(), "")
+	cmdr.Register(cmdr.FlagsCommand(), "")
+	cmdr.Register(cmdr.CommandsCommand(), "")
+	cmdr.Register(&buildCmd{}, "")
+	cmdr.Register(&printCmd{}, "print")
+	cmdr.Register(&workspaceCmd{}, "")
+	cmdr.Register(&remoteCmd{}, "")
+	//subcommands.Register(&workspaceCreateCmd{}, "workspace")
 
 	flag.Parse()
 	ctx := context.Background()
-	os.Exit(int(subcommands.Execute(ctx)))
+	os.Exit(int(cmdr.Execute(ctx)))
 }

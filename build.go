@@ -9,7 +9,8 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
-	"github.com/google/subcommands"
+	"github.com/docker/docker/pkg/archive"
+	"github.com/johnewart/subcommands"
 
 	"github.com/nu7hatch/gouuid"
 	"gopkg.in/yaml.v2"
@@ -85,7 +86,6 @@ func archiveDirectory(source, target, prefix string) error {
 			if err != nil {
 				return err
 			}
-			fmt.Printf("Adding %s ...\n", info.Name())
 			header, err := tar.FileInfoHeader(info, info.Name())
 			if err != nil {
 				return err
@@ -96,6 +96,8 @@ func archiveDirectory(source, target, prefix string) error {
 			} else {
 				header.Name = filepath.Join(".", strings.TrimPrefix(path, source))
 			}
+
+			fmt.Printf("Adding %s as %s...\n", info.Name(), header.Name)
 
 			if err := tarball.WriteHeader(header); err != nil {
 				return err
@@ -154,17 +156,15 @@ func (bc *BuildContext) doBuild() (bool, error) {
 	var containerConfig = &container.Config{
 		Image:        imageName,
 		Cmd:          strings.Split(instructions.Build.Command, " "),
+		WorkingDir:   "/workspace/",
 		Tty:          true,
 		AttachStdout: true,
-		WorkingDir:   "/workspace",
 	}
 
 	buildContainer, err := dockerClient.ContainerCreate(ctx, containerConfig, hostConfig, networkConfig, containerName)
 	if err != nil {
 		panic(err)
 	}
-
-	fmt.Printf("Going to run '%s'...\n", instructions.Build.Command)
 
 	dir, err := ioutil.TempDir("", "machinist-src")
 	if err != nil {
@@ -179,7 +179,7 @@ func (bc *BuildContext) doBuild() (bool, error) {
 
 	//defer os.Remove(tmpfile.Name())
 	fmt.Printf("Archiving source to %s...\n", tmpfile.Name())
-	archiveSource("src", tmpfile.Name())
+	archiveSource(".", tmpfile.Name())
 	fmt.Printf("Done!\n")
 	tarStream, err := os.Open(tmpfile.Name())
 	if err != nil {
@@ -187,9 +187,11 @@ func (bc *BuildContext) doBuild() (bool, error) {
 	}
 
 	fmt.Printf("Adding source to container...\n")
-	if err := dockerClient.CopyToContainer(ctx, buildContainer.ID, "/", tarStream, types.CopyToContainerOptions{}); err != nil {
+	if err := dockerClient.CopyToContainer(ctx, buildContainer.ID, ".", tarStream, types.CopyToContainerOptions{}); err != nil {
 		panic(err)
 	}
+
+	fmt.Printf("Going to run '%s'...\n", instructions.Build.Command)
 
 	fmt.Printf("Starting build container...\n")
 	if err := dockerClient.ContainerStart(ctx, buildContainer.ID, types.ContainerStartOptions{}); err != nil {
@@ -217,26 +219,31 @@ func (bc *BuildContext) doBuild() (bool, error) {
 
 	for _, element := range instructions.Build.Artifacts {
 		downloadPath := fmt.Sprintf("/workspace/%s", element)
-		fileParts := strings.Split(element, "/")
-		filename := fileParts[len(fileParts)-1]
-		outfileName := fmt.Sprintf("%s/%s", dir, filename)
+		//fileParts := strings.Split(element, "/")
+		//		filename := fileParts[len(fileParts)-1]
+		//		outfileName := fmt.Sprintf("%s/%s", dir, filename)
 
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		fmt.Printf("Extracting %s to %s...\n", element, outfileName)
-
-		stream, _, err := dockerClient.CopyFromContainer(ctx, buildContainer.ID, downloadPath)
-		outFile, err := os.Create(outfileName)
-		// handle err
-		defer outFile.Close()
-		_, err = io.Copy(outFile, stream)
-		// handle err
-
+		dstPath := dir
+		fmt.Printf("Extracting %s to %s...\n", element, dir)
+		content, stat, err := dockerClient.CopyFromContainer(ctx, buildContainer.ID, downloadPath)
 		if err != nil {
-			log.Fatal(err)
+			return false, err
 		}
+		defer content.Close()
+
+		srcInfo := archive.CopyInfo{
+			Path:       downloadPath,
+			Exists:     true,
+			IsDir:      stat.Mode.IsDir(),
+			RebaseName: "",
+		}
+
+		preArchive := content
+		archive.CopyTo(preArchive, srcInfo, dstPath)
 
 	}
 
@@ -250,6 +257,10 @@ func NewContext(dockerClient *client.Client, id *uuid.UUID, projectDir string) B
 	ctx.DockerClient = dockerClient
 	ctx.Id = id
 	ctx.Instructions = BuildInstructions{}
+
+	if _, err := os.Stat("build.yml"); os.IsNotExist(err) {
+		panic("No build.yml -- can't build!")
+	}
 
 	buildyaml, _ := ioutil.ReadFile("build.yml")
 	err := yaml.Unmarshal([]byte(buildyaml), &ctx.Instructions)
@@ -268,14 +279,23 @@ type buildCmd struct {
 func (*buildCmd) Name() string     { return "build" }
 func (*buildCmd) Synopsis() string { return "Build the workspace" }
 func (*buildCmd) Usage() string {
-	return `build [-capitalize]`
+	return `build`
 }
 
 func (p *buildCmd) SetFlags(f *flag.FlagSet) {
-	f.BoolVar(&p.capitalize, "capitalize", false, "capitalize output")
 }
 
 func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+
+	workspace := LoadWorkspace()
+	targetPackage := workspace.Target
+
+	fmt.Printf("Building target package %s...\n", targetPackage)
+	err := os.Chdir(targetPackage)
+	if err != nil {
+		return subcommands.ExitFailure
+	}
+	defer os.Chdir("..")
 
 	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithVersion("1.39"))
 	if err != nil {
