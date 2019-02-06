@@ -7,53 +7,85 @@ import (
 	"fmt"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/archive"
 	"github.com/johnewart/subcommands"
 
-	"github.com/nu7hatch/gouuid"
-	"gopkg.in/yaml.v2"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"time"
 )
-
-type BuildContext struct {
-	DockerClient *client.Client
-	Id           *uuid.UUID
-	Instructions BuildInstructions
-}
-
-type BuildInstructions struct {
-	Build     BuildPhase     `yaml:"build"`
-	Container ContainerPhase `yaml:"container"`
-	Exec      ExecPhase      `yaml:"exec"`
-}
-
-type ExecPhase struct {
-	Image   string `yaml:"image"`
-	Command string `yaml:"command"`
-}
-
-type BuildPhase struct {
-	Image     string   `yaml:"image"`
-	Command   string   `yaml:"command"`
-	Sandbox   bool     `yaml:"sandbox"`
-	Artifacts []string `yaml:"artifacts"`
-}
-
-type ContainerPhase struct {
-	BaseImage string   `yaml:"base_image"`
-	Command   string   `yaml:"command"`
-	Artifacts []string `yaml:"artifacts"`
-}
 
 func archiveSource(source, target string) error {
 	return archiveDirectory(source, target, "workspace")
+}
+
+func copyArtifacts(source, target string) (int64, error) {
+	targetBaseDir, err := filepath.Abs(target)
+
+	if err != nil {
+		return 0, err
+	}
+	log.Printf("Copying files to %s...\n", targetBaseDir)
+
+	sourceBaseDir := filepath.Base(source)
+
+	var totalBytes int64 = 0
+
+	err = filepath.Walk(source,
+		func(path string, info os.FileInfo, err error) error {
+			dstPath := filepath.Join(targetBaseDir, info.Name())
+			if err != nil {
+				return err
+			}
+
+			if info.Name() == sourceBaseDir {
+				log.Printf("Skipping base directory...")
+				return nil
+			}
+
+			fmt.Printf("Copying %s to %s...\n", info.Name(), dstPath)
+			sourceFileStat, err := os.Stat(path)
+			if err != nil {
+				return err
+			}
+
+			if sourceFileStat.Mode().IsDir() {
+				os.Mkdir(dstPath, 0700)
+				return nil
+			}
+
+			inFile, err := os.Open(path)
+			if err != nil {
+				return err
+			}
+			defer inFile.Close()
+
+			outFile, err := os.Create(dstPath)
+			if err != nil {
+				return err
+			}
+			defer outFile.Close()
+			nBytes, err := io.Copy(outFile, inFile)
+			if err != nil {
+				return err
+			}
+
+			totalBytes += nBytes
+			return nil
+		})
+
+	if err != nil {
+		log.Printf("Error walking directory: %v\n", err)
+	}
+	return totalBytes, err
 }
 
 func archiveArtifacts(source, target string) error {
@@ -118,21 +150,6 @@ func archiveDirectory(source, target, prefix string) error {
 
 }
 
-func listImages() {
-	/*
-		imgs, _ := dockerClient.ListImages(docker.ListImagesOptions{All: true})
-		for _, img := range imgs {
-			fmt.Println("ID: ", img.ID)
-			fmt.Println("RepoTags: ", img.RepoTags)
-			fmt.Println("Created: ", img.Created)
-			fmt.Println("Size: ", img.Size)
-			fmt.Println("VirtualSize: ", img.VirtualSize)
-			fmt.Println("ParentId: ", img.ParentID)
-		}
-	*/
-	return
-}
-
 func (bc *BuildContext) doBuild() (bool, error) {
 	fmt.Printf("Building in context id: %s\n", bc.Id)
 	containerName := fmt.Sprintf("machinist-%s", bc.Id)
@@ -150,15 +167,38 @@ func (bc *BuildContext) doBuild() (bool, error) {
 	}
 	io.Copy(os.Stdout, reader)
 
+	var mounts = make([]mount.Mount, 0)
+	cachePath, err := filepath.Abs("../cache")
+	fmt.Printf("CACHE DIRECTORY: %s\n", cachePath)
+	if err != nil {
+		return false, fmt.Errorf("Couldn't get absolute path to build directory!")
+	}
+	mounts = append(mounts, mount.Mount{
+		Source: cachePath,
+		Target: "/cache/",
+		Type:   mount.TypeBind,
+	})
+
+	// Environment variables for the build tools' cache
+	env := make([]string, 0)
+	// Set Maven cache
+	env = append(env, "MAVEN_OPTS=-Dmaven.repo.local=/cache/maven")
+	// Bundler cache
+	env = append(env, "BUNDLE_CACHE_PATH=/cache/bundler")
+	//env = append(env, "M2_HOME=/cache/maven")
+	env = append(env, "GOPATH=/cache/go")
 	fmt.Printf("Creating build container '%s' using '%s'\n", containerName, instructions.Build.Image)
 	var networkConfig = &network.NetworkingConfig{}
-	var hostConfig = &container.HostConfig{}
+	var hostConfig = &container.HostConfig{
+		Mounts: mounts,
+	}
+
 	var containerConfig = &container.Config{
 		Image:        imageName,
-		Cmd:          strings.Split(instructions.Build.Command, " "),
 		WorkingDir:   "/workspace/",
 		Tty:          true,
 		AttachStdout: true,
+		Env:          env,
 	}
 
 	buildContainer, err := dockerClient.ContainerCreate(ctx, containerConfig, hostConfig, networkConfig, containerName)
@@ -177,6 +217,26 @@ func (bc *BuildContext) doBuild() (bool, error) {
 		log.Fatal(err)
 	}
 
+	c := make(chan os.Signal, 1)
+
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		for sig := range c {
+			log.Printf("Signal: %s", sig)
+			// sig is a ^C, handle it
+			log.Printf("CTRL-C hit, cleaning up!")
+			// Terminate now, not in a bit
+			stopTime, _ := time.ParseDuration("-1m")
+
+			err := dockerClient.ContainerStop(ctx, buildContainer.ID, &stopTime)
+
+			if err != nil {
+				log.Printf("Unable to stop container...")
+			}
+			bc.Cleanup()
+		}
+	}()
+
 	//defer os.Remove(tmpfile.Name())
 	fmt.Printf("Archiving source to %s...\n", tmpfile.Name())
 	archiveSource(".", tmpfile.Name())
@@ -191,29 +251,54 @@ func (bc *BuildContext) doBuild() (bool, error) {
 		panic(err)
 	}
 
-	fmt.Printf("Going to run '%s'...\n", instructions.Build.Command)
+	/*if err := dockerClient.ContainerStart(ctx, buildContainer.ID, types.ContainerStartOptions{}); err != nil {
+		panic(err)
+	}*/
 
-	fmt.Printf("Starting build container...\n")
+	out, err := dockerClient.ContainerLogs(ctx, buildContainer.ID, types.ContainerLogsOptions{
+		ShowStderr: true,
+		ShowStdout: true,
+		Timestamps: false,
+		Follow:     true,
+		Tail:       "40",
+	})
+	if err != nil {
+		panic(err)
+	}
+	go func() {
+		for {
+			io.Copy(os.Stdout, out)
+		}
+	}()
+
+	log.Printf("Starting build container...\n")
 	if err := dockerClient.ContainerStart(ctx, buildContainer.ID, types.ContainerStartOptions{}); err != nil {
 		panic(err)
 	}
 
-	fmt.Printf("Waiting for build to complete...")
-	statusCh, errCh := dockerClient.ContainerWait(ctx, buildContainer.ID, container.WaitConditionNotRunning)
-	select {
-	case err := <-errCh:
+	for _, cmd := range instructions.Build.Commands {
+		fmt.Printf("Going to run '%s'...\n", cmd)
+		exec, err := dockerClient.ContainerExecCreate(ctx, buildContainer.ID, types.ExecConfig{
+			Cmd: strings.Split(cmd, " "),
+		})
+
 		if err != nil {
 			panic(err)
 		}
-	case <-statusCh:
-	}
 
-	out, err := dockerClient.ContainerLogs(ctx, buildContainer.ID, types.ContainerLogsOptions{ShowStdout: true})
-	if err != nil {
-		panic(err)
-	}
+		fmt.Printf("Execution id: %s\n", exec.ID)
+		err = dockerClient.ContainerExecStart(ctx, exec.ID, types.ExecStartCheck{})
 
-	io.Copy(os.Stdout, out)
+		log.Printf("Waiting for exec to complete...")
+		statusCh, errCh := dockerClient.ContainerWait(ctx, buildContainer.ID, container.WaitConditionNotRunning)
+		select {
+		case err := <-errCh:
+			if err != nil {
+				panic(err)
+			}
+		case <-statusCh:
+		}
+	}
 
 	dir, err = ioutil.TempDir("", "machinist-artifacts")
 
@@ -244,32 +329,16 @@ func (bc *BuildContext) doBuild() (bool, error) {
 
 		preArchive := content
 		archive.CopyTo(preArchive, srcInfo, dstPath)
-
 	}
 
 	archiveArtifacts(dir, "artifacts.tar")
+	err = os.Mkdir("build", 0700)
+	if err != nil {
+		log.Printf("build directory already exists!\n")
+	}
+	copyArtifacts(dir, "build")
 
 	return true, nil
-}
-
-func NewContext(dockerClient *client.Client, id *uuid.UUID, projectDir string) BuildContext {
-	ctx := BuildContext{}
-	ctx.DockerClient = dockerClient
-	ctx.Id = id
-	ctx.Instructions = BuildInstructions{}
-
-	if _, err := os.Stat("build.yml"); os.IsNotExist(err) {
-		panic("No build.yml -- can't build!")
-	}
-
-	buildyaml, _ := ioutil.ReadFile("build.yml")
-	err := yaml.Unmarshal([]byte(buildyaml), &ctx.Instructions)
-	if err != nil {
-		log.Fatalf("error: %v", err)
-	}
-	fmt.Printf("--- i:\n%v\n\n", ctx.Instructions)
-
-	return ctx
 }
 
 type buildCmd struct {
@@ -310,13 +379,20 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	for _, container := range containers {
 		fmt.Printf("%s %s\n", container.ID[:10], container.Image)
 	}
-	ctxId, err := uuid.NewV4()
 	pwd, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
 		fmt.Errorf("Can't get PWD!\n")
 	}
-	ctx := NewContext(dockerClient, ctxId, pwd)
-	ctx.doBuild()
 
+	ctx, err := NewContext(dockerClient, pwd)
+
+	if err != nil {
+		return subcommands.ExitFailure
+	}
+
+	// Do it
+	defer ctx.Cleanup()
+	ctx.doBuild()
 	return subcommands.ExitSuccess
+
 }

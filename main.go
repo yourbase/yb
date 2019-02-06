@@ -14,7 +14,7 @@ func main() {
 	cmdr.Register(cmdr.FlagsCommand(), "")
 	cmdr.Register(cmdr.CommandsCommand(), "")
 	cmdr.Register(&buildCmd{}, "")
-	cmdr.Register(&printCmd{}, "print")
+	cmdr.Register(&execCmd{}, "")
 	cmdr.Register(&workspaceCmd{}, "")
 	cmdr.Register(&remoteCmd{}, "")
 	//subcommands.Register(&workspaceCreateCmd{}, "workspace")
