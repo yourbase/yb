@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/tar"
+	"bytes"
 	"context"
 	"flag"
 	"fmt"
@@ -185,6 +186,9 @@ func (bc *BuildContext) doBuild() (bool, error) {
 	env = append(env, "MAVEN_OPTS=-Dmaven.repo.local=/cache/maven")
 	// Bundler cache
 	env = append(env, "BUNDLE_CACHE_PATH=/cache/bundler")
+	env = append(env, "BUNDLE_PATH=/cache/bundler")
+	env = append(env, "BUNDLE_DEFAULT_INSTALL_USES_PATH=true")
+	env = append(env, "BUNDLE_CACHE_ALL=true")
 	//env = append(env, "M2_HOME=/cache/maven")
 	env = append(env, "GOPATH=/cache/go")
 	fmt.Printf("Creating build container '%s' using '%s'\n", containerName, instructions.Build.Image)
@@ -199,6 +203,7 @@ func (bc *BuildContext) doBuild() (bool, error) {
 		Tty:          true,
 		AttachStdout: true,
 		Env:          env,
+		Cmd:          strings.Split("sh build.sh", " "),
 	}
 
 	buildContainer, err := dockerClient.ContainerCreate(ctx, containerConfig, hostConfig, networkConfig, containerName)
@@ -238,6 +243,14 @@ func (bc *BuildContext) doBuild() (bool, error) {
 	}()
 
 	//defer os.Remove(tmpfile.Name())
+	scriptBuf := bytes.NewBufferString("#!/bin/sh\n\n")
+	for _, cmd := range instructions.Build.Commands {
+		scriptBuf.Write([]byte(fmt.Sprintf("%s\n", cmd)))
+	}
+	fmt.Printf("BUILD SCRIPT: %s\n", scriptBuf.String())
+	ioutil.WriteFile("build.sh", scriptBuf.Bytes(), 0644)
+	defer os.Remove("build.sh")
+
 	fmt.Printf("Archiving source to %s...\n", tmpfile.Name())
 	archiveSource(".", tmpfile.Name())
 	fmt.Printf("Done!\n")
@@ -255,6 +268,42 @@ func (bc *BuildContext) doBuild() (bool, error) {
 		panic(err)
 	}*/
 
+	// Create and add some files to the archive.
+	/*
+		var buf bytes.Buffer
+		tw := tar.NewWriter(&buf)
+		var files = []struct {
+			Name, Body string
+		}{
+			{"workspace/build.sh", scriptBuf.String()},
+		}
+		for _, file := range files {
+			hdr := &tar.Header{
+				Name: file.Name,
+				Mode: 0600,
+				Size: int64(len(file.Body)),
+			}
+			if err := tw.WriteHeader(hdr); err != nil {
+				log.Fatal(err)
+			}
+			if _, err := tw.Write([]byte(file.Body)); err != nil {
+				log.Fatal(err)
+			}
+		}
+		if err := tw.Close(); err != nil {
+			log.Fatal(err)
+		}
+		tr := tar.NewReader(&buf)
+
+		fmt.Printf("Injecting run script ...\n")
+		if err := dockerClient.CopyToContainer(ctx, buildContainer.ID, ".", tr, types.CopyToContainerOptions{}); err != nil {
+			panic(err)
+		}*/
+
+	log.Printf("Starting build container...\n")
+	if err := dockerClient.ContainerStart(ctx, buildContainer.ID, types.ContainerStartOptions{}); err != nil {
+		panic(err)
+	}
 	out, err := dockerClient.ContainerLogs(ctx, buildContainer.ID, types.ContainerLogsOptions{
 		ShowStderr: true,
 		ShowStdout: true,
@@ -271,33 +320,14 @@ func (bc *BuildContext) doBuild() (bool, error) {
 		}
 	}()
 
-	log.Printf("Starting build container...\n")
-	if err := dockerClient.ContainerStart(ctx, buildContainer.ID, types.ContainerStartOptions{}); err != nil {
-		panic(err)
-	}
-
-	for _, cmd := range instructions.Build.Commands {
-		fmt.Printf("Going to run '%s'...\n", cmd)
-		exec, err := dockerClient.ContainerExecCreate(ctx, buildContainer.ID, types.ExecConfig{
-			Cmd: strings.Split(cmd, " "),
-		})
-
+	log.Printf("Waiting for exec to complete...")
+	statusCh, errCh := dockerClient.ContainerWait(ctx, buildContainer.ID, container.WaitConditionNotRunning)
+	select {
+	case err := <-errCh:
 		if err != nil {
 			panic(err)
 		}
-
-		fmt.Printf("Execution id: %s\n", exec.ID)
-		err = dockerClient.ContainerExecStart(ctx, exec.ID, types.ExecStartCheck{})
-
-		log.Printf("Waiting for exec to complete...")
-		statusCh, errCh := dockerClient.ContainerWait(ctx, buildContainer.ID, container.WaitConditionNotRunning)
-		select {
-		case err := <-errCh:
-			if err != nil {
-				panic(err)
-			}
-		case <-statusCh:
-		}
+	case <-statusCh:
 	}
 
 	dir, err = ioutil.TempDir("", "machinist-artifacts")
