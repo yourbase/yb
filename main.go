@@ -17,6 +17,7 @@ func main() {
 	cmdr.Register(&execCmd{}, "")
 	cmdr.Register(&workspaceCmd{}, "")
 	cmdr.Register(&remoteCmd{}, "")
+	cmdr.Register(&patchCmd{}, "")
 	//subcommands.Register(&workspaceCreateCmd{}, "workspace")
 
 	flag.Parse()

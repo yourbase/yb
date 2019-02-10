@@ -132,13 +132,13 @@ type Workspace struct {
 }
 
 func LoadWorkspace() Workspace {
+	fmt.Errorf("Loading workspace...")
 	configyaml, _ := ioutil.ReadFile("config.yml")
 	var workspace = Workspace{}
 	err := yaml.Unmarshal([]byte(configyaml), &workspace)
 	if err != nil {
 		log.Fatalf("error: %v", err)
 	}
-	fmt.Printf("--- i:\n%v\n\n", workspace)
 	return workspace
 }
 
