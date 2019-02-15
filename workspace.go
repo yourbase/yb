@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -129,16 +130,48 @@ func (w *workspaceTargetCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...
 
 type Workspace struct {
 	Target string `yaml:"target"`
+	Path   string
+}
+
+func FindWorkspaceRoot() (string, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+
+	for {
+		config_path := filepath.Join(wd, "config.yml")
+		fmt.Printf("Checking for %s...\n", config_path)
+		if _, err := os.Stat(config_path); err == nil {
+			fmt.Printf("Found!\n")
+			return wd, nil
+		}
+		wd = filepath.Dir(wd)
+		fmt.Printf("Checking %s\n", wd)
+		if strings.HasSuffix(wd, "/") {
+			return "", fmt.Errorf("Can't find workspace, ended up at the root...")
+		}
+	}
 }
 
 func LoadWorkspace() Workspace {
-	fmt.Errorf("Loading workspace...")
+	workspacePath, err := FindWorkspaceRoot()
+
+	if err != nil {
+		log.Fatalf("Error getting workspace path: %v", err)
+	}
+	fmt.Printf("Loading workspace from %s...\n", workspacePath)
+
 	configyaml, _ := ioutil.ReadFile("config.yml")
 	var workspace = Workspace{}
-	err := yaml.Unmarshal([]byte(configyaml), &workspace)
+	err = yaml.Unmarshal([]byte(configyaml), &workspace)
+
 	if err != nil {
-		log.Fatalf("error: %v", err)
+		log.Fatalf("Error loading workspace config!")
 	}
+
+	workspace.Path = workspacePath
+
 	return workspace
 }
 

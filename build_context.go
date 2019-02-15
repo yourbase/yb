@@ -2,15 +2,11 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 
 	"github.com/nu7hatch/gouuid"
-	"gopkg.in/yaml.v2"
-	"io/ioutil"
 	"log"
-	"os"
 )
 
 type BuildContext struct {
@@ -20,9 +16,8 @@ type BuildContext struct {
 }
 
 type BuildInstructions struct {
-	Build     BuildPhase     `yaml:"build"`
-	Container ContainerPhase `yaml:"container"`
-	Exec      ExecPhase      `yaml:"exec"`
+	Build BuildPhase `yaml:"build"`
+	Exec  ExecPhase  `yaml:"exec"`
 }
 
 type ExecPhase struct {
@@ -32,38 +27,25 @@ type ExecPhase struct {
 }
 
 type BuildPhase struct {
-	Image     string   `yaml:"image"`
+	Tool      string   `yaml:"tool"`
 	Commands  []string `yaml:"commands"`
 	Sandbox   bool     `yaml:"sandbox"`
 	Artifacts []string `yaml:"artifacts"`
 }
 
-type ContainerPhase struct {
-	BaseImage string   `yaml:"base_image"`
-	Command   string   `yaml:"command"`
-	Artifacts []string `yaml:"artifacts"`
-}
-
-func NewContext(dockerClient *client.Client, projectDir string) (BuildContext, error) {
+func NewContext() (BuildContext, error) {
 
 	ctxId, err := uuid.NewV4()
 
 	ctx := BuildContext{}
+
+	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithVersion("1.39"))
+	if err != nil {
+		panic(err)
+	}
+
 	ctx.DockerClient = dockerClient
 	ctx.Id = ctxId.String()
-	ctx.Instructions = BuildInstructions{}
-
-	if _, err := os.Stat("build.yml"); os.IsNotExist(err) {
-		panic("No build.yml -- can't build!")
-	}
-
-	buildyaml, _ := ioutil.ReadFile("build.yml")
-	err = yaml.Unmarshal([]byte(buildyaml), &ctx.Instructions)
-	if err != nil {
-		log.Fatalf("error: %v", err)
-	}
-	fmt.Printf("--- i:\n%v\n\n", ctx.Instructions)
-
 	_, err = ctx.SetupNetwork()
 
 	if err != nil {

@@ -8,7 +8,6 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
-	"github.com/docker/docker/client"
 	"github.com/johnewart/subcommands"
 
 	"io"
@@ -174,16 +173,7 @@ func (b *execCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 	defer os.Chdir("..")
 
-	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithVersion("1.39"))
-	if err != nil {
-		panic(err)
-	}
-
-	pwd, err := filepath.Abs(filepath.Dir(os.Args[0]))
-	if err != nil {
-		fmt.Errorf("Can't get PWD!\n")
-	}
-	ctx, err := NewContext(dockerClient, pwd)
+	ctx, err := NewContext()
 	if err != nil {
 		return subcommands.ExitFailure
 	}
