@@ -7,7 +7,8 @@ import (
 )
 
 type BuildTool interface {
-	DoBuild() (bool, error)
+	Install() error
+	Setup() error
 	Version() string
 	Instructions() BuildInstructions
 }

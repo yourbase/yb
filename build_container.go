@@ -154,7 +154,11 @@ func archiveDirectory(source, target, prefix string) error {
 
 }
 
-func (bt *ContainerBuildTool) DoBuild() (bool, error) {
+func (bt *ContainerBuildTool) Install() error {
+	return nil
+}
+
+func (bt *ContainerBuildTool) Setup() error {
 	bc, err := NewContext()
 	if err != nil {
 		panic(err)
@@ -179,7 +183,7 @@ func (bt *ContainerBuildTool) DoBuild() (bool, error) {
 	cachePath, err := filepath.Abs("../cache")
 	fmt.Printf("CACHE DIRECTORY: %s\n", cachePath)
 	if err != nil {
-		return false, fmt.Errorf("Couldn't get absolute path to build directory!")
+		return fmt.Errorf("Couldn't get absolute path to build directory!")
 	}
 	mounts = append(mounts, mount.Mount{
 		Source: cachePath,
@@ -353,7 +357,7 @@ func (bt *ContainerBuildTool) DoBuild() (bool, error) {
 		fmt.Printf("Extracting %s to %s...\n", element, dir)
 		content, stat, err := dockerClient.CopyFromContainer(ctx, buildContainer.ID, downloadPath)
 		if err != nil {
-			return false, err
+			return err
 		}
 		defer content.Close()
 
@@ -375,11 +379,11 @@ func (bt *ContainerBuildTool) DoBuild() (bool, error) {
 	}
 	copyArtifacts(dir, "build")
 
-	return true, nil
+	return nil
 }
 
-func NewContainerBuildTool(instructions BuildInstructions) ContainerBuildTool {
-	parts := strings.Split(instructions.Build.Tool, ":")
+func NewContainerBuildTool(toolSpec string, instructions BuildInstructions) ContainerBuildTool {
+	parts := strings.Split(toolSpec, ":")
 	tag := "latest"
 
 	image := parts[1]

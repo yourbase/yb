@@ -61,6 +61,13 @@ func (w *workspaceCreateCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...in
 		return subcommands.ExitFailure
 	}
 
+	configPath, _ := filepath.Abs(filepath.Join(w.name, "config.yml"))
+	header := fmt.Sprintf("# Workspace config for %s", w.name)
+	if err := ioutil.WriteFile(configPath, []byte(header), 0600); err != nil {
+		fmt.Printf("Unable to create initial config as %s: %v\n", configPath, err)
+		return subcommands.ExitFailure
+	}
+
 	fmt.Printf("Created new workspace %s\n", w.name)
 	return subcommands.ExitSuccess
 
@@ -133,6 +140,84 @@ type Workspace struct {
 	Path   string
 }
 
+func (w Workspace) LoadPackageManifest(packageName string) (*BuildInstructions, error) {
+	instructions := BuildInstructions{}
+	buildYaml := filepath.Join(w.Path, packageName, "build.yml")
+	if _, err := os.Stat(buildYaml); os.IsNotExist(err) {
+		panic("No build.yml -- can't build!")
+	}
+
+	buildyaml, _ := ioutil.ReadFile(buildYaml)
+	err := yaml.Unmarshal([]byte(buildyaml), &instructions)
+	if err != nil {
+		return nil, fmt.Errorf("Error loading build.yml for %s: %v", packageName, err)
+	}
+	//fmt.Printf("--- i:\n%v\n\n", instructions)
+
+	return &instructions, nil
+
+}
+
+func (w Workspace) SetupDependencies(dependencies []string) error {
+	for _, toolSpec := range dependencies {
+
+		var bt BuildTool
+		parts := strings.Split(toolSpec, ":")
+		toolType := parts[0]
+
+		fmt.Printf("Would use tool: %s\n", toolSpec)
+
+		switch toolType {
+		case "node":
+			bt = NewNodeBuildTool(toolSpec)
+		case "rust":
+			bt = NewRustBuildTool(toolSpec)
+		case "java":
+			bt = NewJavaBuildTool(toolSpec)
+		case "maven":
+			bt = NewMavenBuildTool(toolSpec)
+		default:
+			fmt.Printf("Ignoring unknown build tool: %s\n", toolSpec)
+			return nil
+		}
+
+		// Install if needed
+		if err := bt.Install(); err != nil {
+			return fmt.Errorf("Unable to install tool %s: %v", toolSpec, err)
+		}
+
+		// Setup build tool (paths, env, etc)
+		if err := bt.Setup(); err != nil {
+			return fmt.Errorf("Unable to setup tool %s: %v", toolSpec, err)
+		}
+
+	}
+
+	return nil
+
+}
+
+func (w Workspace) SetupBuildDependencies(instructions BuildInstructions) error {
+	return w.SetupDependencies(instructions.Dependencies.Build)
+}
+
+func (w Workspace) SetupRuntimeDependencies(instructions BuildInstructions) error {
+	return w.SetupDependencies(instructions.Dependencies.Runtime)
+}
+
+func (w Workspace) BuildRoot() string {
+	buildRoot := filepath.Join(w.Path, "build")
+
+	if _, err := os.Stat(buildRoot); os.IsNotExist(err) {
+
+		if err := os.Mkdir(filepath.Join(w.Path, "build"), 0700); err != nil {
+			fmt.Printf("Unable to create build dir in workspace: %v\n", err)
+		}
+	}
+
+	return buildRoot
+}
+
 func FindWorkspaceRoot() (string, error) {
 	wd, err := os.Getwd()
 	if err != nil {
@@ -141,9 +226,9 @@ func FindWorkspaceRoot() (string, error) {
 
 	for {
 		config_path := filepath.Join(wd, "config.yml")
-		fmt.Printf("Checking for %s...\n", config_path)
+		//fmt.Printf("Checking for %s...\n", config_path)
 		if _, err := os.Stat(config_path); err == nil {
-			fmt.Printf("Found!\n")
+			//fmt.Printf("Found!\n")
 			return wd, nil
 		}
 		wd = filepath.Dir(wd)
