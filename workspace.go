@@ -176,6 +176,10 @@ func (w Workspace) SetupDependencies(dependencies []string) error {
 			bt = NewJavaBuildTool(toolSpec)
 		case "maven":
 			bt = NewMavenBuildTool(toolSpec)
+		case "go":
+			bt = NewGolangBuildTool(toolSpec)
+		case "python":
+			bt = NewPythonBuildTool(toolSpec)
 		default:
 			fmt.Printf("Ignoring unknown build tool: %s\n", toolSpec)
 			return nil
