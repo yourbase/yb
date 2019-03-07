@@ -1,0 +1,13 @@
+dependencies:
+  build:
+    - go:1.12
+  runtime:
+    - go:1.12
+build:
+  commands:
+    - go get
+    - go build
+exec:
+  commands:
+    - ./artificer
+

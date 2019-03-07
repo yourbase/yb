@@ -56,13 +56,23 @@ func (bt GolangBuildTool) GolangDir() string {
 }
 
 func (bt GolangBuildTool) Setup() error {
+	workspace := LoadWorkspace()
 	golangDir := bt.GolangDir()
+	goPath := workspace.BuildRoot()
+	for _, pkg := range workspace.PackageList() {
+		//pkgPath := filepath.Join(workspace.Path, pkg)
+		goPath = fmt.Sprintf("%s:%s", goPath, pkg)
+	}
+
 	cmdPath := fmt.Sprintf("%s/bin", golangDir)
 	currentPath := os.Getenv("PATH")
 	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
 	fmt.Printf("Setting PATH to %s\n", newPath)
 	os.Setenv("PATH", newPath)
+	fmt.Printf("Setting GOROOT to %s\n", golangDir)
 	os.Setenv("GOROOT", golangDir)
+	fmt.Printf("Setting GOPATH to %s\n", goPath)
+	os.Setenv("GOPATH", goPath)
 
 	return nil
 }

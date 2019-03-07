@@ -140,6 +140,29 @@ type Workspace struct {
 	Path   string
 }
 
+func (w Workspace) PackageList() []string {
+	var packages []string
+	globStr := filepath.Join(w.Path, "*")
+ files, err := filepath.Glob(globStr)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    for _, f := range(files) {
+	fi, err := os.Stat(f)
+	if err != nil {
+		panic(err)
+	}
+	if fi.IsDir() {
+		packages = append(packages, f)
+	} 
+    }
+
+    fmt.Println(packages)
+    return packages
+}
+
+
 func (w Workspace) LoadPackageManifest(packageName string) (*BuildInstructions, error) {
 	instructions := BuildInstructions{}
 	buildYaml := filepath.Join(w.Path, packageName, "build.yml")
@@ -251,7 +274,8 @@ func LoadWorkspace() Workspace {
 	}
 	fmt.Printf("Loading workspace from %s...\n", workspacePath)
 
-	configyaml, _ := ioutil.ReadFile("config.yml")
+	configFile := filepath.Join(workspacePath, "config.yml")
+	configyaml, _ := ioutil.ReadFile(configFile)
 	var workspace = Workspace{}
 	err = yaml.Unmarshal([]byte(configyaml), &workspace)
 

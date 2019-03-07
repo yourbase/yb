@@ -31,6 +31,7 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	workspace := LoadWorkspace()
 	var targetPackage string
 
+	fmt.Println(f.Args())
 	if len(f.Args()) > 0 {
 		targetPackage = f.Args()[0]
 	} else {
@@ -39,8 +40,9 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 
 	fmt.Printf("Building target package %s...\n", targetPackage)
 
+	targetDir := filepath.Join(workspace.Path, targetPackage)
 	instructions := BuildInstructions{}
-	buildYaml := fmt.Sprintf("%s/build.yml", targetPackage)
+	buildYaml := filepath.Join(targetDir, "build.yml")
 	if _, err := os.Stat(buildYaml); os.IsNotExist(err) {
 		panic("No build.yml -- can't build!")
 	}
@@ -55,7 +57,6 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	// Ensure build deps are :+1:
 	workspace.SetupBuildDependencies(instructions)
 
-	targetDir := filepath.Join(workspace.Path, targetPackage)
 	fmt.Printf("Working in %s...\n", targetDir)
 
 	// Set any environment variables as the last thing (override things we do in case people really want to do this)
