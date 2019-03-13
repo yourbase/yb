@@ -2,15 +2,19 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	"github.com/johnewart/subcommands"
+	"gopkg.in/src-d/go-git.v4"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
+	"os"
+	"strconv"
 	"strings"
 )
 
@@ -32,21 +36,94 @@ func (p *remoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	targetPackage := workspace.Target
 
 	fmt.Printf("Remotely building target package %s...\n", targetPackage)
-	//repo := fmt.Sprintf("https://github.com/johnewart/%s.git", targetPackage)
-	repo := fmt.Sprintf("johnewart/%s", targetPackage)
-	submitBuild(repo)
+	packagePath := workspace.PackagePath(targetPackage)
+	workRepo, err := git.PlainOpen(packagePath)
+
+	if err != nil {
+		fmt.Printf("Error opening repository %s: %v\n", packagePath, err)
+		return subcommands.ExitFailure
+	}
+
+	list, err := workRepo.Remotes()
+
+	if err != nil {
+		fmt.Printf("Error getting remotes for %s: %v\n", packagePath, err)
+		return subcommands.ExitFailure
+	}
+
+	var repoUrls []string
+
+	for _, r := range list {
+		fmt.Println(r)
+		c := r.Config()
+		for _, u := range c.URLs {
+			repoUrls = append(repoUrls, u)
+		}
+	}
+
+	project := fetchProject(repoUrls)
+	fmt.Printf("Project key: %d\n", project.Id)
+
+	submitBuild(project)
 
 	return subcommands.ExitSuccess
 }
 
-func submitBuild(repository string) {
-
-	formData := url.Values{
-		"repository":   {repository},
-		"organization": {"johnewart"},
+func postToApi(path string, formData url.Values) (*http.Response, error) {
+	apiBaseURL, exists := os.LookupEnv("YOURBASE_API_URL")
+	if !exists {
+		apiBaseURL = "https://api.yourbase.io"
 	}
 
-	resp, err := http.PostForm("http://127.0.0.1:8080/builds", formData)
+	apiURL := fmt.Sprintf("%s/%s", apiBaseURL, path)
+
+	return http.PostForm(apiURL, formData)
+}
+
+func postToDispatcher(path string, formData url.Values) (*http.Response, error) {
+	dispatcherBaseURL, exists := os.LookupEnv("DISPATCHER_URL")
+	if !exists {
+		dispatcherBaseURL = "https://build.yourbase.io"
+	}
+
+	dispatcherURL := fmt.Sprintf("%s/%s", dispatcherBaseURL, path)
+
+	return http.PostForm(dispatcherURL, formData)
+}
+
+func fetchProject(urls []string) *Project {
+	v := url.Values{}
+	for _, u := range urls {
+		fmt.Printf("Adding remote URL %s to search...\n", u)
+		v.Add("urls[]", u)
+	}
+	resp, err := postToApi("search/projects", v)
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	var project Project
+	err = json.Unmarshal(body, &project)
+	if err != nil {
+		fmt.Printf("Couldn't parse response body: %s\n", err)
+		return nil
+	}
+
+	return &project
+}
+
+func submitBuild(project *Project) {
+
+	formData := url.Values{
+		"project_id":    {strconv.Itoa(project.Id)},
+		"repository_id": {project.Repository},
+		"api_key":       {"12345"},
+	}
+
+	resp, err := postToDispatcher("builds", formData)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -55,7 +132,7 @@ func submitBuild(repository string) {
 	body, err := ioutil.ReadAll(resp.Body)
 	//fmt.Println(resp.Body)
 	if err != nil {
-		fmt.Printf("Couldn't read respons body: %s\n", err)
+		fmt.Printf("Couldn't read response body: %s\n", err)
 	}
 
 	response := string(body)

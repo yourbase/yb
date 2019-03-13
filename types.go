@@ -20,7 +20,7 @@ type ExecPhase struct {
 }
 
 type ExecDependencies struct {
-	Containers []ContainerDefinition `yaml:"containers"`
+	Containers map[string]ContainerDefinition `yaml:"containers"`
 }
 
 type ContainerDefinition struct {
@@ -36,4 +36,12 @@ type BuildPhase struct {
 	Sandbox     bool     `yaml:"sandbox"`
 	Artifacts   []string `yaml:"artifacts"`
 	Environment []string `yaml:"env"`
+}
+
+// API Responses -- use Swagger instead, this is silly
+type Project struct {
+	Id          int    `json:"id"`
+	Label       string `json:"label"`
+	Description string `json:"description"`
+	Repository  string `json:"repository"`
 }
