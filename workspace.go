@@ -237,6 +237,8 @@ func (w Workspace) SetupDependencies(dependencies []string) error {
 		switch toolType {
 		case "node":
 			bt = NewNodeBuildTool(toolSpec)
+		case "glide":
+			bt = NewGlideBuildTool(toolSpec)
 		case "rust":
 			bt = NewRustBuildTool(toolSpec)
 		case "java":
