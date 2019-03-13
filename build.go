@@ -54,9 +54,6 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	}
 	fmt.Printf("--- i:\n%v\n\n", instructions)
 
-	// Ensure build deps are :+1:
-	workspace.SetupBuildDependencies(instructions)
-
 	fmt.Printf("Working in %s...\n", targetDir)
 
 	// Set any environment variables as the last thing (override things we do in case people really want to do this)
@@ -64,9 +61,13 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		parts := strings.Split(envString, "=")
 		key := parts[0]
 		value := parts[1]
+		value = strings.Replace(value, "{PKGDIR}", targetDir, -1)
 		fmt.Printf("Setting %s = %s\n", key, value)
 		os.Setenv(key, value)
 	}
+
+	// Ensure build deps are :+1:
+	workspace.SetupBuildDependencies(instructions)
 
 	for _, cmdString := range instructions.Build.Commands {
 		if err := ExecToStdout(cmdString, targetDir); err != nil {
