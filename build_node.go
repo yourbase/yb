@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/mholt/archiver"
 	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -48,9 +47,8 @@ func (bt NodeBuildTool) Install() error {
 		fmt.Printf("Would install Node v%s into %s\n", bt.Version(), buildDir)
 		archiveFile := fmt.Sprintf("%s.tar.gz", nodePkgVersion)
 		downloadUrl := fmt.Sprintf("%s/v%s/%s", NODE_DIST_MIRROR, bt.Version(), archiveFile)
-		localFile := filepath.Join(buildDir, archiveFile)
-		fmt.Printf("Downloading from URL %s to local file %s\n", downloadUrl, localFile)
-		err := DownloadFile(localFile, downloadUrl)
+		fmt.Printf("Downloading from URL %s...\n", downloadUrl)
+		localFile, err := DownloadFileWithCache(downloadUrl)
 		if err != nil {
 			fmt.Printf("Unable to download: %v\n", err)
 			return err

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/mholt/archiver"
 	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -76,12 +75,10 @@ func (bt MavenBuildTool) Install() error {
 		fmt.Printf("Maven v%s located in %s!\n", bt.Version(), mavenDir)
 	} else {
 		fmt.Printf("Will install Maven v%s into %s\n", bt.Version(), mavenDir)
-		archiveFile := bt.ArchiveFile()
 		downloadUrl := bt.DownloadUrl()
 
-		localFile := filepath.Join(buildDir, archiveFile)
-		fmt.Printf("Downloading from URL %s to local file %s\n", downloadUrl, localFile)
-		err := DownloadFile(localFile, downloadUrl)
+		fmt.Printf("Downloading Maven from URL %s...\n", downloadUrl)
+		localFile, err := DownloadFileWithCache(downloadUrl)
 		if err != nil {
 			fmt.Printf("Unable to download: %v\n", err)
 			return err

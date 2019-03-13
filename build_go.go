@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/mholt/archiver"
 	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -58,7 +57,14 @@ func (bt GolangBuildTool) GolangDir() string {
 func (bt GolangBuildTool) Setup() error {
 	workspace := LoadWorkspace()
 	golangDir := bt.GolangDir()
-	goPath := workspace.BuildRoot()
+	goPath, exists := os.LookupEnv("GOPATH")
+	if !exists {
+		goPath = workspace.BuildRoot()
+	} else {
+		fmt.Printf("Adding existing GOPATH: %s...", goPath)
+		goPath = fmt.Sprintf("%s:%s", goPath, workspace.BuildRoot())
+	}
+
 	for _, pkg := range workspace.PackageList() {
 		//pkgPath := filepath.Join(workspace.Path, pkg)
 		goPath = fmt.Sprintf("%s:%s", goPath, pkg)
@@ -87,12 +93,10 @@ func (bt GolangBuildTool) Install() error {
 		fmt.Printf("Golang v%s located in %s!\n", bt.Version(), golangDir)
 	} else {
 		fmt.Printf("Will install Golang v%s into %s\n", bt.Version(), golangDir)
-		archiveFile := bt.ArchiveFile()
 		downloadUrl := bt.DownloadUrl()
 
-		localFile := filepath.Join(buildDir, archiveFile)
-		fmt.Printf("Downloading from URL %s to local file %s\n", downloadUrl, localFile)
-		err := DownloadFile(localFile, downloadUrl)
+		fmt.Printf("Downloading from URL %s ...\n", downloadUrl)
+		localFile, err := DownloadFileWithCache(downloadUrl)
 		if err != nil {
 			fmt.Printf("Unable to download: %v\n", err)
 			return err

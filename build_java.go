@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/mholt/archiver"
 	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -61,18 +60,17 @@ func (bt JavaBuildTool) Install() error {
 
 	workspace := LoadWorkspace()
 	buildDir := workspace.BuildRoot()
-	rustPath := bt.JavaDir()
+	javaPath := bt.JavaDir()
 
-	if _, err := os.Stat(rustPath); err == nil {
-		fmt.Printf("Java v%s located in %s!\n", bt.Version(), rustPath)
+	if _, err := os.Stat(javaPath); err == nil {
+		fmt.Printf("Java v%s located in %s!\n", bt.Version(), javaPath)
 	} else {
-		fmt.Printf("Will install Java v%s into %s\n", bt.Version(), rustPath)
+		fmt.Printf("Will install Java v%s into %s\n", bt.Version(), javaPath)
 		archiveFile := fmt.Sprintf("openjdk-%s_%s-%s_bin.tar.gz", bt.Version(), operatingSystem, arch)
 		downloadUrl := fmt.Sprintf("%s/jdk%s/9/GPL/%s", OPENJDK_DIST_MIRROR, bt.MajorVersion(), archiveFile)
 
-		localFile := filepath.Join(buildDir, archiveFile)
-		fmt.Printf("Downloading from URL %s to local file %s\n", downloadUrl, localFile)
-		err := DownloadFile(localFile, downloadUrl)
+		fmt.Printf("Downloading from URL %s \n", downloadUrl)
+		localFile, err := DownloadFileWithCache(downloadUrl)
 		if err != nil {
 			fmt.Printf("Unable to download: %v\n", err)
 			return err
