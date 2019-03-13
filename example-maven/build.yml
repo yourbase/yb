@@ -1,9 +1,0 @@
-build:
-  image: maven:3.3.3
-  command: mvn -Dprofile=foobar 
-  sandbox: true
-  artifacts:
-    - target/my-app-1.0-SNAPSHOT.jar
-exec:
-  image: java:8-jre-alpine
-  command: java -jar my-app-1.0-SNAPSHOT.jar

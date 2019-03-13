@@ -1,6 +1,0 @@
-build:
-  image: golang:latest
-  command: sh ./build.sh
-  sandbox: true
-  artifacts:
-    - artificer/artificer
