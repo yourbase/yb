@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"flag"
 	"fmt"
 	"github.com/johnewart/subcommands"
 	"gopkg.in/src-d/go-git.v4"
+	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
@@ -42,7 +44,7 @@ type workspaceCreateCmd struct {
 func (*workspaceCreateCmd) Name() string     { return "create" }
 func (*workspaceCreateCmd) Synopsis() string { return "Create a new workspace" }
 func (*workspaceCreateCmd) Usage() string {
-	return `createworkspace <directory>`
+	return `create --name <name>`
 }
 
 func (w *workspaceCreateCmd) SetFlags(f *flag.FlagSet) {
@@ -86,20 +88,59 @@ func (*workspaceAddCmd) Usage() string {
 func (w *workspaceAddCmd) SetFlags(f *flag.FlagSet) {}
 
 func (w *workspaceAddCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+
+	// TODO: SSH Repositories...
 	repository := f.Args()[0]
-	repositoryURL := fmt.Sprintf("https://github.com/%s.git", repository)
+	var repositoryURL = repository
+	if !strings.Contains(repository, "https") {
+		repositoryURL = fmt.Sprintf("https://github.com/%s.git", repository)
+	}
 	cloneParts := strings.Split(repository, "/")
 	cloneDir := cloneParts[len(cloneParts)-1]
 
 	fmt.Printf("Cloning %s into %s...\n", repository, cloneDir)
-
-	_, err := git.PlainClone(cloneDir, false, &git.CloneOptions{
+	cloneOpts := git.CloneOptions{
 		URL:      repositoryURL,
 		Progress: os.Stdout,
-	})
+	}
+	_, err := git.PlainClone(cloneDir, false, &cloneOpts)
 
 	if err != nil {
-		return subcommands.ExitFailure
+		fmt.Println("Authentication required")
+
+		// Try again with HTTP Auth
+		// TODO only do this if the URL has github?
+		githubtoken, exists := os.LookupEnv("YOURBASE_GITHUB_TOKEN")
+
+		var auth http.BasicAuth
+		if exists {
+			fmt.Println("Using GitHub token")
+			auth = http.BasicAuth{Username: "yourbase", Password: githubtoken}
+		} else {
+
+			gituser, exists := os.LookupEnv("YOURBASE_GIT_USERNAME")
+			if !exists {
+				reader := bufio.NewReader(os.Stdin)
+				fmt.Print("Username: ")
+				gituser, _ = reader.ReadString('\n')
+			}
+
+			gitpassword, exists := os.LookupEnv("YOURBASE_GIT_PASSWORD")
+			if !exists {
+				reader := bufio.NewReader(os.Stdin)
+				fmt.Print("Password: ")
+				gitpassword, _ = reader.ReadString('\n')
+			}
+
+			auth = http.BasicAuth{Username: gituser, Password: gitpassword}
+		}
+
+		cloneOpts.Auth = &auth
+		_, err := git.PlainClone(cloneDir, false, &cloneOpts)
+		if err != nil {
+			fmt.Printf("Unable to clone repository, even with authentication: %v\n", err)
+			return subcommands.ExitFailure
+		}
 	}
 
 	return subcommands.ExitSuccess
@@ -140,28 +181,31 @@ type Workspace struct {
 	Path   string
 }
 
+func (w Workspace) PackagePath(target string) string {
+	return filepath.Join(w.Path, target)
+}
+
 func (w Workspace) PackageList() []string {
 	var packages []string
 	globStr := filepath.Join(w.Path, "*")
- files, err := filepath.Glob(globStr)
-    if err != nil {
-        log.Fatal(err)
-    }
-
-    for _, f := range(files) {
-	fi, err := os.Stat(f)
+	files, err := filepath.Glob(globStr)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
-	if fi.IsDir() {
-		packages = append(packages, f)
-	} 
-    }
 
-    fmt.Println(packages)
-    return packages
+	for _, f := range files {
+		fi, err := os.Stat(f)
+		if err != nil {
+			panic(err)
+		}
+		if fi.IsDir() {
+			packages = append(packages, f)
+		}
+	}
+
+	fmt.Println(packages)
+	return packages
 }
-
 
 func (w Workspace) LoadPackageManifest(packageName string) (*BuildInstructions, error) {
 	instructions := BuildInstructions{}
