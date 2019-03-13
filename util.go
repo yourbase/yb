@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"text/template"
 	"time"
 )
 
@@ -39,8 +40,6 @@ func ExecToStdout(cmdString string, targetDir string) error {
 
 	if err = cmd.Wait(); err != nil {
 		fmt.Printf("Command failed with %s\n", err)
-		outStr := string(stdoutBuf.Bytes())
-		fmt.Printf("\nout:\n%s\n", outStr)
 
 		return err
 	}
@@ -56,14 +55,37 @@ func PrependToPath(dir string) {
 	os.Setenv("PATH", newPath)
 }
 
+func DirectoryExists(dir string) bool {
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		return false
+	}
+
+	return true
+}
+
 func MkdirAsNeeded(dir string) error {
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		fmt.Printf("Making dir: %s\n", dir)
-		if err := os.Mkdir(dir, 0700); err != nil {
+		if err := os.MkdirAll(dir, 0700); err != nil {
 			fmt.Printf("Unable to create dir: %v\n", err)
 			return err
 		}
 	}
 
 	return nil
+}
+
+func TemplateToString(templateText string, data interface{}) (string, error) {
+	t, err := template.New("generic").Parse(templateText)
+	if err != nil {
+		return "", err
+	}
+	var tpl bytes.Buffer
+	if err := t.Execute(&tpl, data); err != nil {
+		fmt.Printf("Can't render template:: %v\n", err)
+		return "", err
+	}
+
+	result := tpl.String()
+	return result, nil
 }
