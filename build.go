@@ -66,14 +66,57 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		os.Setenv(key, value)
 	}
 
-	// Ensure build deps are :+1:
-	workspace.SetupBuildDependencies(instructions)
+	if instructions.Build.Container.Image != "" {
+		// Perform build inside a container
+		image := instructions.Build.Container.Image
+		fmt.Printf("Invoking build in a container: %s\n", image)
 
-	for _, cmdString := range instructions.Build.Commands {
-		if err := ExecToStdout(cmdString, targetDir); err != nil {
-			fmt.Printf("Failed to run %s: %v", cmdString, err)
+		buildOpts := BuildContainerOpts{
+			ContainerOpts: instructions.Build.Container,
+			PackageName:   targetPackage,
+			Workspace:     workspace,
+		}
+
+		var buildContainer BuildContainer
+
+		if existing := FindContainer(buildOpts); existing != nil {
+			fmt.Printf("Found existing container %s, removing...\n", existing.ID)
+			if err = RemoveContainerById(existing.ID); err != nil {
+				fmt.Printf("Unable to remove existing container: %v\n", err)
+			}
+		}
+
+		buildContainer, err = NewContainer(buildOpts)
+		if err != nil {
+			fmt.Printf("Error creating build container: %v\n", err)
 			return subcommands.ExitFailure
 		}
+
+		if err := buildContainer.Start(); err != nil {
+			fmt.Printf("Unable to start container %s: %v", buildContainer.Id, err)
+			return subcommands.ExitFailure
+		}
+
+		fmt.Printf("Building in container: %s\n", buildContainer.Id)
+
+		for _, cmdString := range instructions.Build.Commands {
+			fmt.Printf("Would run %s in the container\n", cmdString)
+			if err := buildContainer.ExecToStdout(cmdString); err != nil {
+				fmt.Printf("Failed to run %s: %v", cmdString, err)
+				return subcommands.ExitFailure
+			}
+		}
+
+	} else {
+		// Ensure build deps are :+1:
+		workspace.SetupBuildDependencies(instructions)
+		for _, cmdString := range instructions.Build.Commands {
+			if err := ExecToStdout(cmdString, targetDir); err != nil {
+				fmt.Printf("Failed to run %s: %v", cmdString, err)
+				return subcommands.ExitFailure
+			}
+		}
+
 	}
 
 	return subcommands.ExitSuccess

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/johnewart/subcommands"
 	"os"
+	"os/exec"
 	"strings"
 
 	"path/filepath"
@@ -18,11 +19,11 @@ type runCmd struct {
 func (*runCmd) Name() string     { return "run" }
 func (*runCmd) Synopsis() string { return "Run an arbitrary command" }
 func (*runCmd) Usage() string {
-	return `run [-t|--target pkg] command`
+	return `run [--target pkg] command`
 }
 
 func (p *runCmd) SetFlags(f *flag.FlagSet) {
-	f.StringVar(&p.target, "target", "t", "Target package, if not the default")
+	f.StringVar(&p.target, "target", "", "Target package, if not the default")
 }
 
 /*
@@ -47,7 +48,7 @@ func (b *runCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	}
 
 	fmt.Printf("Setting up dependencies...\n")
-	workspace.SetupRuntimeDependencies(*instructions)
+	workspace.SetupBuildDependencies(*instructions)
 
 	fmt.Printf("Setting environment variables...\n")
 	for _, property := range instructions.Exec.Environment {
@@ -60,12 +61,15 @@ func (b *runCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 
 	execDir := filepath.Join(workspace.Path, targetPackage)
 
-	cmdString := strings.Join(f.Args(), " ")
+	cmdName := f.Args()[0]
+	cmdArgs := f.Args()[1:]
+	cmd := exec.Command(cmdName, cmdArgs...)
+	cmd.Dir = execDir
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 
-	if err := ExecToStdout(cmdString, execDir); err != nil {
-		fmt.Printf("Failed to run %s: %v", cmdString, err)
-		return subcommands.ExitFailure
-	}
+	cmd.Run()
 
 	return subcommands.ExitSuccess
 }

@@ -1,61 +1,303 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/api/types/mount"
-	"github.com/docker/docker/api/types/network"
-	"github.com/docker/docker/client"
-	"github.com/docker/go-connections/nat"
+	docker "github.com/johnewart/go-dockerclient"
 	"github.com/nu7hatch/gouuid"
-	"io"
-	"log"
+
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 )
 
 type ServiceContext struct {
-	DockerClient *client.Client
+	DockerClient *docker.Client
 	Id           string
-	Containers   []ContainerDefinition
+	Containers   map[string]ContainerDefinition
 	PackageName  string
 	NetworkId    string
+	Workspace    Workspace
 }
 
-func NewServiceContext(packageName string, containers []ContainerDefinition) (*ServiceContext, error) {
-	ctxId, err := uuid.NewV4()
-	ctx := context.Background()
+type BuildContainerOpts struct {
+	ContainerOpts ContainerDefinition
+	PackageName   string
+	Workspace     Workspace
+}
+type BuildContainer struct {
+	Id      string
+	Name    string
+	Options BuildContainerOpts
+}
 
-	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithVersion("1.39"))
+func (sc *ServiceContext) FindContainer(cd ContainerDefinition) *docker.Container {
+	return FindContainer(BuildContainerOpts{
+		PackageName:   sc.PackageName,
+		Workspace:     sc.Workspace,
+		ContainerOpts: cd,
+	})
+}
+
+// TODO: make sure the opts match the existing container
+func FindContainer(opts BuildContainerOpts) *docker.Container {
+
+	client := NewDockerClient()
+	cd := opts.ContainerOpts
+
+	s := strings.Split(cd.Image, ":")
+	imageName := s[0]
+	containerName := fmt.Sprintf("%s-%s", opts.PackageName, imageName)
+
+	filters := make(map[string][]string)
+	filters["name"] = append(filters["name"], containerName)
+
+	result, err := client.ListContainers(docker.ListContainersOptions{
+		Filters: filters,
+		All:     true,
+	})
+
+	if err == nil && len(result) > 0 {
+		for _, c := range result {
+			fmt.Printf("ID: %s -- NAME: %s\n", c.ID, c.Names)
+		}
+		c := result[0]
+		fmt.Printf("Found container %s with ID %s\n", containerName, c.ID)
+		container, err := client.InspectContainer(c.ID)
+		if err != nil {
+			return nil
+		} else {
+			return container
+		}
+	} else {
+		return nil
+	}
+
+}
+
+func RemoveContainerById(id string) error {
+	client := NewDockerClient()
+	return client.RemoveContainer(docker.RemoveContainerOptions{
+		ID: id,
+	})
+}
+
+func (sc *ServiceContext) NewContainer(c ContainerDefinition) (BuildContainer, error) {
+	opts := BuildContainerOpts{
+		ContainerOpts: c,
+		PackageName:   sc.PackageName,
+		Workspace:     sc.Workspace,
+	}
+	return NewContainer(opts)
+}
+
+func NewDockerClient() *docker.Client {
+	// TODO: Do something smarter...
+	//endpoint := "unix:///var/run/docker.sock"
+	endpoint := "unix:///home/jewart/.dockersocket"
+	client, err := docker.NewVersionedClient(endpoint, "1.39")
 	if err != nil {
 		panic(err)
 	}
+	return client
 
-	log.Printf("Creating network %s...\n", ctxId.String())
+}
+
+func PullImage(imageLabel string) error {
+	client := NewDockerClient()
+	filters := make(map[string][]string)
+
+	fmt.Printf("Pulling %s if needed...\n", imageLabel)
+	filters["label"] = append(filters["label"], imageLabel)
+
+	parts := strings.Split(imageLabel, ":")
+	imageName := parts[0]
+	imageTag := "latest"
+
+	if len(parts) == 2 {
+		imageTag = parts[1]
+	}
+
+	opts := docker.ListImagesOptions{
+		Filters: filters,
+	}
+
+	imgs, err := client.ListImages(opts)
+	if err != nil {
+		fmt.Printf("Error getting image list: %v\n", err)
+		return err
+	}
+
+	if len(imgs) == 0 {
+		fmt.Printf("Image %s not found, pulling\n", imageLabel)
+
+		pullOpts := docker.PullImageOptions{
+			Repository:   imageName,
+			Tag:          imageTag,
+			OutputStream: os.Stdout,
+		}
+
+		authConfig := docker.AuthConfiguration{}
+
+		if err = client.PullImage(pullOpts, authConfig); err != nil {
+			fmt.Printf("Unable to pull image: %v\n", err)
+			return err
+		}
+
+	}
+
+	return nil
+
+}
+
+func (b BuildContainer) Start() error {
+	client := NewDockerClient()
+
+	hostConfig := &docker.HostConfig{}
+
+	return client.StartContainer(b.Id, hostConfig)
+}
+
+func (b BuildContainer) ExecToStdout(cmdString string) error {
+	client := NewDockerClient()
+
+	fmt.Printf("Using API Version: %s\n", client.ServerAPIVersion())
+	cmdArray := strings.Split(cmdString, " ")
+
+	execOpts := docker.CreateExecOptions{
+		Env:          b.Options.ContainerOpts.Environment,
+		Cmd:          cmdArray,
+		AttachStdout: true,
+		AttachStderr: true,
+		Container:    b.Id,
+		WorkingDir:   "/build",
+	}
+
+	exec, err := client.CreateExec(execOpts)
+
+	if err != nil {
+		fmt.Printf("Can't create exec: %v\n", err)
+		return err
+	}
+
+	startOpts := docker.StartExecOptions{
+		OutputStream: os.Stdout,
+		ErrorStream:  os.Stdout,
+	}
+
+	err = client.StartExec(exec.ID, startOpts)
+
+	if err != nil {
+		fmt.Printf("Unable to run exec %s: %v\n", exec.ID, err)
+		return err
+	}
+
+	return nil
+
+}
+
+func NewContainer(opts BuildContainerOpts) (BuildContainer, error) {
+	containerDef := opts.ContainerOpts
+	s := strings.Split(containerDef.Image, ":")
+	imageName := s[0]
+	containerName := fmt.Sprintf("%s-%s", opts.PackageName, imageName)
+
+	fmt.Printf("Creating container '%s'\n", containerName)
+
+	client := NewDockerClient()
+
+	PullImage(containerDef.Image)
+
+	var mounts = make([]docker.HostMount, 0)
+
+	buildRoot := opts.Workspace.BuildRoot()
+	pkgWorkdir := filepath.Join(buildRoot, opts.PackageName)
+
+	for _, mountSpec := range containerDef.Mounts {
+		s := strings.Split(mountSpec, ":")
+		src := filepath.Join(pkgWorkdir, s[0])
+
+		MkdirAsNeeded(src)
+
+		dst := s[1]
+
+		mounts = append(mounts, docker.HostMount{
+			Source: src,
+			Target: dst,
+			Type:   "bind",
+		})
+	}
+
+	mounts = append(mounts, docker.HostMount{
+		Source: opts.Workspace.PackagePath(opts.PackageName),
+		Target: "/build",
+		Type:   "bind",
+	})
+
+	var ports = make([]string, 0)
+	for _, portSpec := range containerDef.Ports {
+		ports = append(ports, portSpec)
+	}
+
+	cmdParts := strings.Split("tail -f /dev/null", " ")
+
+	hostConfig := docker.HostConfig{
+		Mounts: mounts,
+	}
+
+	config := docker.Config{
+		AttachStdout: true,
+		AttachStdin:  true,
+		Image:        containerDef.Image,
+		Cmd:          cmdParts,
+		PortSpecs:    ports,
+	}
+
+	container, err := client.CreateContainer(
+		docker.CreateContainerOptions{
+			Name:       containerName,
+			Config:     &config,
+			HostConfig: &hostConfig,
+		})
+
+	if err != nil {
+		return BuildContainer{}, err
+	}
+
+	fmt.Printf("Container ID: %s\n", container.ID)
+
+	return BuildContainer{
+		Name:    containerName,
+		Id:      container.ID,
+		Options: opts,
+	}, nil
+}
+
+func NewServiceContext(packageName string, containers map[string]ContainerDefinition) (*ServiceContext, error) {
+	workspace := LoadWorkspace()
+
+	dockerClient := NewDockerClient()
+	ctxId, _ := uuid.NewV4()
+	/*log.Printf("Creating network %s...\n", ctxId.String())
 	opts := types.NetworkCreate{}
 	response, err := dockerClient.NetworkCreate(ctx, ctxId.String(), opts)
 	if err != nil {
 		return nil, err
-	}
+	}*/
 
 	sc := &ServiceContext{
 		PackageName:  packageName,
 		Id:           ctxId.String(),
 		DockerClient: dockerClient,
 		Containers:   containers,
-		NetworkId:    response.ID,
+		NetworkId:    "",
+		Workspace:    workspace,
 	}
 
 	return sc, nil
 }
 
 func (sc *ServiceContext) SetupNetwork() (string, error) {
-	ctx := context.Background()
+	/*ctx := context.Background()
 	dockerClient := sc.DockerClient
 	opts := types.NetworkCreate{}
 
@@ -67,19 +309,22 @@ func (sc *ServiceContext) SetupNetwork() (string, error) {
 	}
 
 	return response.ID, nil
+	*/
+	return "", nil
 }
 
 func (sc *ServiceContext) Cleanup() error {
-	ctx := context.Background()
-	dockerClient := sc.DockerClient
+	/*
+		ctx := context.Background()
+		dockerClient := sc.DockerClient
 
-	log.Printf("Removing network %s\n", sc.Id)
-	err := dockerClient.NetworkRemove(ctx, sc.Id)
+		log.Printf("Removing network %s\n", sc.Id)
+		err := dockerClient.NetworkRemove(ctx, sc.Id)
 
-	if err != nil {
-		return err
-	}
-
+		if err != nil {
+			return err
+		}
+	*/
 	return nil
 
 }
@@ -95,92 +340,19 @@ func (sc *ServiceContext) StandUp() error {
 	for _, c := range sc.Containers {
 		fmt.Printf("  %s...\n", c.Image)
 
-		s := strings.Split(c.Image, ":")
-		imageName := s[0]
+		container := sc.FindContainer(c)
 
-		containerName := fmt.Sprintf("%s-%s", sc.PackageName, imageName)
-
-		dockerClient := sc.DockerClient
-		ctx := context.Background()
-
-		filters := filters.NewArgs()
-		filters.Add("name", containerName)
-		containers, err := dockerClient.ContainerList(ctx, types.ContainerListOptions{
-			Size:    true,
-			All:     true,
-			Filters: filters,
-		})
-
-		if len(containers) > 0 {
-			fmt.Printf("Container '%s' already exists, not creating...\n", containerName)
+		if container != nil {
 			continue
+		} else {
+			container, err := sc.NewContainer(c)
+			if err != nil {
+				return err
+			}
+			fmt.Printf("Created container: %s\n", container.Id)
 		}
 
-		fmt.Printf("Pulling image '%s' if needed...\n", c.Image)
-
-		reader, err := dockerClient.ImagePull(ctx, c.Image, types.ImagePullOptions{})
-		if err != nil {
-			panic(err)
-		}
-		io.Copy(os.Stdout, reader)
-
-		var mounts = make([]mount.Mount, 0)
-
-		for _, mountSpec := range c.Mounts {
-			s := strings.Split(mountSpec, ":")
-			src := filepath.Join(pkgWorkdir, s[0])
-
-			MkdirAsNeeded(src)
-
-			dst := s[1]
-			mounts = append(mounts, mount.Mount{
-				Source: src,
-				Target: dst,
-				Type:   mount.TypeBind,
-			})
-		}
-
-		_, portmap, err := nat.ParsePortSpecs(c.Ports)
-
-		/*portmap := nat.PortMap{
-			nat.Port(fmt.Sprintf("%d/tcp", port)): []nat.PortBinding{
-				{
-					HostPort: fmt.Sprintf("%d", port),
-				},
-			},
-		}*/
-
-		if err != nil {
-			fmt.Printf("Unable to parse ports: %v\n", err)
-			return err
-		}
-
-		// Environment variables for the build tools' cache
-		env := make([]string, 0)
-
-		for _, e := range c.Environment {
-			env = append(env, e)
-		}
-
-		var networkConfig = &network.NetworkingConfig{}
-		var hostConfig = &container.HostConfig{
-			Mounts:       mounts,
-			PortBindings: portmap,
-		}
-
-		var containerConfig = &container.Config{
-			Image:        c.Image,
-			Tty:          false,
-			AttachStdout: false,
-			Env:          env,
-		}
-
-		dependencyContainer, err := dockerClient.ContainerCreate(ctx, containerConfig, hostConfig, networkConfig, containerName)
-		if err != nil {
-			panic(err)
-		}
-
-		log.Printf("Connecting to network %s...\n", sc.NetworkId)
+		/*log.Printf("Connecting to network %s...\n", sc.NetworkId)
 		if err := dockerClient.NetworkConnect(ctx, sc.NetworkId, dependencyContainer.ID, &network.EndpointSettings{}); err != nil {
 			panic(err)
 		}
@@ -226,6 +398,7 @@ func (sc *ServiceContext) StandUp() error {
 				time.Sleep(300 * time.Millisecond)
 			}
 		}()
+		*/
 	}
 
 	return nil

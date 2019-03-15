@@ -211,7 +211,7 @@ func (w Workspace) LoadPackageManifest(packageName string) (*BuildInstructions, 
 	instructions := BuildInstructions{}
 	buildYaml := filepath.Join(w.Path, packageName, "build.yml")
 	if _, err := os.Stat(buildYaml); os.IsNotExist(err) {
-		panic("No build.yml -- can't build!")
+		return nil, fmt.Errorf("Can't load build.yml: %v", err)
 	}
 
 	buildyaml, _ := ioutil.ReadFile(buildYaml)
@@ -235,6 +235,8 @@ func (w Workspace) SetupDependencies(dependencies []string) error {
 		fmt.Printf("Would use tool: %s\n", toolSpec)
 
 		switch toolType {
+		case "heroku":
+			bt = NewHerokuBuildTool(toolSpec)
 		case "node":
 			bt = NewNodeBuildTool(toolSpec)
 		case "glide":

@@ -12,11 +12,11 @@ type DependencySet struct {
 }
 
 type ExecPhase struct {
-	Image        string           `yaml:"image"`
-	Commands     []string         `yaml:"commands"`
-	Ports        []string         `yaml:"ports"`
-	Environment  []string         `yaml:"environment"`
-	Dependencies ExecDependencies `yaml:"dependencies"`
+	Container    ContainerDefinition `yaml:"container"`
+	Commands     []string            `yaml:"commands"`
+	Ports        []string            `yaml:"ports"`
+	Environment  []string            `yaml:"environment"`
+	Dependencies ExecDependencies    `yaml:"dependencies"`
 }
 
 type ExecDependencies struct {
@@ -31,11 +31,12 @@ type ContainerDefinition struct {
 }
 
 type BuildPhase struct {
-	Tools       []string `yaml:"tools"`
-	Commands    []string `yaml:"commands"`
-	Sandbox     bool     `yaml:"sandbox"`
-	Artifacts   []string `yaml:"artifacts"`
-	Environment []string `yaml:"env"`
+	Container   ContainerDefinition `yaml:"container"`
+	Tools       []string            `yaml:"tools"`
+	Commands    []string            `yaml:"commands"`
+	Sandbox     bool                `yaml:"sandbox"`
+	Artifacts   []string            `yaml:"artifacts"`
+	Environment []string            `yaml:"env"`
 }
 
 // API Responses -- use Swagger instead, this is silly
