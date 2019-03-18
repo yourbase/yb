@@ -4,6 +4,11 @@ type BuildInstructions struct {
 	Dependencies DependencySet `yaml:"dependencies"`
 	Build        BuildPhase    `yaml:"build"`
 	Exec         ExecPhase     `yaml:"exec"`
+	Package      PackagePhase  `yaml:"package"`
+}
+
+type PackagePhase struct {
+	Artifacts []string `yaml:"artifacts"`
 }
 
 type DependencySet struct {

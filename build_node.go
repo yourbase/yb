@@ -74,5 +74,17 @@ func (bt NodeBuildTool) Setup() error {
 	fmt.Printf("Setting PATH to %s\n", newPath)
 	os.Setenv("PATH", newPath)
 
+	nodePaths := make([]string, 0)
+	for _, pkg := range workspace.PackageList() {
+		nodePath := fmt.Sprintf("%s/node_modules", pkg)
+		nodeBinPath := fmt.Sprintf("%s/.bin", nodePath)
+		nodePaths = append(nodePaths, nodePath)
+		PrependToPath(nodeBinPath)
+	}
+
+	nodePath := strings.Join(nodePaths, ":")
+	fmt.Printf("Setting NODE_PATH to %s\n", nodePath)
+	os.Setenv("NODE_PATH", nodePath)
+
 	return nil
 }

@@ -72,7 +72,7 @@ func (p *remoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 func postToApi(path string, formData url.Values) (*http.Response, error) {
 	apiBaseURL, exists := os.LookupEnv("YOURBASE_API_URL")
 	if !exists {
-		apiBaseURL = "https://api.yourbase.io"
+		apiBaseURL = "https://yb-api.herokuapp.com"
 	}
 
 	apiURL := fmt.Sprintf("%s/%s", apiBaseURL, path)
@@ -83,7 +83,7 @@ func postToApi(path string, formData url.Values) (*http.Response, error) {
 func postToDispatcher(path string, formData url.Values) (*http.Response, error) {
 	dispatcherBaseURL, exists := os.LookupEnv("DISPATCHER_URL")
 	if !exists {
-		dispatcherBaseURL = "https://build.yourbase.io"
+		dispatcherBaseURL = "https://yb-dispatcher.herokuapp.com"
 	}
 
 	dispatcherURL := fmt.Sprintf("%s/%s", dispatcherBaseURL, path)
@@ -138,7 +138,7 @@ func submitBuild(project *Project) {
 	response := string(body)
 
 	fmt.Println(response)
-	if strings.HasPrefix(response, "ws:") {
+	if strings.HasPrefix(response, "ws:") || strings.HasPrefix(response, "wss:") {
 		fmt.Println("Build output:")
 		conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), response)
 		if err != nil {

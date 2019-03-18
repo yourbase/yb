@@ -57,13 +57,7 @@ func (bt GolangBuildTool) GolangDir() string {
 func (bt GolangBuildTool) Setup() error {
 	workspace := LoadWorkspace()
 	golangDir := bt.GolangDir()
-	goPath, exists := os.LookupEnv("GOPATH")
-	if !exists {
-		goPath = workspace.BuildRoot()
-	} else {
-		fmt.Printf("Adding existing GOPATH: %s...", goPath)
-		goPath = fmt.Sprintf("%s:%s", goPath, workspace.BuildRoot())
-	}
+	goPath := workspace.BuildRoot()
 
 	for _, pkg := range workspace.PackageList() {
 		//pkgPath := filepath.Join(workspace.Path, pkg)

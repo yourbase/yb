@@ -55,6 +55,14 @@ func PrependToPath(dir string) {
 	os.Setenv("PATH", newPath)
 }
 
+func PathExists(path string) bool {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return false
+	}
+
+	return true
+}
+
 func DirectoryExists(dir string) bool {
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		return false

@@ -92,8 +92,7 @@ func (sc *ServiceContext) NewContainer(c ContainerDefinition) (BuildContainer, e
 
 func NewDockerClient() *docker.Client {
 	// TODO: Do something smarter...
-	//endpoint := "unix:///var/run/docker.sock"
-	endpoint := "unix:///home/jewart/.dockersocket"
+	endpoint := "unix:///var/run/docker.sock"
 	client, err := docker.NewVersionedClient(endpoint, "1.39")
 	if err != nil {
 		panic(err)

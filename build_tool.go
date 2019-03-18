@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/user"
 	"path/filepath"
 	"regexp"
 )
@@ -17,8 +18,16 @@ type BuildTool interface {
 }
 
 func CacheDir() string {
-	cacheDir := "/home/jewart/.artificer/cache"
-	MkdirAsNeeded(cacheDir)
+	cacheDir, exists := os.LookupEnv("YB_CACHE_DIR")
+	if !exists {
+		u, err := user.Current()
+		if err != nil {
+			cacheDir = "/tmp/artificer"
+		} else {
+			cacheDir = fmt.Sprintf("%s/.artificer/cache", u.HomeDir)
+		}
+	}
+	fmt.Printf(cacheDir)
 	return cacheDir
 }
 

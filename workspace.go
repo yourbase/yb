@@ -235,6 +235,8 @@ func (w Workspace) SetupDependencies(dependencies []string) error {
 		fmt.Printf("Would use tool: %s\n", toolSpec)
 
 		switch toolType {
+		case "r":
+			bt = NewRLangBuildTool(toolSpec)
 		case "heroku":
 			bt = NewHerokuBuildTool(toolSpec)
 		case "node":
