@@ -1,5 +1,7 @@
 package main
 
+const MANIFEST_FILE = "build.yml"
+
 type BuildInstructions struct {
 	Dependencies DependencySet `yaml:"dependencies"`
 	Build        BuildPhase    `yaml:"build"`

@@ -27,7 +27,9 @@ func CacheDir() string {
 			cacheDir = fmt.Sprintf("%s/.artificer/cache", u.HomeDir)
 		}
 	}
-	fmt.Printf(cacheDir)
+
+	MkdirAsNeeded(cacheDir)
+
 	return cacheDir
 }
 

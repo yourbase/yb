@@ -64,12 +64,23 @@ func (p *remoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	project := fetchProject(repoUrls)
 	fmt.Printf("Project key: %d\n", project.Id)
 
-	submitBuild(project)
+	err = submitBuild(project)
+
+	if err != nil {
+		fmt.Printf("Unable to submit build: %v\n", err)
+		return subcommands.ExitFailure
+	}
 
 	return subcommands.ExitSuccess
 }
 
 func postToApi(path string, formData url.Values) (*http.Response, error) {
+	userToken, err := getUserToken()
+
+	if err != nil {
+		return nil, err
+	}
+
 	apiBaseURL, exists := os.LookupEnv("YOURBASE_API_URL")
 	if !exists {
 		apiBaseURL = "https://yb-api.herokuapp.com"
@@ -77,10 +88,21 @@ func postToApi(path string, formData url.Values) (*http.Response, error) {
 
 	apiURL := fmt.Sprintf("%s/%s", apiBaseURL, path)
 
-	return http.PostForm(apiURL, formData)
+	client := &http.Client{}
+	req, _ := http.NewRequest("POST", apiURL, strings.NewReader(formData.Encode()))
+	req.Header.Set("YB_API_TOKEN", userToken)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	res, _ := client.Do(req)
+	return res, nil
 }
 
 func postToDispatcher(path string, formData url.Values) (*http.Response, error) {
+	userToken, err := getUserToken()
+
+	if err != nil {
+		return nil, err
+	}
+
 	dispatcherBaseURL, exists := os.LookupEnv("DISPATCHER_URL")
 	if !exists {
 		dispatcherBaseURL = "https://yb-dispatcher.herokuapp.com"
@@ -88,7 +110,22 @@ func postToDispatcher(path string, formData url.Values) (*http.Response, error) 
 
 	dispatcherURL := fmt.Sprintf("%s/%s", dispatcherBaseURL, path)
 
-	return http.PostForm(dispatcherURL, formData)
+	client := &http.Client{}
+	req, _ := http.NewRequest("POST", dispatcherURL, strings.NewReader(formData.Encode()))
+	req.Header.Set("YB_API_TOKEN", userToken)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	res, _ := client.Do(req)
+
+	return res, nil
+}
+
+func getUserToken() (string, error) {
+	token, exists := os.LookupEnv("YB_USER_TOKEN")
+	if !exists {
+		return "", fmt.Errorf("Unable to determine YB user via YB_USER_TOKEN environment variable")
+	}
+
+	return token, nil
 }
 
 func fetchProject(urls []string) *Project {
@@ -115,45 +152,81 @@ func fetchProject(urls []string) *Project {
 	return &project
 }
 
-func submitBuild(project *Project) {
+func fetchUserEmail() (string, error) {
+	userToken, err := getUserToken()
+	if err != nil {
+		return "", err
+	}
+
+	apiBaseURL, exists := os.LookupEnv("YOURBASE_API_URL")
+	if !exists {
+		apiBaseURL = "https://yb-api.herokuapp.com"
+	}
+
+	apiURL := fmt.Sprintf("%s/users/whoami", apiBaseURL)
+
+	client := &http.Client{}
+	req, _ := http.NewRequest("GET", apiURL, nil)
+	req.Header.Set("YB_API_TOKEN", userToken)
+	res, _ := client.Do(req)
+
+	if res.StatusCode == 200 {
+		defer res.Body.Close()
+		body, err := ioutil.ReadAll(res.Body)
+
+		if err != nil {
+			return "", err
+		}
+
+		email := string(body)
+		return email, nil
+	} else {
+		return "", fmt.Errorf("User could not be found using your API token, please double-check and try again")
+	}
+}
+
+func submitBuild(project *Project) error {
+
+	userToken, err := getUserToken()
+
+	if err != nil {
+		return err
+	}
 
 	formData := url.Values{
 		"project_id":    {strconv.Itoa(project.Id)},
 		"repository_id": {project.Repository},
-		"api_key":       {"12345"},
+		"api_key":       {userToken},
 	}
 
 	resp, err := postToDispatcher("builds", formData)
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	//fmt.Println(resp.Body)
 	if err != nil {
-		fmt.Printf("Couldn't read response body: %s\n", err)
+		return fmt.Errorf("Couldn't read response body: %s\n", err)
 	}
 
 	response := string(body)
 
-	fmt.Println(response)
 	if strings.HasPrefix(response, "ws:") || strings.HasPrefix(response, "wss:") {
 		fmt.Println("Build output:")
 		conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), response)
 		if err != nil {
-			fmt.Printf("can not connect: %v\n", err)
+			return fmt.Errorf("can not connect: %v\n", err)
 		} else {
 			for {
 				msg, _, err := wsutil.ReadServerData(conn)
 				if err != nil {
 					fmt.Printf("can not receive: %v\n", err)
-					return
+					return err
 				} else {
-					//fmt.Printf("receive: %s，type: %v\n", msg, op)
 					fmt.Printf("%s", msg)
 				}
-				//time.Sleep(time.Duration(1) * time.Second)
 			}
 
 			err = conn.Close()
@@ -164,4 +237,7 @@ func submitBuild(project *Project) {
 			}
 		}
 	}
+
+	return nil
+
 }

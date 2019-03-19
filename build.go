@@ -30,12 +30,16 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 
 	workspace := LoadWorkspace()
 	var targetPackage string
-
-	fmt.Println(f.Args())
-	if len(f.Args()) > 0 {
-		targetPackage = f.Args()[0]
+	if PathExists(MANIFEST_FILE) {
+		currentPath, _ := filepath.Abs(".")
+		parts := strings.Split(currentPath, "/")
+		targetPackage = parts[len(parts)-1]
 	} else {
-		targetPackage = workspace.Target
+		if len(f.Args()) > 0 {
+			targetPackage = f.Args()[0]
+		} else {
+			targetPackage = workspace.Target
+		}
 	}
 
 	fmt.Printf("Building target package %s...\n", targetPackage)
