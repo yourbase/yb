@@ -13,17 +13,19 @@ import (
 )
 
 type runCmd struct {
-	target string
+	target      string
+	environment string
 }
 
 func (*runCmd) Name() string     { return "run" }
 func (*runCmd) Synopsis() string { return "Run an arbitrary command" }
 func (*runCmd) Usage() string {
-	return `run [--target pkg] command`
+	return `run [-t pkg] [-e environment] command`
 }
 
 func (p *runCmd) SetFlags(f *flag.FlagSet) {
-	f.StringVar(&p.target, "target", "", "Target package, if not the default")
+	f.StringVar(&p.target, "t", "", "Target package, if not the default")
+	f.StringVar(&p.environment, "e", "default", "The environment to set")
 }
 
 /*
@@ -51,11 +53,21 @@ func (b *runCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	workspace.SetupBuildDependencies(*instructions)
 
 	fmt.Printf("Setting environment variables...\n")
-	for _, property := range instructions.Exec.Environment {
+	for _, property := range instructions.Exec.Environment["default"] {
 		s := strings.Split(property, "=")
 		if len(s) == 2 {
 			fmt.Printf("  %s\n", s[0])
 			os.Setenv(s[0], s[1])
+		}
+	}
+
+	if b.environment != "default" {
+		for _, property := range instructions.Exec.Environment[b.environment] {
+			s := strings.Split(property, "=")
+			if len(s) == 2 {
+				fmt.Printf("  %s\n", s[0])
+				os.Setenv(s[0], s[1])
+			}
 		}
 	}
 

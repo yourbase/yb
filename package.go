@@ -7,7 +7,6 @@ import (
 	"github.com/johnewart/subcommands"
 	"github.com/mholt/archiver"
 	"os"
-	"strings"
 
 	"path/filepath"
 )
@@ -47,17 +46,17 @@ func (b *packageCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 		return subcommands.ExitFailure
 	}
 
-	fmt.Printf("Setting up dependencies...\n")
-	workspace.SetupBuildDependencies(*instructions)
+	/*	fmt.Printf("Setting up dependencies...\n")
+		workspace.SetupBuildDependencies(*instructions)
 
-	fmt.Printf("Setting environment variables...\n")
-	for _, property := range instructions.Exec.Environment {
-		s := strings.Split(property, "=")
-		if len(s) == 2 {
-			fmt.Printf("  %s\n", s[0])
-			os.Setenv(s[0], s[1])
-		}
-	}
+		/*fmt.Printf("Setting environment variables...\n")
+		for _, property := range instructions.Exec.Environment {
+			s := strings.Split(property, "=")
+			if len(s) == 2 {
+				fmt.Printf("  %s\n", s[0])
+				os.Setenv(s[0], s[1])
+			}
+		}*/
 
 	buildDir := workspace.BuildRoot()
 	outputDir := filepath.Join(buildDir, "output")

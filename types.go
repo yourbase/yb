@@ -22,7 +22,7 @@ type ExecPhase struct {
 	Container    ContainerDefinition `yaml:"container"`
 	Commands     []string            `yaml:"commands"`
 	Ports        []string            `yaml:"ports"`
-	Environment  []string            `yaml:"environment"`
+	Environment  map[string][]string `yaml:"environment"`
 	Dependencies ExecDependencies    `yaml:"dependencies"`
 }
 
