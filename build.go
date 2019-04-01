@@ -32,8 +32,8 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	var targetPackage string
 	if PathExists(MANIFEST_FILE) {
 		currentPath, _ := filepath.Abs(".")
-		parts := strings.Split(currentPath, "/")
-		targetPackage = parts[len(parts)-1]
+		_, file := filepath.Split(currentPath)
+		targetPackage = file
 	} else {
 		if len(f.Args()) > 0 {
 			targetPackage = f.Args()[0]
@@ -46,9 +46,9 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 
 	targetDir := filepath.Join(workspace.Path, targetPackage)
 	instructions := BuildInstructions{}
-	buildYaml := filepath.Join(targetDir, "build.yml")
+	buildYaml := filepath.Join(targetDir, MANIFEST_FILE)
 	if _, err := os.Stat(buildYaml); os.IsNotExist(err) {
-		panic("No build.yml -- can't build!")
+		fmt.Printf("No %s -- can't build!\n", MANIFEST_FILE)
 	}
 
 	buildyaml, _ := ioutil.ReadFile(buildYaml)
@@ -56,7 +56,6 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	if err != nil {
 		log.Fatalf("error: %v", err)
 	}
-	fmt.Printf("--- i:\n%v\n\n", instructions)
 
 	fmt.Printf("Working in %s...\n", targetDir)
 
@@ -84,8 +83,8 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		var buildContainer BuildContainer
 
 		if existing := FindContainer(buildOpts); existing != nil {
-			fmt.Printf("Found existing container %s, removing...\n", existing.ID)
-			if err = RemoveContainerById(existing.ID); err != nil {
+			fmt.Printf("Found existing container %s, removing...\n", existing.Id)
+			if err = RemoveContainerById(existing.Id); err != nil {
 				fmt.Printf("Unable to remove existing container: %v\n", err)
 			}
 		}
@@ -115,10 +114,19 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		// Ensure build deps are :+1:
 		workspace.SetupBuildDependencies(instructions)
 		for _, cmdString := range instructions.Build.Commands {
-			if err := ExecToStdout(cmdString, targetDir); err != nil {
-				fmt.Printf("Failed to run %s: %v", cmdString, err)
-				return subcommands.ExitFailure
+			if strings.HasPrefix(cmdString, "cd ") {
+				parts := strings.SplitN(cmdString, " ", 2)
+				dir := filepath.Join(targetDir, parts[1])
+				//fmt.Printf("Chdir to %s\n", dir)
+				//os.Chdir(dir)
+				targetDir = dir
+			} else {
+				if err := ExecToStdout(cmdString, targetDir); err != nil {
+					fmt.Printf("Failed to run %s: %v", cmdString, err)
+					return subcommands.ExitFailure
+				}
 			}
+
 		}
 
 	}

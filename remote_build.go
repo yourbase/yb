@@ -9,6 +9,7 @@ import (
 	"github.com/gobwas/ws/wsutil"
 	"github.com/johnewart/subcommands"
 	"gopkg.in/src-d/go-git.v4"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -74,6 +75,21 @@ func (p *remoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	return subcommands.ExitSuccess
 }
 
+func ApiUrl(path string) string {
+	apiBaseURL, exists := os.LookupEnv("YOURBASE_API_URL")
+	if !exists {
+		apiBaseURL = "https://yb-api.herokuapp.com"
+	}
+
+	if !strings.HasPrefix(path, "/") {
+		path = fmt.Sprintf("/%s", path)
+	}
+
+	apiURL := fmt.Sprintf("%s%s", apiBaseURL, path)
+
+	return apiURL
+}
+
 func postToApi(path string, formData url.Values) (*http.Response, error) {
 	userToken, err := getUserToken()
 
@@ -81,13 +97,7 @@ func postToApi(path string, formData url.Values) (*http.Response, error) {
 		return nil, err
 	}
 
-	apiBaseURL, exists := os.LookupEnv("YOURBASE_API_URL")
-	if !exists {
-		apiBaseURL = "https://yb-api.herokuapp.com"
-	}
-
-	apiURL := fmt.Sprintf("%s/%s", apiBaseURL, path)
-
+	apiURL := ApiUrl(path)
 	client := &http.Client{}
 	req, _ := http.NewRequest("POST", apiURL, strings.NewReader(formData.Encode()))
 	req.Header.Set("YB_API_TOKEN", userToken)
@@ -122,7 +132,13 @@ func postToDispatcher(path string, formData url.Values) (*http.Response, error) 
 func getUserToken() (string, error) {
 	token, exists := os.LookupEnv("YB_USER_TOKEN")
 	if !exists {
-		return "", fmt.Errorf("Unable to determine YB user via YB_USER_TOKEN environment variable")
+		configFile := ConfigFilePath("api_key")
+		if PathExists(configFile) {
+			buf, _ := ioutil.ReadFile(configFile)
+			token = string(buf)
+		} else {
+			return "", fmt.Errorf("Unable to find YB token in config file or environment.")
+		}
 	}
 
 	return token, nil
@@ -214,7 +230,7 @@ func submitBuild(project *Project) error {
 	response := string(body)
 
 	if strings.HasPrefix(response, "ws:") || strings.HasPrefix(response, "wss:") {
-		fmt.Println("Build output:")
+		fmt.Printf("Streaming build output from %s\n", response)
 		conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), response)
 		if err != nil {
 			return fmt.Errorf("can not connect: %v\n", err)
@@ -222,8 +238,14 @@ func submitBuild(project *Project) error {
 			for {
 				msg, _, err := wsutil.ReadServerData(conn)
 				if err != nil {
-					fmt.Printf("can not receive: %v\n", err)
-					return err
+					if err != io.EOF {
+						// Ignore
+						//fmt.Printf("can not receive: %v\n", err)
+						//return err
+					} else {
+						fmt.Println("\n\n\nBuild Completed!")
+						return nil
+					}
 				} else {
 					fmt.Printf("%s", msg)
 				}

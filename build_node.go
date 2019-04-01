@@ -68,7 +68,7 @@ func (bt NodeBuildTool) Setup() error {
 
 	workspace := LoadWorkspace()
 	buildDir := fmt.Sprintf("%s/build", workspace.Path)
-	cmdPath := fmt.Sprintf("%s/%s", buildDir, bt.PackageString())
+	cmdPath := fmt.Sprintf("%s/%s/bin", buildDir, bt.PackageString())
 	currentPath := os.Getenv("PATH")
 	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
 	fmt.Printf("Setting PATH to %s\n", newPath)

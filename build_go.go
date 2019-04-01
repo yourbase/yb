@@ -27,8 +27,8 @@ func NewGolangBuildTool(toolSpec string) GolangBuildTool {
 }
 
 func (bt GolangBuildTool) ArchiveFile() string {
-	operatingSystem := "linux"
-	arch := "amd64"
+	operatingSystem := OS()
+	arch := Arch()
 	return fmt.Sprintf("go%s.%s-%s.tar.gz", bt.Version(), operatingSystem, arch)
 }
 

@@ -30,7 +30,7 @@ type BuildContainer struct {
 	Options BuildContainerOpts
 }
 
-func (sc *ServiceContext) FindContainer(cd ContainerDefinition) *docker.Container {
+func (sc *ServiceContext) FindContainer(cd ContainerDefinition) *BuildContainer {
 	return FindContainer(BuildContainerOpts{
 		PackageName:   sc.PackageName,
 		Workspace:     sc.Workspace,
@@ -39,7 +39,7 @@ func (sc *ServiceContext) FindContainer(cd ContainerDefinition) *docker.Containe
 }
 
 // TODO: make sure the opts match the existing container
-func FindContainer(opts BuildContainerOpts) *docker.Container {
+func FindContainer(opts BuildContainerOpts) *BuildContainer {
 
 	client := NewDockerClient()
 	cd := opts.ContainerOpts
@@ -62,11 +62,16 @@ func FindContainer(opts BuildContainerOpts) *docker.Container {
 		}
 		c := result[0]
 		fmt.Printf("Found container %s with ID %s\n", containerName, c.ID)
-		container, err := client.InspectContainer(c.ID)
+		_, err := client.InspectContainer(c.ID)
 		if err != nil {
 			return nil
 		} else {
-			return container
+			bc := BuildContainer{
+				Id:      c.ID,
+				Name:    containerName,
+				Options: opts,
+			}
+			return &bc
 		}
 	} else {
 		return nil
@@ -342,7 +347,8 @@ func (sc *ServiceContext) StandUp() error {
 		container := sc.FindContainer(c)
 
 		if container != nil {
-			continue
+			fmt.Printf("Container already exists, starting...\n")
+			container.Start()
 		} else {
 			container, err := sc.NewContainer(c)
 			if err != nil {
@@ -373,6 +379,7 @@ func (sc *ServiceContext) StandUp() error {
 
 		//TODO: stream logs from each dependency to the build dir
 		containerLogFile := filepath.Join(logDir, fmt.Sprintf("%s.log", imageName))
+		Name:
 		f, err := os.Create(containerLogFile)
 
 		if err != nil {

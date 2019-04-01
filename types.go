@@ -1,6 +1,6 @@
 package main
 
-const MANIFEST_FILE = "build.yml"
+const MANIFEST_FILE = ".yourbase.yml"
 
 type BuildInstructions struct {
 	Dependencies DependencySet `yaml:"dependencies"`
@@ -24,6 +24,7 @@ type ExecPhase struct {
 	Ports        []string            `yaml:"ports"`
 	Environment  map[string][]string `yaml:"environment"`
 	Dependencies ExecDependencies    `yaml:"dependencies"`
+	LogFiles     []string            `yaml:"logfiles"`
 }
 
 type ExecDependencies struct {
@@ -52,4 +53,9 @@ type Project struct {
 	Label       string `json:"label"`
 	Description string `json:"description"`
 	Repository  string `json:"repository"`
+}
+
+type LoginResponse struct {
+	UserId   int    `json:"user_id"`
+	ApiToken string `json:"token"`
 }

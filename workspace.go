@@ -98,6 +98,11 @@ func (w *workspaceAddCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...int
 	cloneParts := strings.Split(repository, "/")
 	cloneDir := cloneParts[len(cloneParts)-1]
 
+	if strings.HasSuffix(cloneDir, ".git") {
+		offset := strings.LastIndex(cloneDir, ".git")
+		cloneDir = cloneDir[0:offset]
+	}
+
 	fmt.Printf("Cloning %s into %s...\n", repository, cloneDir)
 	cloneOpts := git.CloneOptions{
 		URL:      repositoryURL,
@@ -136,6 +141,7 @@ func (w *workspaceAddCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...int
 		}
 
 		cloneOpts.Auth = &auth
+
 		_, err := git.PlainClone(cloneDir, false, &cloneOpts)
 		if err != nil {
 			fmt.Printf("Unable to clone repository, even with authentication: %v\n", err)
@@ -209,17 +215,16 @@ func (w Workspace) PackageList() []string {
 
 func (w Workspace) LoadPackageManifest(packageName string) (*BuildInstructions, error) {
 	instructions := BuildInstructions{}
-	buildYaml := filepath.Join(w.Path, packageName, "build.yml")
+	buildYaml := filepath.Join(w.Path, packageName, MANIFEST_FILE)
 	if _, err := os.Stat(buildYaml); os.IsNotExist(err) {
-		return nil, fmt.Errorf("Can't load build.yml: %v", err)
+		return nil, fmt.Errorf("Can't load %s: %v", MANIFEST_FILE, err)
 	}
 
 	buildyaml, _ := ioutil.ReadFile(buildYaml)
 	err := yaml.Unmarshal([]byte(buildyaml), &instructions)
 	if err != nil {
-		return nil, fmt.Errorf("Error loading build.yml for %s: %v", packageName, err)
+		return nil, fmt.Errorf("Error loading %s for %s: %v", MANIFEST_FILE, packageName, err)
 	}
-	//fmt.Printf("--- i:\n%v\n\n", instructions)
 
 	return &instructions, nil
 
@@ -243,6 +248,8 @@ func (w Workspace) SetupDependencies(dependencies []string) error {
 			bt = NewNodeBuildTool(toolSpec)
 		case "glide":
 			bt = NewGlideBuildTool(toolSpec)
+		case "flutter":
+			bt = NewFlutterBuildTool(toolSpec)
 		case "rust":
 			bt = NewRustBuildTool(toolSpec)
 		case "java":
@@ -344,7 +351,6 @@ func SaveWorkspace(w Workspace) error {
 		log.Fatalf("error: %v", err)
 		return err
 	}
-	fmt.Printf("--- t dump:\n%s\n\n", string(d))
 	err = ioutil.WriteFile("config.yml", d, 0644)
 	if err != nil {
 		log.Fatalf("Unable to write config: %v", err)

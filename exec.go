@@ -42,8 +42,8 @@ func (b *execCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 
 	if PathExists(MANIFEST_FILE) {
 		currentPath, _ := filepath.Abs(".")
-		parts := strings.Split(currentPath, "/")
-		targetPackage = parts[len(parts)-1]
+		_, file := filepath.Split(currentPath)
+		targetPackage = file
 	} else {
 		if len(f.Args()) > 0 {
 			targetPackage = f.Args()[0]
@@ -94,6 +94,10 @@ func (b *execCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 
 	log.Printf("Execing target package %s...\n", targetPackage)
 	execDir := filepath.Join(workspace.Path, targetPackage)
+
+	for _, logFile := range instructions.Exec.LogFiles {
+		fmt.Printf("Will tail %s...\n", logFile)
+	}
 
 	for _, cmdString := range instructions.Exec.Commands {
 		if err := ExecToStdout(cmdString, execDir); err != nil {

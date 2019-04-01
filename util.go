@@ -6,13 +6,15 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"os/user"
+	"path/filepath"
 	"strings"
 	"text/template"
 	"time"
 )
 
 func ExecToStdout(cmdString string, targetDir string) error {
-	fmt.Printf("Running: %s\n", cmdString)
+	fmt.Printf("Running: %s in %s\n", cmdString, targetDir)
 
 	cmdArgs := strings.Fields(cmdString)
 	cmd := exec.Command(cmdArgs[0], cmdArgs[1:len(cmdArgs)]...)
@@ -53,6 +55,14 @@ func PrependToPath(dir string) {
 	newPath := fmt.Sprintf("%s:%s", dir, currentPath)
 	fmt.Printf("Setting PATH to %s\n", newPath)
 	os.Setenv("PATH", newPath)
+}
+
+func ConfigFilePath(filename string) string {
+	u, _ := user.Current()
+	configDir := filepath.Join(u.HomeDir, ".config", "yb")
+	MkdirAsNeeded(configDir)
+	filePath := filepath.Join(configDir, filename)
+	return filePath
 }
 
 func PathExists(path string) bool {

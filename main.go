@@ -20,6 +20,7 @@ func main() {
 	cmdr.Register(&remoteCmd{}, "")
 	cmdr.Register(&packageCmd{}, "")
 	cmdr.Register(&patchCmd{}, "")
+	cmdr.Register(&loginCmd{}, "")
 	//subcommands.Register(&workspaceCreateCmd{}, "workspace")
 
 	flag.Parse()
