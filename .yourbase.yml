@@ -15,7 +15,6 @@ build:
       - GOOS=windows
       - GOARCH=amd64
   commands:
-    - go get
     - go build
 
 exec:

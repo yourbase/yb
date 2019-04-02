@@ -248,6 +248,10 @@ func (w Workspace) SetupDependencies(dependencies []string) error {
 			bt = NewNodeBuildTool(toolSpec)
 		case "glide":
 			bt = NewGlideBuildTool(toolSpec)
+		case "android":
+			bt = NewAndroidBuildTool(toolSpec)
+		case "gradle":
+			bt = NewGradleBuildTool(toolSpec)
 		case "flutter":
 			bt = NewFlutterBuildTool(toolSpec)
 		case "rust":

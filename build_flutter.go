@@ -8,7 +8,7 @@ import (
 )
 
 //https://archive.apache.org/dist/flutter/flutter-3/3.3.3/binaries/apache-flutter-3.3.3-bin.tar.gz
-var FLUTTER_DIST_MIRROR = "https://storage.googleapis.com/flutter_infra/releases/stable/{{.OS}}/flutter_{{.OS}}_v{{.Version}}-stable.tar.xz"
+var FLUTTER_DIST_MIRROR = "https://storage.googleapis.com/flutter_infra/releases/stable/{{.OS}}/flutter_{{.OS}}_v{{.Version}}-stable.{{.Extension}}"
 
 type FlutterBuildTool struct {
 	BuildTool
@@ -29,21 +29,29 @@ func NewFlutterBuildTool(toolSpec string) FlutterBuildTool {
 func (bt FlutterBuildTool) DownloadUrl() string {
 	opsys := OS()
 	arch := Arch()
+	extension := "tar.xz"
 
 	if arch == "amd64" {
 		arch = "x64"
 	}
 
+	if opsys == "darwin" {
+		opsys = "macos"
+		extension = "zip"
+	}
+
 	version := bt.Version()
 
 	data := struct {
-		OS      string
-		Arch    string
-		Version string
+		OS        string
+		Arch      string
+		Version   string
+		Extension string
 	}{
 		opsys,
 		arch,
 		version,
+		extension,
 	}
 
 	url, _ := TemplateToString(FLUTTER_DIST_MIRROR, data)

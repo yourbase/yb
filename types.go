@@ -42,8 +42,9 @@ type BuildPhase struct {
 	Container   ContainerDefinition `yaml:"container"`
 	Tools       []string            `yaml:"tools"`
 	Commands    []string            `yaml:"commands"`
-	Sandbox     bool                `yaml:"sandbox"`
 	Artifacts   []string            `yaml:"artifacts"`
+	Sandbox     bool                `yaml:"sandbox"`
+	Root        string              `yaml:"root"`
 	Environment []string            `yaml:"env"`
 }
 

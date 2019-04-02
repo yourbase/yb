@@ -3,14 +3,14 @@ package main
 import (
 	"fmt"
 	"io"
-	"log"
+	//"log"
 	"net/http"
 	"os"
 	"os/user"
 	"path/filepath"
 	"regexp"
-	"strconv"
-	"time"
+	//"strconv"
+	//"time"
 )
 
 type BuildTool interface {
@@ -69,7 +69,7 @@ func DownloadFileWithCache(url string) (string, error) {
 	return cacheFilename, nil
 }
 
-/*func DownloadFile(filepath string, url string) error {
+func DownloadFile(filepath string, url string) error {
 
 	// Get the data
 	resp, err := http.Get(url)
@@ -88,8 +88,9 @@ func DownloadFileWithCache(url string) (string, error) {
 	// Write the body to file
 	_, err = io.Copy(out, resp.Body)
 	return err
-}*/
+}
 
+/*
 func PrintDownloadPercent(done chan int64, path string, total int64) {
 
 	var stop bool = false
@@ -181,4 +182,4 @@ func DownloadFile(dest string, url string) error {
 	elapsed := time.Since(start)
 	log.Printf("Download completed in %s", elapsed)
 	return nil
-}
+} */

@@ -30,8 +30,14 @@ func (bt NodeBuildTool) Version() string {
 }
 func (bt NodeBuildTool) PackageString() string {
 	version := bt.Version()
-	arch := "x64"
-	osName := "linux"
+	arch := Arch()
+
+	if arch == "amd64" {
+		arch = "x64"
+	}
+
+	osName := OS()
+
 	return fmt.Sprintf("node-v%s-%s-%s", version, osName, arch)
 }
 func (bt NodeBuildTool) Install() error {

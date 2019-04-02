@@ -121,6 +121,11 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 				//os.Chdir(dir)
 				targetDir = dir
 			} else {
+				if instructions.Build.Root != "" {
+					fmt.Printf("Build root is %s\n", instructions.Build.Root)
+					targetDir = filepath.Join(targetDir, instructions.Build.Root)
+				}
+
 				if err := ExecToStdout(cmdString, targetDir); err != nil {
 					fmt.Printf("Failed to run %s: %v", cmdString, err)
 					return subcommands.ExitFailure

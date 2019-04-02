@@ -4,11 +4,15 @@ import (
 	"fmt"
 	"github.com/mholt/archiver"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
 //https://download.java.net/java/GA/jdk11/9/GPL/openjdk-11.0.2_linux-x64_bin.tar.gz
-var OPENJDK_DIST_MIRROR = "https://download.java.net/java/GA"
+//var OPENJDK_DIST_MIRROR = "https://download.java.net/java/GA"
+
+//https://github.com/AdoptOpenJDK/openjdk8-binaries/releases/download/jdk8u202-b08/OpenJDK8U-jdk_x64_mac_hotspot_8u202b08.tar.gz
+var OPENJDK_DIST_MIRROR = "https://github.com/AdoptOpenJDK/openjdk{{.MajorVersion}}-binaries/releases/download/jdk{{.MajorVersion}}u{{.MinorVersion}}-b{{.PatchVersion}}/OpenJDK{{.MajorVersion}}U-jdk_{{.Arch}}_{{.OS}}_hotspot_{{.MajorVersion}}u{{.MinorVersion}}b{{.PatchVersion}}.{{.Extension}}"
 
 type JavaBuildTool struct {
 	BuildTool
@@ -35,14 +39,26 @@ func (bt JavaBuildTool) MajorVersion() string {
 	return parts[0]
 }
 
+func (bt JavaBuildTool) MinorVersion() string {
+	parts := strings.Split(bt._version, ".")
+	return parts[1]
+}
+
+func (bt JavaBuildTool) PatchVersion() string {
+	parts := strings.Split(bt._version, ".")
+	return parts[2]
+}
+
 func (bt JavaBuildTool) JavaDir() string {
 	workspace := LoadWorkspace()
 	opsys := OS()
+	basePath := filepath.Join(workspace.BuildRoot(), fmt.Sprintf("jdk%su%s-b%s", bt.MajorVersion(), bt.MinorVersion(), bt.PatchVersion()))
+
 	if opsys == "darwin" {
-		return fmt.Sprintf("%s/jdk-%s.jdk/Contents/Home", workspace.BuildRoot(), bt.Version())
-	} else {
-		return fmt.Sprintf("%s/jdk-%s", workspace.BuildRoot(), bt.Version())
+		basePath = filepath.Join(basePath, "Contents", "Home")
 	}
+
+	return basePath
 }
 
 func (bt JavaBuildTool) Setup() error {
@@ -58,13 +74,47 @@ func (bt JavaBuildTool) Setup() error {
 	return nil
 }
 
-func (bt JavaBuildTool) Install() error {
-
+func (bt JavaBuildTool) DownloadUrl() string {
 	arch := "x64"
+	extension := "tar.gz"
+
 	operatingSystem := OS()
 	if operatingSystem == "darwin" {
-		operatingSystem = "osx"
+		operatingSystem = "mac"
 	}
+
+	if operatingSystem == "windows" {
+		extension = "zip"
+	}
+
+	data := struct {
+		OS           string
+		Arch         string
+		MajorVersion string
+		MinorVersion string
+		PatchVersion string
+		Extension    string
+	}{
+		operatingSystem,
+		arch,
+		bt.MajorVersion(),
+		bt.MinorVersion(),
+		bt.PatchVersion(),
+		extension,
+	}
+
+	fmt.Printf("URL params: %s\n", data)
+
+	url, err := TemplateToString(OPENJDK_DIST_MIRROR, data)
+
+	if err != nil {
+		fmt.Printf("Error generating download URL: %v\n", err)
+	}
+
+	return url
+}
+
+func (bt JavaBuildTool) Install() error {
 
 	// https://download.java.net/java/GA/jdk11/9/GPL/openjdk-11.0.2_osx-x64_bin.tar.gz
 	workspace := LoadWorkspace()
@@ -75,8 +125,7 @@ func (bt JavaBuildTool) Install() error {
 		fmt.Printf("Java v%s located in %s!\n", bt.Version(), javaPath)
 	} else {
 		fmt.Printf("Will install Java v%s into %s\n", bt.Version(), javaPath)
-		archiveFile := fmt.Sprintf("openjdk-%s_%s-%s_bin.tar.gz", bt.Version(), operatingSystem, arch)
-		downloadUrl := fmt.Sprintf("%s/jdk%s/9/GPL/%s", OPENJDK_DIST_MIRROR, bt.MajorVersion(), archiveFile)
+		downloadUrl := bt.DownloadUrl()
 
 		fmt.Printf("Downloading from URL %s \n", downloadUrl)
 		localFile, err := DownloadFileWithCache(downloadUrl)
