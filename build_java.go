@@ -37,7 +37,12 @@ func (bt JavaBuildTool) MajorVersion() string {
 
 func (bt JavaBuildTool) JavaDir() string {
 	workspace := LoadWorkspace()
-	return fmt.Sprintf("%s/jdk-%s", workspace.BuildRoot(), bt.Version())
+	opsys := OS()
+	if opsys == "darwin" {
+		return fmt.Sprintf("%s/jdk-%s.jdk/Contents/Home", workspace.BuildRoot(), bt.Version())
+	} else {
+		return fmt.Sprintf("%s/jdk-%s", workspace.BuildRoot(), bt.Version())
+	}
 }
 
 func (bt JavaBuildTool) Setup() error {
@@ -56,8 +61,12 @@ func (bt JavaBuildTool) Setup() error {
 func (bt JavaBuildTool) Install() error {
 
 	arch := "x64"
-	operatingSystem := "linux"
+	operatingSystem := OS()
+	if operatingSystem == "darwin" {
+		operatingSystem = "osx"
+	}
 
+	// https://download.java.net/java/GA/jdk11/9/GPL/openjdk-11.0.2_osx-x64_bin.tar.gz
 	workspace := LoadWorkspace()
 	buildDir := workspace.BuildRoot()
 	javaPath := bt.JavaDir()
