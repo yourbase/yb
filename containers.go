@@ -242,18 +242,31 @@ func NewContainer(opts BuildContainerOpts) (BuildContainer, error) {
 		ports = append(ports, portSpec)
 	}
 
-	cmdParts := strings.Split("tail -f /dev/null", " ")
+	//cmdParts := strings.Split("tail -f /dev/null", " ")
+
+	var bindings = make(map[docker.Port][]docker.PortBinding)
+	for _, portSpec := range containerDef.Ports {
+		parts := strings.Split(portSpec, ":")
+		externalPort := parts[0]
+		internalPort := parts[1]
+		portKey := docker.Port(fmt.Sprintf("%d/tcp", internalPort))
+		var pb = make([]docker.PortBinding, 0)
+		pb = append(pb, docker.PortBinding{HostIP: "0.0.0.0", HostPort: externalPort})
+		bindings[portKey] = pb
+	}
 
 	hostConfig := docker.HostConfig{
-		Mounts: mounts,
+		Mounts:       mounts,
+		PortBindings: bindings,
 	}
 
 	config := docker.Config{
-		AttachStdout: true,
-		AttachStdin:  true,
+		Env:          opts.ContainerOpts.Environment,
+		AttachStdout: false,
+		AttachStdin:  false,
 		Image:        containerDef.Image,
-		Cmd:          cmdParts,
-		PortSpecs:    ports,
+		//Cmd:          cmdParts,
+		PortSpecs: ports,
 	}
 
 	container, err := client.CreateContainer(
@@ -264,6 +277,7 @@ func NewContainer(opts BuildContainerOpts) (BuildContainer, error) {
 		})
 
 	if err != nil {
+		fmt.Printf("Container failed to create: %v\n", err)
 		return BuildContainer{}, err
 	}
 
@@ -355,6 +369,7 @@ func (sc *ServiceContext) StandUp() error {
 				return err
 			}
 			fmt.Printf("Created container: %s\n", container.Id)
+			container.Start()
 		}
 
 		/*log.Printf("Connecting to network %s...\n", sc.NetworkId)
