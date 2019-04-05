@@ -136,6 +136,8 @@ func getUserToken() (string, error) {
 		if PathExists(configFile) {
 			buf, _ := ioutil.ReadFile(configFile)
 			token = string(buf)
+			token = strings.TrimSuffix(token, "\n")
+
 		} else {
 			return "", fmt.Errorf("Unable to find YB token in config file or environment.")
 		}

@@ -35,7 +35,7 @@ TODO: Install libssl-dev (or equivalent / warn) and zlib-dev based on platform
 func (bt PythonBuildTool) Install() error {
 
 	workspace := LoadWorkspace()
-	buildDir := fmt.Sprintf("%s/build", workspace.Path)
+	buildDir := workspace.BuildRoot()
 
 	pyenvGitUrl := "https://github.com/pyenv/pyenv.git"
 	pyenvDir := filepath.Join(buildDir, "pyenv")
@@ -53,7 +53,7 @@ func (bt PythonBuildTool) Install() error {
 
 		if err != nil {
 			fmt.Printf("Unable to clone pyenv!\n")
-			return fmt.Errorf("Couldn't clond pyenv: %v\n", err)
+			return fmt.Errorf("Couldn't clone pyenv: %v\n", err)
 		}
 	}
 
@@ -72,7 +72,7 @@ func (bt PythonBuildTool) Install() error {
 func (bt PythonBuildTool) Setup() error {
 
 	workspace := LoadWorkspace()
-	buildDir := fmt.Sprintf("%s/build", workspace.Path)
+	buildDir := workspace.BuildRoot()
 	pyenvDir := filepath.Join(buildDir, "pyenv")
 	shimsDir := filepath.Join(pyenvDir, "shims")
 

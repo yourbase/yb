@@ -183,12 +183,17 @@ func (w *workspaceTargetCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...
 // UTILITY FUNCTIONS
 
 type Workspace struct {
-	Target string `yaml:"target"`
-	Path   string
+	Target           string `yaml:"target"`
+	Path             string
+	PackageWorkspace bool
 }
 
 func (w Workspace) PackagePath(target string) string {
-	return filepath.Join(w.Path, target)
+	if w.PackageWorkspace {
+		return w.Path
+	} else {
+		return filepath.Join(w.Path, target)
+	}
 }
 
 func (w Workspace) PackageList() []string {
@@ -254,6 +259,8 @@ func (w Workspace) SetupDependencies(dependencies []string) error {
 			bt = NewGradleBuildTool(toolSpec)
 		case "flutter":
 			bt = NewFlutterBuildTool(toolSpec)
+		case "dart":
+			bt = NewDartBuildTool(toolSpec)
 		case "rust":
 			bt = NewRustBuildTool(toolSpec)
 		case "java":
@@ -294,11 +301,11 @@ func (w Workspace) SetupRuntimeDependencies(instructions BuildInstructions) erro
 }
 
 func (w Workspace) BuildRoot() string {
-	buildRoot := filepath.Join(w.Path, "build")
+	buildRoot := filepath.Join(w.Path, "yb-build")
 
 	if _, err := os.Stat(buildRoot); os.IsNotExist(err) {
 
-		if err := os.Mkdir(filepath.Join(w.Path, "build"), 0700); err != nil {
+		if err := os.Mkdir(filepath.Join(w.Path, "yb-build"), 0700); err != nil {
 			fmt.Printf("Unable to create build dir in workspace: %v\n", err)
 		}
 	}
@@ -306,25 +313,64 @@ func (w Workspace) BuildRoot() string {
 	return buildRoot
 }
 
-func FindWorkspaceRoot() (string, error) {
+func FindFileUpTree(filename string) (string, error) {
 	wd, err := os.Getwd()
 	if err != nil {
 		panic(err)
 	}
 
 	for {
-		config_path := filepath.Join(wd, "config.yml")
-		//fmt.Printf("Checking for %s...\n", config_path)
-		if _, err := os.Stat(config_path); err == nil {
-			//fmt.Printf("Found!\n")
+		file_path := filepath.Join(wd, filename)
+		if _, err := os.Stat(file_path); err == nil {
 			return wd, nil
 		}
+
 		wd = filepath.Dir(wd)
-		fmt.Printf("Checking %s\n", wd)
+
 		if strings.HasSuffix(wd, "/") {
-			return "", fmt.Errorf("Can't find workspace, ended up at the root...")
+			return "", fmt.Errorf("Can't find %s, ended up at the root...", filename)
 		}
 	}
+}
+
+func FindNearestManifestFile() (string, error) {
+	return FindFileUpTree(MANIFEST_FILE)
+}
+
+/*
+ * Look in the directory above the manifest file, if there's a config.yml, use that
+ * otherwise we use the directory of the manifest file as the workspace root
+ */
+func FindWorkspaceRoot() (string, error) {
+	wd, err := os.Getwd()
+
+	if err != nil {
+		panic(err)
+	}
+
+	if _, err := os.Stat(filepath.Join(wd, "config.yml")); err == nil {
+		// If we're currently in the directory with the config.yml
+		fmt.Printf("Workspace root: %s\n", wd)
+		return wd, nil
+	}
+
+	// Look upwards to find a manifest file
+	packageDir, err := FindNearestManifestFile()
+
+	// If we find a manifest file, check the parent directory for a config.yml
+	if err == nil {
+		parent := filepath.Dir(packageDir)
+		if _, err := os.Stat(filepath.Join(parent, "config.yml")); err == nil {
+			fmt.Printf("Workspace root: %s\n", parent)
+			return parent, nil
+		}
+	} else {
+		return "", err
+	}
+
+	fmt.Printf("Workspace root: %s\n", packageDir)
+	// No config in the parent? Use the packageDir
+	return packageDir, nil
 }
 
 func LoadWorkspace() Workspace {
@@ -335,30 +381,40 @@ func LoadWorkspace() Workspace {
 	}
 	fmt.Printf("Loading workspace from %s...\n", workspacePath)
 
-	configFile := filepath.Join(workspacePath, "config.yml")
-	configyaml, _ := ioutil.ReadFile(configFile)
 	var workspace = Workspace{}
-	err = yaml.Unmarshal([]byte(configyaml), &workspace)
+	configFile := filepath.Join(workspacePath, "config.yml")
+	if _, err := os.Stat(configFile); os.IsNotExist(err) {
+		// Not a multi-package workspace, make sure manifest is present
+		if os.Stat(filepath.Join(workspacePath, MANIFEST_FILE)); err != nil {
+			fmt.Printf("Package-based workspace\n")
+			// Manifest present, single-package workspace
+			workspace.PackageWorkspace = true
+		}
+	} else {
+		configyaml, _ := ioutil.ReadFile(configFile)
+		err = yaml.Unmarshal([]byte(configyaml), &workspace)
 
-	if err != nil {
-		log.Fatalf("Error loading workspace config!")
+		if err != nil {
+			log.Fatalf("Error loading workspace config!")
+		}
 	}
 
 	workspace.Path = workspacePath
-
 	return workspace
 }
 
 func SaveWorkspace(w Workspace) error {
-	d, err := yaml.Marshal(w)
-	if err != nil {
-		log.Fatalf("error: %v", err)
-		return err
-	}
-	err = ioutil.WriteFile("config.yml", d, 0644)
-	if err != nil {
-		log.Fatalf("Unable to write config: %v", err)
-		return err
+	if !w.PackageWorkspace {
+		d, err := yaml.Marshal(w)
+		if err != nil {
+			log.Fatalf("error: %v", err)
+			return err
+		}
+		err = ioutil.WriteFile("config.yml", d, 0644)
+		if err != nil {
+			log.Fatalf("Unable to write config: %v", err)
+			return err
+		}
 	}
 	return nil
 }

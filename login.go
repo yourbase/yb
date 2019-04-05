@@ -8,10 +8,12 @@ import (
 	"flag"
 	"fmt"
 	"github.com/johnewart/subcommands"
+	"golang.org/x/crypto/ssh/terminal"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
+	"syscall"
 )
 
 type loginCmd struct {
@@ -33,8 +35,9 @@ func (p *loginCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	email = strings.TrimSuffix(email, "\n")
 
 	fmt.Print("Password: ")
-	password, _ := reader.ReadString('\n')
-	password = strings.TrimSuffix(password, "\n")
+	bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
+	password := string(bytePassword)
+	fmt.Println()
 
 	values := map[string]string{"email": email, "password": password}
 	jsonData, _ := json.Marshal(values)

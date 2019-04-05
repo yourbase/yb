@@ -15,6 +15,8 @@ import (
 )
 
 type buildCmd struct {
+	ExecPrefix  string
+	NoContainer bool
 }
 
 func (*buildCmd) Name() string     { return "build" }
@@ -24,27 +26,31 @@ func (*buildCmd) Usage() string {
 }
 
 func (p *buildCmd) SetFlags(f *flag.FlagSet) {
+	f.BoolVar(&p.NoContainer, "no-container", false, "Bypass container even if specified")
+	f.StringVar(&p.ExecPrefix, "exec-prefix", "", "Add a prefix to all executed commands (useful for timing or wrapping things)")
 }
 
 func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 
 	workspace := LoadWorkspace()
+	buildTarget := "default"
 	var targetPackage string
+
 	if PathExists(MANIFEST_FILE) {
 		currentPath, _ := filepath.Abs(".")
 		_, file := filepath.Split(currentPath)
 		targetPackage = file
 	} else {
-		if len(f.Args()) > 0 {
-			targetPackage = f.Args()[0]
-		} else {
-			targetPackage = workspace.Target
-		}
+		targetPackage = workspace.Target
 	}
 
-	fmt.Printf("Building target package %s...\n", targetPackage)
+	if len(f.Args()) > 0 {
+		buildTarget = f.Args()[0]
+	}
 
-	targetDir := filepath.Join(workspace.Path, targetPackage)
+	targetDir := workspace.PackagePath(targetPackage)
+
+	fmt.Printf("Building target package %s in %s...\n", targetPackage, targetDir)
 	instructions := BuildInstructions{}
 	buildYaml := filepath.Join(targetDir, MANIFEST_FILE)
 	if _, err := os.Stat(buildYaml); os.IsNotExist(err) {
@@ -59,8 +65,28 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 
 	fmt.Printf("Working in %s...\n", targetDir)
 
+	var target BuildPhase
+
+	if len(instructions.BuildTargets) == 0 {
+		target = instructions.Build
+		if len(target.Commands) == 0 {
+			fmt.Printf("Default build command has no steps and no targets described\n")
+		}
+	} else {
+		ok := false
+		if target, ok = instructions.BuildTargets[buildTarget]; !ok {
+			targets := make([]string, 0, len(instructions.BuildTargets))
+			for t := range instructions.BuildTargets {
+				targets = append(targets, t)
+			}
+
+			fmt.Printf("Build target %s specified but it doesn't exist!\n")
+			fmt.Printf("Valid build targets: %s\n", strings.Join(targets, ", "))
+		}
+	}
+
 	// Set any environment variables as the last thing (override things we do in case people really want to do this)
-	for _, envString := range instructions.Build.Environment {
+	for _, envString := range target.Environment {
 		parts := strings.Split(envString, "=")
 		key := parts[0]
 		value := parts[1]
@@ -69,13 +95,14 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		os.Setenv(key, value)
 	}
 
-	if instructions.Build.Container.Image != "" {
+	// If the build specifies a container and the --no-container flag isn't true
+	if target.Container.Image != "" && !b.NoContainer {
 		// Perform build inside a container
-		image := instructions.Build.Container.Image
+		image := target.Container.Image
 		fmt.Printf("Invoking build in a container: %s\n", image)
 
 		buildOpts := BuildContainerOpts{
-			ContainerOpts: instructions.Build.Container,
+			ContainerOpts: target.Container,
 			PackageName:   targetPackage,
 			Workspace:     workspace,
 		}
@@ -102,8 +129,13 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 
 		fmt.Printf("Building in container: %s\n", buildContainer.Id)
 
-		for _, cmdString := range instructions.Build.Commands {
-			fmt.Printf("Would run %s in the container\n", cmdString)
+		for _, cmdString := range target.Commands {
+			if len(b.ExecPrefix) > 0 {
+				cmdString = fmt.Sprintf("%s %s", b.ExecPrefix, cmdString)
+			}
+
+			fmt.Printf("Running %s in the container\n", cmdString)
+
 			if err := buildContainer.ExecToStdout(cmdString); err != nil {
 				fmt.Printf("Failed to run %s: %v", cmdString, err)
 				return subcommands.ExitFailure
@@ -113,7 +145,12 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	} else {
 		// Ensure build deps are :+1:
 		workspace.SetupBuildDependencies(instructions)
-		for _, cmdString := range instructions.Build.Commands {
+		for _, cmdString := range target.Commands {
+
+			if len(b.ExecPrefix) > 0 {
+				cmdString = fmt.Sprintf("%s %s", b.ExecPrefix, cmdString)
+			}
+
 			if strings.HasPrefix(cmdString, "cd ") {
 				parts := strings.SplitN(cmdString, " ", 2)
 				dir := filepath.Join(targetDir, parts[1])
@@ -121,9 +158,9 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 				//os.Chdir(dir)
 				targetDir = dir
 			} else {
-				if instructions.Build.Root != "" {
-					fmt.Printf("Build root is %s\n", instructions.Build.Root)
-					targetDir = filepath.Join(targetDir, instructions.Build.Root)
+				if target.Root != "" {
+					fmt.Printf("Build root is %s\n", target.Root)
+					targetDir = filepath.Join(targetDir, target.Root)
 				}
 
 				if err := ExecToStdout(cmdString, targetDir); err != nil {

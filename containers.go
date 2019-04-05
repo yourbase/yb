@@ -249,7 +249,7 @@ func NewContainer(opts BuildContainerOpts) (BuildContainer, error) {
 		parts := strings.Split(portSpec, ":")
 		externalPort := parts[0]
 		internalPort := parts[1]
-		portKey := docker.Port(fmt.Sprintf("%d/tcp", internalPort))
+		portKey := docker.Port(fmt.Sprintf("%s/tcp", internalPort))
 		var pb = make([]docker.PortBinding, 0)
 		pb = append(pb, docker.PortBinding{HostIP: "0.0.0.0", HostPort: externalPort})
 		bindings[portKey] = pb

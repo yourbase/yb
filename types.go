@@ -3,10 +3,11 @@ package main
 const MANIFEST_FILE = ".yourbase.yml"
 
 type BuildInstructions struct {
-	Dependencies DependencySet `yaml:"dependencies"`
-	Build        BuildPhase    `yaml:"build"`
-	Exec         ExecPhase     `yaml:"exec"`
-	Package      PackagePhase  `yaml:"package"`
+	Dependencies DependencySet         `yaml:"dependencies"`
+	BuildTargets map[string]BuildPhase `yaml:"targets"`
+	Build        BuildPhase            `yaml:"build"`
+	Exec         ExecPhase             `yaml:"exec"`
+	Package      PackagePhase          `yaml:"package"`
 }
 
 type PackagePhase struct {
