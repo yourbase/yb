@@ -41,6 +41,7 @@ func ExecToStdout(cmdString string, targetDir string) error {
 	}()
 
 	if err = cmd.Wait(); err != nil {
+		fmt.Printf("Output:\n%s\n", stdoutBuf.String())
 		fmt.Printf("Command failed with %s\n", err)
 
 		return err
@@ -66,7 +67,7 @@ func ConfigFilePath(filename string) string {
 }
 
 func PathExists(path string) bool {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
+	if _, err := os.Lstat(path); os.IsNotExist(err) {
 		return false
 	}
 
@@ -106,4 +107,38 @@ func TemplateToString(templateText string, data interface{}) (string, error) {
 
 	result := tpl.String()
 	return result, nil
+}
+
+func RemoveWritePermission(path string) bool {
+	info, err := os.Stat(path)
+
+	if os.IsNotExist(err) {
+		return false
+	}
+
+	//Check 'others' permission
+	p := info.Mode()
+	newmask := p & (0555)
+	os.Chmod(path, newmask)
+
+	return true
+}
+
+func RemoveWritePermissionRecursively(path string) bool {
+	fileList := []string{}
+
+	err := filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
+		fileList = append(fileList, path)
+		return nil
+	})
+
+	if err != nil {
+		return false
+	}
+
+	for _, file := range fileList {
+		RemoveWritePermission(file)
+	}
+
+	return true
 }

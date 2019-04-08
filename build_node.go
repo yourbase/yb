@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/mholt/archiver"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -40,17 +41,21 @@ func (bt NodeBuildTool) PackageString() string {
 
 	return fmt.Sprintf("node-v%s-%s-%s", version, osName, arch)
 }
+
+func (bt NodeBuildTool) NodeDir() string {
+	return filepath.Join(ToolsDir(), "nodejs", bt.Version())
+}
+
 func (bt NodeBuildTool) Install() error {
 
-	workspace := LoadWorkspace()
-	buildDir := fmt.Sprintf("%s/build", workspace.Path)
+	nodeDir := bt.NodeDir()
 	nodePkgVersion := bt.PackageString()
-	cmdPath := fmt.Sprintf("%s/%s", buildDir, nodePkgVersion)
+	cmdPath := filepath.Join(nodeDir, nodePkgVersion)
 
 	if _, err := os.Stat(cmdPath); err == nil {
 		fmt.Printf("Node v%s located in %s!\n", bt.Version(), cmdPath)
 	} else {
-		fmt.Printf("Would install Node v%s into %s\n", bt.Version(), buildDir)
+		fmt.Printf("Would install Node v%s into %s\n", bt.Version(), nodeDir)
 		archiveFile := fmt.Sprintf("%s.tar.gz", nodePkgVersion)
 		downloadUrl := fmt.Sprintf("%s/v%s/%s", NODE_DIST_MIRROR, bt.Version(), archiveFile)
 		fmt.Printf("Downloading from URL %s...\n", downloadUrl)
@@ -60,7 +65,7 @@ func (bt NodeBuildTool) Install() error {
 			return err
 		}
 
-		err = archiver.Unarchive(localFile, buildDir)
+		err = archiver.Unarchive(localFile, nodeDir)
 		if err != nil {
 			fmt.Printf("Unable to decompress: %v\n", err)
 			return err

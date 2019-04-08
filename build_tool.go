@@ -20,14 +20,30 @@ type BuildTool interface {
 	Instructions() BuildInstructions
 }
 
+func ToolsDir() string {
+	toolsDir, exists := os.LookupEnv("YB_TOOLS_DIR")
+	if !exists {
+		u, err := user.Current()
+		if err != nil {
+			toolsDir = "/tmp/yourbase/tools"
+		} else {
+			toolsDir = fmt.Sprintf("%s/.yourbase/tools", u.HomeDir)
+		}
+	}
+
+	MkdirAsNeeded(toolsDir)
+
+	return toolsDir
+}
+
 func CacheDir() string {
 	cacheDir, exists := os.LookupEnv("YB_CACHE_DIR")
 	if !exists {
 		u, err := user.Current()
 		if err != nil {
-			cacheDir = "/tmp/artificer"
+			cacheDir = "/tmp/yourbase/cache"
 		} else {
-			cacheDir = fmt.Sprintf("%s/.artificer/cache", u.HomeDir)
+			cacheDir = fmt.Sprintf("%s/.yourbase/cache", u.HomeDir)
 		}
 	}
 

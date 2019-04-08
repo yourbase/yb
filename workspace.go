@@ -197,30 +197,37 @@ func (w Workspace) PackagePath(target string) string {
 }
 
 func (w Workspace) PackageList() []string {
+
 	var packages []string
-	globStr := filepath.Join(w.Path, "*")
-	files, err := filepath.Glob(globStr)
-	if err != nil {
-		log.Fatal(err)
-	}
 
-	for _, f := range files {
-		fi, err := os.Stat(f)
+	// Package-workspace has only one package, empty list
+	if !w.PackageWorkspace {
+		globStr := filepath.Join(w.Path, "*")
+		files, err := filepath.Glob(globStr)
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
-		if fi.IsDir() {
-			packages = append(packages, f)
+
+		for _, f := range files {
+			fi, err := os.Stat(f)
+			if err != nil {
+				panic(err)
+			}
+			if fi.IsDir() {
+				pkgName := strings.Replace(f, w.Path, "", 1)
+				if !strings.HasPrefix(pkgName, ".") {
+					packages = append(packages, pkgName)
+				}
+			}
 		}
 	}
 
-	fmt.Println(packages)
 	return packages
 }
 
 func (w Workspace) LoadPackageManifest(packageName string) (*BuildInstructions, error) {
 	instructions := BuildInstructions{}
-	buildYaml := filepath.Join(w.Path, packageName, MANIFEST_FILE)
+	buildYaml := filepath.Join(w.PackagePath(packageName), MANIFEST_FILE)
 	if _, err := os.Stat(buildYaml); os.IsNotExist(err) {
 		return nil, fmt.Errorf("Can't load %s: %v", MANIFEST_FILE, err)
 	}
@@ -301,11 +308,16 @@ func (w Workspace) SetupRuntimeDependencies(instructions BuildInstructions) erro
 }
 
 func (w Workspace) BuildRoot() string {
-	buildRoot := filepath.Join(w.Path, "yb-build")
+	buildDir := "build"
+	if w.PackageWorkspace {
+		buildDir = ".yb-build"
+	}
+
+	buildRoot := filepath.Join(w.Path, buildDir)
 
 	if _, err := os.Stat(buildRoot); os.IsNotExist(err) {
 
-		if err := os.Mkdir(filepath.Join(w.Path, "yb-build"), 0700); err != nil {
+		if err := os.Mkdir(buildRoot, 0700); err != nil {
 			fmt.Printf("Unable to create build dir in workspace: %v\n", err)
 		}
 	}
@@ -386,7 +398,6 @@ func LoadWorkspace() Workspace {
 	if _, err := os.Stat(configFile); os.IsNotExist(err) {
 		// Not a multi-package workspace, make sure manifest is present
 		if os.Stat(filepath.Join(workspacePath, MANIFEST_FILE)); err != nil {
-			fmt.Printf("Package-based workspace\n")
 			// Manifest present, single-package workspace
 			workspace.PackageWorkspace = true
 		}

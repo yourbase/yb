@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/mholt/archiver"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -68,14 +69,17 @@ func (bt FlutterBuildTool) Version() string {
 	return bt._version
 }
 
+func (bt FlutterBuildTool) InstallDir() string {
+	return filepath.Join(ToolsDir(), "flutter", fmt.Sprintf("flutter-%s", bt.Version()))
+}
+
 func (bt FlutterBuildTool) FlutterDir() string {
-	workspace := LoadWorkspace()
-	return fmt.Sprintf("%s/flutter-%s", workspace.BuildRoot(), bt.Version())
+	return filepath.Join(bt.InstallDir(), "flutter")
 }
 
 func (bt FlutterBuildTool) Setup() error {
 	flutterDir := bt.FlutterDir()
-	cmdPath := fmt.Sprintf("%s/flutter/bin", flutterDir)
+	cmdPath := filepath.Join(flutterDir, "bin")
 	currentPath := os.Getenv("PATH")
 	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
 	fmt.Printf("Setting PATH to %s\n", newPath)
@@ -87,6 +91,7 @@ func (bt FlutterBuildTool) Setup() error {
 // TODO, generalize downloader
 func (bt FlutterBuildTool) Install() error {
 	flutterDir := bt.FlutterDir()
+	installDir := bt.InstallDir()
 
 	if _, err := os.Stat(flutterDir); err == nil {
 		fmt.Printf("Flutter v%s located in %s!\n", bt.Version(), flutterDir)
@@ -100,7 +105,7 @@ func (bt FlutterBuildTool) Install() error {
 			fmt.Printf("Unable to download: %v\n", err)
 			return err
 		}
-		err = archiver.Unarchive(localFile, flutterDir)
+		err = archiver.Unarchive(localFile, installDir)
 		if err != nil {
 			fmt.Printf("Unable to decompress: %v\n", err)
 			return err

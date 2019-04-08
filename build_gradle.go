@@ -58,8 +58,11 @@ func (bt GradleBuildTool) Version() string {
 }
 
 func (bt GradleBuildTool) GradleDir() string {
-	workspace := LoadWorkspace()
-	return filepath.Join(workspace.BuildRoot(), fmt.Sprintf("gradle-%s", bt.Version()))
+	return filepath.Join(bt.InstallDir(), fmt.Sprintf("gradle-%s", bt.Version()))
+}
+
+func (bt GradleBuildTool) InstallDir() string {
+	return filepath.Join(ToolsDir(), "gradle")
 }
 
 func (bt GradleBuildTool) Setup() error {
@@ -79,9 +82,8 @@ func (bt GradleBuildTool) Setup() error {
 
 // TODO, generalize downloader
 func (bt GradleBuildTool) Install() error {
-	workspace := LoadWorkspace()
-	buildDir := workspace.BuildRoot()
 	gradleDir := bt.GradleDir()
+	installDir := bt.InstallDir()
 
 	if _, err := os.Stat(gradleDir); err == nil {
 		fmt.Printf("Gradle v%s located in %s!\n", bt.Version(), gradleDir)
@@ -95,7 +97,7 @@ func (bt GradleBuildTool) Install() error {
 			fmt.Printf("Unable to download: %v\n", err)
 			return err
 		}
-		err = archiver.Unarchive(localFile, buildDir)
+		err = archiver.Unarchive(localFile, installDir)
 		if err != nil {
 			fmt.Printf("Unable to decompress: %v\n", err)
 			return err

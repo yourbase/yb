@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/mholt/archiver"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -36,8 +37,7 @@ func (bt GlideBuildTool) Version() string {
 }
 
 func (bt GlideBuildTool) GlideDir() string {
-	workspace := LoadWorkspace()
-	return fmt.Sprintf("%s/glide-%v", workspace.BuildRoot(), bt.Version())
+	return filepath.Join(ToolsDir(), fmt.Sprintf("glide-%v", bt.Version()))
 }
 
 func (bt GlideBuildTool) Setup() error {

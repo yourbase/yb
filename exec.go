@@ -45,11 +45,7 @@ func (b *execCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		_, file := filepath.Split(currentPath)
 		targetPackage = file
 	} else {
-		if len(f.Args()) > 0 {
-			targetPackage = f.Args()[0]
-		} else {
-			targetPackage = workspace.Target
-		}
+		targetPackage = workspace.Target
 	}
 
 	instructions, err := workspace.LoadPackageManifest(targetPackage)
@@ -93,7 +89,7 @@ func (b *execCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 
 	log.Printf("Execing target package %s...\n", targetPackage)
-	execDir := filepath.Join(workspace.Path, targetPackage)
+	execDir := workspace.PackagePath(targetPackage)
 
 	for _, logFile := range instructions.Exec.LogFiles {
 		fmt.Printf("Will tail %s...\n", logFile)

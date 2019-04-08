@@ -3,19 +3,17 @@ dependencies:
     - go:1.12
   runtime:
     - go:1.12
-build:
-  environment:
-    linux_amd64:
+
+targets:
+  default:
+    commands:
+      - go build
+  linux:
+    env: 
       - GOOS=linux
       - GOARCH=amd64
-    darwin_amd64:
-      - GOOS=darwin
-      - GOARCH=amd64
-    windows_amd64:
-      - GOOS=windows
-      - GOARCH=amd64
-  commands:
-    - go build
+    commands:
+      - go build -o artificer-linux-amd64
 
 exec:
   commands:

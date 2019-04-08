@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/mholt/archiver"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -67,13 +68,61 @@ func (bt AndroidBuildTool) Version() string {
 	return bt._version
 }
 
+func (bt AndroidBuildTool) InstallDir() string {
+	return filepath.Join(ToolsDir(), "android", fmt.Sprintf("android-%s", bt.Version()))
+}
+
 func (bt AndroidBuildTool) AndroidDir() string {
+	return filepath.Join(bt.InstallDir())
+}
+
+func (bt AndroidBuildTool) AndroidHomeDir() string {
 	workspace := LoadWorkspace()
-	return fmt.Sprintf("%s/android-%s", workspace.BuildRoot(), bt.Version())
+	return filepath.Join(workspace.BuildRoot(), "android-home")
+}
+
+func (bt AndroidBuildTool) WriteAgreements() bool {
+	agreements := map[string]string{
+		"android-googletv-license":      "601085b94cd77f0b54ff86406957099ebe79c4d6",
+		"android-sdk-license":           "24333f8a63b6825ea9c5514f83c2829b004d1fee",
+		"android-sdk-preview-license":   "84831b9409646a918e30573bab4c9c91346d8abd",
+		"google-gdk-license":            "33b6a2b64607f11b759f320ef9dff4ae5c47d97a",
+		"intel-android-extra-license":   "d975f751698a77b662f1254ddbeed3901e976f5a",
+		"mips-android-sysimage-license": "e9acab5b5fbb560a72cfaecce8946896ff6aab9d",
+	}
+
+	licensesDir := filepath.Join(bt.AndroidDir(), "licenses")
+	MkdirAsNeeded(licensesDir)
+
+	for filename, hash := range agreements {
+		agreementFile := filepath.Join(licensesDir, filename)
+		f, err := os.Create(agreementFile)
+		if err != nil {
+			fmt.Printf("Can't create agreement file %s: %v\n", agreementFile, err)
+			return false
+		}
+
+		defer f.Close()
+		_, err = f.WriteString(hash)
+
+		if err != nil {
+			fmt.Printf("Can't write agreement file %s: %v\n", agreementFile, err)
+			return false
+		}
+
+		f.Sync()
+
+		fmt.Printf("Wrote hash for agreement: %s\n", agreementFile)
+	}
+
+	return true
+
 }
 
 func (bt AndroidBuildTool) Setup() error {
 	androidDir := bt.AndroidDir()
+	//androidHomeDir := bt.AndroidHomeDir()
+
 	binPath := fmt.Sprintf("%s/tools/bin", androidDir)
 	toolsPath := fmt.Sprintf("%s/tools", androidDir)
 	currentPath := os.Getenv("PATH")
@@ -82,9 +131,14 @@ func (bt AndroidBuildTool) Setup() error {
 	fmt.Printf("Setting PATH to %s\n", newPath)
 	os.Setenv("PATH", newPath)
 
-	fmt.Printf("Setting ANDROID_HOME to %s\n", androidDir)
-	os.Setenv("ANDROID_HOME", androidDir)
+	//fmt.Printf("Setting ANDROID_HOME to %s\n", androidHomeDir)
+	//os.Setenv("ANDROID_HOME", androidHomeDir)
+
+	fmt.Printf("Setting ANDROID_SDK_ROOT to %s\n", androidDir)
 	os.Setenv("ANDROID_SDK_ROOT", androidDir)
+
+	fmt.Printf("Writing agreement hashes...\n")
+	bt.WriteAgreements()
 
 	return nil
 }
@@ -92,6 +146,7 @@ func (bt AndroidBuildTool) Setup() error {
 // TODO, generalize downloader
 func (bt AndroidBuildTool) Install() error {
 	androidDir := bt.AndroidDir()
+	installDir := bt.InstallDir()
 
 	if _, err := os.Stat(androidDir); err == nil {
 		fmt.Printf("Android v%s located in %s!\n", bt.Version(), androidDir)
@@ -105,7 +160,7 @@ func (bt AndroidBuildTool) Install() error {
 			fmt.Printf("Unable to download: %v\n", err)
 			return err
 		}
-		err = archiver.Unarchive(localFile, androidDir)
+		err = archiver.Unarchive(localFile, installDir)
 		if err != nil {
 			fmt.Printf("Unable to decompress: %v\n", err)
 			return err

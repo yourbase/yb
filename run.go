@@ -8,8 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-
-	"path/filepath"
+	//"path/filepath"
 )
 
 type runCmd struct {
@@ -71,8 +70,10 @@ func (b *runCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 		}
 	}
 
-	execDir := filepath.Join(workspace.Path, targetPackage)
+	execDir, _ := os.Getwd()
+	//execDir := filepath.Join(workspace.Path, targetPackage)
 
+	fmt.Printf("Running %s from %s\n", strings.Join(f.Args(), " "), execDir)
 	cmdName := f.Args()[0]
 	cmdArgs := f.Args()[1:]
 	cmd := exec.Command(cmdName, cmdArgs...)

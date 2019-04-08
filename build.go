@@ -5,10 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/johnewart/subcommands"
-	"gopkg.in/yaml.v2"
 
-	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -51,16 +48,10 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	targetDir := workspace.PackagePath(targetPackage)
 
 	fmt.Printf("Building target package %s in %s...\n", targetPackage, targetDir)
-	instructions := BuildInstructions{}
-	buildYaml := filepath.Join(targetDir, MANIFEST_FILE)
-	if _, err := os.Stat(buildYaml); os.IsNotExist(err) {
-		fmt.Printf("No %s -- can't build!\n", MANIFEST_FILE)
-	}
+	instructions, err := workspace.LoadPackageManifest(targetPackage)
 
-	buildyaml, _ := ioutil.ReadFile(buildYaml)
-	err := yaml.Unmarshal([]byte(buildyaml), &instructions)
 	if err != nil {
-		log.Fatalf("error: %v", err)
+		fmt.Printf("Unable to load package manifest for %s: %v\n", targetPackage, err)
 	}
 
 	fmt.Printf("Working in %s...\n", targetDir)
@@ -109,7 +100,13 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 
 		var buildContainer BuildContainer
 
-		if existing := FindContainer(buildOpts); existing != nil {
+		existing, err := FindContainer(buildOpts)
+
+		if err != nil {
+			fmt.Printf("Failed trying to find container: %v\n", err)
+		}
+
+		if existing != nil {
 			fmt.Printf("Found existing container %s, removing...\n", existing.Id)
 			if err = RemoveContainerById(existing.Id); err != nil {
 				fmt.Printf("Unable to remove existing container: %v\n", err)
@@ -144,7 +141,7 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 
 	} else {
 		// Ensure build deps are :+1:
-		workspace.SetupBuildDependencies(instructions)
+		workspace.SetupBuildDependencies(*instructions)
 		for _, cmdString := range target.Commands {
 
 			if len(b.ExecPrefix) > 0 {

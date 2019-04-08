@@ -5,6 +5,10 @@ import (
 	docker "github.com/johnewart/go-dockerclient"
 	"github.com/nu7hatch/gouuid"
 
+	"archive/tar"
+	"bytes"
+	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -30,7 +34,7 @@ type BuildContainer struct {
 	Options BuildContainerOpts
 }
 
-func (sc *ServiceContext) FindContainer(cd ContainerDefinition) *BuildContainer {
+func (sc *ServiceContext) FindContainer(cd ContainerDefinition) (*BuildContainer, error) {
 	return FindContainer(BuildContainerOpts{
 		PackageName:   sc.PackageName,
 		Workspace:     sc.Workspace,
@@ -39,7 +43,7 @@ func (sc *ServiceContext) FindContainer(cd ContainerDefinition) *BuildContainer 
 }
 
 // TODO: make sure the opts match the existing container
-func FindContainer(opts BuildContainerOpts) *BuildContainer {
+func FindContainer(opts BuildContainerOpts) (*BuildContainer, error) {
 
 	client := NewDockerClient()
 	cd := opts.ContainerOpts
@@ -64,19 +68,25 @@ func FindContainer(opts BuildContainerOpts) *BuildContainer {
 		fmt.Printf("Found container %s with ID %s\n", containerName, c.ID)
 		_, err := client.InspectContainer(c.ID)
 		if err != nil {
-			return nil
+			return nil, err
 		} else {
 			bc := BuildContainer{
 				Id:      c.ID,
 				Name:    containerName,
 				Options: opts,
 			}
-			return &bc
+			return &bc, nil
 		}
 	} else {
-		return nil
+		return nil, err
 	}
 
+}
+
+func StopContainerById(id string, timeout uint) error {
+	client := NewDockerClient()
+	fmt.Printf("Stopping container %s with a %d second timeout...\n", id, timeout)
+	return client.StopContainer(id, timeout)
 }
 
 func RemoveContainerById(id string) error {
@@ -153,12 +163,105 @@ func PullImage(imageLabel string) error {
 
 }
 
+func (b BuildContainer) Stop(timeout uint) error {
+	client := NewDockerClient()
+	fmt.Printf("Stopping container %s with a %d timeout...\n", b.Id, timeout)
+	return client.StopContainer(b.Id, timeout)
+}
+
 func (b BuildContainer) Start() error {
 	client := NewDockerClient()
 
 	hostConfig := &docker.HostConfig{}
 
 	return client.StartContainer(b.Id, hostConfig)
+}
+
+func (b BuildContainer) UploadFile(localFile string, fileName string, remotePath string) error {
+	client := NewDockerClient()
+
+	dir, err := ioutil.TempDir("", "yb")
+	if err != nil {
+		return err
+	}
+
+	//defer os.RemoveAll(dir) // clean up
+	tmpfile, err := os.OpenFile(fmt.Sprintf("%s/%s.tar", dir, fileName), os.O_CREATE|os.O_RDWR|os.O_APPEND, 0660)
+	if err != nil {
+		return err
+	}
+
+	err = archiveFile(localFile, fileName, tmpfile.Name())
+
+	if err != nil {
+		return err
+	}
+
+	uploadOpts := docker.UploadToContainerOptions{
+		InputStream:          tmpfile,
+		Path:                 remotePath,
+		NoOverwriteDirNonDir: true,
+	}
+
+	err = client.UploadToContainer(b.Id, uploadOpts)
+
+	return err
+}
+
+func (b BuildContainer) CommitImage(repository string, tag string) (string, error) {
+	client := NewDockerClient()
+
+	commitOpts := docker.CommitContainerOptions{
+		Container:  b.Id,
+		Repository: repository,
+		Tag:        tag,
+	}
+
+	img, err := client.CommitContainer(commitOpts)
+
+	if err != nil {
+		return "", err
+	}
+
+	fmt.Printf("Committed container %s as image %s:%s with id %s\n", b.Id, repository, tag, img.ID)
+
+	return img.ID, nil
+}
+
+func (b BuildContainer) MakeDirectoryInContainer(path string) error {
+	client := NewDockerClient()
+
+	cmdArray := strings.Split(fmt.Sprintf("mkdir -p %s", path), " ")
+
+	execOpts := docker.CreateExecOptions{
+		Env:          b.Options.ContainerOpts.Environment,
+		Cmd:          cmdArray,
+		AttachStdout: true,
+		AttachStderr: true,
+		Container:    b.Id,
+	}
+
+	exec, err := client.CreateExec(execOpts)
+
+	if err != nil {
+		fmt.Printf("Can't create exec: %v\n", err)
+		return err
+	}
+
+	startOpts := docker.StartExecOptions{
+		OutputStream: os.Stdout,
+		ErrorStream:  os.Stdout,
+	}
+
+	err = client.StartExec(exec.ID, startOpts)
+
+	if err != nil {
+		fmt.Printf("Unable to run exec %s: %v\n", exec.ID, err)
+		return err
+	}
+
+	return nil
+
 }
 
 func (b BuildContainer) ExecToStdout(cmdString string) error {
@@ -173,7 +276,7 @@ func (b BuildContainer) ExecToStdout(cmdString string) error {
 		AttachStdout: true,
 		AttachStderr: true,
 		Container:    b.Id,
-		WorkingDir:   "/build",
+		WorkingDir:   "/workspace",
 	}
 
 	exec, err := client.CreateExec(execOpts)
@@ -242,8 +345,6 @@ func NewContainer(opts BuildContainerOpts) (BuildContainer, error) {
 		ports = append(ports, portSpec)
 	}
 
-	//cmdParts := strings.Split("tail -f /dev/null", " ")
-
 	var bindings = make(map[docker.Port][]docker.PortBinding)
 	for _, portSpec := range containerDef.Ports {
 		parts := strings.Split(portSpec, ":")
@@ -265,8 +366,14 @@ func NewContainer(opts BuildContainerOpts) (BuildContainer, error) {
 		AttachStdout: false,
 		AttachStdin:  false,
 		Image:        containerDef.Image,
-		//Cmd:          cmdParts,
-		PortSpecs: ports,
+		PortSpecs:    ports,
+	}
+
+	if len(opts.ContainerOpts.Command) > 0 {
+		cmd := opts.ContainerOpts.Command
+		fmt.Printf("Will run %s in the container\n", cmd)
+		cmdParts := strings.Split(cmd, " ")
+		config.Cmd = cmdParts
 	}
 
 	container, err := client.CreateContainer(
@@ -358,7 +465,12 @@ func (sc *ServiceContext) StandUp() error {
 	for _, c := range sc.Containers {
 		fmt.Printf("  %s...\n", c.Image)
 
-		container := sc.FindContainer(c)
+		container, err := sc.FindContainer(c)
+
+		if err == nil {
+			fmt.Printf("Problem searching for container: %v\n", err)
+			return err
+		}
 
 		if container != nil {
 			fmt.Printf("Container already exists, starting...\n")
@@ -423,4 +535,83 @@ func (sc *ServiceContext) StandUp() error {
 	}
 
 	return nil
+}
+
+func archiveFileInMemory(source string, target string) (*tar.Reader, error) {
+	var buf bytes.Buffer
+
+	tarball := tar.NewWriter(&buf)
+	defer tarball.Close()
+
+	info, err := os.Stat(source)
+	if err != nil {
+		return nil, err
+	}
+
+	header, err := tar.FileInfoHeader(info, info.Name())
+	if err != nil {
+		return nil, err
+	}
+
+	header.Name = target
+
+	fmt.Printf("Adding %s as %s...\n", info.Name(), header.Name)
+
+	if err := tarball.WriteHeader(header); err != nil {
+		return nil, err
+	}
+
+	fh, err := os.Open(source)
+	if err != nil {
+		return nil, err
+	}
+	defer fh.Close()
+	_, err = io.Copy(tarball, fh)
+
+	tarball.Close()
+
+	tr := tar.NewReader(&buf)
+	return tr, nil
+
+}
+
+func archiveFile(source string, target string, tarfile string) error {
+	tf, err := os.Create(tarfile)
+	if err != nil {
+		return err
+	}
+	defer tf.Close()
+
+	tarball := tar.NewWriter(tf)
+	defer tarball.Close()
+
+	info, err := os.Stat(source)
+	if err != nil {
+		return err
+	}
+
+	header, err := tar.FileInfoHeader(info, info.Name())
+	if err != nil {
+		return err
+	}
+
+	header.Name = target
+
+	fmt.Printf("Adding %s as %s...\n", info.Name(), header.Name)
+
+	if err := tarball.WriteHeader(header); err != nil {
+		return err
+	}
+
+	fh, err := os.Open(source)
+	if err != nil {
+		return err
+	}
+	defer fh.Close()
+	_, err = io.Copy(tarball, fh)
+
+	tarball.Close()
+
+	return nil
+
 }

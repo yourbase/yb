@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/mholt/archiver"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -50,21 +51,20 @@ func (bt GolangBuildTool) Version() string {
 }
 
 func (bt GolangBuildTool) GolangDir() string {
-	workspace := LoadWorkspace()
-	return fmt.Sprintf("%s/go", workspace.BuildRoot())
+	return fmt.Sprintf("%s/go/%s", ToolsDir(), bt.Version())
 }
 
 func (bt GolangBuildTool) Setup() error {
 	workspace := LoadWorkspace()
-	golangDir := bt.GolangDir()
+	golangDir := filepath.Join(bt.GolangDir(), "go")
 	goPath := workspace.BuildRoot()
 
 	for _, pkg := range workspace.PackageList() {
-		//pkgPath := filepath.Join(workspace.Path, pkg)
-		goPath = fmt.Sprintf("%s:%s", goPath, pkg)
+		pkgPath := filepath.Join(workspace.Path, pkg)
+		goPath = fmt.Sprintf("%s:%s", goPath, pkgPath)
 	}
 
-	cmdPath := fmt.Sprintf("%s/bin", golangDir)
+	cmdPath := filepath.Join(golangDir, "bin")
 	currentPath := os.Getenv("PATH")
 	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
 	fmt.Printf("Setting PATH to %s\n", newPath)
@@ -79,8 +79,6 @@ func (bt GolangBuildTool) Setup() error {
 
 // TODO, generalize downloader
 func (bt GolangBuildTool) Install() error {
-	workspace := LoadWorkspace()
-	buildDir := workspace.BuildRoot()
 	golangDir := bt.GolangDir()
 
 	if _, err := os.Stat(golangDir); err == nil {
@@ -95,12 +93,14 @@ func (bt GolangBuildTool) Install() error {
 			fmt.Printf("Unable to download: %v\n", err)
 			return err
 		}
-		err = archiver.Unarchive(localFile, buildDir)
+		err = archiver.Unarchive(localFile, golangDir)
 		if err != nil {
 			fmt.Printf("Unable to decompress: %v\n", err)
 			return err
 		}
 
+		fmt.Printf("Making go installation in %s read-only\n", golangDir)
+		RemoveWritePermissionRecursively(golangDir)
 	}
 
 	return nil

@@ -50,9 +50,8 @@ func (bt JavaBuildTool) PatchVersion() string {
 }
 
 func (bt JavaBuildTool) JavaDir() string {
-	workspace := LoadWorkspace()
 	opsys := OS()
-	basePath := filepath.Join(workspace.BuildRoot(), fmt.Sprintf("jdk%su%s-b%s", bt.MajorVersion(), bt.MinorVersion(), bt.PatchVersion()))
+	basePath := filepath.Join(ToolsDir(), "java", fmt.Sprintf("jdk%su%s-b%s", bt.MajorVersion(), bt.MinorVersion(), bt.PatchVersion()))
 
 	if opsys == "darwin" {
 		basePath = filepath.Join(basePath, "Contents", "Home")
@@ -117,14 +116,16 @@ func (bt JavaBuildTool) DownloadUrl() string {
 func (bt JavaBuildTool) Install() error {
 
 	// https://download.java.net/java/GA/jdk11/9/GPL/openjdk-11.0.2_osx-x64_bin.tar.gz
-	workspace := LoadWorkspace()
-	buildDir := workspace.BuildRoot()
+	toolsDir := ToolsDir()
 	javaPath := bt.JavaDir()
+	javaInstallDir := filepath.Join(toolsDir, "java")
+
+	MkdirAsNeeded(javaInstallDir)
 
 	if _, err := os.Stat(javaPath); err == nil {
 		fmt.Printf("Java v%s located in %s!\n", bt.Version(), javaPath)
 	} else {
-		fmt.Printf("Will install Java v%s into %s\n", bt.Version(), javaPath)
+		fmt.Printf("Will install Java v%s into %s\n", bt.Version(), javaInstallDir)
 		downloadUrl := bt.DownloadUrl()
 
 		fmt.Printf("Downloading from URL %s \n", downloadUrl)
@@ -133,7 +134,7 @@ func (bt JavaBuildTool) Install() error {
 			fmt.Printf("Unable to download: %v\n", err)
 			return err
 		}
-		err = archiver.Unarchive(localFile, buildDir)
+		err = archiver.Unarchive(localFile, javaInstallDir)
 		if err != nil {
 			fmt.Printf("Unable to decompress: %v\n", err)
 			return err

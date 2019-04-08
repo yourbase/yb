@@ -37,6 +37,7 @@ type ContainerDefinition struct {
 	Mounts      []string `yaml:"mounts"`
 	Ports       []string `yaml:"ports"`
 	Environment []string `yaml:"environment"`
+	Command     string   `yaml:"command"`
 }
 
 type BuildPhase struct {

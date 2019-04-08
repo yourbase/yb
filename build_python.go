@@ -36,13 +36,16 @@ func (bt PythonBuildTool) Install() error {
 
 	workspace := LoadWorkspace()
 	buildDir := workspace.BuildRoot()
+	toolsDir := ToolsDir()
 
 	pyenvGitUrl := "https://github.com/pyenv/pyenv.git"
-	pyenvDir := filepath.Join(buildDir, "pyenv")
+	pyenvDir := filepath.Join(toolsDir, "pyenv")
 	pythonVersionDir := filepath.Join(pyenvDir, "versions", bt.Version())
 
+	virtualenvDir := filepath.Join(buildDir, "python", bt.Version())
+
 	if _, err := os.Stat(pyenvDir); err == nil {
-		fmt.Printf("pyenv installed in %s", pyenvDir)
+		fmt.Printf("pyenv installed in %s\n", pyenvDir)
 	} else {
 		fmt.Printf("Installing pyenv\n")
 
@@ -66,6 +69,37 @@ func (bt PythonBuildTool) Install() error {
 		installCmd := fmt.Sprintf("pyenv install %s", bt.Version())
 		ExecToStdout(installCmd, pyenvDir)
 	}
+
+	virtualenvBin := filepath.Join(pythonVersionDir, "bin", "virtualenv")
+	if _, err := os.Stat(virtualenvBin); err == nil {
+		fmt.Printf("Virtualenv binary already installed in %s\n", virtualenvBin)
+	} else {
+		fmt.Printf("Installing virtualenv for Python in %s\n", pythonVersionDir)
+
+		shimsDir := filepath.Join(pyenvDir, "shims")
+
+		os.Setenv("PYENV_ROOT", pyenvDir)
+		os.Setenv("PYENV_SHELL", "sh")
+		os.Setenv("PYENV_VERSION", bt.Version())
+
+		PrependToPath(filepath.Join(pyenvDir, "bin"))
+		PrependToPath(shimsDir)
+		setupCmd := fmt.Sprintf("pyenv rehash")
+		ExecToStdout(setupCmd, pyenvDir)
+
+		cmd := "pip install virtualenv"
+		ExecToStdout(cmd, pyenvDir)
+	}
+
+	if _, err := os.Stat(virtualenvDir); err == nil {
+		fmt.Printf("Virtualenv for %s exists in %s\n", bt.Version(), virtualenvDir)
+	} else {
+		fmt.Println("Creating virtualenv...")
+		pythonBinPath := filepath.Join(pythonVersionDir, "bin", "python")
+		cmd := fmt.Sprintf("virtualenv -p %s %s", pythonBinPath, virtualenvDir)
+		ExecToStdout(cmd, buildDir)
+	}
+
 	return nil
 }
 
@@ -73,17 +107,9 @@ func (bt PythonBuildTool) Setup() error {
 
 	workspace := LoadWorkspace()
 	buildDir := workspace.BuildRoot()
-	pyenvDir := filepath.Join(buildDir, "pyenv")
-	shimsDir := filepath.Join(pyenvDir, "shims")
+	virtualenvDir := filepath.Join(buildDir, "python", bt.Version())
 
-	os.Setenv("PYENV_ROOT", pyenvDir)
-	os.Setenv("PYENV_SHELL", "sh")
-	os.Setenv("PYENV_VERSION", bt.Version())
-	PrependToPath(filepath.Join(pyenvDir, "bin"))
-	PrependToPath(shimsDir)
-
-	setupCmd := fmt.Sprintf("pyenv rehash")
-	ExecToStdout(setupCmd, pyenvDir)
+	PrependToPath(filepath.Join(virtualenvDir, "bin"))
 
 	return nil
 

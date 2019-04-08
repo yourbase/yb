@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/mholt/archiver"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -49,9 +50,12 @@ func (bt MavenBuildTool) Version() string {
 	return bt._version
 }
 
+func (bt MavenBuildTool) InstallDir() string {
+	return filepath.Join(ToolsDir(), "maven")
+}
+
 func (bt MavenBuildTool) MavenDir() string {
-	workspace := LoadWorkspace()
-	return fmt.Sprintf("%s/apache-maven-%s", workspace.BuildRoot(), bt.Version())
+	return filepath.Join(bt.InstallDir(), fmt.Sprintf("apache-maven-%s", bt.Version()))
 }
 
 func (bt MavenBuildTool) Setup() error {
@@ -67,14 +71,12 @@ func (bt MavenBuildTool) Setup() error {
 
 // TODO, generalize downloader
 func (bt MavenBuildTool) Install() error {
-	workspace := LoadWorkspace()
-	buildDir := workspace.BuildRoot()
 	mavenDir := bt.MavenDir()
 
 	if _, err := os.Stat(mavenDir); err == nil {
 		fmt.Printf("Maven v%s located in %s!\n", bt.Version(), mavenDir)
 	} else {
-		fmt.Printf("Will install Maven v%s into %s\n", bt.Version(), mavenDir)
+		fmt.Printf("Will install Maven v%s into %s\n", bt.Version(), bt.InstallDir())
 		downloadUrl := bt.DownloadUrl()
 
 		fmt.Printf("Downloading Maven from URL %s...\n", downloadUrl)
@@ -83,7 +85,7 @@ func (bt MavenBuildTool) Install() error {
 			fmt.Printf("Unable to download: %v\n", err)
 			return err
 		}
-		err = archiver.Unarchive(localFile, buildDir)
+		err = archiver.Unarchive(localFile, bt.InstallDir())
 		if err != nil {
 			fmt.Printf("Unable to decompress: %v\n", err)
 			return err
