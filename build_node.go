@@ -43,20 +43,24 @@ func (bt NodeBuildTool) PackageString() string {
 }
 
 func (bt NodeBuildTool) NodeDir() string {
-	return filepath.Join(ToolsDir(), "nodejs", bt.Version())
+	return filepath.Join(bt.InstallDir(), bt.PackageString())
+}
+
+func (bt NodeBuildTool) InstallDir() string { 
+	return filepath.Join(ToolsDir(), "nodejs")
 }
 
 func (bt NodeBuildTool) Install() error {
 
 	nodeDir := bt.NodeDir()
-	nodePkgVersion := bt.PackageString()
-	cmdPath := filepath.Join(nodeDir, nodePkgVersion)
+	installDir := bt.InstallDir()
+	nodePkgString := bt.PackageString()
 
-	if _, err := os.Stat(cmdPath); err == nil {
-		fmt.Printf("Node v%s located in %s!\n", bt.Version(), cmdPath)
+	if _, err := os.Stat(nodeDir); err == nil {
+		fmt.Printf("Node v%s located in %s!\n", bt.Version(), nodeDir)
 	} else {
-		fmt.Printf("Would install Node v%s into %s\n", bt.Version(), nodeDir)
-		archiveFile := fmt.Sprintf("%s.tar.gz", nodePkgVersion)
+		fmt.Printf("Would install Node v%s into %s\n", bt.Version(), installDir)
+		archiveFile := fmt.Sprintf("%s.tar.gz", nodePkgString)
 		downloadUrl := fmt.Sprintf("%s/v%s/%s", NODE_DIST_MIRROR, bt.Version(), archiveFile)
 		fmt.Printf("Downloading from URL %s...\n", downloadUrl)
 		localFile, err := DownloadFileWithCache(downloadUrl)
@@ -65,7 +69,7 @@ func (bt NodeBuildTool) Install() error {
 			return err
 		}
 
-		err = archiver.Unarchive(localFile, nodeDir)
+		err = archiver.Unarchive(localFile, installDir)
 		if err != nil {
 			fmt.Printf("Unable to decompress: %v\n", err)
 			return err
@@ -76,24 +80,12 @@ func (bt NodeBuildTool) Install() error {
 }
 
 func (bt NodeBuildTool) Setup() error {
-
 	workspace := LoadWorkspace()
-	buildDir := fmt.Sprintf("%s/build", workspace.Path)
-	cmdPath := fmt.Sprintf("%s/%s/bin", buildDir, bt.PackageString())
-	currentPath := os.Getenv("PATH")
-	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
-	fmt.Printf("Setting PATH to %s\n", newPath)
-	os.Setenv("PATH", newPath)
-
-	nodePaths := make([]string, 0)
-	for _, pkg := range workspace.PackageList() {
-		nodePath := fmt.Sprintf("%s/node_modules", pkg)
-		nodeBinPath := fmt.Sprintf("%s/.bin", nodePath)
-		nodePaths = append(nodePaths, nodePath)
-		PrependToPath(nodeBinPath)
-	}
-
-	nodePath := strings.Join(nodePaths, ":")
+	nodeDir := bt.NodeDir()
+	cmdPath := filepath.Join(nodeDir, "bin")
+	PrependToPath(cmdPath)
+	// TODO: Fix
+	nodePath := workspace.PackagePath(workspace.Target)
 	fmt.Printf("Setting NODE_PATH to %s\n", nodePath)
 	os.Setenv("NODE_PATH", nodePath)
 

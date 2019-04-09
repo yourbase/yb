@@ -92,9 +92,6 @@ func (w *workspaceAddCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...int
 	// TODO: SSH Repositories...
 	repository := f.Args()[0]
 	var repositoryURL = repository
-	if !strings.Contains(repository, "https") {
-		repositoryURL = fmt.Sprintf("https://github.com/%s.git", repository)
-	}
 	cloneParts := strings.Split(repository, "/")
 	cloneDir := cloneParts[len(cloneParts)-1]
 

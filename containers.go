@@ -467,7 +467,7 @@ func (sc *ServiceContext) StandUp() error {
 
 		container, err := sc.FindContainer(c)
 
-		if err == nil {
+		if err != nil {
 			fmt.Printf("Problem searching for container: %v\n", err)
 			return err
 		}

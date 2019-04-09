@@ -5,8 +5,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"os/exec"
 
 	"gopkg.in/src-d/go-git.v4"
+	"github.com/matishsiao/goInfo"
 )
 
 type PythonBuildTool struct {
@@ -33,7 +35,6 @@ func (bt PythonBuildTool) Version() string {
 TODO: Install libssl-dev (or equivalent / warn) and zlib-dev based on platform
 */
 func (bt PythonBuildTool) Install() error {
-
 	workspace := LoadWorkspace()
 	buildDir := workspace.BuildRoot()
 	toolsDir := ToolsDir()
@@ -43,6 +44,8 @@ func (bt PythonBuildTool) Install() error {
 	pythonVersionDir := filepath.Join(pyenvDir, "versions", bt.Version())
 
 	virtualenvDir := filepath.Join(buildDir, "python", bt.Version())
+
+	bt.InstallPlatformDependencies()
 
 	if _, err := os.Stat(pyenvDir); err == nil {
 		fmt.Printf("pyenv installed in %s\n", pyenvDir)
@@ -113,4 +116,25 @@ func (bt PythonBuildTool) Setup() error {
 
 	return nil
 
+}
+
+func (bt PythonBuildTool) InstallPlatformDependencies() error { 
+	gi := goInfo.GetInfo()
+	if gi.GoOS == "darwin" { 
+		if gi.Core == "18.2.0" {
+			// Need to install the headers on Mojave
+			if !PathExists("/usr/include/zlib.h") {
+				installCmd := "sudo installer -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg -target /"
+				fmt.Println("Going to run: %s\n", installCmd)
+				cmdArgs := strings.Split(installCmd, " ")
+				cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
+				cmd.Stdout = os.Stdout
+				cmd.Stdin = os.Stdin
+				cmd.Stderr = os.Stderr
+				cmd.Run()
+			}
+		}
+	}
+
+	return nil
 }
