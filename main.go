@@ -21,6 +21,7 @@ func main() {
 	cmdr.Register(&packageCmd{}, "")
 	cmdr.Register(&patchCmd{}, "")
 	cmdr.Register(&loginCmd{}, "")
+	cmdr.Register(&platformCmd{}, "")
 	//subcommands.Register(&workspaceCreateCmd{}, "workspace")
 
 	flag.Parse()

@@ -121,7 +121,7 @@ func (bt PythonBuildTool) Setup() error {
 func (bt PythonBuildTool) InstallPlatformDependencies() error { 
 	gi := goInfo.GetInfo()
 	if gi.GoOS == "darwin" { 
-		if gi.Core == "18.2.0" {
+		if strings.HasPrefix(gi.Core, "18.") {
 			// Need to install the headers on Mojave
 			if !PathExists("/usr/include/zlib.h") {
 				installCmd := "sudo installer -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg -target /"

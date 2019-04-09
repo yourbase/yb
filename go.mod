@@ -14,11 +14,13 @@ require (
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/johnewart/go-dockerclient v1.3.7
 	github.com/johnewart/subcommands v0.0.0-20181012225330-46f0354f6315
+	github.com/matishsiao/goInfo v0.0.0-20170803142006-617e6440957e
 	github.com/mholt/archiver v3.1.1+incompatible
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
 	github.com/nwaples/rardecode v1.0.0 // indirect
 	github.com/pierrec/lz4 v2.0.5+incompatible // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
+	golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
 	gopkg.in/src-d/go-git.v4 v4.10.0
 	gopkg.in/yaml.v2 v2.2.2
 )
