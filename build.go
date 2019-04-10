@@ -52,6 +52,7 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 
 	if err != nil {
 		fmt.Printf("Unable to load package manifest for %s: %v\n", targetPackage, err)
+		return subcommands.ExitFailure
 	}
 
 	fmt.Printf("Working in %s...\n", targetDir)
