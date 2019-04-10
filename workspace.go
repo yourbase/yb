@@ -277,6 +277,8 @@ func (w Workspace) SetupDependencies(dependencies []string) error {
 			bt = NewPythonBuildTool(toolSpec)
 		case "ruby":
 			bt = NewRubyBuildTool(toolSpec)
+		case "homebrew":
+			bt = NewHomebrewBuildTool(toolSpec)
 		default:
 			fmt.Printf("Ignoring unknown build tool: %s\n", toolSpec)
 			return nil
