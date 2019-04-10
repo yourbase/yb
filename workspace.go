@@ -363,7 +363,6 @@ func FindWorkspaceRoot() (string, error) {
 
 	if _, err := os.Stat(filepath.Join(wd, "config.yml")); err == nil {
 		// If we're currently in the directory with the config.yml
-		fmt.Printf("Workspace root: %s\n", wd)
 		return wd, nil
 	}
 
@@ -374,14 +373,12 @@ func FindWorkspaceRoot() (string, error) {
 	if err == nil {
 		parent := filepath.Dir(packageDir)
 		if _, err := os.Stat(filepath.Join(parent, "config.yml")); err == nil {
-			fmt.Printf("Workspace root: %s\n", parent)
 			return parent, nil
 		}
 	} else {
 		return "", err
 	}
 
-	fmt.Printf("Workspace root: %s\n", packageDir)
 	// No config in the parent? Use the packageDir
 	return packageDir, nil
 }
@@ -392,7 +389,6 @@ func LoadWorkspace() Workspace {
 	if err != nil {
 		log.Fatalf("Error getting workspace path: %v", err)
 	}
-	fmt.Printf("Loading workspace from %s...\n", workspacePath)
 
 	var workspace = Workspace{}
 	configFile := filepath.Join(workspacePath, "config.yml")
