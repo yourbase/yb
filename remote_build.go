@@ -62,7 +62,13 @@ func (p *remoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 	}
 
-	project := fetchProject(repoUrls)
+	project, err := fetchProject(repoUrls)
+
+	if err != nil {
+		fmt.Printf("Error fetching project metadata: %v\n", err)
+		return subcommands.ExitFailure
+	}
+
 	fmt.Printf("Project key: %d\n", project.Id)
 
 	err = submitBuild(project)
@@ -132,21 +138,17 @@ func postToDispatcher(path string, formData url.Values) (*http.Response, error) 
 func getUserToken() (string, error) {
 	token, exists := os.LookupEnv("YB_USER_TOKEN")
 	if !exists {
-		configFile := ConfigFilePath("api_key")
-		if PathExists(configFile) {
-			buf, _ := ioutil.ReadFile(configFile)
-			token = string(buf)
-			token = strings.TrimSuffix(token, "\n")
-
-		} else {
+		if token, err := GetConfigValue("user", "api_key"); err != nil {
 			return "", fmt.Errorf("Unable to find YB token in config file or environment.")
+		} else {
+			return token, nil
 		}
+	} else {
+		return token, nil
 	}
-
-	return token, nil
 }
 
-func fetchProject(urls []string) *Project {
+func fetchProject(urls []string) (*Project, error) {
 	v := url.Values{}
 	for _, u := range urls {
 		fmt.Printf("Adding remote URL %s to search...\n", u)
@@ -158,16 +160,23 @@ func fetchProject(urls []string) *Project {
 		log.Fatalln(err)
 	}
 
+	if resp.StatusCode != 200 {
+		if resp.StatusCode == 404 {
+			return nil, fmt.Errorf("Couldn't find the project, make sure you have created one whose repository URL matches one of these repository's remotes.")
+		} else {
+			return nil, fmt.Errorf("Error fetching project from API, can't build remotely.")
+		}
+	}
+
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	var project Project
 	err = json.Unmarshal(body, &project)
 	if err != nil {
-		fmt.Printf("Couldn't parse response body: %s\n", err)
-		return nil
+		return nil, err
 	}
 
-	return &project
+	return &project, nil
 }
 
 func fetchUserEmail() (string, error) {

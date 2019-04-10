@@ -62,5 +62,5 @@ type Project struct {
 
 type LoginResponse struct {
 	UserId   int    `json:"user_id"`
-	ApiToken string `json:"token"`
+	ApiToken string `json:"api_key"`
 }

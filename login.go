@@ -61,10 +61,9 @@ func (p *loginCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	}
 
 	apiToken := loginResponse.ApiToken
-	apiTokenFile := ConfigFilePath("api_key")
 
-	if err = ioutil.WriteFile(apiTokenFile, []byte(apiToken), 0600); err != nil {
-		fmt.Printf("Cannot write token file %s: %v\n", apiTokenFile, err)
+	if err = SetConfigValue("user", "api_key", apiToken); err != nil {
+		fmt.Printf("Cannot store API token: %v\n", err)
 		return subcommands.ExitFailure
 	}
 
