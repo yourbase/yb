@@ -275,6 +275,8 @@ func (w Workspace) SetupDependencies(dependencies []string) error {
 			bt = NewGolangBuildTool(toolSpec)
 		case "python":
 			bt = NewPythonBuildTool(toolSpec)
+		case "ruby":
+			bt = NewRubyBuildTool(toolSpec)
 		default:
 			fmt.Printf("Ignoring unknown build tool: %s\n", toolSpec)
 			return nil
