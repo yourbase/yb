@@ -107,8 +107,11 @@ func (bt RubyBuildTool) Setup() error {
 	fmt.Printf("Setting GEM_HOME to %s\n", gemsDir)
 	os.Setenv("GEM_HOME", gemsDir)
 
+	gemBinDir := filepath.Join(gemsDir, "bin")
+
 	rubyDir := bt.RubyDir()
 	PrependToPath(filepath.Join(rubyDir, "bin"))
+	PrependToPath(gemBinDir)
 
 
 
