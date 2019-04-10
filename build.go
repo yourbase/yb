@@ -58,6 +58,7 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	fmt.Printf("Working in %s...\n", targetDir)
 
 	var target BuildPhase
+        sandboxed := instructions.Sandbox || target.Sandbox
 
 	if len(instructions.BuildTargets) == 0 {
 		target = instructions.Build
@@ -141,6 +142,7 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		}
 
 	} else {
+
 		// Ensure build deps are :+1:
 		workspace.SetupBuildDependencies(*instructions)
 		for _, cmdString := range target.Commands {
@@ -160,10 +162,19 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 					fmt.Printf("Build root is %s\n", target.Root)
 					targetDir = filepath.Join(targetDir, target.Root)
 				}
+				
+				if sandboxed {
+				    	fmt.Println("Running build in a sandbox!")
+					if err := ExecInSandbox(cmdString, targetDir); err != nil {
+						fmt.Printf("Failed to run %s: %v", cmdString, err)
+						return subcommands.ExitFailure
+					}
+                                } else {
 
-				if err := ExecToStdout(cmdString, targetDir); err != nil {
-					fmt.Printf("Failed to run %s: %v", cmdString, err)
-					return subcommands.ExitFailure
+					if err := ExecToStdout(cmdString, targetDir); err != nil {
+						fmt.Printf("Failed to run %s: %v", cmdString, err)
+						return subcommands.ExitFailure
+					}
 				}
 			}
 

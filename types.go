@@ -4,6 +4,7 @@ const MANIFEST_FILE = ".yourbase.yml"
 
 type BuildInstructions struct {
 	Dependencies DependencySet         `yaml:"dependencies"`
+	Sandbox      bool                  `yaml:"sandbox"`
 	BuildTargets map[string]BuildPhase `yaml:"targets"`
 	Build        BuildPhase            `yaml:"build"`
 	Exec         ExecPhase             `yaml:"exec"`
@@ -26,6 +27,7 @@ type ExecPhase struct {
 	Environment  map[string][]string `yaml:"environment"`
 	Dependencies ExecDependencies    `yaml:"dependencies"`
 	LogFiles     []string            `yaml:"logfiles"`
+	Sandbox      bool                `yaml:"sandbox"`
 }
 
 type ExecDependencies struct {
