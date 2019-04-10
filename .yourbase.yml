@@ -9,13 +9,17 @@ targets:
     commands:
       - go build
   linux:
-    env: 
+    environment: 
       - GOOS=linux
       - GOARCH=amd64
     commands:
       - go build -o artificer-linux-amd64
 
 exec:
+  environment:
+    default:
+     - YOURBASE_API_URL=http://localhost:5000
+     - DISPATCHER_URL=http://localhost:8080
   commands:
     - ./artificer
 
