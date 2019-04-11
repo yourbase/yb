@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/johnewart/subcommands"
-
+	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -28,6 +31,31 @@ func (p *buildCmd) SetFlags(f *flag.FlagSet) {
 }
 
 func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+	realStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	outputs := io.MultiWriter(realStdout)
+	var buf bytes.Buffer
+	uploadBuildLogs := false
+
+	if v, err := GetConfigValue("user", "upload_build_logs"); err == nil {
+		fmt.Printf("Upload build logs set to: %s\n", v)
+		if v == "true" {
+			uploadBuildLogs = true
+			outputs = io.MultiWriter(realStdout, &buf)
+		}
+	}
+
+	// copy the output in a separate goroutine so printing can't block indefinitely
+	go func() {
+		for {
+			io.Copy(outputs, r)
+		}
+	}()
+
+	defer w.Close()
+	defer r.Close()
 
 	workspace := LoadWorkspace()
 	buildTarget := "default"
@@ -58,7 +86,7 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	fmt.Printf("Working in %s...\n", targetDir)
 
 	var target BuildPhase
-        sandboxed := instructions.Sandbox || target.Sandbox
+	sandboxed := instructions.Sandbox || target.Sandbox
 
 	if len(instructions.BuildTargets) == 0 {
 		target = instructions.Build
@@ -162,26 +190,51 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 					fmt.Printf("Build root is %s\n", target.Root)
 					targetDir = filepath.Join(targetDir, target.Root)
 				}
-				
+
 				if sandboxed {
-				    	fmt.Println("Running build in a sandbox!")
+					fmt.Println("Running build in a sandbox!")
 					if err := ExecInSandbox(cmdString, targetDir); err != nil {
 						fmt.Printf("Failed to run %s: %v", cmdString, err)
 						return subcommands.ExitFailure
 					}
-                                } else {
-
+				} else {
 					if err := ExecToStdout(cmdString, targetDir); err != nil {
 						fmt.Printf("Failed to run %s: %v", cmdString, err)
 						return subcommands.ExitFailure
 					}
 				}
 			}
-
 		}
 
 	}
 
+	os.Stdout = realStdout
+
+	if uploadBuildLogs {
+		fmt.Println("UPLOADING...")
+		buildLog := BuildLog{
+			Contents: buf.String(),
+		}
+		jsonData, _ := json.Marshal(buildLog)
+		resp, err := postJsonToApi("/buildlogs", jsonData)
+		if err != nil {
+			fmt.Printf("Couldn't upload logs: %v\n", err)
+		}
+
+		if resp.StatusCode != 200 {
+			fmt.Printf("Status code uploading log: %d\n", resp.StatusCode)
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				fmt.Printf("Couldn't read response body: %s\n", err)
+			}
+			fmt.Println(string(body))
+		}
+	}
+
 	return subcommands.ExitSuccess
 
+}
+
+type BuildLog struct {
+	Contents string `json:"contents"`
 }

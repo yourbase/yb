@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"os/user"
@@ -14,6 +15,10 @@ import (
 )
 
 func ExecToStdout(cmdString string, targetDir string) error {
+	return ExecToStdoutWithSink(cmdString, targetDir, ioutil.Discard)
+}
+
+func ExecToStdoutWithSink(cmdString, targetDir string, sink io.Writer) error {
 	fmt.Printf("Running: %s in %s\n", cmdString, targetDir)
 
 	cmdArgs := strings.Fields(cmdString)
@@ -22,29 +27,25 @@ func ExecToStdout(cmdString string, targetDir string) error {
 	stdoutIn, _ := cmd.StdoutPipe()
 	stderrIn, _ := cmd.StderrPipe()
 
-	var stdoutBuf bytes.Buffer
-
 	err := cmd.Start()
 
 	if err != nil {
 		return fmt.Errorf("cmd.Start() failed with '%s'\n", err)
 	}
 
+	// TODO: this feels broken
 	go func() {
 		//outputs := io.MultiWriter(os.Stdout, websock)
-		outputs := io.MultiWriter(os.Stdout, &stdoutBuf)
+		outputs := io.MultiWriter(os.Stdout, sink)
 		for {
 			io.Copy(outputs, stdoutIn)
 			io.Copy(outputs, stderrIn)
-			time.Sleep(300 * time.Millisecond)
+			time.Sleep(10 * time.Millisecond)
 		}
 	}()
 
 	if err = cmd.Wait(); err != nil {
-		fmt.Printf("Output:\n%s\n", stdoutBuf.String())
-		fmt.Printf("Command failed with %s\n", err)
-
-		return err
+		return fmt.Errorf("Command failed to run with error: %v\n", err)
 	}
 
 	return nil
