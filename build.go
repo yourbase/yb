@@ -12,7 +12,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
+
+const TIME_FORMAT = "15:04:05 MST"
 
 type buildCmd struct {
 	ExecPrefix  string
@@ -31,6 +34,10 @@ func (p *buildCmd) SetFlags(f *flag.FlagSet) {
 }
 
 func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+
+	startTime := time.Now()
+
+	fmt.Printf("Build started at %s\n", startTime.Format(TIME_FORMAT))
 	realStdout := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
@@ -40,7 +47,6 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	uploadBuildLogs := false
 
 	if v, err := GetConfigValue("user", "upload_build_logs"); err == nil {
-		fmt.Printf("Upload build logs set to: %s\n", v)
 		if v == "true" {
 			uploadBuildLogs = true
 			outputs = io.MultiWriter(realStdout, &buf)
@@ -116,6 +122,8 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		os.Setenv(key, value)
 	}
 
+	fmt.Println("Executing build steps")
+	stepTimes := make([]CommandTimer, 0)
 	// If the build specifies a container and the --no-container flag isn't true
 	if target.Container.Image != "" && !b.NoContainer {
 		// Perform build inside a container
@@ -174,7 +182,7 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		// Ensure build deps are :+1:
 		workspace.SetupBuildDependencies(*instructions)
 		for _, cmdString := range target.Commands {
-
+			stepStartTime := time.Now()
 			if len(b.ExecPrefix) > 0 {
 				cmdString = fmt.Sprintf("%s %s", b.ExecPrefix, cmdString)
 			}
@@ -204,11 +212,31 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 					}
 				}
 			}
+
+			stepEndTime := time.Now()
+			stepTotalTime := stepEndTime.Sub(stepStartTime)
+
+			fmt.Printf("Completed '%s' in %s\n", cmdString, stepTotalTime)
+
+			cmdTimer := CommandTimer{
+				Command:   cmdString,
+				StartTime: stepStartTime,
+				EndTime:   stepEndTime,
+			}
+
+			stepTimes = append(stepTimes, cmdTimer)
+			// Make sure our goroutine gets this from stdout
+			// TODO: There must be a better way...
+			time.Sleep(10 * time.Millisecond)
 		}
 
 	}
 
 	os.Stdout = realStdout
+
+	endTime := time.Now()
+	buildTime := endTime.Sub(startTime)
+	fmt.Printf("Build finished at %s, taking %s\n", endTime.Format("15:04:05 MST"), buildTime)
 
 	if uploadBuildLogs {
 		fmt.Println("Uploading build logs...")
@@ -253,4 +281,10 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 type BuildLog struct {
 	Contents string `json:"contents"`
 	UUID     string `json:"uuid"`
+}
+
+type CommandTimer struct {
+	Command   string
+	StartTime time.Time
+	EndTime   time.Time
 }
