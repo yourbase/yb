@@ -82,6 +82,21 @@ func (p *remoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	return subcommands.ExitSuccess
 }
 
+func ManagementUrl(path string) string {
+	managementBaseURL, exists := os.LookupEnv("YOURBASE_UI_URL")
+	if !exists {
+		managementBaseURL = "https://yb-manager.herokuapp.com"
+	}
+
+	if !strings.HasPrefix(path, "/") {
+		path = fmt.Sprintf("/%s", path)
+	}
+
+	managementURL := fmt.Sprintf("%s%s", managementBaseURL, path)
+
+	return managementURL
+}
+
 func ApiUrl(path string) string {
 	apiBaseURL, exists := os.LookupEnv("YOURBASE_API_URL")
 	if !exists {

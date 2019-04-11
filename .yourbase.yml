@@ -19,7 +19,9 @@ exec:
   environment:
     default:
      - YOURBASE_API_URL=http://localhost:5000
+     - YOURBASE_UI_URL=http://localhost:3000
      - DISPATCHER_URL=http://localhost:8080
+     - YB_USER_TOKEN=ec21c5d6-c1c2-4a57-a92a-59a26cb9eb47
   commands:
-    - ./artificer
+    - ./artificer build
 

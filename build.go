@@ -211,23 +211,38 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	os.Stdout = realStdout
 
 	if uploadBuildLogs {
-		fmt.Println("UPLOADING...")
+		fmt.Println("Uploading build logs...")
 		buildLog := BuildLog{
 			Contents: buf.String(),
 		}
 		jsonData, _ := json.Marshal(buildLog)
 		resp, err := postJsonToApi("/buildlogs", jsonData)
+
 		if err != nil {
 			fmt.Printf("Couldn't upload logs: %v\n", err)
+			return subcommands.ExitFailure
+		}
+
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Printf("Couldn't read response body: %s\n", err)
+			return subcommands.ExitFailure
 		}
 
 		if resp.StatusCode != 200 {
 			fmt.Printf("Status code uploading log: %d\n", resp.StatusCode)
-			body, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				fmt.Printf("Couldn't read response body: %s\n", err)
-			}
 			fmt.Println(string(body))
+			return subcommands.ExitFailure
+		} else {
+			var buildLog BuildLog
+			err = json.Unmarshal(body, &buildLog)
+			if err != nil {
+				fmt.Printf("Failed to parse response: %v\n", err)
+				return subcommands.ExitFailure
+			}
+
+			logViewPath := fmt.Sprintf("/buildlogs/%s", buildLog.UUID)
+			fmt.Printf("View your build log here: %s\n", ManagementUrl(logViewPath))
 		}
 	}
 
@@ -237,4 +252,5 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 
 type BuildLog struct {
 	Contents string `json:"contents"`
+	UUID     string `json:"uuid"`
 }
