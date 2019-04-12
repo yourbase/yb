@@ -16,6 +16,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -34,10 +35,46 @@ func (p *remoteCmd) SetFlags(f *flag.FlagSet) {
 }
 
 func (p *remoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	workspace := LoadWorkspace()
-	targetPackage := workspace.Target
 
-	fmt.Printf("Remotely building target package %s...\n", targetPackage)
+	workspace := LoadWorkspace()
+	buildTarget := "default"
+	var targetPackage string
+
+	if PathExists(MANIFEST_FILE) {
+		currentPath, _ := filepath.Abs(".")
+		_, file := filepath.Split(currentPath)
+		targetPackage = file
+	} else {
+		targetPackage = workspace.Target
+	}
+
+	if len(f.Args()) > 0 {
+		buildTarget = f.Args()[0]
+	}
+
+	instructions, err := workspace.LoadPackageManifest(targetPackage)
+
+	var target BuildPhase
+
+	if len(instructions.BuildTargets) == 0 {
+		target = instructions.Build
+		if len(target.Commands) == 0 {
+			fmt.Printf("Default build command has no steps and no targets described\n")
+		}
+	} else {
+		ok := false
+		if target, ok = instructions.BuildTargets[buildTarget]; !ok {
+			targets := make([]string, 0, len(instructions.BuildTargets))
+			for t := range instructions.BuildTargets {
+				targets = append(targets, t)
+			}
+
+			fmt.Printf("Build target %s specified but it doesn't exist!\n")
+			fmt.Printf("Valid build targets: %s\n", strings.Join(targets, ", "))
+		}
+	}
+
+	fmt.Printf("Remotely building '%s' ...\n", buildTarget)
 	packagePath := workspace.PackagePath(targetPackage)
 	workRepo, err := git.PlainOpen(packagePath)
 
@@ -72,7 +109,7 @@ func (p *remoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	fmt.Printf("Project key: %d\n", project.Id)
 
-	err = submitBuild(project)
+	err = submitBuild(project, target.Tags)
 
 	if err != nil {
 		fmt.Printf("Unable to submit build: %v\n", err)
@@ -245,18 +282,29 @@ func fetchUserEmail() (string, error) {
 	}
 }
 
-func submitBuild(project *Project) error {
+func submitBuild(project *Project, tagMap map[string]string) error {
 
 	userToken, err := getUserToken()
 
 	if err != nil {
 		return err
 	}
+	target := ""
 
 	formData := url.Values{
 		"project_id":    {strconv.Itoa(project.Id)},
 		"repository_id": {project.Repository},
 		"api_key":       {userToken},
+		"target":        {target},
+	}
+
+	tags := make([]string, 0)
+	for k, v := range tagMap {
+		tags = append(tags, fmt.Sprintf("%s:%s", k, v))
+	}
+
+	for _, tag := range tags {
+		formData.Add("tags[]", tag)
 	}
 
 	resp, err := postToDispatcher("builds", formData)
@@ -302,6 +350,8 @@ func submitBuild(project *Project) error {
 				fmt.Printf("closed\n")
 			}
 		}
+	} else {
+		fmt.Println(response)
 	}
 
 	return nil

@@ -6,9 +6,13 @@ dependencies:
 
 targets:
   default:
+    tags:
+      os: darwin
     commands:
       - go build
   linux:
+    tags:
+      os: linux
     environment: 
       - GOOS=linux
       - GOARCH=amd64

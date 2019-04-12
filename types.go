@@ -50,6 +50,7 @@ type BuildPhase struct {
 	Sandbox     bool                `yaml:"sandbox"`
 	Root        string              `yaml:"root"`
 	Environment []string            `yaml:"env"`
+	Tags        map[string]string   `yaml:"tags"`
 }
 
 // API Responses -- use Swagger instead, this is silly
