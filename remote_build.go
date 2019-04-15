@@ -122,7 +122,7 @@ func (p *remoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 func ManagementUrl(path string) string {
 	managementBaseURL, exists := os.LookupEnv("YOURBASE_UI_URL")
 	if !exists {
-		managementBaseURL = "https://yb-manager.herokuapp.com"
+		managementBaseURL = "https://app.yourbase.io"
 	}
 
 	if !strings.HasPrefix(path, "/") {
@@ -137,7 +137,7 @@ func ManagementUrl(path string) string {
 func ApiUrl(path string) string {
 	apiBaseURL, exists := os.LookupEnv("YOURBASE_API_URL")
 	if !exists {
-		apiBaseURL = "https://yb-api.herokuapp.com"
+		apiBaseURL = "https://api.yourbase.io"
 	}
 
 	if !strings.HasPrefix(path, "/") {
@@ -191,7 +191,7 @@ func postToDispatcher(path string, formData url.Values) (*http.Response, error) 
 
 	dispatcherBaseURL, exists := os.LookupEnv("DISPATCHER_URL")
 	if !exists {
-		dispatcherBaseURL = "https://yb-dispatcher.herokuapp.com"
+		dispatcherBaseURL = "https://router.yourbase.io"
 	}
 
 	dispatcherURL := fmt.Sprintf("%s/%s", dispatcherBaseURL, path)
@@ -257,7 +257,7 @@ func fetchUserEmail() (string, error) {
 
 	apiBaseURL, exists := os.LookupEnv("YOURBASE_API_URL")
 	if !exists {
-		apiBaseURL = "https://yb-api.herokuapp.com"
+		apiBaseURL = "https://api.yourbase.io"
 	}
 
 	apiURL := fmt.Sprintf("%s/users/whoami", apiBaseURL)

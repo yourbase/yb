@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"gopkg.in/src-d/go-git.v4"
 	"github.com/matishsiao/goInfo"
+	"gopkg.in/src-d/go-git.v4"
 )
 
 type HomebrewBuildTool struct {
@@ -30,24 +30,60 @@ func (bt HomebrewBuildTool) Version() string {
 	return bt._version
 }
 
-// Normally we want to put this in the tools dir; for now we put it in the build dir because I'm not 
-// sure how to handle installation of multiple versions of things via Brew so this will allow project-specific 
+// Normally we want to put this in the tools dir; for now we put it in the build dir because I'm not
+// sure how to handle installation of multiple versions of things via Brew so this will allow project-specific
 // versioning
-func (bt HomebrewBuildTool) HomebrewDir() string { 
+func (bt HomebrewBuildTool) HomebrewDir() string {
 	return filepath.Join(bt.InstallDir(), "brew")
 }
 
-func (bt HomebrewBuildTool) InstallDir() string { 
+func (bt HomebrewBuildTool) InstallDir() string {
 	workspace := LoadWorkspace()
 	return filepath.Join(workspace.BuildRoot(), "homebrew")
 }
 
 func (bt HomebrewBuildTool) Install() error {
 	gi := goInfo.GetInfo()
-	if gi.GoOS != "darwin" { 
-		return fmt.Errorf("Homebrew not supported on %s platform", gi.GoOS)
+
+	switch gi.GoOS {
+	case "darwin":
+		return bt.InstallDarwin()
+	case "linux":
+		return bt.InstallLinux()
+	default:
+		fmt.Printf("Unsupported platform: %s\n", gi.GoOS)
+		return nil
 	}
-	
+}
+
+func (bt HomebrewBuildTool) InstallDarwin() error {
+	installDir := bt.InstallDir()
+	brewDir := bt.HomebrewDir()
+
+	MkdirAsNeeded(installDir)
+
+	brewGitUrl := "https://github.com/Linuxbrew/brew.git"
+
+	if _, err := os.Stat(brewDir); err == nil {
+		fmt.Printf("brew installed in %s\n", brewDir)
+	} else {
+		fmt.Printf("Installing brew\n")
+
+		_, err := git.PlainClone(brewDir, false, &git.CloneOptions{
+			URL:      brewGitUrl,
+			Progress: os.Stdout,
+		})
+
+		if err != nil {
+			fmt.Printf("Unable to clone brew!\n")
+			return fmt.Errorf("Couldn't clone brew: %v\n", err)
+		}
+	}
+
+	return nil
+}
+
+func (bt HomebrewBuildTool) InstallLinux() error {
 	installDir := bt.InstallDir()
 	brewDir := bt.HomebrewDir()
 
@@ -86,7 +122,7 @@ func (bt HomebrewBuildTool) Setup() error {
 
 }
 
-func (bt HomebrewBuildTool) InstallPlatformDependencies() error { 
+func (bt HomebrewBuildTool) InstallPlatformDependencies() error {
 	// Currently a no-op
 	return nil
 }

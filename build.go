@@ -173,8 +173,9 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		fmt.Println("\n\n -- BUILD SUCCEEDED -- ")
 	}
 
+	time.Sleep(100 * time.Millisecond)
 	// Reset stdout
-	os.Stdout = realStdout
+	//os.Stdout = realStdout
 
 	if uploadBuildLogs {
 		UploadBuildLogsToAPI(&buf)
@@ -277,6 +278,8 @@ func RunCommands(config BuildConfiguration) ([]CommandTimer, error) {
 	targetDir := config.TargetDir
 
 	for _, cmdString := range target.Commands {
+		var stepError error
+
 		stepStartTime := time.Now()
 		if len(config.ExecPrefix) > 0 {
 			cmdString = fmt.Sprintf("%s %s", config.ExecPrefix, cmdString)
@@ -298,12 +301,12 @@ func RunCommands(config BuildConfiguration) ([]CommandTimer, error) {
 				fmt.Println("Running build in a sandbox!")
 				if err := ExecInSandbox(cmdString, targetDir); err != nil {
 					fmt.Printf("Failed to run %s: %v", cmdString, err)
-					return stepTimes, err
+					stepError = err
 				}
 			} else {
 				if err := ExecToStdout(cmdString, targetDir); err != nil {
 					fmt.Printf("Failed to run %s: %v", cmdString, err)
-					return stepTimes, err
+					stepError = err
 				}
 			}
 		}
@@ -323,6 +326,9 @@ func RunCommands(config BuildConfiguration) ([]CommandTimer, error) {
 		// Make sure our goroutine gets this from stdout
 		// TODO: There must be a better way...
 		time.Sleep(10 * time.Millisecond)
+		if stepError != nil {
+			return stepTimes, stepError
+		}
 	}
 
 	return stepTimes, nil
