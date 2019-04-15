@@ -5,7 +5,7 @@ A build tool that makes working on projects much more delightful.
 # How to use
 
 1. Download 
-2. Clone a package
+2. Clone a package from GitHub
 3. Build!
 
 # Example commands
