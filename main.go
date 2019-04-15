@@ -3,9 +3,10 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/johnewart/subcommands"
 	"os"
 	"path"
+
+	"github.com/johnewart/subcommands"
 )
 
 func main() {
@@ -22,6 +23,7 @@ func main() {
 	cmdr.Register(&patchCmd{}, "")
 	cmdr.Register(&loginCmd{}, "")
 	cmdr.Register(&platformCmd{}, "")
+	cmdr.Register(&updateCmd{}, "")
 	//subcommands.Register(&workspaceCreateCmd{}, "workspace")
 
 	flag.Parse()
