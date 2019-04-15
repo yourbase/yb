@@ -11,6 +11,7 @@ require (
 	github.com/docker/docker v0.7.3-0.20190309235953-33c3200e0d16
 	github.com/dominikh/go-tools v0.0.0-20190410220842-0e5f7e4d3779 // indirect
 	github.com/dsnet/compress v0.0.1 // indirect
+	github.com/equinox-io/equinox v1.2.0
 	github.com/fatih/gomodifytags v0.0.0-20180914191908-141225bf62b6 // indirect
 	github.com/fatih/motion v0.0.0-20180408211639-218875ebe238 // indirect
 	github.com/gobwas/httphead v0.0.0-20180130184737-2c6c146eadee // indirect
