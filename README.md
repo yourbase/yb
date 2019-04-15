@@ -6,7 +6,7 @@ A build tool that makes working on projects much more delightful.
 
 1. Download 
 2. Clone a package
-3. Build
+3. Build!
 
 # Example commands
 
