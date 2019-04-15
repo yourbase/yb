@@ -1,6 +1,7 @@
 # YourBase CLI
 
-A build tool that makes working on projects much more delightful.
+A build tool that makes working on projects much more delightful. Stop worrying
+about dependencies.
 
 # How to use
 
