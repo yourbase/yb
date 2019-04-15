@@ -1,6 +1,6 @@
-# Artificer
+# YourBase CLI
 
-A build tool.
+A build tool that makes working on projects much more delightful.
 
 # How to use
 
