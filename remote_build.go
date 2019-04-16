@@ -6,19 +6,19 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/gobwas/ws"
-	"github.com/gobwas/ws/wsutil"
-	"github.com/johnewart/subcommands"
-	"gopkg.in/src-d/go-git.v4"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/gobwas/ws"
+	"github.com/gobwas/ws/wsutil"
+	"github.com/johnewart/subcommands"
+	"gopkg.in/src-d/go-git.v4"
 )
 
 type remoteCmd struct {
@@ -227,7 +227,7 @@ func fetchProject(urls []string) (*Project, error) {
 	resp, err := postToApi("search/projects", v)
 
 	if err != nil {
-		log.Fatalln(err)
+		return nil, fmt.Errorf("Couldn't lookup project on api server: %v", err)
 	}
 
 	if resp.StatusCode != 200 {
@@ -263,9 +263,15 @@ func fetchUserEmail() (string, error) {
 	apiURL := fmt.Sprintf("%s/users/whoami", apiBaseURL)
 
 	client := &http.Client{}
-	req, _ := http.NewRequest("GET", apiURL, nil)
+	req, err := http.NewRequest("GET", apiURL, nil)
+	if err != nil {
+		return "", err
+	}
 	req.Header.Set("YB_API_TOKEN", userToken)
-	res, _ := client.Do(req)
+	res, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
 
 	if res.StatusCode == 200 {
 		defer res.Body.Close()
