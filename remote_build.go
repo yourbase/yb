@@ -159,10 +159,14 @@ func postJsonToApi(path string, jsonData []byte) (*http.Response, error) {
 	apiURL := ApiUrl(path)
 
 	client := &http.Client{}
-	req, _ := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return nil, err
+	}
+
 	req.Header.Set("YB_API_TOKEN", userToken)
 	req.Header.Set("Content-Type", "application/json")
-	res, _ := client.Do(req)
+	res, err := client.Do(req)
 	return res, nil
 
 }
@@ -175,10 +179,18 @@ func postToApi(path string, formData url.Values) (*http.Response, error) {
 
 	apiURL := ApiUrl(path)
 	client := &http.Client{}
-	req, _ := http.NewRequest("POST", apiURL, strings.NewReader(formData.Encode()))
+	req, err := http.NewRequest("POST", apiURL, strings.NewReader(formData.Encode()))
+	if err != nil {
+		return nil, err
+	}
+
 	req.Header.Set("YB_API_TOKEN", userToken)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	res, _ := client.Do(req)
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
 	return res, nil
 }
 
@@ -197,10 +209,17 @@ func postToDispatcher(path string, formData url.Values) (*http.Response, error) 
 	dispatcherURL := fmt.Sprintf("%s/%s", dispatcherBaseURL, path)
 
 	client := &http.Client{}
-	req, _ := http.NewRequest("POST", dispatcherURL, strings.NewReader(formData.Encode()))
+	req, err := http.NewRequest("POST", dispatcherURL, strings.NewReader(formData.Encode()))
+	if err != nil {
+		return nil, err
+	}
+
 	req.Header.Set("YB_API_TOKEN", userToken)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	res, _ := client.Do(req)
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
 
 	return res, nil
 }
