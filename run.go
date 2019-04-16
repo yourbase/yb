@@ -4,10 +4,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/johnewart/subcommands"
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/johnewart/subcommands"
 	//"path/filepath"
 )
 
@@ -34,7 +35,10 @@ Executing the target involves:
 3. Start target
 */
 func (b *runCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-
+	if len(f.Args()) == 0 {
+		fmt.Println(b.Usage())
+		return subcommands.ExitFailure
+	}
 	workspace := LoadWorkspace()
 	targetPackage := workspace.Target
 
