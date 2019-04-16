@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/mholt/archiver"
+	"github.com/johnewart/archiver"
 	"os"
 	"strings"
 )

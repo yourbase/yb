@@ -19,6 +19,7 @@ require (
 	github.com/gobwas/ws v1.0.0
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/google/shlex v0.0.0-20181106134648-c34317bd91bf // indirect
+	github.com/johnewart/archiver v3.1.2+incompatible
 	github.com/johnewart/go-dockerclient v1.3.7
 	github.com/johnewart/subcommands v0.0.0-20181012225330-46f0354f6315
 	github.com/josharian/impl v0.0.0-20180228163738-3d0f908298c4 // indirect
@@ -26,7 +27,6 @@ require (
 	github.com/kisielk/errcheck v1.2.0 // indirect
 	github.com/klauspost/asmfmt v1.2.0 // indirect
 	github.com/matishsiao/goInfo v0.0.0-20170803142006-617e6440957e
-	github.com/mholt/archiver v3.1.1+incompatible
 	github.com/nicksnyder/go-i18n v1.10.0 // indirect
 	github.com/nsf/gocode v0.0.0-20190302080247-5bee97b48836 // indirect
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d

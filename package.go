@@ -4,8 +4,8 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/johnewart/archiver"
 	"github.com/johnewart/subcommands"
-	"github.com/mholt/archiver"
 	"os"
 
 	"path/filepath"

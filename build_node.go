@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/mholt/archiver"
+	"github.com/johnewart/archiver"
 	"os"
 	"path/filepath"
 	"strings"
@@ -46,7 +46,7 @@ func (bt NodeBuildTool) NodeDir() string {
 	return filepath.Join(bt.InstallDir(), bt.PackageString())
 }
 
-func (bt NodeBuildTool) InstallDir() string { 
+func (bt NodeBuildTool) InstallDir() string {
 	return filepath.Join(ToolsDir(), "nodejs")
 }
 
@@ -88,6 +88,9 @@ func (bt NodeBuildTool) Setup() error {
 	nodePath := workspace.PackagePath(workspace.Target)
 	fmt.Printf("Setting NODE_PATH to %s\n", nodePath)
 	os.Setenv("NODE_PATH", nodePath)
+
+	npmBinPath := filepath.Join(nodePath, "node_modules", ".bin")
+	PrependToPath(npmBinPath)
 
 	return nil
 }
