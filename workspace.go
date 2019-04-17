@@ -103,7 +103,7 @@ func (w *workspaceAddCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...int
 	fmt.Printf("Cloning %s into %s...\n", repository, cloneDir)
 	cloneOpts := git.CloneOptions{
 		URL:      repositoryURL,
-		Progress: os.Stdout,
+		Progress: nil,
 	}
 	_, err := git.PlainClone(cloneDir, false, &cloneOpts)
 
