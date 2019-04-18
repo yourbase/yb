@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"crypto/sha256"
 	"flag"
 	"fmt"
 	"github.com/johnewart/subcommands"
@@ -12,6 +13,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/user"
 	"path/filepath"
 	"strings"
 )
@@ -193,6 +195,11 @@ func (w Workspace) PackagePath(target string) string {
 	}
 }
 
+// Change this
+func (w Workspace) Root() string {
+	return w.Path
+}
+
 func (w Workspace) PackageList() []string {
 
 	var packages []string
@@ -309,12 +316,34 @@ func (w Workspace) SetupRuntimeDependencies(instructions BuildInstructions) erro
 }
 
 func (w Workspace) BuildRoot() string {
-	buildDir := "build"
+	var workspaceDir string
+
 	if w.PackageWorkspace {
-		buildDir = ".yb-build"
+		workspacesRoot, exists := os.LookupEnv("YB_WORKSPACES_ROOT")
+		if !exists {
+			u, err := user.Current()
+			if err != nil {
+				workspacesRoot = "/tmp/yourbase/workspaces"
+			} else {
+				workspacesRoot = fmt.Sprintf("%s/.yourbase/workspaces", u.HomeDir)
+			}
+		}
+
+		h := sha256.New()
+
+		h.Write([]byte(w.Path))
+		workspaceHash := fmt.Sprintf("%x", h.Sum(nil))
+		workspaceDir = filepath.Join(workspacesRoot, workspaceHash[0:12])
+
+	} else {
+		workspaceDir = w.Path
 	}
 
-	buildRoot := filepath.Join(w.Path, buildDir)
+	fmt.Printf("Workspace-related things will be in %s\n", workspaceDir)
+	MkdirAsNeeded(workspaceDir)
+
+	buildDir := "build"
+	buildRoot := filepath.Join(workspaceDir, buildDir)
 
 	if _, err := os.Stat(buildRoot); os.IsNotExist(err) {
 

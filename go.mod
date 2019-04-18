@@ -19,7 +19,7 @@ require (
 	github.com/gobwas/ws v1.0.0
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/google/shlex v0.0.0-20181106134648-c34317bd91bf // indirect
-	github.com/johnewart/archiver v3.1.2+incompatible
+	github.com/johnewart/archiver v3.1.4+incompatible
 	github.com/johnewart/go-dockerclient v1.3.7
 	github.com/johnewart/subcommands v0.0.0-20181012225330-46f0354f6315
 	github.com/josharian/impl v0.0.0-20180228163738-3d0f908298c4 // indirect

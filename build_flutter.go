@@ -70,7 +70,8 @@ func (bt FlutterBuildTool) Version() string {
 }
 
 func (bt FlutterBuildTool) InstallDir() string {
-	return filepath.Join(ToolsDir(), "flutter", fmt.Sprintf("flutter-%s", bt.Version()))
+	workspace := LoadWorkspace()
+	return filepath.Join(workspace.BuildRoot(), "flutter", fmt.Sprintf("flutter-%s", bt.Version()))
 }
 
 func (bt FlutterBuildTool) FlutterDir() string {
@@ -79,6 +80,7 @@ func (bt FlutterBuildTool) FlutterDir() string {
 
 func (bt FlutterBuildTool) Setup() error {
 	flutterDir := bt.FlutterDir()
+
 	cmdPath := filepath.Join(flutterDir, "bin")
 	currentPath := os.Getenv("PATH")
 	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
@@ -111,6 +113,7 @@ func (bt FlutterBuildTool) Install() error {
 			return err
 		}
 
+		//RemoveWritePermissionRecursively(installDir)
 	}
 
 	return nil
