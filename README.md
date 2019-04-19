@@ -15,5 +15,3 @@ about dependencies.
 * `git clone https://github.com/johnewart/simple-java-app.git`
 * `cd simple-java-app`
 * `yb build`
-
-# Yay
