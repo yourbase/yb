@@ -12,7 +12,7 @@ import (
 type BuildContext struct {
 	DockerClient *client.Client
 	Id           string
-	Instructions BuildInstructions
+	Manifest     BuildManifest
 }
 
 func NewContext() (BuildContext, error) {

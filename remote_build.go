@@ -52,25 +52,19 @@ func (p *remoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		buildTarget = f.Args()[0]
 	}
 
-	instructions, err := workspace.LoadPackageManifest(targetPackage)
+	manifest, err := workspace.LoadPackageManifest(targetPackage)
 
-	var target BuildPhase
+	var target BuildTarget
 
-	if len(instructions.BuildTargets) == 0 {
-		target = instructions.Build
+	if len(manifest.BuildTargets) == 0 {
+		target = manifest.Build
 		if len(target.Commands) == 0 {
 			fmt.Printf("Default build command has no steps and no targets described\n")
 		}
 	} else {
-		ok := false
-		if target, ok = instructions.BuildTargets[buildTarget]; !ok {
-			targets := make([]string, 0, len(instructions.BuildTargets))
-			for t := range instructions.BuildTargets {
-				targets = append(targets, t)
-			}
-
-			fmt.Printf("Build target %s specified but it doesn't exist!\n")
-			fmt.Printf("Valid build targets: %s\n", strings.Join(targets, ", "))
+		if target, err = manifest.BuildTarget(buildTarget); err != nil {
+			fmt.Printf("Build target %s specified but it doesn't exist!\n", buildTarget)
+			fmt.Printf("Valid build targets: %s\n", strings.Join(manifest.BuildTargetList(), ", "))
 		}
 	}
 

@@ -16,6 +16,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 type workspaceCmd struct {
@@ -229,31 +230,32 @@ func (w Workspace) PackageList() []string {
 	return packages
 }
 
-func (w Workspace) LoadPackageManifest(packageName string) (*BuildInstructions, error) {
-	instructions := BuildInstructions{}
+func (w Workspace) LoadPackageManifest(packageName string) (*BuildManifest, error) {
+	manifest := BuildManifest{}
 	buildYaml := filepath.Join(w.PackagePath(packageName), MANIFEST_FILE)
 	if _, err := os.Stat(buildYaml); os.IsNotExist(err) {
 		return nil, fmt.Errorf("Can't load %s: %v", MANIFEST_FILE, err)
 	}
 
 	buildyaml, _ := ioutil.ReadFile(buildYaml)
-	err := yaml.Unmarshal([]byte(buildyaml), &instructions)
+	err := yaml.Unmarshal([]byte(buildyaml), &manifest)
 	if err != nil {
 		return nil, fmt.Errorf("Error loading %s for %s: %v", MANIFEST_FILE, packageName, err)
 	}
 
-	return &instructions, nil
+	return &manifest, nil
 
 }
 
-func (w Workspace) SetupDependencies(dependencies []string) error {
-	for _, toolSpec := range dependencies {
+func (w Workspace) SetupDependencies(dependencies []string) ([]CommandTimer, error) {
+	setupTimers := make([]CommandTimer, 0)
 
+	for _, toolSpec := range dependencies {
 		var bt BuildTool
 		parts := strings.Split(toolSpec, ":")
 		toolType := parts[0]
 
-		fmt.Printf("Would use tool: %s\n", toolSpec)
+		fmt.Printf("Configuring build tool: %s\n", toolSpec)
 
 		switch toolType {
 		case "r":
@@ -288,31 +290,44 @@ func (w Workspace) SetupDependencies(dependencies []string) error {
 			bt = NewHomebrewBuildTool(toolSpec)
 		default:
 			fmt.Printf("Ignoring unknown build tool: %s\n", toolSpec)
-			return nil
 		}
 
 		// Install if needed
+		startTime := time.Now()
 		if err := bt.Install(); err != nil {
-			return fmt.Errorf("Unable to install tool %s: %v", toolSpec, err)
+			return setupTimers, fmt.Errorf("Unable to install tool %s: %v", toolSpec, err)
 		}
+		endTime := time.Now()
+		setupTimers = append(setupTimers, CommandTimer{
+			Command:   fmt.Sprintf("%s [install]", toolSpec),
+			StartTime: startTime,
+			EndTime:   endTime,
+		})
 
 		// Setup build tool (paths, env, etc)
+		startTime = time.Now()
 		if err := bt.Setup(); err != nil {
-			return fmt.Errorf("Unable to setup tool %s: %v", toolSpec, err)
+			return setupTimers, fmt.Errorf("Unable to setup tool %s: %v", toolSpec, err)
 		}
+		endTime = time.Now()
+		setupTimers = append(setupTimers, CommandTimer{
+			Command:   fmt.Sprintf("%s [setup]", toolSpec),
+			StartTime: startTime,
+			EndTime:   endTime,
+		})
 
 	}
 
-	return nil
+	return setupTimers, nil
 
 }
 
-func (w Workspace) SetupBuildDependencies(instructions BuildInstructions) error {
-	return w.SetupDependencies(instructions.Dependencies.Build)
+func (w Workspace) SetupBuildDependencies(manifest BuildManifest) ([]CommandTimer, error) {
+	return w.SetupDependencies(manifest.Dependencies.Build)
 }
 
-func (w Workspace) SetupRuntimeDependencies(instructions BuildInstructions) error {
-	return w.SetupDependencies(instructions.Dependencies.Runtime)
+func (w Workspace) SetupRuntimeDependencies(manifest BuildManifest) ([]CommandTimer, error) {
+	return w.SetupDependencies(manifest.Dependencies.Runtime)
 }
 
 func (w Workspace) BuildRoot() string {
@@ -339,7 +354,7 @@ func (w Workspace) BuildRoot() string {
 		workspaceDir = w.Path
 	}
 
-	fmt.Printf("Workspace-related things will be in %s\n", workspaceDir)
+	fmt.Printf("Workspace root in %s\n", workspaceDir)
 	MkdirAsNeeded(workspaceDir)
 
 	buildDir := "build"

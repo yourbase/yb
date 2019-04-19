@@ -17,7 +17,6 @@ type BuildTool interface {
 	Install() error
 	Setup() error
 	Version() string
-	Instructions() BuildInstructions
 }
 
 func ToolsDir() string {

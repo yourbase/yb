@@ -2,13 +2,13 @@ package main
 
 const MANIFEST_FILE = ".yourbase.yml"
 
-type BuildInstructions struct {
-	Dependencies DependencySet         `yaml:"dependencies"`
-	Sandbox      bool                  `yaml:"sandbox"`
-	BuildTargets map[string]BuildPhase `yaml:"targets"`
-	Build        BuildPhase            `yaml:"build"`
-	Exec         ExecPhase             `yaml:"exec"`
-	Package      PackagePhase          `yaml:"package"`
+type BuildManifest struct {
+	Dependencies DependencySet `yaml:"dependencies"`
+	Sandbox      bool          `yaml:"sandbox"`
+	BuildTargets []BuildTarget `yaml:"build_targets"`
+	Build        BuildTarget   `yaml:"build"`
+	Exec         ExecPhase     `yaml:"exec"`
+	Package      PackagePhase  `yaml:"package"`
 }
 
 type PackagePhase struct {
@@ -21,13 +21,15 @@ type DependencySet struct {
 }
 
 type ExecPhase struct {
+	Name         string              `yaml:"name"`
+	Dependencies ExecDependencies    `yaml:"dependencies"`
 	Container    ContainerDefinition `yaml:"container"`
 	Commands     []string            `yaml:"commands"`
 	Ports        []string            `yaml:"ports"`
 	Environment  map[string][]string `yaml:"environment"`
-	Dependencies ExecDependencies    `yaml:"dependencies"`
 	LogFiles     []string            `yaml:"logfiles"`
 	Sandbox      bool                `yaml:"sandbox"`
+	BuildFirst   []string            `yaml:"build_first"`
 }
 
 type ExecDependencies struct {
@@ -42,15 +44,17 @@ type ContainerDefinition struct {
 	Command     string   `yaml:"command"`
 }
 
-type BuildPhase struct {
+type BuildTarget struct {
+	Name        string              `yaml:"name"`
 	Container   ContainerDefinition `yaml:"container"`
 	Tools       []string            `yaml:"tools"`
 	Commands    []string            `yaml:"commands"`
 	Artifacts   []string            `yaml:"artifacts"`
 	Sandbox     bool                `yaml:"sandbox"`
 	Root        string              `yaml:"root"`
-	Environment []string            `yaml:"env"`
+	Environment []string            `yaml:"environment"`
 	Tags        map[string]string   `yaml:"tags"`
+	BuildAfter  []string            `yaml:"build_after"`
 }
 
 // API Responses -- use Swagger instead, this is silly

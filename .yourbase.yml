@@ -4,13 +4,14 @@ dependencies:
   runtime:
     - go:1.12
 
-targets:
-  default:
-    tags:
-      os: darwin
+build_targets:
+  - name: default
     commands:
       - go build
-  linux:
+
+  - name: linux
+    build_after: 
+      - default
     tags:
       os: linux
     environment: 
@@ -18,6 +19,15 @@ targets:
       - GOARCH=amd64
     commands:
       - go build -o artificer-linux-amd64
+
+  - name: darwin
+    tags:
+      os: darwin
+    environment:
+      - GOOS=darwin
+      - GOARCH=amd64
+    commands:
+      - go build -o artificer-darwin-amd64
 
 exec:
   environment:

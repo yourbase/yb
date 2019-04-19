@@ -22,6 +22,32 @@ type buildCmd struct {
 	NoContainer bool
 }
 
+type BuildConfiguration struct {
+	Target           BuildTarget
+	TargetDir        string
+	Sandboxed        bool
+	ExecPrefix       string
+	ForceNoContainer bool
+	Workspace        Workspace
+	TargetPackage    string
+}
+
+type BuildLog struct {
+	Contents string `json:"contents"`
+	UUID     string `json:"uuid"`
+}
+
+type CommandTimer struct {
+	Command   string
+	StartTime time.Time
+	EndTime   time.Time
+}
+
+type TargetTimer struct {
+	Name   string
+	Timers []CommandTimer
+}
+
 func (*buildCmd) Name() string     { return "build" }
 func (*buildCmd) Synopsis() string { return "Build the workspace" }
 func (*buildCmd) Usage() string {
@@ -57,6 +83,7 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	go func() {
 		for {
 			io.Copy(outputs, r)
+			time.Sleep(100 * time.Millisecond)
 		}
 	}()
 
@@ -64,7 +91,7 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	defer r.Close()
 
 	workspace := LoadWorkspace()
-	buildTarget := "default"
+	buildTargetName := "default"
 	var targetPackage string
 
 	if PathExists(MANIFEST_FILE) {
@@ -76,79 +103,74 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	}
 
 	if len(f.Args()) > 0 {
-		buildTarget = f.Args()[0]
+		buildTargetName = f.Args()[0]
 	}
 
 	targetDir := workspace.PackagePath(targetPackage)
 
 	fmt.Printf("Building target package %s in %s...\n", targetPackage, targetDir)
-	instructions, err := workspace.LoadPackageManifest(targetPackage)
+	manifest, err := workspace.LoadPackageManifest(targetPackage)
 
 	if err != nil {
-		fmt.Printf("Unable to load package manifest for %s: %v\n", targetPackage, err)
+		fmt.Fprintf(os.Stderr, "Unable to load package manifest for %s: %v\n", targetPackage, err)
 		return subcommands.ExitFailure
 	}
 
-	fmt.Printf("Working in %s...\n", targetDir)
+	setupTimer, err := SetupBuildDependencies(workspace, *manifest)
 
-	var target BuildPhase
-	sandboxed := instructions.Sandbox || target.Sandbox
-
-	if len(instructions.BuildTargets) == 0 {
-		target = instructions.Build
-		if len(target.Commands) == 0 {
-			fmt.Printf("Default build command has no steps and no targets described\n")
-		}
-	} else {
-		ok := false
-		if target, ok = instructions.BuildTargets[buildTarget]; !ok {
-			targets := make([]string, 0, len(instructions.BuildTargets))
-			for t := range instructions.BuildTargets {
-				targets = append(targets, t)
-			}
-
-			fmt.Printf("Build target %s specified but it doesn't exist!\n")
-			fmt.Printf("Valid build targets: %s\n", strings.Join(targets, ", "))
-		}
+	if err != nil {
+		fmt.Printf("Error setting up dependencies: %v\n", err)
+		return subcommands.ExitFailure
 	}
 
-	// Ensure build deps are :+1:
-	workspace.SetupBuildDependencies(*instructions)
-
-	// Set any environment variables as the last thing (override things we do in case people really want to do this)
-	// XXX: Should we though?
-	for _, envString := range target.Environment {
-		parts := strings.Split(envString, "=")
-		key := parts[0]
-		value := parts[1]
-		value = strings.Replace(value, "{PKGDIR}", targetDir, -1)
-		fmt.Printf("Setting %s = %s\n", key, value)
-		os.Setenv(key, value)
-	}
-
-	config := BuildConfiguration{
-		Target:     target,
-		Sandboxed:  sandboxed,
-		ExecPrefix: b.ExecPrefix,
-		TargetDir:  targetDir,
-	}
-
-	var stepTimes []CommandTimer
+	var targetTimers []TargetTimer
 	var buildError error
 
-	if target.Container.Image != "" && !b.NoContainer {
-		fmt.Println("Executing build steps in container")
-		containerOpts := BuildContainerOpts{
-			ContainerOpts: target.Container,
-			PackageName:   targetPackage,
-			Workspace:     workspace,
+	targetTimers = append(targetTimers, setupTimer)
+
+	config := BuildConfiguration{
+		ExecPrefix:       b.ExecPrefix,
+		TargetDir:        targetDir,
+		ForceNoContainer: b.NoContainer,
+	}
+
+	// No targets, look for default build stanza
+	if len(manifest.BuildTargets) == 0 {
+		target := manifest.Build
+		if len(target.Commands) == 0 {
+			buildError = fmt.Errorf("Default build command has no steps and no targets described\n")
+		} else {
+			fmt.Printf("Building target %s in %s...\n", buildTargetName, targetDir)
+			config.Target = target
+			config.Sandboxed = manifest.IsTargetSandboxed(target)
+			stepTimers, err := DoBuild(config)
+			buildError = err
+			targetTimers = append(targetTimers, TargetTimer{Name: target.Name, Timers: stepTimers})
+		}
+	} else {
+		// Named target, look for that and resolve it
+		buildTargets, err := manifest.ResolveBuildTargets(buildTargetName)
+
+		if err != nil {
+			fmt.Println(err)
+			fmt.Printf("Valid build targets: %s\n", strings.Join(manifest.BuildTargetList(), ", "))
+			return subcommands.ExitFailure
 		}
 
-		stepTimes, buildError = RunCommandsInContainer(config, containerOpts)
-	} else {
-		// Do the commands
-		fmt.Println("Executing build steps")
-		stepTimes, buildError = RunCommands(config)
+		fmt.Printf("Going to build targets in the following order: \n")
+		for _, target := range buildTargets {
+			fmt.Printf("   - %s\n", target.Name)
+		}
+
+		var buildStepTimers []CommandTimer
+		for _, target := range buildTargets {
+			if buildError == nil {
+				config.Target = target
+				config.Sandboxed = manifest.IsTargetSandboxed(target)
+				buildStepTimers, buildError = DoBuild(config)
+				targetTimers = append(targetTimers, TargetTimer{Name: target.Name, Timers: buildStepTimers})
+			}
+		}
 	}
 
 	endTime := time.Now()
@@ -156,24 +178,28 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 
 	fmt.Printf("\nBuild finished at %s, taking %s\n", endTime.Format(TIME_FORMAT), buildTime)
 	fmt.Println()
-	fmt.Printf("%15s%15s%15s   %s\n", "Start", "End", "Elapsed", "Command")
-	for _, step := range stepTimes {
-		elapsed := step.EndTime.Sub(step.StartTime)
-		fmt.Printf("%15s%15s%15s   %s\n",
-			step.StartTime.Format(TIME_FORMAT),
-			step.EndTime.Format(TIME_FORMAT),
-			elapsed,
-			step.Command)
+	fmt.Printf("%15s%15s%15s%24s   %s\n", "Start", "End", "Elapsed", "Target", "Command")
+	for _, timer := range targetTimers {
+		for _, step := range timer.Timers {
+			elapsed := step.EndTime.Sub(step.StartTime)
+			fmt.Printf("%15s%15s%15s%24s   %s\n",
+				step.StartTime.Format(TIME_FORMAT),
+				step.EndTime.Format(TIME_FORMAT),
+				elapsed,
+				timer.Name,
+				step.Command)
+		}
 	}
 	fmt.Printf("\n%15s%15s%15s   %s\n", "", "", buildTime, "TOTAL")
 
 	if buildError != nil {
 		fmt.Println("\n\n -- BUILD FAILED -- ")
+		fmt.Printf("\nBuild terminated with the following error: %v\n", buildError)
 	} else {
 		fmt.Println("\n\n -- BUILD SUCCEEDED -- ")
 	}
 
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(10 * time.Millisecond)
 	// Reset stdout
 	//os.Stdout = realStdout
 
@@ -187,14 +213,61 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 
 	// No errors, :+1:
 	return subcommands.ExitSuccess
-
 }
 
-type BuildConfiguration struct {
-	Target     BuildPhase
-	TargetDir  string
-	Sandboxed  bool
-	ExecPrefix string
+func DoBuild(config BuildConfiguration) ([]CommandTimer, error) {
+	target := config.Target
+	targetDir := config.TargetDir
+	targetPackage := config.TargetPackage
+	workspace := config.Workspace
+
+	fmt.Printf("\n\n===  %s === \n", target.Name)
+
+	// Set any environment variables as the last thing (override things we do in case people really want to do this)
+	// XXX: Should we though?
+	// XXX: In a perfect world we should force sandboxing by resetting all environment variables
+	// XXX: Saving old state and resetting it after for now
+	fmt.Printf("Setting target environment variables...\n")
+	oldEnvironment := make(map[string]string)
+	for _, envString := range target.Environment {
+		parts := strings.Split(envString, "=")
+		key := parts[0]
+		value := parts[1]
+		oldEnvironment[key] = os.Getenv(key)
+		value = strings.Replace(value, "{PKGDIR}", targetDir, -1)
+		fmt.Printf("  - %s = %s\n", key, value)
+		os.Setenv(key, value)
+	}
+
+	var stepTimers []CommandTimer
+	var buildError error
+
+	if target.Container.Image != "" && !config.ForceNoContainer {
+		fmt.Println("Executing build steps in container")
+		containerOpts := BuildContainerOpts{
+			ContainerOpts: target.Container,
+			PackageName:   targetPackage,
+			Workspace:     workspace,
+		}
+
+		stepTimers, buildError = RunCommandsInContainer(config, containerOpts)
+	} else {
+		// Do the commands
+		fmt.Println("Executing build steps...\n")
+		stepTimers, buildError = RunCommands(config)
+	}
+
+	fmt.Printf("\nResetting target environment variables...\n")
+	for _, envString := range target.Environment {
+		parts := strings.Split(envString, "=")
+		key := parts[0]
+		value := oldEnvironment[key]
+		fmt.Printf("  - %s = %s\n", key, value)
+		os.Setenv(key, value)
+	}
+
+	return stepTimers, buildError
+
 }
 
 func RunCommandsInContainer(config BuildConfiguration, containerOpts BuildContainerOpts) ([]CommandTimer, error) {
@@ -371,13 +444,21 @@ func UploadBuildLogsToAPI(buf *bytes.Buffer) {
 
 }
 
-type BuildLog struct {
-	Contents string `json:"contents"`
-	UUID     string `json:"uuid"`
-}
+func SetupBuildDependencies(workspace Workspace, manifest BuildManifest) (TargetTimer, error) {
 
-type CommandTimer struct {
-	Command   string
-	StartTime time.Time
-	EndTime   time.Time
+	startTime := time.Now()
+	// Ensure build deps are :+1:
+	stepTimers, err := workspace.SetupBuildDependencies(manifest)
+
+	endTime := time.Now()
+	elapsedTime := endTime.Sub(startTime)
+
+	fmt.Printf("\nDependency setup happened in %s\n\n", elapsedTime)
+
+	setupTimer := TargetTimer{
+		Name:   "dependency_setup",
+		Timers: stepTimers,
+	}
+
+	return setupTimer, err
 }
