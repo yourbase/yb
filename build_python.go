@@ -3,12 +3,12 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
-	"os/exec"
 
-	"gopkg.in/src-d/go-git.v4"
 	"github.com/matishsiao/goInfo"
+	"gopkg.in/src-d/go-git.v4"
 )
 
 type PythonBuildTool struct {
@@ -64,7 +64,7 @@ func (bt PythonBuildTool) Install() error {
 	}
 
 	if _, err := os.Stat(pythonVersionDir); err == nil {
-		fmt.Printf("Python %s installed in %s", bt.Version(), pythonVersionDir)
+		fmt.Printf("Python %s installed in %s\n", bt.Version(), pythonVersionDir)
 	} else {
 		os.Setenv("PYENV_ROOT", pyenvDir)
 		PrependToPath(filepath.Join(pyenvDir, "bin"))
@@ -98,8 +98,9 @@ func (bt PythonBuildTool) Install() error {
 		fmt.Printf("Virtualenv for %s exists in %s\n", bt.Version(), virtualenvDir)
 	} else {
 		fmt.Println("Creating virtualenv...")
+		MkdirAsNeeded(virtualenvDir)
 		pythonBinPath := filepath.Join(pythonVersionDir, "bin", "python")
-		cmd := fmt.Sprintf("virtualenv -p %s %s", pythonBinPath, virtualenvDir)
+		cmd := fmt.Sprintf("%s -p %s %s", virtualenvBin, pythonBinPath, virtualenvDir)
 		ExecToStdout(cmd, buildDir)
 	}
 
@@ -118,9 +119,9 @@ func (bt PythonBuildTool) Setup() error {
 
 }
 
-func (bt PythonBuildTool) InstallPlatformDependencies() error { 
+func (bt PythonBuildTool) InstallPlatformDependencies() error {
 	gi := goInfo.GetInfo()
-	if gi.GoOS == "darwin" { 
+	if gi.GoOS == "darwin" {
 		if strings.HasPrefix(gi.Core, "18.") {
 			// Need to install the headers on Mojave
 			if !PathExists("/usr/include/zlib.h") {
