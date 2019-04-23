@@ -9,6 +9,11 @@ import (
 	"github.com/johnewart/subcommands"
 )
 
+var (
+	version string
+	date    string
+)
+
 func main() {
 	cmdr := subcommands.NewCommander(flag.CommandLine, path.Base(os.Args[0]))
 	cmdr.Register(cmdr.HelpCommand(), "")
@@ -24,7 +29,7 @@ func main() {
 	cmdr.Register(&loginCmd{}, "")
 	cmdr.Register(&platformCmd{}, "")
 	cmdr.Register(&updateCmd{}, "")
-	//subcommands.Register(&workspaceCreateCmd{}, "workspace")
+	cmdr.Register(&versionCmd{}, "")
 
 	flag.Parse()
 	ctx := context.Background()

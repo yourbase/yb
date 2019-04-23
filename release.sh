@@ -11,4 +11,6 @@ equinox release \
         --platforms="darwin_amd64 linux_amd64" \
         --signing-key=${HOME}/equinox.key  \
         --app="$APP" \
-        --token="$(cat ${HOME}/equinox.token)" "github.com/microclusters/${PROJECT}"
+        --token="$(cat ${HOME}/equinox.token)" \
+	"github.com/microclusters/${PROJECT}" \
+	-ldflags "-X main.version=$VERSION -X 'main.date=$(date)'"
