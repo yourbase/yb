@@ -12,8 +12,6 @@ equinox release \
         --signing-key=${HOME}/equinox.key  \
         --app="$APP" \
         --token="$(cat ${HOME}/equinox.token)" \
+	-- \
+	-ldflags "-X main.version=$VERSION -X 'main.date=$(date)'" \
 	"github.com/microclusters/${PROJECT}"
-
-	# TODO: re-enable once equinox supports this.
-	#"github.com/microclusters/${PROJECT}" \
-	#-ldflags "-X main.version=$VERSION -X 'main.date=$(date)'"
