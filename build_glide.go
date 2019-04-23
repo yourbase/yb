@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/johnewart/archiver"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/johnewart/archiver"
 )
 
 var GLIDE_DIST_MIRROR = "https://github.com/Masterminds/glide/releases/download/v{{.Version}}/glide-v{{.Version}}-{{.OS}}-{{.Arch}}.tar.gz"

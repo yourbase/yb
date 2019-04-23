@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 
-	"github.com/nu7hatch/gouuid"
 	"log"
+
+	"github.com/nu7hatch/gouuid"
 )
 
 type BuildContext struct {

@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/johnewart/archiver"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/johnewart/archiver"
 )
 
 var GRADLE_DIST_MIRROR = "https://services.gradle.org/distributions/gradle-{{.Version}}-bin.zip"

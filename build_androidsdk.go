@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/johnewart/archiver"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/johnewart/archiver"
 )
 
 var LATEST_VERSION = "4333796"

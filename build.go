@@ -6,13 +6,14 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/johnewart/subcommands"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/johnewart/subcommands"
 )
 
 const TIME_FORMAT = "15:04:05 MST"

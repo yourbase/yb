@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/johnewart/archiver"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/johnewart/archiver"
 )
 
 //https://dl.google.com/go/go1.11.5.linux-amd64.tar.gz

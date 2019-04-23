@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/johnewart/archiver"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/johnewart/archiver"
 )
 
 var NODE_DIST_MIRROR = "https://nodejs.org/dist"
