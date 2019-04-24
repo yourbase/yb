@@ -53,7 +53,7 @@ func (b *runCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	}
 
 	fmt.Printf("Setting up dependencies...\n")
-	workspace.SetupBuildDependencies(*instructions)
+	workspace.SetupRuntimeDependencies(*instructions)
 
 	fmt.Printf("Setting environment variables...\n")
 	for _, property := range instructions.Exec.Environment["default"] {

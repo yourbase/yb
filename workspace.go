@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/johnewart/subcommands"
 	"gopkg.in/src-d/go-git.v4"
+	"gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
@@ -80,6 +81,11 @@ func (w *workspaceCreateCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...in
 
 // ADD PACKAGE
 type workspaceAddCmd struct {
+	Branch    string
+	Tag       string
+	Commit    string
+	OneBranch bool
+	Depth     int
 }
 
 func (*workspaceAddCmd) Name() string     { return "add" }
@@ -88,7 +94,13 @@ func (*workspaceAddCmd) Usage() string {
 	return `add <org/repository>`
 }
 
-func (w *workspaceAddCmd) SetFlags(f *flag.FlagSet) {}
+func (w *workspaceAddCmd) SetFlags(f *flag.FlagSet) {
+	f.StringVar(&w.Branch, "branch", "", "Use a specific branch when cloning (default is master)")
+	f.StringVar(&w.Tag, "tag", "", "Check out a specific tag")
+	f.StringVar(&w.Commit, "commit", "", "Check out a specific commit")
+	f.BoolVar(&w.OneBranch, "only", false, "Only clone the branch specified (only useful with -branch, -tag or -commit)")
+	f.IntVar(&w.Depth, "depth", 0, "Number of commits to fetch")
+}
 
 func (w *workspaceAddCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 
@@ -104,13 +116,32 @@ func (w *workspaceAddCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...int
 	}
 
 	fmt.Printf("Cloning %s into %s...\n", repository, cloneDir)
+
+	refName := "refs/heads/master"
+
+	if w.Branch != "" {
+		fmt.Printf("Using branch %s\n", w.Branch)
+		refName = fmt.Sprintf("refs/heads/%s", w.Branch)
+	}
+
+	if w.Tag != "" {
+		fmt.Printf("Using tag %s\n", w.Tag)
+		refName = fmt.Sprintf("refs/tags/%s", w.Tag)
+	}
+
+	//TODO: warn if they specified more than one, use the most specific for now
+
 	cloneOpts := git.CloneOptions{
-		URL:      repositoryURL,
-		Progress: nil,
+		URL:           repositoryURL,
+		Progress:      nil,
+		ReferenceName: plumbing.ReferenceName(refName),
+		SingleBranch:  w.OneBranch,
+		Depth:         w.Depth,
 	}
 	_, err := git.PlainClone(cloneDir, false, &cloneOpts)
 
 	if err != nil {
+		fmt.Printf("Error: %v\n", err)
 		fmt.Println("Authentication required")
 
 		// Try again with HTTP Auth
