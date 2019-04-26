@@ -22,7 +22,10 @@ trap "cleanup" INT TERM EXIT
 KEY_FILE="${tmpdir}"
 echo "${RELEASE_KEY}" > "${KEY_FILE}"
 
-equinox release \
+wget https://bin.equinox.io/c/mBWdkfai63v/release-tool-stable-linux-amd64.tgz
+tar zxvf release-tool-stable-linux-amd64.tgz
+
+./equinox release \
         --version=$VERSION \
         --platforms="darwin_amd64 linux_amd64" \
         --signing-key="${KEY_FILE}"  \
