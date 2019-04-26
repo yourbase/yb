@@ -5,8 +5,8 @@ set -eux
 APP="app_gtQEt1zkGMj"
 PROJECT="artificer"
 VERSION="$(echo $YB_GIT_BRANCH | sed -e 's|refs/tags/||g')"
-TOKEN="${BUILDAGENT_TOKEN}"
-RELEASE_KEY="${BUILDAGENT_RELEASE_KEY}"
+TOKEN="${RELEASE_TOKEN}"
+RELEASE_KEY="${RELEASE_KEY}"
 
 umask 077
 
