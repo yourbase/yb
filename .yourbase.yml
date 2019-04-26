@@ -1,15 +1,3 @@
-ci:
-  builds:
-    - name: test_build
-      build_target: default
-
-    - name: build_darwin
-      build_target: darwin
-      conditions:
-        branch:
-          in: 
-            - osx
-
 dependencies:
   build:
     - go:1.12
@@ -51,3 +39,20 @@ exec:
   commands:
     - ./artificer build
 
+ci:
+  builds:
+    - name: test_build
+      build_target: default
+
+    - name: build_darwin
+      build_target: darwin
+      conditions:
+        branch:
+          in:
+            - osx
+
+    - name: release
+      build_target: release
+      conditions:
+        branch:
+          tag: true
