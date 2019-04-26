@@ -9,6 +9,12 @@ build_targets:
     commands:
       - go build
 
+  - name: release
+    build_after:
+      - default
+    commands:
+      - bash release.sh 
+
   - name: linux
     build_after: 
       - default
