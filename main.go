@@ -3,10 +3,9 @@ package main
 import (
 	"context"
 	"flag"
+	"github.com/johnewart/subcommands"
 	"os"
 	"path"
-
-	"github.com/johnewart/subcommands"
 )
 
 var (
@@ -15,6 +14,7 @@ var (
 )
 
 func main() {
+
 	cmdr := subcommands.NewCommander(flag.CommandLine, path.Base(os.Args[0]))
 	cmdr.Register(cmdr.HelpCommand(), "")
 	cmdr.Register(cmdr.FlagsCommand(), "")

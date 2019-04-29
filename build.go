@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/matishsiao/goInfo"
 	"io"
 	"io/ioutil"
 	"os"
@@ -64,6 +65,10 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 
 	startTime := time.Now()
 
+	fmt.Println(" === BUILD HOST ===\n")
+	gi := goInfo.GetInfo()
+	gi.VarDump()
+
 	fmt.Printf("Build started at %s\n", startTime.Format(TIME_FORMAT))
 	realStdout := os.Stdout
 	r, w, _ := os.Pipe()
@@ -117,6 +122,8 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		return subcommands.ExitFailure
 	}
 
+	//workspace.SetupEnv()
+	fmt.Println("\n\n === ENVIRONMENT SETUP ===\n")
 	setupTimer, err := SetupBuildDependencies(workspace, *manifest)
 
 	if err != nil {
@@ -127,6 +134,7 @@ func (b *buildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	var targetTimers []TargetTimer
 	var buildError error
 
+	fmt.Println("\n\n === BUILD ===\n")
 	targetTimers = append(targetTimers, setupTimer)
 
 	config := BuildConfiguration{
@@ -222,7 +230,7 @@ func DoBuild(config BuildConfiguration) ([]CommandTimer, error) {
 	targetPackage := config.TargetPackage
 	workspace := config.Workspace
 
-	fmt.Printf("\n\n===  %s === \n", target.Name)
+	fmt.Printf("\n\n -- Build target: %s -- \n\n", target.Name)
 
 	// Set any environment variables as the last thing (override things we do in case people really want to do this)
 	// XXX: Should we though?
