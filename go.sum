@@ -84,6 +84,8 @@ github.com/matishsiao/goInfo v0.0.0-20170803142006-617e6440957e h1:Y+GY+bv5vf1gs
 github.com/matishsiao/goInfo v0.0.0-20170803142006-617e6440957e/go.mod h1:yLZrFIhv+Z20hxHvcZpEyKVQp9HMsOJkXAxx7yDqtvg=
 github.com/mholt/archiver v3.1.1+incompatible h1:1dCVxuqs0dJseYEhi5pl7MYPH9zDa1wBi7mF09cbNkU=
 github.com/mholt/archiver v3.1.1+incompatible/go.mod h1:Dh2dOXnSdiLxRiPoVfIr/fI1TwETms9B8CTWfeh7ROU=
+github.com/microclusters/artificer v0.0.0-20190429175446-9aebbd1450df h1:gXOXimTJqZ4CBDXdCwIH+AaO7MokULVWmpxdGF7spJI=
+github.com/microclusters/artificer v0.0.0-20190429175446-9aebbd1450df/go.mod h1:zcU6tgydrys+FgU7pssxkzVoICLpXNJcOYlcHKRUe24=
 github.com/mitchellh/go-homedir v1.0.0 h1:vKb8ShqSby24Yrqr/yDYkuFz8d0WUjys40rvnGC8aR0=
 github.com/mitchellh/go-homedir v1.0.0/go.mod h1:SfyaCUpYCn1Vlf4IUYiD9fPX4A5wJrkLzIz1N1q0pr0=
 github.com/nicksnyder/go-i18n v1.10.0/go.mod h1:HrK7VCrbOvQoUAQ7Vpy7i87N7JZZZ7R2xBGjv0j365Q=

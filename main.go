@@ -6,6 +6,8 @@ import (
 	"github.com/johnewart/subcommands"
 	"os"
 	"path"
+
+	. "github.com/yourbase/yb/cli"
 )
 
 var (
@@ -19,17 +21,17 @@ func main() {
 	cmdr.Register(cmdr.HelpCommand(), "")
 	cmdr.Register(cmdr.FlagsCommand(), "")
 	cmdr.Register(cmdr.CommandsCommand(), "")
-	cmdr.Register(&buildCmd{}, "")
-	cmdr.Register(&execCmd{}, "")
-	cmdr.Register(&runCmd{}, "")
-	cmdr.Register(&workspaceCmd{}, "")
-	cmdr.Register(&remoteCmd{}, "")
-	cmdr.Register(&packageCmd{}, "")
-	cmdr.Register(&patchCmd{}, "")
-	cmdr.Register(&loginCmd{}, "")
-	cmdr.Register(&platformCmd{}, "")
-	cmdr.Register(&updateCmd{}, "")
-	cmdr.Register(&versionCmd{}, "")
+	cmdr.Register(&BuildCmd{}, "")
+	cmdr.Register(&ExecCmd{}, "")
+	cmdr.Register(&RunCmd{}, "")
+	cmdr.Register(&WorkspaceCmd{}, "")
+	cmdr.Register(&RemoteCmd{}, "")
+	cmdr.Register(&PackageCmd{}, "")
+	cmdr.Register(&PatchCmd{}, "")
+	cmdr.Register(&LoginCmd{}, "")
+	cmdr.Register(&PlatformCmd{}, "")
+	cmdr.Register(&UpdateCmd{}, "")
+	cmdr.Register(&VersionCmd{Version: version}, "")
 
 	flag.Parse()
 	ctx := context.Background()
