@@ -337,8 +337,8 @@ func FindWorkspaceRoot() (string, error) {
 		return "", err
 	}
 
-	// No config in the parent? Use the packageDir
-	return packageDir, nil
+	// No config in the parent of the package? No workspace!
+	return "", fmt.Errorf("No workspace root found nearby.")
 }
 
 func FindFileUpTree(filename string) (string, error) {
