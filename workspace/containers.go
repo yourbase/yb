@@ -268,11 +268,11 @@ func (b BuildContainer) ExecToStdout(cmdString string) error {
 	client := NewDockerClient()
 
 	fmt.Printf("Using API Version: %s\n", client.ServerAPIVersion())
-	cmdArray := strings.Split(cmdString, " ")
+	shellCmd := []string{"sh", "-c", cmdString}
 
 	execOpts := docker.CreateExecOptions{
 		Env:          b.Options.ContainerOpts.Environment,
-		Cmd:          cmdArray,
+		Cmd:          shellCmd,
 		AttachStdout: true,
 		AttachStderr: true,
 		Container:    b.Id,
