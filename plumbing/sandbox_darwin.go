@@ -1,10 +1,11 @@
 package plumbing
 
+/*
 import (
-  "fmt"
-  "io/ioutil"
-  "os"
-)
+	"fmt"
+	"io/ioutil"
+	"os"
+)*/
 
 const SANDBOX_TEMPLATE = `
 (version 1) 
@@ -30,31 +31,36 @@ const SANDBOX_TEMPLATE = `
 ;; If your MyApp requires network access you can grant it here:
 (allow network*)
 `
+
 type SandboxParameters struct {
-  WorkspacePath        string
-  ToolsDir      string
+	WorkspacePath string
+	ToolsDir      string
 }
 
-func ExecInSandbox(command string, workingDir string) error {		
-  workspace := LoadWorkspace()
-  sandboxFile, err := ioutil.TempFile("", "sandbox-*") 
-  defer os.Remove(sandboxFile.Name())
+func ExecInSandbox(command string, workingDir string) error {
+	/* Temporarily disabled
+	workspace := LoadWorkspace()
+	sandboxFile, err := ioutil.TempFile("", "sandbox-*")
+	defer os.Remove(sandboxFile.Name())
 
-  sandboxParams := SandboxParameters{
-                         WorkspacePath: workspace.Path, 
-                         ToolsDir: ToolsDir(),
-                   }
+	sandboxParams := SandboxParameters{
+		WorkspacePath: workspace.Path,
+		ToolsDir:      ToolsDir(),
+	}
 
-  sandboxContents, err := TemplateToString(SANDBOX_TEMPLATE, sandboxParams) 
-  if err != nil { 
-    return err
-  }
+	sandboxContents, err := TemplateToString(SANDBOX_TEMPLATE, sandboxParams)
+	if err != nil {
+		return err
+	}
 
-  _, err = sandboxFile.WriteString(sandboxContents)
-  if err != nil {
-    return err 
-  }
-  sandboxFile.Close()
-  sandboxedCommand := fmt.Sprintf("sandbox-exec -f %s %s", sandboxFile.Name(), command)
-  return ExecToStdout(sandboxedCommand, workingDir)
+	_, err = sandboxFile.WriteString(sandboxContents)
+	if err != nil {
+		return err
+	}
+	sandboxFile.Close()
+	sandboxedCommand := fmt.Sprintf("sandbox-exec -f %s %s", sandboxFile.Name(), command)
+	return ExecToStdout(sandboxedCommand, workingDir)
+	*/
+
+	return ExecToStdout(command, workingDir)
 }
