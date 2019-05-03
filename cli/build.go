@@ -128,7 +128,7 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 
 	targetDir := targetPackage.Path
 
-	fmt.Printf("Building target package %s in %s...\n", targetPackage, targetDir)
+	fmt.Printf("Building target package %s in %s...\n", targetPackage.Name, targetDir)
 	manifest := targetPackage.Manifest
 
 	//workspace.SetupEnv()
