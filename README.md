@@ -1,4 +1,4 @@
-# YourBase CLI
+# YourBase CLI 
 
 A build tool that makes working on projects much more delightful. Stop worrying
 about dependencies.
@@ -15,3 +15,5 @@ about dependencies.
 * `git clone https://github.com/johnewart/simple-java-app.git`
 * `cd simple-java-app`
 * `yb build`
+
+# Magic
