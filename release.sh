@@ -3,7 +3,7 @@
 set -eux
 
 APP="app_gtQEt1zkGMj"
-PROJECT="artificer"
+PROJECT="yb"
 VERSION="$(echo $YB_GIT_BRANCH | sed -e 's|refs/tags/||g')"
 TOKEN="${RELEASE_TOKEN}"
 RELEASE_KEY="${RELEASE_KEY}"
@@ -33,4 +33,4 @@ tar zxvf release-tool-stable-linux-amd64.tgz
         --token="${TOKEN}" \
 	-- \
 	-ldflags "-X main.version=$VERSION -X 'main.date=$(date)'" \
-	"github.com/microclusters/${PROJECT}"
+	"github.com/yourbase/${PROJECT}"
