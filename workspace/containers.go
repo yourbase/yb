@@ -120,16 +120,15 @@ func PullImage(imageLabel string) error {
 	client := NewDockerClient()
 	filters := make(map[string][]string)
 
-	fmt.Printf("Pulling %s if needed...\n", imageLabel)
-	filters["label"] = append(filters["label"], imageLabel)
-
 	parts := strings.Split(imageLabel, ":")
 	imageName := parts[0]
-	imageTag := "latest"
+	imageTag := ""
 
 	if len(parts) == 2 {
 		imageTag = parts[1]
 	}
+
+	fmt.Printf("Pulling %s if needed...\n", imageLabel)
 
 	opts := docker.ListImagesOptions{
 		Filters: filters,
@@ -141,7 +140,19 @@ func PullImage(imageLabel string) error {
 		return err
 	}
 
-	if len(imgs) == 0 {
+	foundImage := false
+	if len(imgs) > 0 {
+		for _, img := range imgs {
+			for _, tag := range img.RepoTags {
+				if tag == imageLabel {
+					fmt.Printf("Found image: %s with tags: %s\n", img.ID, strings.Join(img.RepoTags, ","))
+					foundImage = true
+				}
+			}
+		}
+	}
+
+	if !foundImage {
 		fmt.Printf("Image %s not found, pulling\n", imageLabel)
 
 		pullOpts := docker.PullImageOptions{
