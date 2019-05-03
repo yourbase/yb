@@ -123,7 +123,7 @@ func (bt RubyBuildTool) InstallPlatformDependencies() error {
 		if strings.HasPrefix(gi.Core, "18.") {
 			// Need to install the headers on Mojave
 			if !PathExists("/usr/include/zlib.h") {
-				installCmd := "sudo installer -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg -target /"
+				installCmd := "sudo -S installer -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg -target /"
 				fmt.Println("Going to run: %s\n", installCmd)
 				cmdArgs := strings.Split(installCmd, " ")
 				cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
