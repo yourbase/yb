@@ -309,6 +309,18 @@ func (b BuildContainer) ExecToStdout(cmdString string) error {
 		return err
 	}
 
+	results, err := client.InspectExec(exec.ID)
+	if err != nil {
+		fmt.Printf("Unable to get exec results %s: %v\n", exec.ID, err)
+		return err
+	}
+
+	fmt.Printf("Result status code: %d\n", results.ExitCode)
+	if results.ExitCode != 0 {
+		fmt.Printf("Command failed!\n")
+		return fmt.Errorf("Command failed in container with status code %d", results.ExitCode)
+	}
+
 	return nil
 
 }
