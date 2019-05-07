@@ -62,7 +62,7 @@ func (w Workspace) PackageList() ([]Package, error) {
 			panic(err)
 		}
 		if fi.IsDir() {
-			pkgName := strings.Replace(f, w.Path, "", 1)
+			_, pkgName := filepath.Split(f)
 			pkgPath := f
 			if !strings.HasPrefix(pkgName, ".") {
 				pkg, err := LoadPackage(pkgName, pkgPath)
@@ -136,6 +136,7 @@ func LoadWorkspace() (Workspace, error) {
 		log.Fatalf("Error loading workspace config!")
 	}
 
+	fmt.Printf("Workspace path: %s\n", workspacePath)
 	workspace.Path = workspacePath
 	return workspace, nil
 }
