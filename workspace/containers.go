@@ -276,9 +276,12 @@ func (b BuildContainer) MakeDirectoryInContainer(path string) error {
 }
 
 func (b BuildContainer) ExecToStdout(cmdString string) error {
+	return b.ExecToWriter(cmdString, os.Stdout)
+}
+
+func (b BuildContainer) ExecToWriter(cmdString string, outputSink io.Writer) error {
 	client := NewDockerClient()
 
-	fmt.Printf("Using API Version: %s\n", client.ServerAPIVersion())
 	shellCmd := []string{"sh", "-c", cmdString}
 
 	execOpts := docker.CreateExecOptions{
@@ -293,31 +296,26 @@ func (b BuildContainer) ExecToStdout(cmdString string) error {
 	exec, err := client.CreateExec(execOpts)
 
 	if err != nil {
-		fmt.Printf("Can't create exec: %v\n", err)
-		return err
+		return fmt.Errorf("Can't create exec: %v", err)
 	}
 
 	startOpts := docker.StartExecOptions{
-		OutputStream: os.Stdout,
-		ErrorStream:  os.Stdout,
+		OutputStream: outputSink,
+		ErrorStream:  outputSink,
 	}
 
 	err = client.StartExec(exec.ID, startOpts)
 
 	if err != nil {
-		fmt.Printf("Unable to run exec %s: %v\n", exec.ID, err)
-		return err
+		return fmt.Errorf("Unable to run exec %s: %v\n", exec.ID, err)
 	}
 
 	results, err := client.InspectExec(exec.ID)
 	if err != nil {
-		fmt.Printf("Unable to get exec results %s: %v\n", exec.ID, err)
-		return err
+		return fmt.Errorf("Unable to get exec results %s: %v\n", exec.ID, err)
 	}
 
-	fmt.Printf("Result status code: %d\n", results.ExitCode)
 	if results.ExitCode != 0 {
-		fmt.Printf("Command failed!\n")
 		return fmt.Errorf("Command failed in container with status code %d", results.ExitCode)
 	}
 
