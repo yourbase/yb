@@ -77,18 +77,25 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 			outputs = io.MultiWriter(realStdout, &buf)
 		}
 	}
+	c := make(chan bool)
 
 	// copy the output in a separate goroutine so printing can't block indefinitely
 	go func() {
 		for {
-			io.Copy(outputs, r)
-			time.Sleep(100 * time.Millisecond)
+			select {
+			case <-c:
+				return
+			case <-time.After(100 * time.Millisecond):
+				io.Copy(outputs, r)
+			}
 		}
 	}()
-
-	defer w.Close()
-	defer r.Close()
-
+	defer func() {
+		w.Close()
+		io.Copy(outputs, r)
+		close(c)
+		r.Close()
+	}()
 	var targetPackage Package
 
 	// check if we're just a package
