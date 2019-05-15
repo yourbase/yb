@@ -75,7 +75,7 @@ func LoadBuildPacks(dependencies []string, pkgCacheDir string, pkgDir string) ([
 		case "homebrew":
 			bt = NewHomebrewBuildTool(spec)
 		default:
-			fmt.Printf("Ignoring unknown build tool: %s\n", toolSpec)
+			return setupTimers, fmt.Errorf("Unknown build tool: %s\n", toolSpec)
 		}
 
 		// Install if needed
