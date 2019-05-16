@@ -16,4 +16,4 @@ about dependencies.
 * `cd simple-java-app`
 * `yb build`
 
-# Magic
+![magic!](http://www.reactiongifs.com/r/mgc.gif)
