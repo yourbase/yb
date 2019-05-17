@@ -60,11 +60,21 @@ func (bt GolangBuildTool) GolangDir() string {
 	return filepath.Join(bt.InstallDir(), "go")
 }
 
+func srcParent(dir string) string {
+	// For '/a/b/c/src/d' we guess that GOPATH is /a/b/c.
+	parts := strings.Split(dir, "src")
+	if len(parts) == 0 { return "" }
+	return parts[0]
+}
+
 // TODO: handle multiple packages, for now this is ok
 func (bt GolangBuildTool) Setup() error {
 	golangDir := bt.GolangDir()
 	goPath := bt.spec.PackageCacheDir
 	pkgPath := bt.spec.PackageDir
+	if goPathSrcParent := srcParent(pkgPath); goPathSrcParent != "" {
+		goPath = fmt.Sprintf("%s:%s", goPathSrcParent, goPath)
+	}
 
 	goPath = fmt.Sprintf("%s:%s", goPath, pkgPath)
 
