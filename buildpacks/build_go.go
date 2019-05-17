@@ -72,10 +72,8 @@ func (bt GolangBuildTool) Setup() error {
 	golangDir := bt.GolangDir()
 	goPath := bt.spec.PackageCacheDir
 	pkgPath := bt.spec.PackageDir
-	goPathSrcParent := srcParent(pkgPath)
-	if goPathSrcParent != "" && goPathSrcParent != pkgPath {
+	if goPathSrcParent := srcParent(pkgPath); goPathSrcParent != "" {
 		goPath = fmt.Sprintf("%s:%s", goPathSrcParent, goPath)
-		PrependToPath(filepath.Join(goPathSrcParent, "bin"))
 	}
 
 	goPath = fmt.Sprintf("%s:%s", goPath, pkgPath)
