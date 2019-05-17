@@ -74,6 +74,8 @@ func LoadBuildPacks(dependencies []string, pkgCacheDir string, pkgDir string) ([
 			bt = NewRubyBuildTool(spec)
 		case "homebrew":
 			bt = NewHomebrewBuildTool(spec)
+		case "protoc":
+			bt = NewProtocBuildTool(spec)
 		default:
 			return setupTimers, fmt.Errorf("Unknown build tool: %s\n", toolSpec)
 		}
