@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"os/user"
 	"path/filepath"
 	"strings"
 
@@ -196,7 +197,7 @@ func (b BuildContainer) UploadFile(localFile string, fileName string, remotePath
 		return err
 	}
 
-	//defer os.RemoveAll(dir) // clean up
+	defer os.RemoveAll(dir) // clean up
 	tmpfile, err := os.OpenFile(fmt.Sprintf("%s/%s.tar", dir, fileName), os.O_CREATE|os.O_RDWR|os.O_APPEND, 0660)
 	if err != nil {
 		return err
@@ -275,14 +276,17 @@ func (b BuildContainer) MakeDirectoryInContainer(path string) error {
 
 }
 
-func (b BuildContainer) ExecToStdout(cmdString string) error {
-	return b.ExecToWriter(cmdString, os.Stdout)
+func (b BuildContainer) ExecToStdout(cmdString string, targetDir string) error {
+	return b.ExecToWriter(cmdString, targetDir, os.Stdout)
 }
 
-func (b BuildContainer) ExecToWriter(cmdString string, outputSink io.Writer) error {
+func (b BuildContainer) ExecToWriter(cmdString string, targetDir string, outputSink io.Writer) error {
 	client := NewDockerClient()
 
-	shellCmd := []string{"sh", "-c", cmdString}
+	shellCmd := []string{"bash", "-c", cmdString}
+
+	u, _ := user.Current()
+	uidGid := fmt.Sprintf("%s:%s", u.Uid, u.Gid)
 
 	execOpts := docker.CreateExecOptions{
 		Env:          b.Options.ContainerOpts.Environment,
@@ -290,7 +294,8 @@ func (b BuildContainer) ExecToWriter(cmdString string, outputSink io.Writer) err
 		AttachStdout: true,
 		AttachStderr: true,
 		Container:    b.Id,
-		WorkingDir:   "/workspace",
+		WorkingDir:   targetDir,
+		User:         uidGid,
 	}
 
 	exec, err := client.CreateExec(execOpts)
@@ -348,6 +353,7 @@ func NewContainer(opts BuildContainerOpts) (BuildContainer, error) {
 
 		dst := s[1]
 
+		fmt.Printf("Will mount %s as %s in container\n", src, dst)
 		mounts = append(mounts, docker.HostMount{
 			Source: src,
 			Target: dst,
@@ -355,9 +361,15 @@ func NewContainer(opts BuildContainerOpts) (BuildContainer, error) {
 		})
 	}
 
+	sourceMapDir := "/workspace"
+	if containerDef.WorkDir != "" {
+		sourceMapDir = containerDef.WorkDir
+	}
+
+	fmt.Printf("Will mount package %s at %s in container\n", opts.Package.Path, sourceMapDir)
 	mounts = append(mounts, docker.HostMount{
 		Source: opts.Package.Path,
-		Target: "/build",
+		Target: sourceMapDir,
 		Type:   "bind",
 	})
 

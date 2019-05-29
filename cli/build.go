@@ -135,7 +135,7 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 
 	targetDir := targetPackage.Path
 
-	fmt.Printf("Building target package %s in %s...\n", targetPackage.Name, targetDir)
+	fmt.Printf("Building package %s in %s...\n", targetPackage.Name, targetDir)
 	manifest := targetPackage.Manifest
 
 	//workspace.SetupEnv()
@@ -157,6 +157,7 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		ExecPrefix:       b.ExecPrefix,
 		TargetDir:        targetDir,
 		ForceNoContainer: b.NoContainer,
+		TargetPackage:    targetPackage,
 	}
 
 	// No targets, look for default build stanza
@@ -268,6 +269,7 @@ func DoBuild(config BuildConfiguration) ([]CommandTimer, error) {
 
 	if target.Container.Image != "" && !config.ForceNoContainer {
 		fmt.Println("Executing build steps in container")
+		target.Container.Command = "tail -f /dev/null"
 		containerOpts := BuildContainerOpts{
 			ContainerOpts: target.Container,
 			Package:       targetPackage,
@@ -312,6 +314,8 @@ func RunCommandsInContainer(config BuildConfiguration, containerOpts BuildContai
 
 	if existing != nil {
 		fmt.Printf("Found existing container %s, removing...\n", existing.Id)
+		// Try stopping it first if needed
+		_ = existing.Stop(0)
 		if err = RemoveContainerById(existing.Id); err != nil {
 			fmt.Printf("Unable to remove existing container: %v\n", err)
 			return stepTimes, err
@@ -319,6 +323,8 @@ func RunCommandsInContainer(config BuildConfiguration, containerOpts BuildContai
 	}
 
 	buildContainer, err = NewContainer(containerOpts)
+	defer buildContainer.Stop(0)
+
 	if err != nil {
 		fmt.Printf("Error creating build container: %v\n", err)
 		return stepTimes, err
@@ -331,17 +337,22 @@ func RunCommandsInContainer(config BuildConfiguration, containerOpts BuildContai
 
 	fmt.Printf("Building in container: %s\n", buildContainer.Id)
 
+	containerWorkDir := "/workspace"
+	if containerOpts.ContainerOpts.WorkDir != "" {
+		containerWorkDir = containerOpts.ContainerOpts.WorkDir
+	}
+
 	for _, cmdString := range target.Commands {
 		stepStartTime := time.Now()
 		if len(config.ExecPrefix) > 0 {
 			cmdString = fmt.Sprintf("%s %s", config.ExecPrefix, cmdString)
 		}
 
-		fmt.Printf("Running %s in the container\n", cmdString)
+		fmt.Printf("Running %s in the container in directory %s\n", cmdString, containerWorkDir)
 
-		if err := buildContainer.ExecToStdout(cmdString); err != nil {
+		if err := buildContainer.ExecToStdout(cmdString, containerWorkDir); err != nil {
 			fmt.Printf("Failed to run %s: %v", cmdString, err)
-			return stepTimes, fmt.Errorf("Aborting build, unable to run %s: %v\n")
+			return stepTimes, fmt.Errorf("Aborting build, unable to run %s: %v\n", cmdString, err)
 		}
 
 		stepEndTime := time.Now()
@@ -443,17 +454,16 @@ func UploadBuildLogsToAPI(buf *bytes.Buffer) {
 		return
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Printf("Couldn't read response body: %s\n", err)
-		return
-	}
-
 	if resp.StatusCode != 200 {
 		fmt.Printf("Status code uploading log: %d\n", resp.StatusCode)
-		fmt.Println(string(body))
 		return
 	} else {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Printf("Couldn't read response body: %s\n", err)
+			return
+		}
+
 		var buildLog BuildLog
 		err = json.Unmarshal(body, &buildLog)
 		if err != nil {

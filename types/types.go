@@ -46,6 +46,7 @@ type ContainerDefinition struct {
 	Ports       []string `yaml:"ports"`
 	Environment []string `yaml:"environment"`
 	Command     string   `yaml:"command"`
+	WorkDir     string   `yaml:"workdir"`
 }
 
 type BuildTarget struct {

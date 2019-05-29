@@ -183,7 +183,7 @@ func postJsonToApi(path string, jsonData []byte) (*http.Response, error) {
 	req.Header.Set("YB_API_TOKEN", userToken)
 	req.Header.Set("Content-Type", "application/json")
 	res, err := client.Do(req)
-	return res, nil
+	return res, err
 
 }
 func postToApi(path string, formData url.Values) (*http.Response, error) {
