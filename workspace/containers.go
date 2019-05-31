@@ -10,7 +10,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"os/user"
 	"path/filepath"
 	"strings"
 
@@ -30,7 +29,11 @@ type ServiceContext struct {
 type BuildContainerOpts struct {
 	ContainerOpts ContainerDefinition
 	Package       Package
+	ExecUserId    string // who to run exec as (useful for local container builds which map the source)
+	ExecGroupId   string
+	MountPackage  bool
 }
+
 type BuildContainer struct {
 	Id      string
 	Name    string
@@ -189,6 +192,91 @@ func (b BuildContainer) Start() error {
 	return client.StartContainer(b.Id, hostConfig)
 }
 
+func (b BuildContainer) DownloadDirectoryToWriter(remotePath string, sink io.Writer) error {
+	client := NewDockerClient()
+	downloadOpts := docker.DownloadFromContainerOptions{
+		OutputStream: sink,
+		Path:         remotePath,
+	}
+
+	err := client.DownloadFromContainer(b.Id, downloadOpts)
+	if err != nil {
+		return fmt.Errorf("Unable to download %s: %v", remotePath, err)
+	}
+
+	return nil
+}
+
+func (b BuildContainer) DownloadDirectoryToFile(remotePath string, localFile string) error {
+	outputFile, err := os.OpenFile(localFile, os.O_CREATE|os.O_RDWR, 0660)
+	if err != nil {
+		return fmt.Errorf("Can't create local file: %s: %v", localFile, err)
+	}
+
+	defer outputFile.Close()
+
+	fmt.Printf("Downloading %s to %s...\n", remotePath, localFile)
+
+	return b.DownloadDirectoryToWriter(remotePath, outputFile)
+}
+
+func (b BuildContainer) DownloadDirectory(remotePath string) (string, error) {
+
+	dir, err := ioutil.TempDir("", "yb-container-download")
+
+	if err != nil {
+		return "", fmt.Errorf("Can't create temporary download location: %s: %v", dir, err)
+	}
+
+	fileParts := strings.Split(remotePath, "/")
+	filename := fileParts[len(fileParts)-1]
+	outfileName := fmt.Sprintf("%s.tar", filename)
+	outfilePath := filepath.Join(dir, outfileName)
+
+	err = b.DownloadDirectoryToFile(remotePath, outfilePath)
+
+	if err != nil {
+		return "", err
+	}
+
+	return outfilePath, nil
+}
+
+func (b BuildContainer) UploadStream(source io.Reader, remotePath string) error {
+	client := NewDockerClient()
+
+	uploadOpts := docker.UploadToContainerOptions{
+		InputStream:          source,
+		Path:                 remotePath,
+		NoOverwriteDirNonDir: true,
+	}
+
+	err := client.UploadToContainer(b.Id, uploadOpts)
+
+	return err
+}
+
+func (b BuildContainer) UploadArchive(localFile string, remotePath string) error {
+	client := NewDockerClient()
+
+	file, err := os.Open(localFile)
+	if err != nil {
+		return err
+	}
+
+	defer file.Close()
+
+	uploadOpts := docker.UploadToContainerOptions{
+		InputStream:          file,
+		Path:                 remotePath,
+		NoOverwriteDirNonDir: true,
+	}
+
+	err = client.UploadToContainer(b.Id, uploadOpts)
+
+	return err
+}
+
 func (b BuildContainer) UploadFile(localFile string, fileName string, remotePath string) error {
 	client := NewDockerClient()
 
@@ -285,9 +373,6 @@ func (b BuildContainer) ExecToWriter(cmdString string, targetDir string, outputS
 
 	shellCmd := []string{"bash", "-c", cmdString}
 
-	u, _ := user.Current()
-	uidGid := fmt.Sprintf("%s:%s", u.Uid, u.Gid)
-
 	execOpts := docker.CreateExecOptions{
 		Env:          b.Options.ContainerOpts.Environment,
 		Cmd:          shellCmd,
@@ -295,7 +380,11 @@ func (b BuildContainer) ExecToWriter(cmdString string, targetDir string, outputS
 		AttachStderr: true,
 		Container:    b.Id,
 		WorkingDir:   targetDir,
-		User:         uidGid,
+	}
+
+	if b.Options.ExecUserId != "" || b.Options.ExecGroupId != "" {
+		uidGid := fmt.Sprintf("%s:%s", b.Options.ExecUserId, b.Options.ExecGroupId)
+		execOpts.User = uidGid
 	}
 
 	exec, err := client.CreateExec(execOpts)
@@ -361,17 +450,19 @@ func NewContainer(opts BuildContainerOpts) (BuildContainer, error) {
 		})
 	}
 
-	sourceMapDir := "/workspace"
-	if containerDef.WorkDir != "" {
-		sourceMapDir = containerDef.WorkDir
-	}
+	if opts.MountPackage {
+		sourceMapDir := "/workspace"
+		if containerDef.WorkDir != "" {
+			sourceMapDir = containerDef.WorkDir
+		}
 
-	fmt.Printf("Will mount package %s at %s in container\n", opts.Package.Path, sourceMapDir)
-	mounts = append(mounts, docker.HostMount{
-		Source: opts.Package.Path,
-		Target: sourceMapDir,
-		Type:   "bind",
-	})
+		fmt.Printf("Will mount package %s at %s in container\n", opts.Package.Path, sourceMapDir)
+		mounts = append(mounts, docker.HostMount{
+			Source: opts.Package.Path,
+			Target: sourceMapDir,
+			Type:   "bind",
+		})
+	}
 
 	var ports = make([]string, 0)
 	for _, portSpec := range containerDef.Ports {

@@ -32,6 +32,15 @@ func (b BuildManifest) ResolveBuildTargets(targetName string) ([]BuildTarget, er
 	return targetList, nil
 }
 
+func (b BuildManifest) CIBuild(buildName string) (CIBuild, error) {
+	for _, build := range b.CI.CIBuilds {
+		if build.Name == buildName {
+			return build, nil
+		}
+	}
+	return CIBuild{}, fmt.Errorf("No such CI build '%s' in build manifest", buildName)
+}
+
 func (b BuildManifest) BuildTarget(targetName string) (BuildTarget, error) {
 	for _, target := range b.BuildTargets {
 		if target.Name == targetName {

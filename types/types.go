@@ -13,6 +13,17 @@ type BuildManifest struct {
 	Build        BuildTarget   `yaml:"build"`
 	Exec         ExecPhase     `yaml:"exec"`
 	Package      PackagePhase  `yaml:"package"`
+	CI           CIInfo        `yaml:"ci"`
+}
+
+type CIInfo struct {
+	CIBuilds []CIBuild `yaml:"builds"`
+}
+
+type CIBuild struct {
+	Name        string `yaml:"name"`
+	BuildTarget string `yaml:"build_target"`
+	When        string `yaml:"when"`
 }
 
 type PackagePhase struct {
@@ -55,6 +66,7 @@ type BuildTarget struct {
 	Tools       []string            `yaml:"tools"`
 	Commands    []string            `yaml:"commands"`
 	Artifacts   []string            `yaml:"artifacts"`
+	CachePaths  []string            `yaml:"cache_paths"`
 	Sandbox     bool                `yaml:"sandbox"`
 	Root        string              `yaml:"root"`
 	Environment []string            `yaml:"environment"`

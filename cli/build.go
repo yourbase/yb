@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"os/user"
 	"path/filepath"
 	"strings"
 	"time"
@@ -270,9 +271,15 @@ func DoBuild(config BuildConfiguration) ([]CommandTimer, error) {
 	if target.Container.Image != "" && !config.ForceNoContainer {
 		fmt.Println("Executing build steps in container")
 		target.Container.Command = "tail -f /dev/null"
+
+		u, _ := user.Current()
+
 		containerOpts := BuildContainerOpts{
 			ContainerOpts: target.Container,
 			Package:       targetPackage,
+			ExecUserId:    u.Uid,
+			ExecGroupId:   u.Gid,
+			MountPackage:  true,
 		}
 
 		stepTimers, buildError = RunCommandsInContainer(config, containerOpts)
