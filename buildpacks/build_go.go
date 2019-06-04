@@ -66,17 +66,20 @@ func (bt GolangBuildTool) Setup() error {
 	goPath := bt.spec.PackageCacheDir
 	pkgPath := bt.spec.PackageDir
 
-	goPath = fmt.Sprintf("%s:%s", goPath, pkgPath)
+	var goPathElements = []string{goPath, pkgPath}
+	goPathVar := strings.Join(goPathElements, ":")
 
 	cmdPath := filepath.Join(golangDir, "bin")
-	pkgPathBinDir := filepath.Join(bt.spec.PackageCacheDir, "bin")
 	PrependToPath(cmdPath)
-	PrependToPath(pkgPathBinDir)
+	for _, pathElement := range goPathElements {
+		pathBinDir := filepath.Join(pathElement, "bin")
+		PrependToPath(pathBinDir)
+	}
 
 	fmt.Printf("Setting GOROOT to %s\n", golangDir)
 	os.Setenv("GOROOT", golangDir)
 	fmt.Printf("Setting GOPATH to %s\n", goPath)
-	os.Setenv("GOPATH", goPath)
+	os.Setenv("GOPATH", goPathVar)
 
 	return nil
 }
