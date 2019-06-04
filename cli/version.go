@@ -10,6 +10,7 @@ import (
 
 type VersionCmd struct {
 	Version string
+	Channel string
 }
 
 func (*VersionCmd) Name() string     { return "version" }
@@ -22,6 +23,7 @@ func (p *VersionCmd) SetFlags(f *flag.FlagSet) {
 }
 
 func (p *VersionCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	fmt.Println(p.Version)
+	versionString := fmt.Sprintf("Version: %s channel: %s", p.Version, p.Channel)
+	fmt.Println(versionString)
 	return subcommands.ExitSuccess
 }

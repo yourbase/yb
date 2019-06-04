@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	version string
+	version string = "DEVELOPMENT"
 	date    string
 )
 

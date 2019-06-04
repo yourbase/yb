@@ -18,10 +18,18 @@ MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAESgt7eIAY5+toKM36bGlQQwPg+jldCCje
 -----END ECDSA PUBLIC KEY-----
 `)
 
-func Update() error {
+func Update(version string, channel string) error {
 	var opts equinox.Options
 	if err := opts.SetPublicKeyPEM(publicKey); err != nil {
 		return err
+	}
+
+	if version == "" {
+		fmt.Printf("Will update to latest version in channel %s\n", channel)
+		opts.Channel = channel
+	} else {
+		fmt.Printf("Will update to specific version %s\n", version)
+		opts.Version = version
 	}
 
 	// check for the update
@@ -29,6 +37,7 @@ func Update() error {
 	switch {
 	case err == equinox.NotAvailableErr:
 		// No update available, already at the latest version.
+		fmt.Println("Already at latest version!")
 		return nil
 	case err != nil:
 		return err
