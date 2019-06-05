@@ -54,6 +54,8 @@ func LoadBuildPacks(dependencies []string, pkgCacheDir string, pkgDir string) ([
 			bt = NewNodeBuildTool(spec)
 		case "glide":
 			bt = NewGlideBuildTool(spec)
+		case "androidndk":
+			bt = NewAndroidNdkBuildTool(spec)
 		case "android":
 			bt = NewAndroidBuildTool(spec)
 		case "gradle":

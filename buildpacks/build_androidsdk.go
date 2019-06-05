@@ -134,6 +134,7 @@ func (bt AndroidBuildTool) Setup() error {
 
 	fmt.Printf("Setting ANDROID_SDK_ROOT to %s\n", androidDir)
 	os.Setenv("ANDROID_SDK_ROOT", androidDir)
+	os.Setenv("ANDROID_HOME", androidDir)
 
 	fmt.Printf("Writing agreement hashes...\n")
 	bt.WriteAgreements()
