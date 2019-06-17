@@ -71,20 +71,17 @@ func (bt DartBuildTool) Version() string {
 }
 
 func (bt DartBuildTool) InstallDir() string {
-	return filepath.Join(bt.spec.SharedCacheDir, "dart")
+	return filepath.Join(bt.spec.SharedCacheDir, "dart", bt.Version())
 }
 
 func (bt DartBuildTool) DartDir() string {
-	return filepath.Join(bt.InstallDir(), fmt.Sprintf("dart-%s", bt.Version()))
+	return filepath.Join(bt.InstallDir(), "dart-sdk")
 }
 
 func (bt DartBuildTool) Setup() error {
 	dartDir := bt.DartDir()
-	cmdPath := fmt.Sprintf("%s/dart/bin", dartDir)
-	currentPath := os.Getenv("PATH")
-	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
-	fmt.Printf("Setting PATH to %s\n", newPath)
-	os.Setenv("PATH", newPath)
+	cmdPath := filepath.Join(dartDir, "bin")
+	PrependToPath(cmdPath)
 
 	return nil
 }
