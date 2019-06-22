@@ -240,6 +240,7 @@ func postToDispatcher(path string, formData url.Values) (*http.Response, error) 
 	return res, nil
 }
 
+// TODO(Ridai) Keep an eye on this:
 func getUserToken() (string, error) {
 	token, exists := os.LookupEnv("YB_USER_TOKEN")
 	if !exists {

@@ -49,11 +49,22 @@ func (p *LoginCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	resp, err := http.Post(loginUrl, "application/json", bytes.NewBuffer(jsonData))
 
 	if err != nil {
-		fmt.Printf("Couldn't make authenticatin request: %v\n", err)
+		fmt.Printf("Couldn't make authentication request: %v\n", err)
 		return subcommands.ExitFailure
 	}
 
 	defer resp.Body.Close()
+
+	if resp.StatusCode == 404 || resp.StatusCode == 401 {
+		fmt.Printf("Invalid credentials, please check email/password\n")
+		return subcommands.ExitFailure
+	}
+
+	if resp.StatusCode != 200 {
+		fmt.Printf("Other problems going on: HTTP Status %d\n", resp.StatusCode)
+		return subcommands.ExitFailure
+	}
+
 	body, err := ioutil.ReadAll(resp.Body)
 	var loginResponse LoginResponse
 	err = json.Unmarshal(body, &loginResponse)
