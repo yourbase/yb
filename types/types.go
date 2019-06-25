@@ -58,6 +58,7 @@ type ContainerDefinition struct {
 	Environment []string `yaml:"environment"`
 	Command     string   `yaml:"command"`
 	WorkDir     string   `yaml:"workdir"`
+	Privileged  bool
 }
 
 type BuildTarget struct {

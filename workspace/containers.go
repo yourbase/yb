@@ -483,6 +483,7 @@ func NewContainer(opts BuildContainerOpts) (BuildContainer, error) {
 	hostConfig := docker.HostConfig{
 		Mounts:       mounts,
 		PortBindings: bindings,
+		Privileged:   containerDef.Privileged,
 	}
 
 	config := docker.Config{
