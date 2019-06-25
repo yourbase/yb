@@ -116,6 +116,19 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 	}
 
+	headRef, err := workRepo.Head()
+
+	branch := fmt.Sprintf("%s", headRef.Name())
+
+	if strings.Contains(branch, "refs/heads") {
+		branch = strings.Replace(branch, "refs/heads/", "", -1)
+	}
+
+	fmt.Printf("Remote building branch: %s\n", branch)
+
+	commitHash := fmt.Sprintf("%s", headRef.Hash())
+
+	fmt.Printf("Remote building commit: %s\n", commitHash)
 	project, err := fetchProject(repoUrls)
 
 	if err != nil {
@@ -125,7 +138,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	fmt.Printf("Project key: %d\n", project.Id)
 
-	err = submitBuild(project, target.Tags)
+	err = submitBuild(project, target.Tags, commitHash, branch)
 
 	if err != nil {
 		fmt.Printf("Unable to submit build: %v\n", err)
@@ -323,20 +336,23 @@ func fetchUserEmail() (string, error) {
 	}
 }
 
-func submitBuild(project *Project, tagMap map[string]string) error {
+func submitBuild(project *Project, tagMap map[string]string, commit string, branch string) error {
 
 	userToken, err := getUserToken()
 
 	if err != nil {
 		return err
 	}
-	target := ""
+
+	target := "default"
 
 	formData := url.Values{
 		"project_id":    {strconv.Itoa(project.Id)},
 		"repository_id": {project.Repository},
 		"api_key":       {userToken},
 		"target":        {target},
+		"commit":        {commit},
+		"branch":        {branch},
 	}
 
 	tags := make([]string, 0)
