@@ -24,7 +24,7 @@ build_targets:
       - GOOS=linux
       - GOARCH=amd64
     commands:
-      - go build -o artificer-linux-amd64
+      - go build -o yb-linux-amd64
 
   - name: darwin
     tags:
@@ -33,7 +33,7 @@ build_targets:
       - GOOS=darwin
       - GOARCH=amd64
     commands:
-      - go build -o artificer-darwin-amd64
+      - go build -o yb-darwin-amd64
 
 exec:
   environment:

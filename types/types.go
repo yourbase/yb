@@ -82,9 +82,8 @@ type Project struct {
 	Repository  string `json:"repository"`
 }
 
-type LoginResponse struct {
-	UserId   int    `json:"user_id"`
-	ApiToken string `json:"api_key"`
+type TokenResponse struct {
+	TokenOK bool `json:"token_ok"`
 }
 
 type CommandTimer struct {
