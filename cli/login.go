@@ -2,7 +2,6 @@ package cli
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
 	"flag"
@@ -40,10 +39,7 @@ func (p *LoginCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 
 	fmt.Println()
 
-	values := map[string]string{"token": apiToken}
-	jsonData, _ := json.Marshal(values)
-
-	resp, err := http.Post(ApiUrl("/users/validatetoken"), "application/json", bytes.NewBuffer(jsonData))
+	resp, err := http.Get(ApiUrl(fmt.Sprintf("/apikey/validate/%s", apiToken)))
 
 	if err != nil {
 		fmt.Printf("Couldn't make validation request: %v\n", err)
