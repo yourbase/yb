@@ -436,9 +436,12 @@ func NewContainer(opts BuildContainerOpts) (BuildContainer, error) {
 
 	for _, mountSpec := range containerDef.Mounts {
 		s := strings.Split(mountSpec, ":")
-		src := filepath.Join(pkgWorkdir, s[0])
+		src := s[0]
 
-		MkdirAsNeeded(src)
+		if !strings.HasPrefix(src, "/") {
+			src = filepath.Join(pkgWorkdir, src)
+			MkdirAsNeeded(src)
+		}
 
 		dst := s[1]
 
