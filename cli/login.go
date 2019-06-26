@@ -2,18 +2,15 @@ package cli
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/johnewart/subcommands"
-	"golang.org/x/crypto/ssh/terminal"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
-	"syscall"
 
 	. "github.com/yourbase/yb/plumbing"
 	. "github.com/yourbase/yb/types"
@@ -33,37 +30,47 @@ func (p *LoginCmd) SetFlags(f *flag.FlagSet) {
 
 func (p *LoginCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	reader := bufio.NewReader(os.Stdin)
-	fmt.Print("Email: ")
-	email, _ := reader.ReadString('\n')
-	email = strings.TrimSuffix(email, "\n")
-
-	fmt.Print("Password: ")
-	bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
-	password := string(bytePassword)
+	fmt.Println("Open up https://app.yourbase.io/user/apitoken and then paste the token here.")
 	fmt.Println()
 
-	values := map[string]string{"email": email, "password": password}
-	jsonData, _ := json.Marshal(values)
-	loginUrl := ApiUrl("/users/login")
+	fmt.Print("Token: ")
+	apiToken, _ := reader.ReadString('\n')
+	apiToken = strings.TrimSuffix(apiToken, "\n")
 
-	resp, err := http.Post(loginUrl, "application/json", bytes.NewBuffer(jsonData))
+	fmt.Println()
+
+	resp, err := http.Get(ApiUrl(fmt.Sprintf("/apikey/validate/%s", apiToken)))
 
 	if err != nil {
-		fmt.Printf("Couldn't make authenticatin request: %v\n", err)
+		fmt.Printf("Couldn't make validation request: %v\n", err)
 		return subcommands.ExitFailure
 	}
 
 	defer resp.Body.Close()
+
+	if resp.StatusCode == 404 || resp.StatusCode == 401 {
+		fmt.Printf("Invalid token provided, please check it\n")
+		return subcommands.ExitFailure
+	}
+
+	if resp.StatusCode != 200 {
+		fmt.Printf("Oops: HTTP Status %d that's us, not you, please try again later\n", resp.StatusCode)
+		return subcommands.ExitFailure
+	}
+
 	body, err := ioutil.ReadAll(resp.Body)
-	var loginResponse LoginResponse
-	err = json.Unmarshal(body, &loginResponse)
+	var tokenResponse TokenResponse
+	err = json.Unmarshal(body, &tokenResponse)
 
 	if err != nil {
 		fmt.Printf("Couldn't parse response body: %s\n", err)
 		return subcommands.ExitFailure
 	}
 
-	apiToken := loginResponse.ApiToken
+	if !tokenResponse.TokenOK {
+		fmt.Printf("Token provided is invalid, please check it\n")
+		return subcommands.ExitFailure
+	}
 
 	if err = SetConfigValue("user", "api_key", apiToken); err != nil {
 		fmt.Printf("Cannot store API token: %v\n", err)
