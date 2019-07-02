@@ -13,7 +13,7 @@ import (
 )
 
 //https://archive.apache.org/dist/flutter/flutter-3/3.3.3/binaries/apache-flutter-3.3.3-bin.tar.gz
-var FLUTTER_DIST_MIRROR = "https://storage.googleapis.com/flutter_infra/releases/stable/{{.OS}}/flutter_{{.OS}}_v{{.Version}}-stable.{{.Extension}}"
+var FLUTTER_DIST_MIRROR = "https://storage.googleapis.com/flutter_infra/releases/{{.Channel}}/{{.OS}}/flutter_{{.OS}}_v{{.Version}}-{{.Channel}}.{{.Extension}}"
 
 type FlutterBuildTool struct {
 	BuildTool
@@ -35,6 +35,7 @@ func (bt FlutterBuildTool) DownloadUrl() string {
 	opsys := OS()
 	arch := Arch()
 	extension := "tar.xz"
+	channel := "stable"
 
 	if arch == "amd64" {
 		arch = "x64"
@@ -46,13 +47,22 @@ func (bt FlutterBuildTool) DownloadUrl() string {
 	}
 
 	version := bt.Version()
+	parts := strings.Split(version, "/")
+	if len(parts) > 2 {
+		version = parts[0]
+	} else if len(parts) == 2 {
+		version = parts[0]
+		channel = parts[1]
+	}
 
 	data := struct {
+		Channel   string
 		OS        string
 		Arch      string
 		Version   string
 		Extension string
 	}{
+		channel,
 		opsys,
 		arch,
 		version,
@@ -63,6 +73,8 @@ func (bt FlutterBuildTool) DownloadUrl() string {
 
 	return url
 }
+
+// TODO: Add Channel method?
 
 func (bt FlutterBuildTool) MajorVersion() string {
 	parts := strings.Split(bt.version, ".")
