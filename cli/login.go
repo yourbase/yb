@@ -75,6 +75,8 @@ func (p *LoginCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	if err = SetConfigValue("user", "api_key", apiToken); err != nil {
 		fmt.Printf("Cannot store API token: %v\n", err)
 		return subcommands.ExitFailure
+	} else {
+		fmt.Println("API token saced to the config file")
 	}
 
 	return subcommands.ExitSuccess

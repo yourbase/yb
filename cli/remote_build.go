@@ -28,16 +28,43 @@ import (
 )
 
 type RemoteCmd struct {
-	capitalize bool
+	target         string
+	baseCommit     string
+	branch         string
+	noAcceleration bool
+	foundCommit    string
+	foundTarget    string
+	patchFile      string
 }
 
 func (*RemoteCmd) Name() string     { return "remotebuild" }
 func (*RemoteCmd) Synopsis() string { return "Build remotely." }
 func (*RemoteCmd) Usage() string {
-	return "Build remotely"
+	return "Build remotely, you should login first to acquire the API_KEY for YourBase"
 }
 
 func (p *RemoteCmd) SetFlags(f *flag.FlagSet) {
+	f.StringVar(&p.target, "target", "", "Repository to remote build")
+	f.StringVar(&p.baseCommit, "base-commit", "", "Base commit hash as common ancestor")
+	f.StringVar(&p.branch, "branch", "", "Branch name")
+	f.BoolVar(&p.noAcceleration, "no-accel", false, "Disable accelaration")
+
+}
+
+func (p *RemoteCmd) Commit() string {
+	if p.baseCommit == "" {
+		return p.foundCommit
+	} else {
+		return p.baseCommit
+	}
+}
+
+func (p *RemoteCmd) Target() string {
+	if p.target == "" {
+		return p.foundTarget
+	} else {
+		return p.target
+	}
 }
 
 func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
@@ -116,19 +143,6 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 	}
 
-	headRef, err := workRepo.Head()
-
-	branch := fmt.Sprintf("%s", headRef.Name())
-
-	if strings.Contains(branch, "refs/heads") {
-		branch = strings.Replace(branch, "refs/heads/", "", -1)
-	}
-
-	fmt.Printf("Remote building branch: %s\n", branch)
-
-	commitHash := fmt.Sprintf("%s", headRef.Hash())
-
-	fmt.Printf("Remote building commit: %s\n", commitHash)
 	project, err := fetchProject(repoUrls)
 
 	if err != nil {
@@ -138,7 +152,28 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	fmt.Printf("Project key: %d\n", project.Id)
 
-	err = submitBuild(project, target.Tags, commitHash, branch)
+	// Invoke Patch to get one patch file to send to the API
+	if project.Repository == "" {
+		fmt.Printf("Empty repository for project %s, please check your project settings at %s", project.Label,
+			ManagementUrl(fmt.Sprintf("%s/%s", project.OrgSlug, project.Label)))
+		return subcommands.ExitFailure
+	}
+
+	patchFile := ""
+	if patchFile, err := ioutil.TempFile("", "yb"); err != nil {
+		fmt.Printf("Couldn't create temp file: %s, error: %s", patchFile, err)
+		return subcommands.ExitFailure
+	}
+	patchCmd := &PatchCmd{project.Repository, patchFile}
+
+	if patchCmd.Execute(context.Background(), f, nil) != subcommands.ExitSuccess {
+		fmt.Printf("Patch command failed")
+		return subcommands.ExitFailure
+	}
+
+	p.patchFile = patchFile
+
+	err = submitBuild(project, p, target.Tags)
 
 	if err != nil {
 		fmt.Printf("Unable to submit build: %v\n", err)
@@ -257,7 +292,7 @@ func getUserToken() (string, error) {
 	token, exists := os.LookupEnv("YB_USER_TOKEN")
 	if !exists {
 		if token, err := GetConfigValue("user", "api_key"); err != nil {
-			return "", fmt.Errorf("Unable to find YB token in config file or environment.")
+			return "", fmt.Errorf("Unable to find YB token in config file or environment.\nUse yb login to fetch one, if you already logged in to https://app.yourbase.io")
 		} else {
 			return token, nil
 		}
@@ -281,6 +316,8 @@ func fetchProject(urls []string) (*Project, error) {
 	if resp.StatusCode != 200 {
 		if resp.StatusCode == 404 {
 			return nil, fmt.Errorf("Couldn't find the project, make sure you have created one whose repository URL matches one of these repository's remotes.")
+		} else if resp.StatusCode == 401 {
+			return nil, fmt.Errorf("You don't have permission to build remotely this repositories: %v", urls)
 		} else {
 			return nil, fmt.Errorf("Error fetching project from API, can't build remotely.")
 		}
@@ -336,23 +373,30 @@ func fetchUserEmail() (string, error) {
 	}
 }
 
-func submitBuild(project *Project, tagMap map[string]string, commit string, branch string) error {
+func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) error {
 
 	userToken, err := getUserToken()
 
 	if err != nil {
 		return err
 	}
+	target := ""
 
-	target := "default"
+	patchData, _ := ioutil.ReadFile(cmd.patchFile)
+
+	var patchBuffer bytes.Buffer
+	if err = CompressBuffer(&patchBuffer); err != nil {
+		return fmt.Errorf("Couldn't compress the patch file: \n    %s\n", err)
+	}
 
 	formData := url.Values{
 		"project_id":    {strconv.Itoa(project.Id)},
 		"repository_id": {project.Repository},
 		"api_key":       {userToken},
 		"target":        {target},
-		"commit":        {commit},
-		"branch":        {branch},
+		"patch_data":    {patchBuffer.String()},
+		"commit":        {cmd.Commit()},
+		"branch":        {cmd.Target()},
 	}
 
 	tags := make([]string, 0)
@@ -364,7 +408,7 @@ func submitBuild(project *Project, tagMap map[string]string, commit string, bran
 		formData.Add("tags[]", tag)
 	}
 
-	resp, err := postToDispatcher("builds", formData)
+	resp, err := postToApi("builds", formData)
 	if err != nil {
 		return err
 	}
@@ -382,7 +426,7 @@ func submitBuild(project *Project, tagMap map[string]string, commit string, bran
 		fmt.Printf("Streaming build output from %s\n", response)
 		conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), response)
 		if err != nil {
-			return fmt.Errorf("can not connect: %v\n", err)
+			return fmt.Errorf("Can not connect: %v\n", err)
 		} else {
 			for {
 				msg, _, err := wsutil.ReadServerData(conn)
@@ -402,12 +446,13 @@ func submitBuild(project *Project, tagMap map[string]string, commit string, bran
 
 			err = conn.Close()
 			if err != nil {
-				fmt.Printf("can not close: %v\n", err)
+				fmt.Printf("Can not close: %v\n", err)
 			} else {
-				fmt.Printf("closed\n")
+				fmt.Printf("Closed\n")
 			}
 		}
 	} else {
+		fmt.Println("Wrong response:")
 		fmt.Println(response)
 	}
 

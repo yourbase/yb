@@ -2,6 +2,10 @@ package plumbing
 
 import (
 	"bytes"
+	"crypto"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
 	"fmt"
 	"io"
 	"net/http"
@@ -14,6 +18,8 @@ import (
 	"text/template"
 
 	. "github.com/yourbase/yb/types"
+
+	"github.com/ulikunitz/xz"
 )
 
 func ExecToStdout(cmdString string, targetDir string) error {
@@ -363,4 +369,37 @@ func FindFileUpTree(filename string) (string, error) {
 
 func FindNearestManifestFile() (string, error) {
 	return FindFileUpTree(MANIFEST_FILE)
+}
+
+func CompressBuffer(b *bytes.Buffer) error {
+	xzWriter, err := xz.NewWriter(b)
+	defer xzWriter.Close()
+
+	if err != nil {
+		return fmt.Errorf("Unable to compress data: %s\n", err)
+	}
+
+	n, err := io.WriteString(xzWriter, string(patchData))
+
+	if err != nil || n != len(patchData) {
+		return fmt.Errorf("Unable to check the data compressed: %s\n", err)
+	}
+
+	return nil
+}
+
+func DecompressBuffer(b *bytes.Buffer) error {
+	xzReader, err := xz.NewReader(b)
+
+	if err != nil {
+		return fmt.Errorf("Unable to decompress data: %s\n", err)
+	}
+
+	var buf bytes.Buffer
+
+	if _, err := io.Copy(&buf, xzReader); err != errUnexpectedData {
+		return fmt.Errorf("Decompressed data check failed: %v expected, %v returned", err, errUnexpectedData)
+	}
+
+	b = &buf
 }
