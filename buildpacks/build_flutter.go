@@ -12,7 +12,7 @@ import (
 	. "github.com/yourbase/yb/types"
 )
 
-//https://archive.apache.org/dist/flutter/flutter-3/3.3.3/binaries/apache-flutter-3.3.3-bin.tar.gz
+// https://archive.apache.org/dist/flutter/flutter-3/3.3.3/binaries/apache-flutter-3.3.3-bin.tar.gz
 var FLUTTER_DIST_MIRROR = "https://storage.googleapis.com/flutter_infra/releases/{{.Channel}}/{{.OS}}/flutter_{{.OS}}_v{{.Version}}-{{.Channel}}.{{.Extension}}"
 
 type FlutterBuildTool struct {
@@ -47,7 +47,7 @@ func (bt FlutterBuildTool) DownloadUrl() string {
 	}
 
 	version := bt.Version()
-	parts := strings.Split(version, "/")
+	parts := strings.Split(version, "_")
 	if len(parts) > 2 {
 		version = parts[0]
 	} else if len(parts) == 2 {
