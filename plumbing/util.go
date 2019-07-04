@@ -2,10 +2,6 @@ package plumbing
 
 import (
 	"bytes"
-	"crypto"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/sha256"
 	"fmt"
 	"io"
 	"net/http"
@@ -20,6 +16,7 @@ import (
 	. "github.com/yourbase/yb/types"
 
 	"github.com/ulikunitz/xz"
+	"gopkg.in/src-d/go-git.v4"
 )
 
 func ExecToStdout(cmdString string, targetDir string) error {
@@ -379,10 +376,10 @@ func CompressBuffer(b *bytes.Buffer) error {
 		return fmt.Errorf("Unable to compress data: %s\n", err)
 	}
 
-	n, err := io.WriteString(xzWriter, string(patchData))
+	n, err := io.WriteString(xzWriter, b.String())
 
-	if err != nil || n != len(patchData) {
-		return fmt.Errorf("Unable to check the data compressed: %s\n", err)
+	if err != nil || n != b.Len() {
+		return fmt.Errorf("Unable to check the compressed data: %s\n", err)
 	}
 
 	return nil
@@ -397,9 +394,40 @@ func DecompressBuffer(b *bytes.Buffer) error {
 
 	var buf bytes.Buffer
 
-	if _, err := io.Copy(&buf, xzReader); err != errUnexpectedData {
-		return fmt.Errorf("Decompressed data check failed: %v expected, %v returned", err, errUnexpectedData)
+	if _, err := io.Copy(&buf, xzReader); err != nil {
+		return fmt.Errorf("Decompressed data check failed: %v", err)
 	}
 
 	b = &buf
+
+	return nil
+}
+
+func CloneRepository(uri string, basePath string, branch string) (*git.Repository, error) {
+	if branch == "" {
+		branch = "master"
+	}
+
+	opts := &git.CloneOptions{
+		URL:          uri,
+		RemoteName:   branch,
+		SingleBranch: true,
+		Depth:        50,
+		Tags:         git.NoTags,
+	}
+
+	if err := opts.Validate(); err != nil {
+		return nil, fmt.Errorf("Unable to clone, starting up: %v\n", err)
+	}
+
+	r, err := git.PlainClone(
+		basePath,
+		false,
+		opts)
+
+	if err != nil {
+		return nil, fmt.Errorf("Unable to clone: %v\n", err)
+	}
+
+	return r, nil
 }

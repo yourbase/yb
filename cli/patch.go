@@ -78,27 +78,45 @@ func (p *PatchCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	targetDir := p.targetRepository
 	patchFile := p.patchFile
 
-	fmt.Printf("Generating diff from local target package %s against %s and writing out to %s...\n", targetPackage, targetDir, patchFile)
+	fmt.Printf("Generating diff from local target package %s against %s and writing out to %s...\n", targetPackage.Path, targetDir, patchFile)
 
 	repoDir, err := filepath.Abs(targetPackage.Path)
 	if err != nil {
-		fmt.Errorf("Can't get repo dir: %v!\n", err)
+		fmt.Printf("Can't get repo dir: %v!\n", err)
+		return subcommands.ExitFailure
 	}
 
 	workRepo, err := git.PlainOpen(repoDir)
 
 	if err != nil {
 		fmt.Printf("Error opening repository %s: %v\n", repoDir, err)
+		return subcommands.ExitFailure
 	}
 
-	targetRepo, err := git.PlainOpen(targetDir)
+	targetRepoDir, err := filepath.Abs(targetDir)
+	if err != nil {
+		fmt.Printf("Can't get target repo dir: %v!\n", err)
+		return subcommands.ExitFailure
+	}
+
+	if repoDir == targetRepoDir {
+		fmt.Printf("Will generate a blank patch file, as target is equal to package (current working dir: %v == %v)\n", repoDir, targetRepoDir)
+	}
+
+	targetRepo, err := git.PlainOpen(targetRepoDir)
 
 	if err != nil {
-		fmt.Printf("Error opening repository %s: %v\n", targetDir, err)
+		fmt.Printf("Error opening repository %s: %v\n", targetRepoDir, err)
+		return subcommands.ExitFailure
 	}
 
 	// Get set of commits in the target (where we're going to patch on top of)
 	targetSet := commitSet(targetRepo)
+	if targetSet == nil {
+		fmt.Printf("Unable to build a commit set for comparing\n")
+		return subcommands.ExitFailure
+	}
+
 	commonAncestor := findCommonAncestor(workRepo, targetSet)
 	headRef, _ := workRepo.Head()
 
@@ -114,13 +132,16 @@ func (p *PatchCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 }
 
 func findCommonAncestor(r *git.Repository, commits map[string]bool) plumbing.Hash {
-	ref, _ := r.Head()
+	ref, err := r.Head()
+	if err != nil {
+		fmt.Printf("No Head: %v\n", err)
+	}
 
 	commit, _ := r.CommitObject(ref.Hash())
 	commitIter, _ := r.Log(&git.LogOptions{From: commit.Hash})
 	var commonCommit *object.Commit
 
-	err := commitIter.ForEach(func(c *object.Commit) error {
+	err = commitIter.ForEach(func(c *object.Commit) error {
 		hash := c.Hash.String()
 		LOGGER.Debug("Considering %s -> %s...\n", hash, commits[hash])
 		if commits[hash] {
@@ -141,13 +162,22 @@ func findCommonAncestor(r *git.Repository, commits map[string]bool) plumbing.Has
 }
 
 func commitSet(r *git.Repository) map[string]bool {
-	ref, _ := r.Head()
+	if r == nil {
+		fmt.Printf("Error getting the repo\n")
+		return nil
+	}
+	ref, err := r.Head()
+
+	if err != nil {
+		fmt.Printf("No Head: %v\n", err)
+		return nil
+	}
 
 	commit, _ := r.CommitObject(ref.Hash())
 	commitIter, _ := r.Log(&git.LogOptions{From: commit.Hash})
 	hashSet := make(map[string]bool)
 
-	err := commitIter.ForEach(func(c *object.Commit) error {
+	err = commitIter.ForEach(func(c *object.Commit) error {
 		hash := c.Hash.String()
 		hashSet[hash] = true
 		return nil

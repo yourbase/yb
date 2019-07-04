@@ -160,14 +160,41 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	patchFile := ""
-	if patchFile, err := ioutil.TempFile("", "yb"); err != nil {
+	if file, err := ioutil.TempFile("", "yb-*.patch"); err != nil {
 		fmt.Printf("Couldn't create temp file: %s, error: %s", patchFile, err)
 		return subcommands.ExitFailure
+	} else {
+		patchFile = file.Name()
+
+		if err = file.Close(); err != nil {
+			//Ignore
+		}
+		os.Remove(patchFile)
 	}
-	patchCmd := &PatchCmd{project.Repository, patchFile}
+	fmt.Printf("Temp patchFile type: %T\n", patchFile)
+
+	cloneDir, err := ioutil.TempDir("", "yb-clone-")
+	if err != nil {
+		fmt.Printf("Unable to create clone dir to fetch and checkout remote repository '%v': %v\n", project.Repository, err)
+		return subcommands.ExitFailure
+	}
+
+	_, err = CloneRepository(project.Repository, cloneDir, p.branch)
+	if err != nil {
+		fmt.Printf("Unable to clone %v: %v\n", project.Repository, err)
+		return subcommands.ExitFailure
+	}
+	defer os.RemoveAll(cloneDir)
+
+	patchCmd := &PatchCmd{
+		targetRepository: cloneDir,
+		patchFile:        patchFile,
+	}
+
+	fmt.Printf("targetRepository: %v patchFile: %v\n", patchCmd.targetRepository, patchCmd.patchFile)
 
 	if patchCmd.Execute(context.Background(), f, nil) != subcommands.ExitSuccess {
-		fmt.Printf("Patch command failed")
+		fmt.Printf("Patch command failed\n")
 		return subcommands.ExitFailure
 	}
 
@@ -317,7 +344,7 @@ func fetchProject(urls []string) (*Project, error) {
 		if resp.StatusCode == 404 {
 			return nil, fmt.Errorf("Couldn't find the project, make sure you have created one whose repository URL matches one of these repository's remotes.")
 		} else if resp.StatusCode == 401 {
-			return nil, fmt.Errorf("You don't have permission to build remotely this repositories: %v", urls)
+			return nil, fmt.Errorf("You don't have access to remotely build these repositories: %v", urls)
 		} else {
 			return nil, fmt.Errorf("Error fetching project from API, can't build remotely.")
 		}
@@ -384,8 +411,9 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 
 	patchData, _ := ioutil.ReadFile(cmd.patchFile)
 
-	var patchBuffer bytes.Buffer
-	if err = CompressBuffer(&patchBuffer); err != nil {
+	patchBuffer := bytes.NewBuffer(patchData)
+
+	if err = CompressBuffer(patchBuffer); err != nil {
 		return fmt.Errorf("Couldn't compress the patch file: \n    %s\n", err)
 	}
 
@@ -408,7 +436,9 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 		formData.Add("tags[]", tag)
 	}
 
-	resp, err := postToApi("builds", formData)
+	defer os.Remove(cmd.patchFile)
+
+	resp, err := postToApi("builds/cli", formData)
 	if err != nil {
 		return err
 	}
