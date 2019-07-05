@@ -20,6 +20,7 @@ import (
 	"github.com/johnewart/subcommands"
 
 	"gopkg.in/src-d/go-git.v4"
+	"gopkg.in/src-d/go-git.v4/plumbing"
 
 	. "github.com/yourbase/yb/packages"
 	. "github.com/yourbase/yb/plumbing"
@@ -64,6 +65,14 @@ func (p *RemoteCmd) Target() string {
 		return p.foundTarget
 	} else {
 		return p.target
+	}
+}
+
+func (p *RemoteCmd) Branch() string {
+	if p.branch == "" {
+		return "master"
+	} else {
+		return p.branch
 	}
 }
 
@@ -143,14 +152,19 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 	}
 
+	// Define which commitHash to use
+	p.foundCommit, err = defineCommit(workRepo, p.baseCommit)
+	if err != nil {
+		fmt.Printf("Error finding base-commit argument: %v\n", err)
+		return subcommands.ExitFailure
+	}
+
 	project, err := fetchProject(repoUrls)
 
 	if err != nil {
 		fmt.Printf("Error fetching project metadata: %v\n", err)
 		return subcommands.ExitFailure
 	}
-
-	fmt.Printf("Project key: %d\n", project.Id)
 
 	// Invoke Patch to get one patch file to send to the API
 	if project.Repository == "" {
@@ -171,7 +185,6 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 		os.Remove(patchFile)
 	}
-	fmt.Printf("Temp patchFile type: %T\n", patchFile)
 
 	cloneDir, err := ioutil.TempDir("", "yb-clone-")
 	if err != nil {
@@ -315,6 +328,26 @@ func postToDispatcher(path string, formData url.Values) (*http.Response, error) 
 	return res, nil
 }
 
+func defineCommit(r *git.Repository, commit string) (string, error) {
+
+	if commit == "" {
+		ref, err := r.Head()
+		if err != nil {
+			fmt.Printf("No Head: %v\n", err)
+		}
+
+		return ref.Hash().String(), nil
+	}
+
+	_, err := r.CommitObject(plumbing.NewHash(commit))
+
+	if err == plumbing.ErrObjectNotFound {
+		return "", fmt.Errorf("No commit %s found in the current dir git worktree: %v", commit, err)
+	}
+
+	return commit, nil
+}
+
 func getUserToken() (string, error) {
 	token, exists := os.LookupEnv("YB_USER_TOKEN")
 	if !exists {
@@ -407,7 +440,6 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 	if err != nil {
 		return err
 	}
-	target := ""
 
 	patchData, _ := ioutil.ReadFile(cmd.patchFile)
 
@@ -421,10 +453,10 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 		"project_id":    {strconv.Itoa(project.Id)},
 		"repository_id": {project.Repository},
 		"api_key":       {userToken},
-		"target":        {target},
+		"target":        {cmd.Target()},
 		"patch_data":    {patchBuffer.String()},
 		"commit":        {cmd.Commit()},
-		"branch":        {cmd.Target()},
+		"branch":        {cmd.Branch()},
 	}
 
 	tags := make([]string, 0)

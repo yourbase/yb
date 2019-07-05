@@ -100,7 +100,8 @@ func (p *PatchCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	}
 
 	if repoDir == targetRepoDir {
-		fmt.Printf("Will generate a blank patch file, as target is equal to package (current working dir: %v == %v)\n", repoDir, targetRepoDir)
+		fmt.Printf("Cowardly decided not to generate this patch, as target is equal to package: %v == %v\n", repoDir, targetRepoDir)
+		return subcommands.ExitFailure
 	}
 
 	targetRepo, err := git.PlainOpen(targetRepoDir)

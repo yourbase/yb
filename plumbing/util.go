@@ -369,18 +369,21 @@ func FindNearestManifestFile() (string, error) {
 }
 
 func CompressBuffer(b *bytes.Buffer) error {
-	xzWriter, err := xz.NewWriter(b)
-	defer xzWriter.Close()
+	var buf bytes.Buffer
 
+	xzWriter, err := xz.NewWriter(&buf)
 	if err != nil {
 		return fmt.Errorf("Unable to compress data: %s\n", err)
 	}
+	defer xzWriter.Close()
 
 	n, err := io.WriteString(xzWriter, b.String())
 
 	if err != nil || n != b.Len() {
 		return fmt.Errorf("Unable to check the compressed data: %s\n", err)
 	}
+	b.Reset()
+	b.Write(buf.Bytes())
 
 	return nil
 }
@@ -398,7 +401,8 @@ func DecompressBuffer(b *bytes.Buffer) error {
 		return fmt.Errorf("Decompressed data check failed: %v", err)
 	}
 
-	b = &buf
+	b.Reset()
+	b.Write(buf.Bytes())
 
 	return nil
 }
