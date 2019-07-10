@@ -409,7 +409,7 @@ func DecompressBuffer(b *bytes.Buffer) error {
 
 func CloneRepository(uri string, basePath string, branch string) (*git.Repository, error) {
 	if branch == "" {
-		branch = "master"
+		return nil, fmt.Errorf("No branch defined to clone repo %v at dir %v", uri, basePath)
 	}
 
 	opts := &git.CloneOptions{

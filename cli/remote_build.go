@@ -31,10 +31,9 @@ import (
 type RemoteCmd struct {
 	target         string
 	baseCommit     string
+	commonCommit   string
 	branch         string
 	noAcceleration bool
-	foundCommit    string
-	foundTarget    string
 	patchFile      string
 }
 
@@ -52,33 +51,11 @@ func (p *RemoteCmd) SetFlags(f *flag.FlagSet) {
 
 }
 
-func (p *RemoteCmd) Commit() string {
-	if p.baseCommit == "" {
-		return p.foundCommit
-	} else {
-		return p.baseCommit
-	}
-}
-
-func (p *RemoteCmd) Target() string {
-	if p.target == "" {
-		return p.foundTarget
-	} else {
-		return p.target
-	}
-}
-
-func (p *RemoteCmd) Branch() string {
-	if p.branch == "" {
-		return "master"
-	} else {
-		return p.branch
-	}
-}
-
 func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 
-	buildTarget := "default"
+	if p.target == "" {
+		p.target = "default"
+	}
 
 	var targetPackage Package
 
@@ -120,13 +97,13 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			fmt.Printf("Default build command has no steps and no targets described\n")
 		}
 	} else {
-		if _, err := manifest.BuildTarget(buildTarget); err != nil {
-			fmt.Printf("Build target %s specified but it doesn't exist!\n", buildTarget)
+		if _, err := manifest.BuildTarget(p.target); err != nil {
+			fmt.Printf("Build target %s specified but it doesn't exist!\n", p.target)
 			fmt.Printf("Valid build targets: %s\n", strings.Join(manifest.BuildTargetList(), ", "))
 		}
 	}
 
-	fmt.Printf("Remotely building '%s' ...\n", buildTarget)
+	fmt.Printf("Remotely building '%s' ...\n", p.target)
 	packagePath := targetPackage.Path
 	workRepo, err := git.PlainOpen(packagePath)
 
@@ -150,13 +127,6 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		for _, u := range c.URLs {
 			repoUrls = append(repoUrls, u)
 		}
-	}
-
-	// Define which commitHash to use
-	p.foundCommit, err = defineCommit(workRepo, p.baseCommit)
-	if err != nil {
-		fmt.Printf("Error finding base-commit argument: %v\n", err)
-		return subcommands.ExitFailure
 	}
 
 	project, err := fetchProject(repoUrls)
@@ -191,13 +161,60 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		fmt.Printf("Unable to create clone dir to fetch and checkout remote repository '%v': %v\n", project.Repository, err)
 		return subcommands.ExitFailure
 	}
+	defer os.RemoveAll(cloneDir)
 
-	_, err = CloneRepository(project.Repository, cloneDir, p.branch)
+	// First things first:
+	// 1. Define correct branch name
+	// 2. Try to clone the remote repository using the defined branch
+	// 3. Then try to clone it using the default 'master' branch
+	// 4. Define baseCommit (informed, validated or found)
+	// 5. If branch isn't on remote yet,
+	// 6. Define common ancestor commit
+	// 7. Generate patch file
+	// 8. Submit build!
+
+	foundBranch, err := defineBranch(workRepo, p.branch)
+
 	if err != nil {
-		fmt.Printf("Unable to clone %v: %v\n", project.Repository, err)
+		fmt.Printf("Unable to define a branch: %v\n", err)
 		return subcommands.ExitFailure
 	}
-	defer os.RemoveAll(cloneDir)
+
+	branchOnRemote := false
+	clonedRepo, err := CloneRepository(project.Repository, cloneDir, foundBranch)
+	if err != nil {
+		fmt.Printf("Unable to clone %v, using branch '%v': %v\n", project.Repository, foundBranch, err)
+
+		clonedRepo, err = CloneRepository(project.Repository, cloneDir, "master")
+		if err != nil {
+			fmt.Printf("Unable to clone %v using the master branch: %v\n", project.Repository, err)
+			return subcommands.ExitFailure
+		}
+	} else {
+		branchOnRemote = true
+	}
+	p.branch = foundBranch
+
+	foundCommit, err := defineCommit(workRepo, p.baseCommit)
+	if err != nil {
+		fmt.Printf("Error finding base-commit argument: %v\n", err)
+		return subcommands.ExitFailure
+	} else {
+		fmt.Printf("Found commit: '%v'\n", foundCommit)
+		p.baseCommit = foundCommit
+	}
+
+	if !branchOnRemote {
+		targetSet := commitSet(workRepo)
+		if targetSet == nil {
+			fmt.Printf("Branch isn't on remote yet and couldn't build a commit set for comparing\n")
+			return subcommands.ExitFailure
+		}
+
+		p.commonCommit = findCommonAncestor(clonedRepo, targetSet).String()
+	} else {
+		p.commonCommit = p.baseCommit
+	}
 
 	patchCmd := &PatchCmd{
 		targetRepository: cloneDir,
@@ -328,12 +345,38 @@ func postToDispatcher(path string, formData url.Values) (*http.Response, error) 
 	return res, nil
 }
 
+func defineBranch(r *git.Repository, hintBranch string) (string, error) {
+
+	ref, err := r.Head()
+	if err != nil {
+		return "", fmt.Errorf("No Head: %v\n", err)
+	}
+
+	if ref.Name().IsBranch() {
+		if hintBranch != "" {
+			if hintBranch == ref.Name().String() {
+				fmt.Printf("Informed branch is the one used locally")
+
+				return hintBranch, nil
+
+			} else {
+				return hintBranch, fmt.Errorf("Informed branch (%v) isn't the same as the one used locally (%v)", hintBranch, ref.Name().String())
+			}
+		} else {
+			return ref.Name().String(), nil
+		}
+
+	} else {
+		return "", fmt.Errorf("No branch set?")
+	}
+}
+
 func defineCommit(r *git.Repository, commit string) (string, error) {
 
 	if commit == "" {
 		ref, err := r.Head()
 		if err != nil {
-			fmt.Printf("No Head: %v\n", err)
+			return "", fmt.Errorf("No Head: %v\n", err)
 		}
 
 		return ref.Hash().String(), nil
@@ -450,13 +493,13 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 	}
 
 	formData := url.Values{
-		"project_id":    {strconv.Itoa(project.Id)},
-		"repository_id": {project.Repository},
-		"api_key":       {userToken},
-		"target":        {cmd.Target()},
-		"patch_data":    {patchBuffer.String()},
-		"commit":        {cmd.Commit()},
-		"branch":        {cmd.Branch()},
+		"project_id": {strconv.Itoa(project.Id)},
+		"repository": {project.Repository},
+		"api_key":    {userToken},
+		"target":     {cmd.target},
+		"patch_data": {patchBuffer.String()},
+		"commit":     {cmd.commonCommit},
+		"branch":     {cmd.branch},
 	}
 
 	tags := make([]string, 0)
@@ -467,6 +510,9 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 	for _, tag := range tags {
 		formData.Add("tags[]", tag)
 	}
+
+	//XXX Remove, just for checing it out
+	fmt.Printf("Calling backend with the following values: %v\n", formData)
 
 	defer os.Remove(cmd.patchFile)
 
@@ -484,9 +530,14 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 
 	response := string(body)
 
-	if strings.HasPrefix(response, "ws:") || strings.HasPrefix(response, "wss:") {
-		fmt.Printf("Streaming build output from %s\n", response)
-		conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), response)
+	//Process simple response from the API
+	response = strings.ReplaceAll(response, "\"", "")
+	split := strings.Split(response, "\n")
+	url := split[0]
+
+	if strings.HasPrefix(url, "ws:") || strings.HasPrefix(url, "wss:") {
+		fmt.Printf("Streaming build output from %s\n", url)
+		conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), url)
 		if err != nil {
 			return fmt.Errorf("Can not connect: %v\n", err)
 		} else {
@@ -514,8 +565,8 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 			}
 		}
 	} else {
-		fmt.Println("Wrong response:")
-		fmt.Println(response)
+		fmt.Println("Wrong url:")
+		fmt.Println(url)
 	}
 
 	return nil
