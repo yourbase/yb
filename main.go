@@ -32,7 +32,6 @@ func main() {
 	cmdr.Register(&PlatformCmd{}, "")
 	cmdr.Register(&UpdateCmd{}, "")
 	cmdr.Register(&VersionCmd{Version: version}, "")
-	cmdr.Register(&XzCmd{}, "")
 
 	flag.Parse()
 	ctx := context.Background()
