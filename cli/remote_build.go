@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -35,19 +36,23 @@ type RemoteCmd struct {
 	branch         string
 	noAcceleration bool
 	patchFile      string
+	patchPath      string
+	noDeleteTemp   bool
 }
 
 func (*RemoteCmd) Name() string     { return "remotebuild" }
 func (*RemoteCmd) Synopsis() string { return "Build remotely." }
 func (*RemoteCmd) Usage() string {
-	return "Build remotely, you should login first to acquire the API_KEY for YourBase"
+	return "Build remotely using YB infrastructure"
 }
 
 func (p *RemoteCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&p.target, "target", "", "Repository to remote build")
 	f.StringVar(&p.baseCommit, "base-commit", "", "Base commit hash as common ancestor")
 	f.StringVar(&p.branch, "branch", "", "Branch name")
+	f.StringVar(&p.patchPath, "patch-path", "", "Path to save the patch")
 	f.BoolVar(&p.noAcceleration, "no-accel", false, "Disable accelaration")
+	f.BoolVar(&p.noDeleteTemp, "no-delete-temp", false, "Delete temp generated data")
 
 }
 
@@ -153,6 +158,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		if err = file.Close(); err != nil {
 			//Ignore
 		}
+		// We just need the unique name
 		os.Remove(patchFile)
 	}
 
@@ -161,7 +167,9 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		fmt.Printf("Unable to create clone dir to fetch and checkout remote repository '%v': %v\n", project.Repository, err)
 		return subcommands.ExitFailure
 	}
-	defer os.RemoveAll(cloneDir)
+	if p.noDeleteTemp {
+		defer os.RemoveAll(cloneDir)
+	}
 
 	// First things first:
 	// 1. Define correct branch name
@@ -181,6 +189,8 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	branchOnRemote := false
+	LOGGER.Debugf("Cloning repo %s into %s, using found branch '%s'", project.Repository, cloneDir, foundBranch)
+
 	clonedRepo, err := CloneRepository(project.Repository, cloneDir, foundBranch)
 	if err != nil {
 		fmt.Printf("Unable to clone %v, using branch '%v': %v\n", project.Repository, foundBranch, err)
@@ -190,14 +200,15 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			fmt.Printf("Unable to clone %v using the master branch: %v\n", project.Repository, err)
 			return subcommands.ExitFailure
 		}
+		p.branch = "master"
 	} else {
 		branchOnRemote = true
+		p.branch = foundBranch
 	}
-	p.branch = foundBranch
 
 	foundCommit, err := defineCommit(workRepo, p.baseCommit)
 	if err != nil {
-		fmt.Printf("Error finding base-commit argument: %v\n", err)
+		fmt.Printf("Error finding and deciding which base-commit to use: %v\n", err)
 		return subcommands.ExitFailure
 	} else {
 		fmt.Printf("Found commit: '%v'\n", foundCommit)
@@ -221,7 +232,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		patchFile:        patchFile,
 	}
 
-	fmt.Printf("targetRepository: %v patchFile: %v\n", patchCmd.targetRepository, patchCmd.patchFile)
+	LOGGER.Debugf("targetRepository: %v patchFile: %v\n", patchCmd.targetRepository, patchCmd.patchFile)
 
 	if patchCmd.Execute(context.Background(), f, nil) != subcommands.ExitSuccess {
 		fmt.Printf("Patch command failed\n")
@@ -229,6 +240,14 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	p.patchFile = patchFile
+
+	if p.patchPath != "" {
+		if err := savePatch(p); err != nil {
+			fmt.Printf("\nUnable to save copy of generated patch: %v\n\n", err)
+		} else {
+			fmt.Printf("Patch copy saved at: %v\n", p.patchPath)
+		}
+	}
 
 	err = submitBuild(project, p, target.Tags)
 
@@ -354,7 +373,7 @@ func defineBranch(r *git.Repository, hintBranch string) (string, error) {
 
 	if ref.Name().IsBranch() {
 		if hintBranch != "" {
-			if hintBranch == ref.Name().String() {
+			if hintBranch == ref.Name().Short() {
 				fmt.Printf("Informed branch is the one used locally")
 
 				return hintBranch, nil
@@ -363,7 +382,8 @@ func defineBranch(r *git.Repository, hintBranch string) (string, error) {
 				return hintBranch, fmt.Errorf("Informed branch (%v) isn't the same as the one used locally (%v)", hintBranch, ref.Name().String())
 			}
 		} else {
-			return ref.Name().String(), nil
+			LOGGER.Debugf("Found branch reference name is %v", ref.Name().Short())
+			return ref.Name().Short(), nil
 		}
 
 	} else {
@@ -476,6 +496,18 @@ func fetchUserEmail() (string, error) {
 	}
 }
 
+func savePatch(cmd *RemoteCmd) error {
+
+	data, _ := ioutil.ReadFile(cmd.patchFile)
+	err := ioutil.WriteFile(cmd.patchPath, data, 0644)
+
+	if err != nil {
+		return fmt.Errorf("Couldn't save a local patch file at: %v, because: %v", err)
+	}
+
+	return nil
+}
+
 func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) error {
 
 	userToken, err := getUserToken()
@@ -492,12 +524,14 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 		return fmt.Errorf("Couldn't compress the patch file: \n    %s\n", err)
 	}
 
+	patchEncoded := base64.StdEncoding.EncodeToString(patchBuffer.Bytes())
+
 	formData := url.Values{
 		"project_id": {strconv.Itoa(project.Id)},
 		"repository": {project.Repository},
 		"api_key":    {userToken},
 		"target":     {cmd.target},
-		"patch_data": {patchBuffer.String()},
+		"patch_data": {patchEncoded},
 		"commit":     {cmd.commonCommit},
 		"branch":     {cmd.branch},
 	}
@@ -511,10 +545,11 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 		formData.Add("tags[]", tag)
 	}
 
-	//XXX Remove, just for checing it out
-	fmt.Printf("Calling backend with the following values: %v\n", formData)
+	LOGGER.Debugf("Calling backend with the following values: %v\n", formData)
 
-	defer os.Remove(cmd.patchFile)
+	if cmd.noDeleteTemp {
+		defer os.Remove(cmd.patchFile)
+	}
 
 	resp, err := postToApi("builds/cli", formData)
 	if err != nil {
@@ -532,8 +567,13 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 
 	//Process simple response from the API
 	response = strings.ReplaceAll(response, "\"", "")
-	split := strings.Split(response, "\n")
-	url := split[0]
+
+	url := ""
+	if strings.Count(response, "\n") > 0 {
+		url = strings.Split(response, "\n")[0]
+	} else {
+		url = response
+	}
 
 	if strings.HasPrefix(url, "ws:") || strings.HasPrefix(url, "wss:") {
 		fmt.Printf("Streaming build output from %s\n", url)
@@ -565,8 +605,7 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 			}
 		}
 	} else {
-		fmt.Println("Wrong url:")
-		fmt.Println(url)
+		return fmt.Errorf("Unable to stream build output!")
 	}
 
 	return nil

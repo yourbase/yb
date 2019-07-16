@@ -17,6 +17,7 @@ import (
 
 	"github.com/ulikunitz/xz"
 	"gopkg.in/src-d/go-git.v4"
+	"gopkg.in/src-d/go-git.v4/plumbing"
 )
 
 func ExecToStdout(cmdString string, targetDir string) error {
@@ -375,13 +376,12 @@ func CompressBuffer(b *bytes.Buffer) error {
 	if err != nil {
 		return fmt.Errorf("Unable to compress data: %s\n", err)
 	}
-	defer xzWriter.Close()
 
-	n, err := io.WriteString(xzWriter, b.String())
-
-	if err != nil || n != b.Len() {
-		return fmt.Errorf("Unable to check the compressed data: %s\n", err)
+	if _, err := io.Copy(xzWriter, b); err != nil {
+		return fmt.Errorf("Unable to compress data: %s\n", err)
 	}
+	xzWriter.Close()
+
 	b.Reset()
 	b.Write(buf.Bytes())
 
@@ -398,7 +398,7 @@ func DecompressBuffer(b *bytes.Buffer) error {
 	var buf bytes.Buffer
 
 	if _, err := io.Copy(&buf, xzReader); err != nil {
-		return fmt.Errorf("Decompressed data check failed: %v", err)
+		return fmt.Errorf("Unable to decompress data", err)
 	}
 
 	b.Reset()
@@ -412,22 +412,16 @@ func CloneRepository(uri string, basePath string, branch string) (*git.Repositor
 		return nil, fmt.Errorf("No branch defined to clone repo %v at dir %v", uri, basePath)
 	}
 
-	opts := &git.CloneOptions{
-		URL:          uri,
-		RemoteName:   branch,
-		SingleBranch: true,
-		Depth:        50,
-		Tags:         git.NoTags,
-	}
-
-	if err := opts.Validate(); err != nil {
-		return nil, fmt.Errorf("Unable to clone, starting up: %v\n", err)
-	}
-
 	r, err := git.PlainClone(
 		basePath,
 		false,
-		opts)
+		&git.CloneOptions{
+			URL:           uri,
+			ReferenceName: plumbing.NewBranchReferenceName(branch),
+			SingleBranch:  true,
+			Depth:         50,
+			Tags:          git.NoTags,
+		})
 
 	if err != nil {
 		return nil, fmt.Errorf("Unable to clone: %v\n", err)

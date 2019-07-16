@@ -1,6 +1,8 @@
 package types
 
 import (
+	"github.com/alexcesaro/log/stdlog"
+
 	"time"
 )
 
@@ -104,3 +106,6 @@ type BuildTool interface {
 	Setup() error
 	Version() string
 }
+
+// Logger used by everyone
+var LOGGER = stdlog.GetFromFlags()

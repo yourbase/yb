@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	"github.com/alexcesaro/log/stdlog"
 	"github.com/johnewart/subcommands"
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing"
@@ -20,22 +19,22 @@ import (
 	. "github.com/yourbase/yb/workspace"
 )
 
-var LOGGER = stdlog.GetFromFlags()
-
 type PatchCmd struct {
 	targetRepository string
 	patchFile        string
+	all              bool
 }
 
 func (*PatchCmd) Name() string     { return "patch" }
-func (*PatchCmd) Synopsis() string { return "patch args to stdout." }
+func (*PatchCmd) Synopsis() string { return "patch args to the defined patch file." }
 func (*PatchCmd) Usage() string {
-	return `patch -target <target repository path> -out <patch file>`
+	return `patch -target <target repository path> -out <patch file> `
 }
 
 func (p *PatchCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&p.targetRepository, "target", "", "Repository to generate a patch for")
 	f.StringVar(&p.patchFile, "out", "", "Output file for the patch")
+	f.BoolVar(&p.all, "all", false, "Consider unstaged files too")
 }
 
 func (p *PatchCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
@@ -124,10 +123,46 @@ func (p *PatchCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	baseCommit, _ := workRepo.CommitObject(commonAncestor)
 	headCommit, _ := workRepo.CommitObject(headRef.Hash())
 
+	LOGGER.Debugf("Comparing base commit '%v' to head commit (local directory) '%v'", baseCommit.String(), headCommit.String())
+
+	stagedLocal := false
+	// TODO Stage a dirty worktree base dir
+	worktree, err := workRepo.Worktree()
+	if err == nil {
+		if p.all {
+			// To get untracked, unstaged, staged and other changes between, we have to use the plumbing.Tree object
+
+			// baseTree := workRepo.TreeObjects()
+
+			if status, err := worktree.Status(); err != nil {
+				fmt.Printf("Status unavailable, check your .git dir: %v\n", err)
+			} else {
+				if !status.IsClean() {
+					// Stages changes for them to be included in the patch
+					// Later we should unstage them
+					if _, err := worktree.Add("."); err != nil {
+						fmt.Printf("Couldn't temporarily stage changes: %v\n", err)
+					} else {
+						stagedLocal = true
+					}
+				}
+			}
+		}
+	} else {
+		fmt.Printf("Unable to verify worktree's state, unstaged changes ignored: %v\n", err)
+	}
+
 	commitPatch, _ := baseCommit.Patch(headCommit)
 
 	fmt.Printf("Writing patch to %s\n", patchFile)
 	ioutil.WriteFile(patchFile, []byte(commitPatch.String()), 0600)
+
+	if stagedLocal {
+		// Unstage changes
+		if err = worktree.Reset(&git.ResetOptions{Mode: git.MixedReset}); err != nil {
+			fmt.Printf("Unable to unstage local changes, sorry for the unconvenience")
+		}
+	}
 
 	return subcommands.ExitSuccess
 }
@@ -135,7 +170,7 @@ func (p *PatchCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 func findCommonAncestor(r *git.Repository, commits map[string]bool) plumbing.Hash {
 	ref, err := r.Head()
 	if err != nil {
-		fmt.Printf("No Head: %v\n", err)
+		fmt.Errorf("No Head: %v\n", err)
 	}
 
 	commit, _ := r.CommitObject(ref.Hash())
@@ -144,7 +179,9 @@ func findCommonAncestor(r *git.Repository, commits map[string]bool) plumbing.Has
 
 	err = commitIter.ForEach(func(c *object.Commit) error {
 		hash := c.Hash.String()
-		LOGGER.Debug("Considering %s -> %s...\n", hash, commits[hash])
+		if LOGGER.LogDebug() {
+			LOGGER.Debugf("Considering %s -> %v...\n", hash, commits[hash])
+		}
 		if commits[hash] {
 			commonCommit = c
 			return storer.ErrStop
@@ -154,10 +191,10 @@ func findCommonAncestor(r *git.Repository, commits map[string]bool) plumbing.Has
 	})
 
 	if err != nil {
-		fmt.Errorf("Error printing: %v\n", err)
+		LOGGER.Debugf("Error printing: %v\n", err)
 	}
 
-	LOGGER.Debug("Common commit hash: %s\n", commonCommit.Hash)
+	LOGGER.Debugf("Common commit hash: %s\n", commonCommit.Hash)
 	return commonCommit.Hash
 
 }
