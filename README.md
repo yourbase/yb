@@ -1,5 +1,8 @@
 # YourBase CLI 
 
+
+[![YourBase Community Slack](https://img.shields.io/badge/slack-@yourbase/community-blue.svg?logo=slack)](https://slack.yourbase.io)
+
 `yb build all-the-things!`
 
 A build tool that makes working on projects much more delightful. Stop worrying
@@ -22,6 +25,10 @@ The primary features of the YB tooling are:
   these tools in codified build-packs, these can be installed and configured 
   automatically on a per-project basis. Manage containers and other runtime 
   dependencies programmatically and in a consistent manner. 
+
+* *Remote builds* Run your work and tests in the cloud just like you would 
+  locally or as part of CI! Stream the results back to your machine in real-time
+  to offload the work. (Currently in-progress, requires a free YourBase account)
 
 ![magic!](http://www.reactiongifs.com/r/mgc.gif)
 
