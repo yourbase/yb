@@ -1,0 +1,54 @@
+dependencies:
+  build:
+    - go:1.12.6
+  runtime:
+    - go:1.12.6
+
+build_targets:
+  - name: default
+    commands:
+      - go build
+
+  - name: release
+    build_after:
+      - default
+    commands:
+      - bash release.sh 
+
+  - name: linux
+    build_after: 
+      - default
+    tags:
+      os: linux
+    environment: 
+      - GOOS=linux
+      - GOARCH=amd64
+    commands:
+      - go build -o yb-linux-amd64
+
+  - name: darwin
+    tags:
+      os: darwin
+    environment:
+      - GOOS=darwin
+      - GOARCH=amd64
+    commands:
+      - go build -o yb-darwin-amd64
+
+ci:
+  builds:
+    - name: test_build
+      build_target: default
+
+    - name: build_darwin
+      build_target: darwin
+      conditions:
+        branch:
+          in:
+            - osx
+
+    - name: release
+      build_target: release
+      conditions:
+        branch:
+          tag: true
