@@ -97,8 +97,13 @@ func (bt HomebrewBuildTool) InstallPackage() error {
 		return fmt.Errorf("Couldn't update brew: %v", err)
 	}
 
-	fmt.Printf("Going to install %s@%s from Homebrew...\n", bt.pkgName, bt.version)
-	installCmd := fmt.Sprintf("brew install %s@%s", bt.pkgName, bt.version)
+	pkgVersion := ""
+	if bt.version != "" {
+		pkgVersion = fmt.Sprintf("@%s", bt.version)
+	}
+
+	fmt.Printf("Going to install %s%s from Homebrew...\n", bt.pkgName, pkgVersion)
+	installCmd := fmt.Sprintf("brew install %s%s", bt.pkgName, pkgVersion)
 	err = ExecToStdout(installCmd, brewDir)
 
 	if err != nil {
