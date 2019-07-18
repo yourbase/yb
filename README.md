@@ -28,7 +28,7 @@ The primary features of the YB tooling are:
 
 * *Remote builds* Run your work and tests in the cloud just like you would 
   locally or as part of CI! Stream the results back to your machine in real-time
-  to offload the work. (Currently in-progress, requires a free YourBase account)
+  to offload the work. (Currently in-progress, requires a YourBase account)
 
 ![magic!](http://www.reactiongifs.com/r/mgc.gif)
 
