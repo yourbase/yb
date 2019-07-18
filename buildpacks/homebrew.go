@@ -61,7 +61,7 @@ func (bt HomebrewBuildTool) InstallDarwin() error {
 
 	MkdirAsNeeded(installDir)
 
-	brewGitUrl := "https://github.com/Linuxbrew/brew.git"
+	brewGitUrl := "https://github.com/Homebrew/brew.git"
 
 	if _, err := os.Stat(brewDir); err == nil {
 		fmt.Printf("brew installed in %s\n", brewDir)
@@ -78,6 +78,9 @@ func (bt HomebrewBuildTool) InstallDarwin() error {
 			return fmt.Errorf("Couldn't clone brew: %v\n", err)
 		}
 	}
+	fmt.Printf("Updating brew\n")
+	updateCmd := "brew update"
+	ExecToStdout(updateCmd, brewDir)
 
 	return nil
 }
@@ -107,7 +110,9 @@ func (bt HomebrewBuildTool) InstallLinux() error {
 			return fmt.Errorf("Couldn't clone brew: %v\n", err)
 		}
 	}
-
+	fmt.Printf("Updating brew\n")
+	updateCmd := "brew update"
+	ExecToStdout(updateCmd, brewDir)
 	return nil
 }
 

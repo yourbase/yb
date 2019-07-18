@@ -139,6 +139,12 @@ func (bt PythonBuildTool) InstallPlatformDependencies() error {
 				cmd.Run()
 			}
 		}
+		// Thanks to henriquebastos, here:
+		// https://github.com/pyenv/pyenv/issues/1066#issuecomment-504710495
+		if strings.HasPrefix(gi.Core, "18.6") {
+			os.Setenv("SDKROOT", "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk")
+			os.Setenv("MACOSX_DEPLOYMENT_TARGET", "10.14")
+		}
 	}
 
 	return nil
