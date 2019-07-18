@@ -61,7 +61,7 @@ func (bt HomebrewBuildTool) InstallDarwin() error {
 
 	MkdirAsNeeded(installDir)
 
-	brewGitUrl := "https://github.com/Linuxbrew/brew.git"
+	brewGitUrl := "https://github.com/Homebrew/brew.git"
 
 	if _, err := os.Stat(brewDir); err == nil {
 		fmt.Printf("brew installed in %s\n", brewDir)
