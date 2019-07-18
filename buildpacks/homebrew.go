@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/matishsiao/goInfo"
 	. "github.com/yourbase/yb/plumbing"
@@ -15,12 +16,28 @@ type HomebrewBuildTool struct {
 	BuildTool
 	version string
 	spec    BuildToolSpec
+	pkgName string
 }
 
 func NewHomebrewBuildTool(toolSpec BuildToolSpec) HomebrewBuildTool {
+
+	pkgName := ""
+	version := toolSpec.Version
+
+	parts := strings.Split(version, "@")
+	if len(parts) == 2 {
+		// Package
+		pkgName = parts[0]
+		version = parts[1]
+	} else {
+		// Homebrew itself
+		version = toolSpec.Version
+	}
+
 	tool := HomebrewBuildTool{
-		version: toolSpec.Version,
+		version: version,
 		spec:    toolSpec,
+		pkgName: pkgName,
 	}
 
 	return tool
@@ -44,15 +61,51 @@ func (bt HomebrewBuildTool) InstallDir() string {
 func (bt HomebrewBuildTool) Install() error {
 	gi := goInfo.GetInfo()
 
+	var err error
 	switch gi.GoOS {
 	case "darwin":
-		return bt.InstallDarwin()
+		err = bt.InstallDarwin()
 	case "linux":
-		return bt.InstallLinux()
+		err = bt.InstallLinux()
 	default:
-		fmt.Printf("Unsupported platform: %s\n", gi.GoOS)
-		return nil
+		err = fmt.Errorf("Unsupported platform: %s\n", gi.GoOS)
 	}
+
+	if err != nil {
+		return fmt.Errorf("Unable to install Homebrew: %v\n", err)
+	}
+
+	fmt.Printf("Installing package %s\n", bt.pkgName)
+	if bt.pkgName != "" {
+		err = bt.InstallPackage()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (bt HomebrewBuildTool) InstallPackage() error {
+	bt.Setup()
+
+	brewDir := bt.HomebrewDir()
+
+	updateCmd := "brew update"
+	err := ExecToStdout(updateCmd, brewDir)
+	if err != nil {
+		return fmt.Errorf("Couldn't update brew: %v", err)
+	}
+
+	fmt.Printf("Going to install %s@%s from Homebrew...\n", bt.pkgName, bt.version)
+	installCmd := fmt.Sprintf("brew install %s@%s", bt.pkgName, bt.version)
+	err = ExecToStdout(installCmd, brewDir)
+
+	if err != nil {
+		return fmt.Errorf("Couldn't intall %s@%s from  Homebrew: %v", bt.pkgName, bt.version, err)
+	}
+
+	return nil
 }
 
 func (bt HomebrewBuildTool) InstallDarwin() error {
@@ -123,7 +176,6 @@ func (bt HomebrewBuildTool) Setup() error {
 	PrependToPath(brewBinDir)
 
 	return nil
-
 }
 
 func (bt HomebrewBuildTool) InstallPlatformDependencies() error {

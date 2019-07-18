@@ -1,8 +1,22 @@
 package types
 
 import (
+	"bytes"
+	"crypto/sha256"
 	"fmt"
 )
+
+const PKG_CHECKSUM_LENGTH = 12
+
+func (b BuildManifest) BuildDependenciesChecksum() string {
+	buf := bytes.Buffer{}
+	for _, dep := range b.Dependencies.Build {
+		buf.Write([]byte(dep))
+	}
+
+	sum := sha256.Sum256(buf.Bytes())
+	return fmt.Sprintf("%x", sum[:PKG_CHECKSUM_LENGTH])
+}
 
 func (b BuildManifest) IsTargetSandboxed(target BuildTarget) bool {
 	return b.Sandbox || target.Sandbox
