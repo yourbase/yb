@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-const PKG_CHECKSUM_LENGTH = 12
+const DependencyChecksumLength = 12
 
 func (b BuildManifest) BuildDependenciesChecksum() string {
 	buf := bytes.Buffer{}
@@ -15,7 +15,7 @@ func (b BuildManifest) BuildDependenciesChecksum() string {
 	}
 
 	sum := sha256.Sum256(buf.Bytes())
-	return fmt.Sprintf("%x", sum[:PKG_CHECKSUM_LENGTH])
+	return fmt.Sprintf("%x", sum[:DependencyChecksumLength])
 }
 
 func (b BuildManifest) IsTargetSandboxed(target BuildTarget) bool {

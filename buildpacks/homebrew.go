@@ -68,11 +68,11 @@ func (bt HomebrewBuildTool) Install() error {
 	case "linux":
 		err = bt.InstallLinux()
 	default:
-		err = fmt.Errorf("Unsupported platform: %s\n", gi.GoOS)
+		err = fmt.Errorf("Unsupported platform: %s", gi.GoOS)
 	}
 
 	if err != nil {
-		return fmt.Errorf("Unable to install Homebrew: %v\n", err)
+		return fmt.Errorf("Unable to install Homebrew: %v", err)
 	}
 
 	fmt.Printf("Installing package %s\n", bt.pkgName)
