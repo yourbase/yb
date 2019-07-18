@@ -26,8 +26,9 @@ import (
 const TIME_FORMAT = "15:04:05 MST"
 
 type BuildCmd struct {
-	ExecPrefix  string
-	NoContainer bool
+	ExecPrefix       string
+	NoContainer      bool
+	DependenciesOnly bool
 }
 
 type BuildConfiguration struct {
@@ -52,6 +53,7 @@ func (*BuildCmd) Usage() string {
 
 func (b *BuildCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&b.NoContainer, "no-container", false, "Bypass container even if specified")
+	f.BoolVar(&b.DependenciesOnly, "deps-only", false, "Install only dependencies, don't do anything else")
 	f.StringVar(&b.ExecPrefix, "exec-prefix", "", "Add a prefix to all executed commands (useful for timing or wrapping things)")
 }
 
@@ -139,6 +141,8 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	fmt.Printf("Building package %s in %s...\n", targetPackage.Name, targetDir)
 	manifest := targetPackage.Manifest
 
+	fmt.Printf("Checksum of dependencies: %s\n", manifest.BuildDependenciesChecksum())
+
 	//workspace.SetupEnv()
 	fmt.Println("\n\n === ENVIRONMENT SETUP ===\n")
 	setupTimer, err := SetupBuildDependencies(targetPackage)
@@ -146,6 +150,11 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	if err != nil {
 		fmt.Printf("Error setting up dependencies: %v\n", err)
 		return subcommands.ExitFailure
+	}
+
+	if b.DependenciesOnly {
+		fmt.Printf("Only installing dependencies; done!\n")
+		return subcommands.ExitSuccess
 	}
 
 	var targetTimers []TargetTimer
