@@ -78,6 +78,9 @@ func (bt HomebrewBuildTool) InstallDarwin() error {
 			return fmt.Errorf("Couldn't clone brew: %v\n", err)
 		}
 	}
+	fmt.Printf("Updating brew\n")
+	updateCmd := "brew update"
+	ExecToStdout(updateCmd, brewDir)
 
 	return nil
 }
@@ -107,7 +110,9 @@ func (bt HomebrewBuildTool) InstallLinux() error {
 			return fmt.Errorf("Couldn't clone brew: %v\n", err)
 		}
 	}
-
+	fmt.Printf("Updating brew\n")
+	updateCmd := "brew update"
+	ExecToStdout(updateCmd, brewDir)
 	return nil
 }
 
