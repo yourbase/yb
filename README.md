@@ -9,7 +9,8 @@ A build tool that makes working on projects much more delightful. Stop worrying
 about dependencies and keep your CI build process in-sync with your local
 development process.
 
-It is kind of like docker, but with composable build-packs, a CI-friendly YAML and remote builds.
+It is kind of like docker, but with composable build-packs, configurable with YAML
+and that can be used in CIs or in remote builds.
 
 The primary features of the YB tooling are:
 
