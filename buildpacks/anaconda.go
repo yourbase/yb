@@ -87,7 +87,7 @@ func (bt AnacondaBuildTool) DownloadUrl() string {
 	}
 
 	if arch == "amd64" {
-		arch = "x64"
+		arch = "x86_64"
 	}
 
 	if opsys == "darwin" {
