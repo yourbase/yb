@@ -421,7 +421,8 @@ func NewContainer(opts BuildContainerOpts) (BuildContainer, error) {
 	containerDef := opts.ContainerOpts
 	s := strings.Split(containerDef.Image, ":")
 	imageName := s[0]
-	containerName := fmt.Sprintf("%s-%s", opts.Package.Name, imageName)
+	containerImageName := strings.Replace(imageName, "/", "_", -1)
+	containerName := fmt.Sprintf("%s-%s", opts.Package.Name, containerImageName)
 
 	fmt.Printf("Creating container '%s'\n", containerName)
 
