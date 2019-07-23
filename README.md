@@ -18,7 +18,7 @@ The primary features of the YB tooling are:
   CI/CD process should not be any different than how it is built on a
   developer's machine. Keeping tooling in-sync means predictable results and 
   a better developer experience for everyone. (Although local builds are not 
-  fully iolated yet)
+  fully isolated yet)
 
 * *Accelerated on-boarding* Many projects have long sets of instructions that 
   are required for a developer to get started. With YB, the experience is as 
