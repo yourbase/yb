@@ -11,17 +11,28 @@ import (
 
 type AnacondaBuildTool struct {
 	BuildTool
-	version string
-	spec    BuildToolSpec
+	version         string
+	spec            BuildToolSpec
+	pyCompatibleNum int
 }
 
-// Fixed for Python3, later we'll create some support for Python2
-var ANACONDA_DIST_MIRROR = "https://repo.continuum.io/miniconda/Miniconda3-{{.Version}}-Linux-x86_64.sh"
+var ANACONDA_DIST_MIRROR = "https://repo.continuum.io/miniconda/Miniconda{{.PyNum}}-{{.Version}}-{{.OS}}-{{.Arch}}.{{.Extension}}"
 
-func NewAnacondaBuildTool(toolSpec BuildToolSpec) AnacondaBuildTool {
+func NewAnaconda2BuildTool(toolSpec BuildToolSpec) AnacondaBuildTool {
 	tool := AnacondaBuildTool{
-		version: toolSpec.Version,
-		spec:    toolSpec,
+		version:         toolSpec.Version,
+		spec:            toolSpec,
+		pyCompatibleNum: 2,
+	}
+
+	return tool
+}
+
+func NewAnaconda3BuildTool(toolSpec BuildToolSpec) AnacondaBuildTool {
+	tool := AnacondaBuildTool{
+		version:         toolSpec.Version,
+		spec:            toolSpec,
+		pyCompatibleNum: 3,
 	}
 
 	return tool
@@ -93,11 +104,13 @@ func (bt AnacondaBuildTool) DownloadUrl() string {
 	}
 
 	data := struct {
+		PyNum     int
 		OS        string
 		Arch      string
 		Version   string
 		Extension string
 	}{
+		bt.pyCompatibleNum,
 		opsys,
 		arch,
 		version,

@@ -44,8 +44,10 @@ func LoadBuildPacks(dependencies []string, pkgCacheDir string, pkgDir string) ([
 		fmt.Printf("Configuring build tool: %s\n", toolSpec)
 
 		switch buildpackName {
-		case "anaconda":
-			bt = NewAnacondaBuildTool(spec)
+		case "anaconda2":
+			bt = NewAnaconda2BuildTool(spec)
+		case "anaconda3":
+			bt = NewAnaconda3BuildTool(spec)
 		case "ant":
 			bt = NewAntBuildTool(spec)
 		case "r":
