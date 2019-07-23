@@ -42,9 +42,13 @@ func ExecToStdout(cmdString string, targetDir string) error {
 
 func PrependToPath(dir string) {
 	currentPath := os.Getenv("PATH")
-	newPath := fmt.Sprintf("%s:%s", dir, currentPath)
-	fmt.Printf("Setting PATH to %s\n", newPath)
-	os.Setenv("PATH", newPath)
+	// Only prepend if it's not already the head; presume that
+	// whomever asked for this wants to be at the front so it's okay if it's
+	// duplicated later
+	if !strings.HasPrefix(currentPath, dir) {
+		newPath := fmt.Sprintf("%s:%s", dir, currentPath)
+		os.Setenv("PATH", newPath)
+	}
 }
 
 func ConfigFilePath(filename string) string {
