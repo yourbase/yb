@@ -415,9 +415,9 @@ func RunCommands(config BuildConfiguration) ([]CommandTimer, error) {
 			//os.Chdir(dir)
 			targetDir = dir
 		} else {
-			if target.Root != "" {
-				fmt.Printf("Build root is %s\n", target.Root)
-				targetDir = filepath.Join(targetDir, target.Root)
+			if target.WorkDir != "" {
+				fmt.Printf("Build root is %s\n", target.WorkDir)
+				targetDir = filepath.Join(targetDir, target.WorkDir)
 			}
 
 			if sandboxed {

@@ -71,7 +71,7 @@ type BuildTarget struct {
 	Artifacts   []string            `yaml:"artifacts"`
 	CachePaths  []string            `yaml:"cache_paths"`
 	Sandbox     bool                `yaml:"sandbox"`
-	Root        string              `yaml:"root"`
+	WorkDir     string              `yaml:"workdir"`
 	Environment []string            `yaml:"environment"`
 	Tags        map[string]string   `yaml:"tags"`
 	BuildAfter  []string            `yaml:"build_after"`
