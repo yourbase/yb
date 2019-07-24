@@ -188,7 +188,6 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		return subcommands.ExitFailure
 	}
 
-	branchOnRemote := false
 	LOGGER.Debugf("Cloning repo %s into %s, using found branch '%s'", project.Repository, cloneDir, foundBranch)
 
 	clonedRepo, err := CloneRepository(project.Repository, cloneDir, foundBranch)
@@ -202,7 +201,6 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 		p.branch = "master"
 	} else {
-		branchOnRemote = true
 		p.branch = foundBranch
 	}
 
@@ -215,17 +213,13 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		p.baseCommit = foundCommit
 	}
 
-	if !branchOnRemote {
-		targetSet := commitSet(workRepo)
-		if targetSet == nil {
-			fmt.Printf("Branch isn't on remote yet and couldn't build a commit set for comparing\n")
-			return subcommands.ExitFailure
-		}
-
-		p.commonCommit = findCommonAncestor(clonedRepo, targetSet).String()
-	} else {
-		p.commonCommit = p.baseCommit
+	targetSet := commitSet(workRepo)
+	if targetSet == nil {
+		fmt.Printf("Branch isn't on remote yet and couldn't build a commit set for comparing\n")
+		return subcommands.ExitFailure
 	}
+
+	p.commonCommit = findCommonAncestor(clonedRepo, targetSet).String()
 
 	patchCmd := &PatchCmd{
 		targetRepository: cloneDir,
