@@ -416,7 +416,7 @@ func RunCommands(config BuildConfiguration) ([]CommandTimer, error) {
 			targetDir = dir
 		} else {
 			if target.WorkDir != "" {
-				fmt.Printf("Build root is %s\n", target.WorkDir)
+				fmt.Printf("Workdir is %s\n", target.WorkDir)
 				targetDir = filepath.Join(targetDir, target.WorkDir)
 			}
 
