@@ -12,8 +12,9 @@ import (
 	"os"
 	"strings"
 
-	. "github.com/yourbase/yb/plumbing"
 	. "github.com/yourbase/yb/types"
+
+	ybconfig "github.com/yourbase/yb/config"
 )
 
 type LoginCmd struct {
@@ -30,7 +31,7 @@ func (p *LoginCmd) SetFlags(f *flag.FlagSet) {
 
 func (p *LoginCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	reader := bufio.NewReader(os.Stdin)
-	fmt.Println("Open up https://app.yourbase.io/user/apitoken and then paste the token here.")
+	fmt.Println(fmt.Sprintf("Open up %s and then paste the token here.", ybconfig.ManagementUrl("user/apitoken")))
 	fmt.Println()
 
 	fmt.Print("Token: ")
@@ -39,7 +40,7 @@ func (p *LoginCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 
 	fmt.Println()
 
-	resp, err := http.Get(ApiUrl(fmt.Sprintf("/apikey/validate/%s", apiToken)))
+	resp, err := http.Get(ybconfig.ApiUrl(fmt.Sprintf("/apikey/validate/%s", apiToken)))
 
 	if err != nil {
 		fmt.Printf("Couldn't make validation request: %v\n", err)
@@ -72,7 +73,7 @@ func (p *LoginCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		return subcommands.ExitFailure
 	}
 
-	if err = SetConfigValue("user", "api_key", apiToken); err != nil {
+	if err = ybconfig.SetConfigValue("user", "api_key", apiToken); err != nil {
 		fmt.Printf("Cannot store API token: %v\n", err)
 		return subcommands.ExitFailure
 	} else {

@@ -1,4 +1,4 @@
-package plumbing
+package config
 
 import (
 	"fmt"
@@ -6,15 +6,17 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+
+	"github.com/yourbase/yb/plumbing"
 )
 
 func configFilePath() string {
 	u, _ := user.Current()
 	configDir := filepath.Join(u.HomeDir, ".config", "yb")
-	MkdirAsNeeded(configDir)
+	plumbing.MkdirAsNeeded(configDir)
 	iniPath := filepath.Join(configDir, "settings.ini")
 
-	if !PathExists(iniPath) {
+	if !plumbing.PathExists(iniPath) {
 		emptyFile, _ := os.Create(iniPath)
 		emptyFile.Close()
 	}
@@ -35,19 +37,34 @@ func loadConfigFile() (*ini.File, error) {
 
 }
 
+func SectionPrefix() string {
+	profile := YourBaseProfile()
+	if profile != "" {
+		return fmt.Sprintf("%s:", profile)
+	}
+
+	return ""
+}
+
 func GetConfigValue(section string, key string) (string, error) {
+	sectionPrefix := SectionPrefix()
+	cfgSection := fmt.Sprintf("%s%s", sectionPrefix, section)
+
 	if cfg, err := loadConfigFile(); err != nil {
 		return "", err
 	} else {
-		return cfg.Section(section).Key(key).String(), nil
+		return cfg.Section(cfgSection).Key(key).String(), nil
 	}
 }
 
 func SetConfigValue(section string, key string, value string) error {
+	sectionPrefix := SectionPrefix()
+	cfgSection := fmt.Sprintf("%s%s", sectionPrefix, section)
+
 	if cfg, err := loadConfigFile(); err != nil {
 		return err
 	} else {
-		cfg.Section(section).Key(key).SetValue(value)
+		cfg.Section(cfgSection).Key(key).SetValue(value)
 		iniPath := configFilePath()
 		cfg.SaveTo(iniPath)
 		return nil
