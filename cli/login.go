@@ -31,16 +31,26 @@ func (p *LoginCmd) SetFlags(f *flag.FlagSet) {
 
 func (p *LoginCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	reader := bufio.NewReader(os.Stdin)
-	fmt.Println(fmt.Sprintf("Open up %s and then paste the token here.", ybconfig.ManagementUrl("user/apitoken")))
-	fmt.Println()
+	tokenUrl, err := ybconfig.ManagementUrl("user/apitoken")
+	if err != nil {
+		fmt.Printf("Couldn't determine login URL: %v\n", err)
+		return subcommands.ExitFailure
+	}
 
-	fmt.Print("Token: ")
+	tokenPrompt := fmt.Sprintf("Open up %s and then paste the token here.", tokenUrl)
+	fmt.Println(tokenPrompt)
+	fmt.Print("API Token: ")
 	apiToken, _ := reader.ReadString('\n')
 	apiToken = strings.TrimSuffix(apiToken, "\n")
 
-	fmt.Println()
+	validationUrl, err := ybconfig.ApiUrl(fmt.Sprintf("/apikey/validate/%s", apiToken))
 
-	resp, err := http.Get(ybconfig.ApiUrl(fmt.Sprintf("/apikey/validate/%s", apiToken)))
+	if err != nil {
+		fmt.Printf("Unable to get token validation URL: %v\n", err)
+		return subcommands.ExitFailure
+	}
+
+	resp, err := http.Get(validationUrl)
 
 	if err != nil {
 		fmt.Printf("Couldn't make validation request: %v\n", err)

@@ -190,10 +190,6 @@ func findCommonAncestor(r *git.Repository, commits map[string]bool) plumbing.Has
 		}
 	})
 
-	if err != nil {
-		LOGGER.Debugf("Error printing: %v\n", err)
-	}
-
 	LOGGER.Debugf("Common commit hash: %s\n", commonCommit.Hash)
 	return commonCommit.Hash
 
@@ -220,10 +216,6 @@ func commitSet(r *git.Repository) map[string]bool {
 		hashSet[hash] = true
 		return nil
 	})
-
-	if err != nil {
-		fmt.Printf("Error printing: %v\n", err)
-	}
 
 	return hashSet
 

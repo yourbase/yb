@@ -33,14 +33,14 @@ func YourBaseProfile() string {
 	return ""
 }
 
-func apiBaseUrl() string {
+func apiBaseUrl() (string, error) {
 	if url, exists := os.LookupEnv("YOURBASE_API_URL"); exists {
-		return url
+		return url, nil
 	}
 
 	if url, err := GetConfigValue("yourbase", "api_url"); err == nil {
 		if url != "" {
-			return url
+			return url, nil
 		}
 	}
 
@@ -48,32 +48,39 @@ func apiBaseUrl() string {
 
 	switch profile {
 	case "staging":
-		return "https://api.staging.yourbase.io"
+		return "https://api.staging.yourbase.io", nil
 	case "development":
-		return "http://localhost:5000"
+		return "http://localhost:5000", nil
+	case "":
+	case "production":
+		return "https://api.yourbase.io", nil
 	default:
-		return "https://api.yourbase.io"
+		return "", fmt.Errorf("Unknown environment (%s) and no override in the config file or environment available", profile)
 	}
+
+	return "", fmt.Errorf("Unable to generate URL")
 }
 
-func ApiUrl(path string) string {
+func ApiUrl(path string) (string, error) {
 	if !strings.HasPrefix(path, "/") {
 		path = fmt.Sprintf("/%s", path)
 	}
 
-	apiURL := fmt.Sprintf("%s%s", apiBaseUrl(), path)
-
-	return apiURL
+	if baseUrl, err := apiBaseUrl(); err != nil {
+		return "", fmt.Errorf("Can't determine API URL: %v", err)
+	} else {
+		return fmt.Sprintf("%s%s", baseUrl, path), nil
+	}
 }
 
-func managementBaseUrl() string {
+func managementBaseUrl() (string, error) {
 	if url, exists := os.LookupEnv("YOURBASE_UI_URL"); exists {
-		return url
+		return url, nil
 	}
 
 	if url, err := GetConfigValue("yourbase", "management_url"); err == nil {
 		if url != "" {
-			return url
+			return url, nil
 		}
 	}
 
@@ -81,34 +88,44 @@ func managementBaseUrl() string {
 
 	switch profile {
 	case "staging":
-		return "https://app.staging.yourbase.io"
+		return "https://app.staging.yourbase.io", nil
 	case "development":
-		return "http://localhost:3000"
+		return "http://localhost:3000", nil
+	case "production":
+	case "":
+		return "https://app.yourbase.io", nil
 	default:
-		return "https://app.yourbase.io"
+		return "", fmt.Errorf("Unknown environment (%s) and no override in the config file or environment available", profile)
 	}
+
+	return "", fmt.Errorf("Unable to generate URL")
 }
 
-func ManagementUrl(path string) string {
+func ManagementUrl(path string) (string, error) {
 	if !strings.HasPrefix(path, "/") {
 		path = fmt.Sprintf("/%s", path)
 	}
 
-	managementURL := fmt.Sprintf("%s%s", managementBaseUrl(), path)
-
-	return managementURL
+	if baseUrl, err := managementBaseUrl(); err != nil {
+		return "", fmt.Errorf("Couldn't determine management URL: %v", err)
+	} else {
+		return fmt.Sprintf("%s%s", baseUrl, path), nil
+	}
 }
 
 func UserToken() (string, error) {
 	token, exists := os.LookupEnv("YB_USER_TOKEN")
 	if !exists {
-		if token, err := GetConfigValue("user", "api_key"); err != nil {
+		token, err := GetConfigValue("user", "api_key")
+
+		if err != nil {
 			return "", fmt.Errorf("Unable to find YB token in config file or environment.\nUse yb login to fetch one, if you already logged in to https://app.yourbase.io")
-		} else {
-			fmt.Printf("User token: %s\n", token)
-			return token, nil
 		}
+
+		return token, nil
 	} else {
 		return token, nil
 	}
+
+	return "", fmt.Errorf("Unable to determine token - not in the config or environment")
 }

@@ -129,7 +129,6 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	var repoUrls []string
 
 	for _, r := range list {
-		fmt.Println(r)
 		c := r.Config()
 		for _, u := range c.URLs {
 			repoUrls = append(repoUrls, u)
@@ -145,8 +144,13 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	// Invoke Patch to get one patch file to send to the API
 	if project.Repository == "" {
-		fmt.Printf("Empty repository for project %s, please check your project settings at %s", project.Label,
-			ybconfig.ManagementUrl(fmt.Sprintf("%s/%s", project.OrgSlug, project.Label)))
+		projectUrl, err := ybconfig.ManagementUrl(fmt.Sprintf("%s/%s", project.OrgSlug, project.Label))
+		if err != nil {
+			fmt.Printf("Unable to generate project URL: %v\n", err)
+			return subcommands.ExitFailure
+		}
+
+		fmt.Printf("Empty repository for project %s, please check your project settings at %s", project.Label, projectUrl)
 		return subcommands.ExitFailure
 	}
 
@@ -169,7 +173,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		fmt.Printf("Unable to create clone dir to fetch and checkout remote repository '%v': %v\n", project.Repository, err)
 		return subcommands.ExitFailure
 	}
-	if p.noDeleteTemp {
+	if !p.noDeleteTemp {
 		defer os.RemoveAll(cloneDir)
 	}
 
@@ -190,7 +194,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		return subcommands.ExitFailure
 	}
 
-	LOGGER.Debugf("Cloning repo %s into %s, using found branch '%s'", project.Repository, cloneDir, foundBranch)
+	LOGGER.Debugf("Cloning repo %s into %s, using branch '%s'", project.Repository, cloneDir, foundBranch)
 
 	clonedRepo, err := CloneRepository(project.Repository, cloneDir, foundBranch)
 	if err != nil {
@@ -211,7 +215,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		fmt.Printf("Error finding and deciding which base-commit to use: %v\n", err)
 		return subcommands.ExitFailure
 	} else {
-		fmt.Printf("Found commit: '%v'\n", foundCommit)
+		fmt.Printf("Found common commit: '%v'\n", foundCommit)
 		p.baseCommit = foundCommit
 	}
 
@@ -263,10 +267,14 @@ func postJsonToApi(path string, jsonData []byte) (*http.Response, error) {
 		return nil, err
 	}
 
-	apiURL := ybconfig.ApiUrl(path)
+	apiUrl, err := ybconfig.ApiUrl(path)
+
+	if err != nil {
+		return nil, fmt.Errorf("Unable to generate API URL: %v")
+	}
 
 	client := &http.Client{}
-	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", apiUrl, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, err
 	}
@@ -285,9 +293,12 @@ func postToApi(path string, formData url.Values) (*http.Response, error) {
 		return nil, fmt.Errorf("Couldn't get user token: %v", err)
 	}
 
-	apiURL := ybconfig.ApiUrl(path)
+	apiUrl, err := ybconfig.ApiUrl(path)
+	if err != nil {
+		return nil, fmt.Errorf("Couldn't determine API URL: %v", err)
+	}
 	client := &http.Client{}
-	req, err := http.NewRequest("POST", apiURL, strings.NewReader(formData.Encode()))
+	req, err := http.NewRequest("POST", apiUrl, strings.NewReader(formData.Encode()))
 	if err != nil {
 		return nil, fmt.Errorf("Couldn't make API call: %v", err)
 	}
@@ -432,9 +443,13 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 	}
 
 	LOGGER.Debugf("Common commit: %s\n", cmd.commonCommit)
-	LOGGER.Debugf("Calling backend (%s) with the following values: %v\n", ybconfig.ApiUrl("builds/cli"), formData)
+	cliUrl, err := ybconfig.ApiUrl("builds/cli")
+	if err != nil {
+		LOGGER.Debugf("Unable to generate CLI URL: %v\n", err)
+	}
+	LOGGER.Debugf("Calling backend (%s) with the following values: %v\n", cliUrl, formData)
 
-	if cmd.noDeleteTemp {
+	if !cmd.noDeleteTemp {
 		defer os.Remove(cmd.patchFile)
 	}
 
