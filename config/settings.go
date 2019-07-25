@@ -51,8 +51,9 @@ func apiBaseUrl() (string, error) {
 		return "https://api.staging.yourbase.io", nil
 	case "development":
 		return "http://localhost:5000", nil
-	case "":
 	case "production":
+		return "https://api.yourbase.io", nil
+	case "":
 		return "https://api.yourbase.io", nil
 	default:
 		return "", fmt.Errorf("Unknown environment (%s) and no override in the config file or environment available", profile)
@@ -92,6 +93,7 @@ func managementBaseUrl() (string, error) {
 	case "development":
 		return "http://localhost:3000", nil
 	case "production":
+		return "https://app.yourbase.io", nil
 	case "":
 		return "https://app.yourbase.io", nil
 	default:
