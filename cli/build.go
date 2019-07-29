@@ -17,6 +17,7 @@ import (
 
 	"github.com/johnewart/subcommands"
 
+	ybconfig "github.com/yourbase/yb/config"
 	. "github.com/yourbase/yb/packages"
 	. "github.com/yourbase/yb/plumbing"
 	. "github.com/yourbase/yb/types"
@@ -72,14 +73,12 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 
 	outputs := io.MultiWriter(realStdout)
 	var buf bytes.Buffer
-	uploadBuildLogs := false
+	uploadBuildLogs := ybconfig.ShouldUploadBuildLogs()
 
-	if v, err := GetConfigValue("user", "upload_build_logs"); err == nil {
-		if v == "true" {
-			uploadBuildLogs = true
-			outputs = io.MultiWriter(realStdout, &buf)
-		}
+	if uploadBuildLogs {
+		outputs = io.MultiWriter(realStdout, &buf)
 	}
+
 	c := make(chan bool)
 
 	// copy the output in a separate goroutine so printing can't block indefinitely
@@ -488,7 +487,13 @@ func UploadBuildLogsToAPI(buf *bytes.Buffer) {
 		}
 
 		logViewPath := fmt.Sprintf("/buildlogs/%s", buildLog.UUID)
-		fmt.Printf("View your build log here: %s\n", ManagementUrl(logViewPath))
+		buildLogUrl, err := ybconfig.ManagementUrl(logViewPath)
+
+		if err != nil {
+			fmt.Printf("Unable to determine build log url: %v\n", err)
+		}
+
+		fmt.Printf("View your build log here: %s\n", buildLogUrl)
 	}
 
 }

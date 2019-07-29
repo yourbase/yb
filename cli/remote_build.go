@@ -27,6 +27,8 @@ import (
 	. "github.com/yourbase/yb/plumbing"
 	. "github.com/yourbase/yb/types"
 	. "github.com/yourbase/yb/workspace"
+
+	ybconfig "github.com/yourbase/yb/config"
 )
 
 type RemoteCmd struct {
@@ -127,7 +129,6 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	var repoUrls []string
 
 	for _, r := range list {
-		fmt.Println(r)
 		c := r.Config()
 		for _, u := range c.URLs {
 			repoUrls = append(repoUrls, u)
@@ -143,8 +144,13 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	// Invoke Patch to get one patch file to send to the API
 	if project.Repository == "" {
-		fmt.Printf("Empty repository for project %s, please check your project settings at %s", project.Label,
-			ManagementUrl(fmt.Sprintf("%s/%s", project.OrgSlug, project.Label)))
+		projectUrl, err := ybconfig.ManagementUrl(fmt.Sprintf("%s/%s", project.OrgSlug, project.Label))
+		if err != nil {
+			fmt.Printf("Unable to generate project URL: %v\n", err)
+			return subcommands.ExitFailure
+		}
+
+		fmt.Printf("Empty repository for project %s, please check your project settings at %s", project.Label, projectUrl)
 		return subcommands.ExitFailure
 	}
 
@@ -167,7 +173,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		fmt.Printf("Unable to create clone dir to fetch and checkout remote repository '%v': %v\n", project.Repository, err)
 		return subcommands.ExitFailure
 	}
-	if p.noDeleteTemp {
+	if !p.noDeleteTemp {
 		defer os.RemoveAll(cloneDir)
 	}
 
@@ -188,7 +194,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		return subcommands.ExitFailure
 	}
 
-	LOGGER.Debugf("Cloning repo %s into %s, using found branch '%s'", project.Repository, cloneDir, foundBranch)
+	LOGGER.Debugf("Cloning repo %s into %s, using branch '%s'", project.Repository, cloneDir, foundBranch)
 
 	clonedRepo, err := CloneRepository(project.Repository, cloneDir, foundBranch)
 	if err != nil {
@@ -209,7 +215,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		fmt.Printf("Error finding and deciding which base-commit to use: %v\n", err)
 		return subcommands.ExitFailure
 	} else {
-		fmt.Printf("Found commit: '%v'\n", foundCommit)
+		fmt.Printf("Found common commit: '%v'\n", foundCommit)
 		p.baseCommit = foundCommit
 	}
 
@@ -218,6 +224,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		fmt.Printf("Branch isn't on remote yet and couldn't build a commit set for comparing\n")
 		return subcommands.ExitFailure
 	}
+	p.commonCommit = findCommonAncestor(clonedRepo, targetSet).String()
 
 	p.commonCommit = findCommonAncestor(clonedRepo, targetSet).String()
 
@@ -253,47 +260,21 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	return subcommands.ExitSuccess
 }
 
-func ManagementUrl(path string) string {
-	managementBaseURL, exists := os.LookupEnv("YOURBASE_UI_URL")
-	if !exists {
-		managementBaseURL = "https://app.yourbase.io"
-	}
-
-	if !strings.HasPrefix(path, "/") {
-		path = fmt.Sprintf("/%s", path)
-	}
-
-	managementURL := fmt.Sprintf("%s%s", managementBaseURL, path)
-
-	return managementURL
-}
-
-func ApiUrl(path string) string {
-	apiBaseURL, exists := os.LookupEnv("YOURBASE_API_URL")
-	if !exists {
-		apiBaseURL = "https://api.yourbase.io"
-	}
-
-	if !strings.HasPrefix(path, "/") {
-		path = fmt.Sprintf("/%s", path)
-	}
-
-	apiURL := fmt.Sprintf("%s%s", apiBaseURL, path)
-
-	return apiURL
-}
-
 func postJsonToApi(path string, jsonData []byte) (*http.Response, error) {
-	userToken, err := getUserToken()
+	userToken, err := ybconfig.UserToken()
 
 	if err != nil {
 		return nil, err
 	}
 
-	apiURL := ApiUrl(path)
+	apiUrl, err := ybconfig.ApiUrl(path)
+
+	if err != nil {
+		return nil, fmt.Errorf("Unable to generate API URL: %v")
+	}
 
 	client := &http.Client{}
-	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", apiUrl, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, err
 	}
@@ -304,48 +285,22 @@ func postJsonToApi(path string, jsonData []byte) (*http.Response, error) {
 	return res, err
 
 }
+
 func postToApi(path string, formData url.Values) (*http.Response, error) {
-	userToken, err := getUserToken()
+	userToken, err := ybconfig.UserToken()
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Couldn't get user token: %v", err)
 	}
 
-	apiURL := ApiUrl(path)
+	apiUrl, err := ybconfig.ApiUrl(path)
+	if err != nil {
+		return nil, fmt.Errorf("Couldn't determine API URL: %v", err)
+	}
 	client := &http.Client{}
-	req, err := http.NewRequest("POST", apiURL, strings.NewReader(formData.Encode()))
+	req, err := http.NewRequest("POST", apiUrl, strings.NewReader(formData.Encode()))
 	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("YB_API_TOKEN", userToken)
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	res, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	return res, nil
-}
-
-func postToDispatcher(path string, formData url.Values) (*http.Response, error) {
-	userToken, err := getUserToken()
-
-	if err != nil {
-		return nil, err
-	}
-
-	dispatcherBaseURL, exists := os.LookupEnv("DISPATCHER_URL")
-	if !exists {
-		dispatcherBaseURL = "https://router.yourbase.io"
-	}
-
-	dispatcherURL := fmt.Sprintf("%s/%s", dispatcherBaseURL, path)
-
-	client := &http.Client{}
-	req, err := http.NewRequest("POST", dispatcherURL, strings.NewReader(formData.Encode()))
-	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Couldn't make API call: %v", err)
 	}
 
 	req.Header.Set("YB_API_TOKEN", userToken)
@@ -405,19 +360,6 @@ func defineCommit(r *git.Repository, commit string) (string, error) {
 	return commit, nil
 }
 
-func getUserToken() (string, error) {
-	token, exists := os.LookupEnv("YB_USER_TOKEN")
-	if !exists {
-		if token, err := GetConfigValue("user", "api_key"); err != nil {
-			return "", fmt.Errorf("Unable to find YB token in config file or environment.\nUse yb login to fetch one, if you already logged in to https://app.yourbase.io")
-		} else {
-			return token, nil
-		}
-	} else {
-		return token, nil
-	}
-}
-
 func fetchProject(urls []string) (*Project, error) {
 	v := url.Values{}
 	for _, u := range urls {
@@ -451,45 +393,6 @@ func fetchProject(urls []string) (*Project, error) {
 	return &project, nil
 }
 
-func fetchUserEmail() (string, error) {
-	userToken, err := getUserToken()
-	if err != nil {
-		return "", err
-	}
-
-	apiBaseURL, exists := os.LookupEnv("YOURBASE_API_URL")
-	if !exists {
-		apiBaseURL = "https://api.yourbase.io"
-	}
-
-	apiURL := fmt.Sprintf("%s/users/whoami", apiBaseURL)
-
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", apiURL, nil)
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("YB_API_TOKEN", userToken)
-	res, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-
-	if res.StatusCode == 200 {
-		defer res.Body.Close()
-		body, err := ioutil.ReadAll(res.Body)
-
-		if err != nil {
-			return "", err
-		}
-
-		email := string(body)
-		return email, nil
-	} else {
-		return "", fmt.Errorf("User could not be found using your API token, please double-check and try again")
-	}
-}
-
 func savePatch(cmd *RemoteCmd) error {
 
 	data, _ := ioutil.ReadFile(cmd.patchFile)
@@ -504,7 +407,7 @@ func savePatch(cmd *RemoteCmd) error {
 
 func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) error {
 
-	userToken, err := getUserToken()
+	userToken, err := ybconfig.UserToken()
 
 	if err != nil {
 		return err
@@ -539,9 +442,14 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 		formData.Add("tags[]", tag)
 	}
 
-	LOGGER.Debugf("Calling backend with the following values: %v\n", formData)
+	LOGGER.Debugf("Common commit: %s\n", cmd.commonCommit)
+	cliUrl, err := ybconfig.ApiUrl("builds/cli")
+	if err != nil {
+		LOGGER.Debugf("Unable to generate CLI URL: %v\n", err)
+	}
+	LOGGER.Debugf("Calling backend (%s) with the following values: %v\n", cliUrl, formData)
 
-	if cmd.noDeleteTemp {
+	if !cmd.noDeleteTemp {
 		defer os.Remove(cmd.patchFile)
 	}
 
