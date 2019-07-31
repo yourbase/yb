@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
@@ -486,29 +487,45 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 		conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), url)
 		if err != nil {
 			return fmt.Errorf("Can not connect: %v\n", err)
-		} else {
+		}
+		finish := make(chan struct{})
+
+		go func() {
 			for {
-				msg, _, err := wsutil.ReadServerData(conn)
-				if err != nil {
-					if err != io.EOF {
-						// Ignore
-						//fmt.Printf("can not receive: %v\n", err)
-						//return err
-					} else {
-						fmt.Println("\n\n\nBuild Completed!")
-						return nil
+				select {
+				case <-finish:
+					return
+				case <-time.After(5 * time.Second):
+					err := wsutil.WriteClientMessage(conn, ws.OpPing, []byte("ping"))
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "can not send ping: %v", err)
 					}
-				} else {
-					fmt.Printf("%s", msg)
 				}
 			}
 
-			err = conn.Close()
+		}()
+		for {
+			msg, _, err := wsutil.ReadServerData(conn)
 			if err != nil {
-				fmt.Printf("Can not close: %v\n", err)
+				if err != io.EOF {
+					// Ignore
+					//fmt.Printf("can not receive: %v\n", err)
+					//return err
+				} else {
+					fmt.Println("\n\n\nBuild Completed!")
+					return nil
+				}
 			} else {
-				fmt.Printf("Closed\n")
+				fmt.Printf("%s", msg)
 			}
+		}
+		close(finish)
+
+		err = conn.Close()
+		if err != nil {
+			fmt.Printf("Can not close: %v\n", err)
+		} else {
+			fmt.Printf("Closed\n")
 		}
 	} else {
 		return fmt.Errorf("Unable to stream build output!")
