@@ -491,14 +491,16 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 		finish := make(chan struct{})
 
 		go func() {
+			// TODO: make a reusable dialer that does this?
 			for {
 				select {
 				case <-finish:
 					return
 				case <-time.After(5 * time.Second):
+					LOGGER.Debugf("Sending ping!")
 					err := wsutil.WriteClientMessage(conn, ws.OpPing, []byte("ping"))
 					if err != nil {
-						fmt.Fprintf(os.Stderr, "can not send ping: %v", err)
+						LOGGER.Infof("can not send ping: %v", err)
 					}
 				}
 			}
