@@ -67,7 +67,11 @@ func (b *ExecCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		targetPackage = pkg
 	}
 
-	targetPackage.SetupRuntimeDependencies()
+	if _, err := targetPackage.SetupRuntimeDependencies(); err != nil {
+		fmt.Printf("Couldn't configure dependencies: %v\n", err)
+		return subcommands.ExitFailure
+	}
+
 	instructions := targetPackage.Manifest
 	containers := instructions.Exec.Dependencies.Containers
 

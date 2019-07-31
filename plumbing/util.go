@@ -20,15 +20,20 @@ import (
 	"gopkg.in/src-d/go-git.v4/plumbing"
 )
 
-func ExecToStdout(cmdString string, targetDir string) error {
-	fmt.Printf("Running: %s in %s\n", cmdString, targetDir)
+func ExecToStdoutWithExtraEnv(cmdString string, targetDir string, env []string) error {
+	env = append(os.Environ(), env...)
+	return ExecToStdoutWithEnv(cmdString, targetDir, env)
+}
 
+func ExecToStdoutWithEnv(cmdString string, targetDir string, env []string) error {
+	fmt.Printf("Running: %s in %s\n", cmdString, targetDir)
 	cmdArgs := strings.Fields(cmdString)
 	cmd := exec.Command(cmdArgs[0], cmdArgs[1:len(cmdArgs)]...)
 	cmd.Dir = targetDir
 	cmd.Stdout = os.Stdout
 	cmd.Stdin = os.Stdin
 	cmd.Stderr = os.Stdout
+	cmd.Env = env
 
 	err := cmd.Run()
 
@@ -37,7 +42,10 @@ func ExecToStdout(cmdString string, targetDir string) error {
 	}
 
 	return nil
+}
 
+func ExecToStdout(cmdString string, targetDir string) error {
+	return ExecToStdoutWithEnv(cmdString, targetDir, os.Environ())
 }
 
 func PrependToPath(dir string) {
