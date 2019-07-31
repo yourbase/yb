@@ -37,7 +37,7 @@ func (bt PythonBuildTool) AnacondaInstallDir() string {
 }
 
 func (bt PythonBuildTool) EnvironmentDir() string {
-	return filepath.Join(bt.spec.PackageCacheDir, "python", bt.Version())
+	return filepath.Join(bt.spec.PackageCacheDir, "conda-python", bt.Version())
 }
 
 func (bt PythonBuildTool) Install() error {
