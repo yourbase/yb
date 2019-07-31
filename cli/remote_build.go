@@ -170,7 +170,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	cloneDir, err := ioutil.TempDir("", "yb-clone-")
 	if err != nil {
-		fmt.Printf("Unable to create clone dir to fetch and checkout remote repository '%v': %v\n", project.Repository, err)
+		fmt.Printf("Unable to create clone dir to fetch and checkout remote repository '%v': %v\n", project.LocalRepoRemote, err)
 		return subcommands.ExitFailure
 	}
 	if !p.noDeleteTemp {
@@ -194,15 +194,15 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		return subcommands.ExitFailure
 	}
 
-	LOGGER.Debugf("Cloning repo %s into %s, using branch '%s'", project.Repository, cloneDir, foundBranch)
+	LOGGER.Debugf("Cloning repo %s into %s, using branch '%s'", project.LocalRepoRemote, cloneDir, foundBranch)
 
-	clonedRepo, err := CloneRepository(project.Repository, cloneDir, foundBranch)
+	clonedRepo, err := CloneRepository(project.LocalRepoRemote, cloneDir, foundBranch)
 	if err != nil {
-		fmt.Printf("Unable to clone %v, using branch '%v': %v\n", project.Repository, foundBranch, err)
+		fmt.Printf("Unable to clone %v, using branch '%v': %v\n", project.LocalRepoRemote, foundBranch, err)
 
-		clonedRepo, err = CloneRepository(project.Repository, cloneDir, "master")
+		clonedRepo, err = CloneRepository(project.LocalRepoRemote, cloneDir, "master")
 		if err != nil {
-			fmt.Printf("Unable to clone %v using the master branch: %v\n", project.Repository, err)
+			fmt.Printf("Unable to clone %v using the master branch: %v\n", project.LocalRepoRemote, err)
 			return subcommands.ExitFailure
 		}
 		p.branch = "master"
@@ -388,6 +388,10 @@ func fetchProject(urls []string) (*Project, error) {
 	err = json.Unmarshal(body, &project)
 	if err != nil {
 		return nil, err
+	}
+	// TODO: Use the correct URL rather than the first one.
+	if len(urls) > 0 {
+		project.LocalRepoRemote = urls[0]
 	}
 
 	return &project, nil
