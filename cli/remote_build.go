@@ -484,6 +484,8 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 
 	if strings.HasPrefix(url, "ws:") || strings.HasPrefix(url, "wss:") {
 		fmt.Printf("Streaming build output from %s\n", url)
+		recentReconnect := false
+	CONN:
 		conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), url)
 		if err != nil {
 			return fmt.Errorf("Can not connect: %v\n", err)
@@ -497,10 +499,9 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 				case <-finish:
 					return
 				case <-time.After(5 * time.Second):
-					LOGGER.Debugf("Sending ping!")
 					err := wsutil.WriteClientMessage(conn, ws.OpPing, []byte("ping"))
 					if err != nil {
-						LOGGER.Infof("can not send ping: %v", err)
+						LOGGER.Debugf("can not send ping: %v", err)
 					}
 				}
 			}
@@ -509,17 +510,30 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 		for {
 			msg, _, err := wsutil.ReadServerData(conn)
 			if err != nil {
-				if err != io.EOF {
-					// Ignore
-					//fmt.Printf("can not receive: %v\n", err)
-					//return err
-				} else {
-					fmt.Println("\n\n\nBuild Completed!")
-					return nil
+				// TODO: modify dispatcher to send a typed build status to all log
+				// listeners. See router.TransitionBuild.
+
+				// EOF does not really mean the build ended. Heroku disconnects also
+				// come as an EOF.
+				if err == io.EOF && !recentReconnect {
+					LOGGER.Debug("EOF Reconnecting")
+					conn.Close()
+					close(finish)
+					recentReconnect = true
+					goto CONN
 				}
-			} else {
-				fmt.Printf("%s", msg)
+
+				if err != io.EOF {
+					LOGGER.Debugf("Conn error: %v. Reconnecting", err)
+					conn.Close()
+					close(finish)
+					goto CONN
+				}
+				fmt.Println("\n\n\nBuild ", err)
+				return nil
 			}
+			fmt.Printf("%s", msg)
+			recentReconnect = false
 		}
 		close(finish)
 
