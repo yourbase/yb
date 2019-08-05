@@ -62,7 +62,7 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 
 	startTime := time.Now()
 
-	fmt.Println(" === BUILD HOST ===\n")
+	fmt.Printf(" === BUILD HOST ===\n\n")
 	gi := goInfo.GetInfo()
 	gi.VarDump()
 
@@ -143,7 +143,7 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	fmt.Printf("Checksum of dependencies: %s\n", manifest.BuildDependenciesChecksum())
 
 	//workspace.SetupEnv()
-	fmt.Println("\n\n === ENVIRONMENT SETUP ===\n")
+	fmt.Printf("\n\n === ENVIRONMENT SETUP ===\n\n")
 	setupTimer, err := SetupBuildDependencies(targetPackage)
 
 	if err != nil {
@@ -159,7 +159,7 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	var targetTimers []TargetTimer
 	var buildError error
 
-	fmt.Println("\n\n === BUILD ===\n")
+	fmt.Printf("\n\n === BUILD ===\n\n")
 	targetTimers = append(targetTimers, setupTimer)
 
 	config := BuildConfiguration{
@@ -275,6 +275,25 @@ func DoBuild(config BuildConfiguration) ([]CommandTimer, error) {
 
 	var stepTimers []CommandTimer
 	var buildError error
+	var sc *ServiceContext
+
+	if !config.ForceNoContainer {
+		containers := target.Dependencies.Containers
+
+		if len(containers) > 0 {
+			var err error
+			contextId := fmt.Sprintf("%s-%s", targetPackage.Name, target.Name)
+			fmt.Printf("Starting %d containers with context id %s...\n", len(containers), contextId)
+			sc, err = NewServiceContextWithId(contextId, targetPackage, containers)
+			if err != nil {
+				fmt.Sprintf("Couldn't create service context for dependencies: %v\n", err)
+			}
+
+			if err = sc.StandUp(); err != nil {
+				fmt.Sprintf("Couldn't start dependencies: %v\n", err)
+			}
+		}
+	}
 
 	if target.Container.Image != "" && !config.ForceNoContainer {
 		fmt.Println("Executing build steps in container")
@@ -293,8 +312,15 @@ func DoBuild(config BuildConfiguration) ([]CommandTimer, error) {
 		stepTimers, buildError = RunCommandsInContainer(config, containerOpts)
 	} else {
 		// Do the commands
-		fmt.Println("Executing build steps...\n")
+		fmt.Printf("Executing build steps...\n\n")
 		stepTimers, buildError = RunCommands(config)
+	}
+
+	if sc != nil {
+		fmt.Printf("\nCleaning up containers...\n")
+		if err := sc.TearDown(); err != nil {
+			fmt.Printf("Problem tearing down containers: %v\n", err)
+		}
 	}
 
 	fmt.Printf("\nResetting target environment variables...\n")

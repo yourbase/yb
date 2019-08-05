@@ -49,32 +49,43 @@ type ExecPhase struct {
 	BuildFirst   []string            `yaml:"build_first"`
 }
 
+type BuildDependencies struct {
+	Containers map[string]ContainerDefinition `yaml:"containers"`
+}
+
 type ExecDependencies struct {
 	Containers map[string]ContainerDefinition `yaml:"containers"`
 }
 
 type ContainerDefinition struct {
-	Image       string   `yaml:"image"`
-	Mounts      []string `yaml:"mounts"`
-	Ports       []string `yaml:"ports"`
-	Environment []string `yaml:"environment"`
-	Command     string   `yaml:"command"`
-	WorkDir     string   `yaml:"workdir"`
-	Privileged  bool
+	Image         string   `yaml:"image"`
+	Mounts        []string `yaml:"mounts"`
+	Ports         []string `yaml:"ports"`
+	Environment   []string `yaml:"environment"`
+	Command       string   `yaml:"command"`
+	WorkDir       string   `yaml:"workdir"`
+	Privileged    bool
+	PortWaitCheck PortWaitCheck `yaml:"port_check"`
+}
+
+type PortWaitCheck struct {
+	Port    int `yaml:"port"`
+	Timeout int `yaml:"timeout"`
 }
 
 type BuildTarget struct {
-	Name        string              `yaml:"name"`
-	Container   ContainerDefinition `yaml:"container"`
-	Tools       []string            `yaml:"tools"`
-	Commands    []string            `yaml:"commands"`
-	Artifacts   []string            `yaml:"artifacts"`
-	CachePaths  []string            `yaml:"cache_paths"`
-	Sandbox     bool                `yaml:"sandbox"`
-	Root        string              `yaml:"root"`
-	Environment []string            `yaml:"environment"`
-	Tags        map[string]string   `yaml:"tags"`
-	BuildAfter  []string            `yaml:"build_after"`
+	Name         string              `yaml:"name"`
+	Container    ContainerDefinition `yaml:"container"`
+	Tools        []string            `yaml:"tools"`
+	Commands     []string            `yaml:"commands"`
+	Artifacts    []string            `yaml:"artifacts"`
+	CachePaths   []string            `yaml:"cache_paths"`
+	Sandbox      bool                `yaml:"sandbox"`
+	Root         string              `yaml:"root"`
+	Environment  []string            `yaml:"environment"`
+	Tags         map[string]string   `yaml:"tags"`
+	BuildAfter   []string            `yaml:"build_after"`
+	Dependencies BuildDependencies   `yaml:"dependencies"`
 }
 
 // API Responses -- use Swagger instead, this is silly

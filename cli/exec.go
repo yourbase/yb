@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -76,14 +75,16 @@ func (b *ExecCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	containers := instructions.Exec.Dependencies.Containers
 
 	fmt.Printf("Starting %d dependencies...\n", len(containers))
+	contextId := targetPackage.Name
 	if len(containers) > 0 {
-		sc, err := NewServiceContext(targetPackage, containers)
+		sc, err := NewServiceContextWithId(contextId, targetPackage, containers)
 		if err != nil {
 			fmt.Sprintf("Couldn't create service context for dependencies: %v\n", err)
 		}
 
 		if err = sc.StandUp(); err != nil {
-			fmt.Sprintf("Couldn't start dependencies: %v\n", err)
+			fmt.Printf("Couldn't start dependencies: %v\n", err)
+			return subcommands.ExitFailure
 		}
 	}
 
@@ -106,7 +107,7 @@ func (b *ExecCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		}
 	}
 
-	log.Printf("Execing target package %s...\n", targetPackage)
+	fmt.Printf("Execing target package %s...\n", targetPackage.Name)
 	execDir := targetPackage.Path
 
 	for _, logFile := range instructions.Exec.LogFiles {

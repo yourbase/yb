@@ -67,7 +67,7 @@ func (b *PackageCmd) ArchiveWorkspace() subcommands.ExitStatus {
 	buildDir := workspace.BuildRoot()
 	outputDir := filepath.Join(buildDir, "output")
 	MkdirAsNeeded(outputDir)
-	archiveFile := fmt.Sprintf("%s-package.tar", targetPackage)
+	archiveFile := fmt.Sprintf("%s-package.tar", targetPackage.Name)
 	pkgFile := filepath.Join(outputDir, archiveFile)
 
 	if PathExists(pkgFile) {

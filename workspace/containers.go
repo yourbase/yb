@@ -1,21 +1,26 @@
 package workspace
 
 import (
-	"fmt"
-	docker "github.com/johnewart/go-dockerclient"
-	"github.com/nu7hatch/gouuid"
-
 	"archive/tar"
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
+	"time"
+
+	docker "github.com/johnewart/go-dockerclient"
+	"github.com/nu7hatch/gouuid"
 
 	. "github.com/yourbase/yb/packages"
 	. "github.com/yourbase/yb/plumbing"
 	. "github.com/yourbase/yb/types"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type ServiceContext struct {
@@ -32,6 +37,7 @@ type BuildContainerOpts struct {
 	ExecUserId    string // who to run exec as (useful for local container builds which map the source)
 	ExecGroupId   string
 	MountPackage  bool
+	Namespace     string // A namespace for prefixing container names
 }
 
 type BuildContainer struct {
@@ -40,10 +46,31 @@ type BuildContainer struct {
 	Options BuildContainerOpts
 }
 
+func sanitizeContainerName(proposed string) string {
+	// Remove unusable characters from the container name
+	// Must match: [a-zA-Z0-9][a-zA-Z0-9_.-]
+	re := regexp.MustCompile(`^([a-zA-Z0-9])([a-zA-Z0-9_.-]+)$`)
+
+	if re.MatchString(proposed) {
+		return proposed
+	}
+
+	badChars := regexp.MustCompile(`[^a-zA-Z0-9_.-]`)
+	result := badChars.ReplaceAllString(proposed, "")
+
+	firstCharRe := regexp.MustCompile(`[a-zA-Z0-9]`)
+	if !firstCharRe.MatchString(string(result[0])) {
+		result = result[1:]
+	}
+
+	return result
+}
+
 func (sc *ServiceContext) FindContainer(cd ContainerDefinition) (*BuildContainer, error) {
 	return FindContainer(BuildContainerOpts{
 		Package:       sc.Package,
 		ContainerOpts: cd,
+		Namespace:     sc.Id,
 	})
 }
 
@@ -55,7 +82,12 @@ func FindContainer(opts BuildContainerOpts) (*BuildContainer, error) {
 
 	s := strings.Split(cd.Image, ":")
 	imageName := s[0]
+
 	containerName := fmt.Sprintf("%s-%s", opts.Package.Name, imageName)
+	// Prefix container name with the namespace
+	if opts.Namespace != "" {
+		containerName = fmt.Sprintf("%s-%s", opts.Namespace, containerName)
+	}
 
 	filters := make(map[string][]string)
 	filters["name"] = append(filters["name"], containerName)
@@ -67,10 +99,10 @@ func FindContainer(opts BuildContainerOpts) (*BuildContainer, error) {
 
 	if err == nil && len(result) > 0 {
 		for _, c := range result {
-			fmt.Printf("ID: %s -- NAME: %s\n", c.ID, c.Names)
+			log.Debugf("ID: %s -- NAME: %s\n", c.ID, c.Names)
 		}
 		c := result[0]
-		fmt.Printf("Found container %s with ID %s\n", containerName, c.ID)
+		log.Debugf("Found container %s with ID %s\n", containerName, c.ID)
 		_, err := client.InspectContainer(c.ID)
 		if err != nil {
 			return nil, err
@@ -105,6 +137,7 @@ func (sc *ServiceContext) NewContainer(c ContainerDefinition) (BuildContainer, e
 	opts := BuildContainerOpts{
 		ContainerOpts: c,
 		Package:       sc.Package,
+		Namespace:     sc.Id,
 	}
 	return NewContainer(opts)
 }
@@ -132,7 +165,7 @@ func PullImage(imageLabel string) error {
 		imageTag = parts[1]
 	}
 
-	fmt.Printf("Pulling %s if needed...\n", imageLabel)
+	log.Debugf("Pulling %s if needed...\n", imageLabel)
 
 	opts := docker.ListImagesOptions{
 		Filters: filters,
@@ -140,8 +173,7 @@ func PullImage(imageLabel string) error {
 
 	imgs, err := client.ListImages(opts)
 	if err != nil {
-		fmt.Printf("Error getting image list: %v\n", err)
-		return err
+		return fmt.Errorf("Error getting image list: %v", err)
 	}
 
 	foundImage := false
@@ -149,7 +181,7 @@ func PullImage(imageLabel string) error {
 		for _, img := range imgs {
 			for _, tag := range img.RepoTags {
 				if tag == imageLabel {
-					fmt.Printf("Found image: %s with tags: %s\n", img.ID, strings.Join(img.RepoTags, ","))
+					log.Debugf("Found image: %s with tags: %s\n", img.ID, strings.Join(img.RepoTags, ","))
 					foundImage = true
 				}
 			}
@@ -157,7 +189,7 @@ func PullImage(imageLabel string) error {
 	}
 
 	if !foundImage {
-		fmt.Printf("Image %s not found, pulling\n", imageLabel)
+		log.Infof("Image %s not found, pulling\n", imageLabel)
 
 		pullOpts := docker.PullImageOptions{
 			Repository:   imageName,
@@ -168,14 +200,119 @@ func PullImage(imageLabel string) error {
 		authConfig := docker.AuthConfiguration{}
 
 		if err = client.PullImage(pullOpts, authConfig); err != nil {
-			fmt.Printf("Unable to pull image: %v\n", err)
-			return err
+			return fmt.Errorf("Unable to pull image: %v\n", err)
 		}
 
 	}
 
 	return nil
 
+}
+
+func (b BuildContainer) ListNetworkIDs() ([]string, error) {
+	client := NewDockerClient()
+	c, err := client.InspectContainer(b.Id)
+
+	networkIds := make([]string, 0)
+
+	if err != nil {
+		return networkIds, fmt.Errorf("Couldn't get networks for container %s: %v", b.Id, err)
+	}
+
+	for _, network := range c.NetworkSettings.Networks {
+		networkIds = append(networkIds, network.NetworkID)
+	}
+	return networkIds, nil
+}
+
+func (b BuildContainer) DisconnectFromNetworks() error {
+
+	dockerClient := NewDockerClient()
+	if networkIds, err := b.ListNetworkIDs(); err != nil {
+		return fmt.Errorf("Can't get listing of networks: %v", err)
+	} else {
+		for _, networkId := range networkIds {
+			opts := docker.NetworkConnectionOptions{
+				Container: b.Id,
+				EndpointConfig: &docker.EndpointConfig{
+					NetworkID: networkId,
+				},
+				Force: true,
+			}
+
+			if err := dockerClient.DisconnectNetwork(networkId, opts); err != nil {
+				log.Warnf("Couldn't disconnect container %s from network %s: %v", b.Id, networkId, err)
+			}
+		}
+	}
+
+	return nil
+}
+
+func (b BuildContainer) EnsureRunning(uptime int) error {
+
+	sleepTime := time.Duration(uptime) * time.Second
+	time.Sleep(sleepTime)
+
+	running, err := b.IsRunning()
+	if err != nil {
+		return fmt.Errorf("Couldn't wait for running state: %v", err)
+	}
+
+	if !running {
+		return fmt.Errorf("Container stopped running before %d seconds", uptime)
+	}
+
+	return nil
+}
+
+func (b BuildContainer) WaitForTcpPort(port int, timeout int) error {
+	address, err := b.IPv4Address()
+	if err != nil {
+		return fmt.Errorf("Couldn't wait for TCP port %d: %v", port, err)
+	}
+
+	hostPort := fmt.Sprintf("%s:%d", address, port)
+
+	timeWaited := 0
+	secondsToSleep := 1
+	sleepTime := time.Duration(secondsToSleep) * time.Second
+
+	for timeWaited < timeout {
+		conn, err := net.Dial("tcp", hostPort)
+		if err != nil {
+			// Pass for now
+			timeWaited = timeWaited + secondsToSleep
+			time.Sleep(sleepTime)
+		} else {
+			conn.Close()
+			return nil
+		}
+	}
+
+	return fmt.Errorf("Couldn't connect to service before specified timeout (%d sec.)", timeout)
+}
+
+func (b BuildContainer) IPv4Address() (string, error) {
+	client := NewDockerClient()
+	c, err := client.InspectContainer(b.Id)
+
+	if err != nil {
+		return "", fmt.Errorf("Couldn't determine IP of container %s: %v", b.Id, err)
+	}
+
+	ipv4 := c.NetworkSettings.IPAddress
+	return ipv4, nil
+}
+
+func (b BuildContainer) IsRunning() (bool, error) {
+	client := NewDockerClient()
+	c, err := client.InspectContainer(b.Id)
+	if err != nil {
+		return false, fmt.Errorf("Couldn't determine state of container %s: %v", b.Id, err)
+	}
+
+	return c.State.Running, nil
 }
 
 func (b BuildContainer) Stop(timeout uint) error {
@@ -186,6 +323,15 @@ func (b BuildContainer) Stop(timeout uint) error {
 
 func (b BuildContainer) Start() error {
 	client := NewDockerClient()
+
+	if running, err := b.IsRunning(); err != nil {
+		return fmt.Errorf("Couldn't determine if container %s is running: %v", b.Id, err)
+	} else {
+		if running {
+			// Nothing to do
+			return nil
+		}
+	}
 
 	hostConfig := &docker.HostConfig{}
 
@@ -422,9 +568,14 @@ func NewContainer(opts BuildContainerOpts) (BuildContainer, error) {
 	s := strings.Split(containerDef.Image, ":")
 	imageName := s[0]
 	containerImageName := strings.Replace(imageName, "/", "_", -1)
+
 	containerName := fmt.Sprintf("%s-%s", opts.Package.Name, containerImageName)
 
-	fmt.Printf("Creating container '%s'\n", containerName)
+	if opts.Namespace != "" {
+		containerName = fmt.Sprintf("%s-%s", opts.Namespace, containerName)
+	}
+
+	log.Infof("Creating container '%s'\n", containerName)
 
 	client := NewDockerClient()
 
@@ -446,7 +597,7 @@ func NewContainer(opts BuildContainerOpts) (BuildContainer, error) {
 
 		dst := s[1]
 
-		fmt.Printf("Will mount %s as %s in container\n", src, dst)
+		log.Infof("Will mount %s as %s in container", src, dst)
 		mounts = append(mounts, docker.HostMount{
 			Source: src,
 			Target: dst,
@@ -500,7 +651,7 @@ func NewContainer(opts BuildContainerOpts) (BuildContainer, error) {
 
 	if len(opts.ContainerOpts.Command) > 0 {
 		cmd := opts.ContainerOpts.Command
-		fmt.Printf("Will run %s in the container\n", cmd)
+		log.Debugf("Will run %s in the container", cmd)
 		cmdParts := strings.Split(cmd, " ")
 		config.Cmd = cmdParts
 	}
@@ -513,11 +664,10 @@ func NewContainer(opts BuildContainerOpts) (BuildContainer, error) {
 		})
 
 	if err != nil {
-		fmt.Printf("Container failed to create: %v\n", err)
-		return BuildContainer{}, err
+		return BuildContainer{}, fmt.Errorf("Failed to create container: %v", err)
 	}
 
-	fmt.Printf("Container ID: %s\n", container.ID)
+	log.Debugf("Found container ID: %s\n", container.ID)
 
 	return BuildContainer{
 		Name:    containerName,
@@ -526,25 +676,66 @@ func NewContainer(opts BuildContainerOpts) (BuildContainer, error) {
 	}, nil
 }
 
-func NewServiceContext(pkg Package, containers map[string]ContainerDefinition) (*ServiceContext, error) {
+func FindNetworkByName(name string) (*docker.Network, error) {
 	dockerClient := NewDockerClient()
-	ctxId, _ := uuid.NewV4()
-	/*log.Printf("Creating network %s...\n", ctxId.String())
-	opts := types.NetworkCreate{}
-	response, err := dockerClient.NetworkCreate(ctx, ctxId.String(), opts)
+	log.Debugf("Finding network by name %s", name)
+	filters := make(map[string]map[string]bool)
+	filter := make(map[string]bool)
+	filter[name] = true
+	filters["name"] = filter
+	networks, err := dockerClient.FilteredListNetworks(filters)
+
 	if err != nil {
-		return nil, err
-	}*/
+		return nil, fmt.Errorf("Can't filter networks by name %s: %v", name, err)
+	}
+
+	if len(networks) == 0 {
+		return nil, nil
+	}
+
+	network := networks[0]
+	return &network, nil
+}
+
+func NewServiceContextWithId(ctxId string, pkg Package, containers map[string]ContainerDefinition) (*ServiceContext, error) {
+	dockerClient := NewDockerClient()
+	fmt.Printf("Creating service context '%s'...\n", ctxId)
+
+	// Find network by context Id
+
+	network, err := FindNetworkByName(ctxId)
+
+	if err != nil {
+		return nil, fmt.Errorf("Couldn't find existing network: %v", err)
+	}
+
+	if err == nil && network == nil {
+		opts := docker.CreateNetworkOptions{
+			Name:   ctxId,
+			Driver: "bridge",
+		}
+
+		network, err = dockerClient.CreateNetwork(opts)
+
+		if err != nil {
+			return nil, fmt.Errorf("Unable to create Docker network: %v", err)
+		}
+	}
 
 	sc := &ServiceContext{
 		Package:      pkg,
-		Id:           ctxId.String(),
+		Id:           ctxId,
 		DockerClient: dockerClient,
 		Containers:   containers,
-		NetworkId:    "",
+		NetworkId:    network.ID,
 	}
 
 	return sc, nil
+}
+
+func NewServiceContext(pkg Package, containers map[string]ContainerDefinition) (*ServiceContext, error) {
+	ctxId, _ := uuid.NewV4()
+	return NewServiceContextWithId(ctxId.String(), pkg, containers)
 }
 
 func (sc *ServiceContext) SetupNetwork() (string, error) {
@@ -579,57 +770,115 @@ func (sc *ServiceContext) Cleanup() error {
 	return nil
 
 }
+func (sc *ServiceContext) TearDown() error {
+	fmt.Printf("Terminating services...\n")
+
+	for _, c := range sc.Containers {
+		fmt.Printf("  %s...", c.Image)
+
+		container, err := sc.FindContainer(c)
+
+		if err != nil {
+			fmt.Printf("Problem searching for container: %v\n", err)
+		}
+
+		if container != nil {
+			fmt.Printf(" %s\n", container.Id)
+			container.Stop(0)
+		}
+	}
+
+	client := sc.DockerClient
+	fmt.Printf("Removing network...\n")
+	err := client.RemoveNetwork(sc.NetworkId)
+	if err != nil {
+		fmt.Printf("Unable to remove network %s: %v", sc.NetworkId, err)
+	}
+
+	return nil
+}
 
 func (sc *ServiceContext) StandUp() error {
+	dockerClient := sc.DockerClient
 	buildRoot := sc.Package.BuildRoot()
 	pkgWorkdir := filepath.Join(buildRoot, sc.Package.Name)
 	MkdirAsNeeded(pkgWorkdir)
 	logDir := filepath.Join(pkgWorkdir, "logs")
 	MkdirAsNeeded(logDir)
 
-	for _, c := range sc.Containers {
-		fmt.Printf("  %s...\n", c.Image)
+	log.Infof("Starting up dependent containers and network...")
+
+	for label, c := range sc.Containers {
+		log.Infof("  ===  %s ===", c.Image)
 
 		container, err := sc.FindContainer(c)
 
 		if err != nil {
-			fmt.Printf("Problem searching for container: %v\n", err)
-			return err
+			return fmt.Errorf("Problem searching for container %s: %v", c.Image, err)
 		}
 
 		if container != nil {
-			fmt.Printf("Container already exists, starting...\n")
-			container.Start()
+			log.Infof("Container for %s already exists, not re-creating...", c.Image)
 		} else {
-			container, err := sc.NewContainer(c)
+			c, err := sc.NewContainer(c)
 			if err != nil {
 				return err
 			}
-			fmt.Printf("Created container: %s\n", container.Id)
-			container.Start()
+			container = &c
+			log.Infof("Created container: %s\n", container.Id)
+
+			// Disconnect from existing networks if needed
+			container.DisconnectFromNetworks()
+
+			// Attach to network
+			log.Infof("Attaching container to network ... ")
+			opts := docker.NetworkConnectionOptions{
+				Container: container.Id,
+				EndpointConfig: &docker.EndpointConfig{
+					NetworkID: sc.NetworkId,
+				},
+			}
+
+			if err = dockerClient.ConnectNetwork(sc.NetworkId, opts); err != nil {
+				return fmt.Errorf("Couldn't connect container %s to network %s: %v", container.Id, sc.NetworkId, err)
+			}
+
 		}
 
-		/*log.Printf("Connecting to network %s...\n", sc.NetworkId)
-		if err := dockerClient.NetworkConnect(ctx, sc.NetworkId, dependencyContainer.ID, &network.EndpointSettings{}); err != nil {
-			panic(err)
-		}
-
-		log.Printf("Starting container...\n")
-		if err := dockerClient.ContainerStart(ctx, dependencyContainer.ID, types.ContainerStartOptions{}); err != nil {
-			panic(err)
-		}
-
-		props, err := dockerClient.ContainerInspect(ctx, dependencyContainer.ID)
-
+		running, err := container.IsRunning()
 		if err != nil {
-			panic(err)
+			return fmt.Errorf("Couldn't determine if container is running: %v", err)
 		}
 
-		networkSettings := props.NetworkSettings
-		ipv4 := networkSettings.DefaultNetworkSettings.IPAddress
-		log.Printf("Container IP: %s\n", ipv4)
+		if !running {
+			log.Infof("Starting container for %s...", c.Image)
+			if err = container.Start(); err != nil {
+				return fmt.Errorf("Couldn't start container %s: %v", container.Id, err)
+			}
+		}
 
-		//TODO: stream logs from each dependency to the build dir
+		ipv4, err := container.IPv4Address()
+		if err != nil {
+			return fmt.Errorf("Couldn't determine IP of container dependency %s (%s): %v", label, container.Id, err)
+		}
+
+		if ipv4 == "" {
+			return fmt.Errorf("Container didn't get an IP address -- check the logs for container %s", container.Id[0:12])
+		}
+		log.Infof("Container IP: %s", ipv4)
+
+		if c.PortWaitCheck.Port != 0 {
+			fmt.Printf(" Waiting for %s:%d for %d sec... ", ipv4, c.PortWaitCheck.Port, c.PortWaitCheck.Timeout)
+			if err := container.WaitForTcpPort(c.PortWaitCheck.Port, c.PortWaitCheck.Timeout); err != nil {
+				fmt.Printf(" timed out!")
+			} else {
+				fmt.Printf(" OK!")
+			}
+		}
+
+		fmt.Println()
+
+		/*//TODO: stream logs from each dependency to the build dir
 		containerLogFile := filepath.Join(logDir, fmt.Sprintf("%s.log", imageName))
 		Name:
 		f, err := os.Create(containerLogFile)

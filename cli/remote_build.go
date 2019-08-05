@@ -270,7 +270,7 @@ func postJsonToApi(path string, jsonData []byte) (*http.Response, error) {
 	apiUrl, err := ybconfig.ApiUrl(path)
 
 	if err != nil {
-		return nil, fmt.Errorf("Unable to generate API URL: %v")
+		return nil, fmt.Errorf("Unable to generate API URL: %v", err)
 	}
 
 	client := &http.Client{}
@@ -399,7 +399,7 @@ func savePatch(cmd *RemoteCmd) error {
 	err := ioutil.WriteFile(cmd.patchPath, data, 0644)
 
 	if err != nil {
-		return fmt.Errorf("Couldn't save a local patch file at: %v, because: %v", err)
+		return fmt.Errorf("Couldn't save a local patch file at: %s, because: %v", cmd.patchPath, err)
 	}
 
 	return nil

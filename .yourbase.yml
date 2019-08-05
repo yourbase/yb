@@ -7,6 +7,7 @@ dependencies:
 build_targets:
   - name: default
     commands:
+      - go test ./...
       - go build
 
   - name: release

@@ -70,10 +70,7 @@ func (p Package) BuildRoot() string {
 	buildDir := "build"
 	buildRoot := filepath.Join(workspaceDir, buildDir)
 
-	fmt.Printf("Package build root in %s\n", buildRoot)
-
 	if _, err := os.Stat(buildRoot); os.IsNotExist(err) {
-
 		if err := os.Mkdir(buildRoot, 0700); err != nil {
 			fmt.Printf("Unable to create build dir in workspace: %v\n", err)
 		}
