@@ -93,6 +93,26 @@ func sanitizeContainerName(proposed string) string {
 	return result
 }
 
+func sanitizeContainerName(proposed string) string {
+	// Remove unusable characters from the container name
+	// Must match: [a-zA-Z0-9][a-zA-Z0-9_.-]
+	re := regexp.MustCompile(`^([a-zA-Z0-9])([a-zA-Z0-9_.-]+)$`)
+
+	if re.MatchString(proposed) {
+		return proposed
+	}
+
+	badChars := regexp.MustCompile(`[^a-zA-Z0-9_.-]`)
+	result := badChars.ReplaceAllString(proposed, "")
+
+	firstCharRe := regexp.MustCompile(`[a-zA-Z0-9]`)
+	if !firstCharRe.MatchString(string(result[0])) {
+		result = result[1:]
+	}
+
+	return result
+}
+
 func (sc *ServiceContext) FindContainer(cd ContainerDefinition) (*BuildContainer, error) {
 	return FindContainer(BuildContainerOpts{
 		Package:       sc.Package,
@@ -198,7 +218,7 @@ func PullImageIfNotHere(c ContainerDefinition) error {
 	filters := make(map[string][]string)
 
 	imageLabel := c.ImageNameWithTag()
-	fmt.Printf("Pulling %s if needed...\n", imageLabel)
+	log.Debugf("Pulling %s if needed...", imageLabel)
 
 	opts := docker.ListImagesOptions{
 		Filters: filters,
@@ -236,6 +256,112 @@ func (b BuildContainer) Destroy() error {
 		ID: b.Id,
 	}
 	return client.RemoveContainer(opts)
+}
+
+func (b BuildContainer) ListNetworkIDs() ([]string, error) {
+	client := NewDockerClient()
+	c, err := client.InspectContainer(b.Id)
+
+	networkIds := make([]string, 0)
+
+	if err != nil {
+		return networkIds, fmt.Errorf("Couldn't get networks for container %s: %v", b.Id, err)
+	}
+
+	for _, network := range c.NetworkSettings.Networks {
+		networkIds = append(networkIds, network.NetworkID)
+	}
+	return networkIds, nil
+}
+
+func (b BuildContainer) DisconnectFromNetworks() error {
+
+	dockerClient := NewDockerClient()
+	if networkIds, err := b.ListNetworkIDs(); err != nil {
+		return fmt.Errorf("Can't get listing of networks: %v", err)
+	} else {
+		for _, networkId := range networkIds {
+			opts := docker.NetworkConnectionOptions{
+				Container: b.Id,
+				EndpointConfig: &docker.EndpointConfig{
+					NetworkID: networkId,
+				},
+				Force: true,
+			}
+
+			if err := dockerClient.DisconnectNetwork(networkId, opts); err != nil {
+				log.Warnf("Couldn't disconnect container %s from network %s: %v", b.Id, networkId, err)
+			}
+		}
+	}
+
+	return nil
+}
+
+func (b BuildContainer) EnsureRunning(uptime int) error {
+
+	sleepTime := time.Duration(uptime) * time.Second
+	time.Sleep(sleepTime)
+
+	running, err := b.IsRunning()
+	if err != nil {
+		return fmt.Errorf("Couldn't wait for running state: %v", err)
+	}
+
+	if !running {
+		return fmt.Errorf("Container stopped running before %d seconds", uptime)
+	}
+
+	return nil
+}
+
+func (b BuildContainer) WaitForTcpPort(port int, timeout int) error {
+	address, err := b.IPv4Address()
+	if err != nil {
+		return fmt.Errorf("Couldn't wait for TCP port %d: %v", port, err)
+	}
+
+	hostPort := fmt.Sprintf("%s:%d", address, port)
+
+	timeWaited := 0
+	secondsToSleep := 1
+	sleepTime := time.Duration(secondsToSleep) * time.Second
+
+	for timeWaited < timeout {
+		conn, err := net.Dial("tcp", hostPort)
+		if err != nil {
+			// Pass for now
+			timeWaited = timeWaited + secondsToSleep
+			time.Sleep(sleepTime)
+		} else {
+			conn.Close()
+			return nil
+		}
+	}
+
+	return fmt.Errorf("Couldn't connect to service before specified timeout (%d sec.)", timeout)
+}
+
+func (b BuildContainer) IPv4Address() (string, error) {
+	client := NewDockerClient()
+	c, err := client.InspectContainer(b.Id)
+
+	if err != nil {
+		return "", fmt.Errorf("Couldn't determine IP of container %s: %v", b.Id, err)
+	}
+
+	ipv4 := c.NetworkSettings.IPAddress
+	return ipv4, nil
+}
+
+func (b BuildContainer) IsRunning() (bool, error) {
+	client := NewDockerClient()
+	c, err := client.InspectContainer(b.Id)
+	if err != nil {
+		return false, fmt.Errorf("Couldn't determine state of container %s: %v", b.Id, err)
+	}
+
+	return c.State.Running, nil
 }
 
 func (b BuildContainer) ListNetworkIDs() ([]string, error) {
@@ -813,6 +939,33 @@ func (sc *ServiceContext) TearDown() error {
 		if err != nil {
 			log.Warnf("Unable to remove network %s: %v", sc.NetworkId, err)
 		}
+	}
+
+	return nil
+}
+func (sc *ServiceContext) TearDown() error {
+	fmt.Printf("Terminating services...\n")
+
+	for _, c := range sc.Containers {
+		fmt.Printf("  %s...", c.Image)
+
+		container, err := sc.FindContainer(c)
+
+		if err != nil {
+			fmt.Printf("Problem searching for container: %v\n", err)
+		}
+
+		if container != nil {
+			fmt.Printf(" %s\n", container.Id)
+			container.Stop(0)
+		}
+	}
+
+	client := sc.DockerClient
+	fmt.Printf("Removing network...\n")
+	err := client.RemoveNetwork(sc.NetworkId)
+	if err != nil {
+		fmt.Printf("Unable to remove network %s: %v", sc.NetworkId, err)
 	}
 
 	return nil
