@@ -24,11 +24,12 @@ import (
 )
 
 type ServiceContext struct {
-	DockerClient *docker.Client
-	Id           string
-	Containers   map[string]ContainerDefinition
-	Package      Package
-	NetworkId    string
+	DockerClient    *docker.Client
+	Id              string
+	Containers      map[string]ContainerDefinition
+	Package         Package
+	NetworkId       string
+	BuildContainers map[string]*BuildContainer
 }
 
 type BuildContainerOpts struct {
@@ -44,6 +45,7 @@ type BuildContainer struct {
 	Id      string
 	Name    string
 	Options BuildContainerOpts
+	IPv4    string
 }
 
 func sanitizeContainerName(proposed string) string {
@@ -99,10 +101,10 @@ func FindContainer(opts BuildContainerOpts) (*BuildContainer, error) {
 
 	if err == nil && len(result) > 0 {
 		for _, c := range result {
-			log.Debugf("ID: %s -- NAME: %s\n", c.ID, c.Names)
+			log.Debugf("ID: %s -- NAME: %s", c.ID, c.Names)
 		}
 		c := result[0]
-		log.Debugf("Found container %s with ID %s\n", containerName, c.ID)
+		log.Debugf("Found container %s with ID %s", containerName, c.ID)
 		_, err := client.InspectContainer(c.ID)
 		if err != nil {
 			return nil, err
@@ -122,7 +124,7 @@ func FindContainer(opts BuildContainerOpts) (*BuildContainer, error) {
 
 func StopContainerById(id string, timeout uint) error {
 	client := NewDockerClient()
-	fmt.Printf("Stopping container %s with a %d second timeout...\n", id, timeout)
+	log.Infof("Stopping container %s with a %d second timeout...", id, timeout)
 	return client.StopContainer(id, timeout)
 }
 
@@ -165,7 +167,7 @@ func PullImage(imageLabel string) error {
 		imageTag = parts[1]
 	}
 
-	log.Debugf("Pulling %s if needed...\n", imageLabel)
+	log.Debugf("Pulling %s if needed...", imageLabel)
 
 	opts := docker.ListImagesOptions{
 		Filters: filters,
@@ -181,7 +183,7 @@ func PullImage(imageLabel string) error {
 		for _, img := range imgs {
 			for _, tag := range img.RepoTags {
 				if tag == imageLabel {
-					log.Debugf("Found image: %s with tags: %s\n", img.ID, strings.Join(img.RepoTags, ","))
+					log.Debugf("Found image: %s with tags: %s", img.ID, strings.Join(img.RepoTags, ","))
 					foundImage = true
 				}
 			}
@@ -189,24 +191,33 @@ func PullImage(imageLabel string) error {
 	}
 
 	if !foundImage {
-		log.Infof("Image %s not found, pulling\n", imageLabel)
+		log.Infof("Image %s not found, pulling", imageLabel)
 
 		pullOpts := docker.PullImageOptions{
-			Repository:   imageName,
-			Tag:          imageTag,
-			OutputStream: os.Stdout,
+			Repository: imageName,
+			Tag:        imageTag,
+			//OutputStream: os.Stdout,
+			OutputStream: nil,
 		}
 
 		authConfig := docker.AuthConfiguration{}
 
 		if err = client.PullImage(pullOpts, authConfig); err != nil {
-			return fmt.Errorf("Unable to pull image: %v\n", err)
+			return fmt.Errorf("Unable to pull image: %v", err)
 		}
 
 	}
 
 	return nil
 
+}
+
+func (b BuildContainer) Destroy() error {
+	client := NewDockerClient()
+	opts := docker.RemoveContainerOptions{
+		ID: b.Id,
+	}
+	return client.RemoveContainer(opts)
 }
 
 func (b BuildContainer) ListNetworkIDs() ([]string, error) {
@@ -317,7 +328,7 @@ func (b BuildContainer) IsRunning() (bool, error) {
 
 func (b BuildContainer) Stop(timeout uint) error {
 	client := NewDockerClient()
-	fmt.Printf("Stopping container %s with a %d timeout...\n", b.Id, timeout)
+	log.Infof("Stopping container %s with a %d timeout...", b.Id, timeout)
 	return client.StopContainer(b.Id, timeout)
 }
 
@@ -361,7 +372,7 @@ func (b BuildContainer) DownloadDirectoryToFile(remotePath string, localFile str
 
 	defer outputFile.Close()
 
-	fmt.Printf("Downloading %s to %s...\n", remotePath, localFile)
+	log.Infof("Downloading %s to %s...", remotePath, localFile)
 
 	return b.DownloadDirectoryToWriter(remotePath, outputFile)
 }
@@ -469,7 +480,7 @@ func (b BuildContainer) CommitImage(repository string, tag string) (string, erro
 		return "", err
 	}
 
-	fmt.Printf("Committed container %s as image %s:%s with id %s\n", b.Id, repository, tag, img.ID)
+	log.Infof("Committed container %s as image %s:%s with id %s", b.Id, repository, tag, img.ID)
 
 	return img.ID, nil
 }
@@ -490,7 +501,7 @@ func (b BuildContainer) MakeDirectoryInContainer(path string) error {
 	exec, err := client.CreateExec(execOpts)
 
 	if err != nil {
-		fmt.Printf("Can't create exec: %v\n", err)
+		log.Infof("Can't create exec: %v", err)
 		return err
 	}
 
@@ -502,7 +513,7 @@ func (b BuildContainer) MakeDirectoryInContainer(path string) error {
 	err = client.StartExec(exec.ID, startOpts)
 
 	if err != nil {
-		fmt.Printf("Unable to run exec %s: %v\n", exec.ID, err)
+		log.Infof("Unable to run exec %s: %v", exec.ID, err)
 		return err
 	}
 
@@ -547,12 +558,12 @@ func (b BuildContainer) ExecToWriter(cmdString string, targetDir string, outputS
 	err = client.StartExec(exec.ID, startOpts)
 
 	if err != nil {
-		return fmt.Errorf("Unable to run exec %s: %v\n", exec.ID, err)
+		return fmt.Errorf("Unable to run exec %s: %v", exec.ID, err)
 	}
 
 	results, err := client.InspectExec(exec.ID)
 	if err != nil {
-		return fmt.Errorf("Unable to get exec results %s: %v\n", exec.ID, err)
+		return fmt.Errorf("Unable to get exec results %s: %v", exec.ID, err)
 	}
 
 	if results.ExitCode != 0 {
@@ -575,7 +586,7 @@ func NewContainer(opts BuildContainerOpts) (BuildContainer, error) {
 		containerName = fmt.Sprintf("%s-%s", opts.Namespace, containerName)
 	}
 
-	log.Infof("Creating container '%s'\n", containerName)
+	log.Infof("Creating container '%s'", containerName)
 
 	client := NewDockerClient()
 
@@ -611,7 +622,7 @@ func NewContainer(opts BuildContainerOpts) (BuildContainer, error) {
 			sourceMapDir = containerDef.WorkDir
 		}
 
-		fmt.Printf("Will mount package %s at %s in container\n", opts.Package.Path, sourceMapDir)
+		log.Infof("Will mount package %s at %s in container", opts.Package.Path, sourceMapDir)
 		mounts = append(mounts, docker.HostMount{
 			Source: opts.Package.Path,
 			Target: sourceMapDir,
@@ -667,7 +678,7 @@ func NewContainer(opts BuildContainerOpts) (BuildContainer, error) {
 		return BuildContainer{}, fmt.Errorf("Failed to create container: %v", err)
 	}
 
-	log.Debugf("Found container ID: %s\n", container.ID)
+	log.Debugf("Found container ID: %s", container.ID)
 
 	return BuildContainer{
 		Name:    containerName,
@@ -699,7 +710,7 @@ func FindNetworkByName(name string) (*docker.Network, error) {
 
 func NewServiceContextWithId(ctxId string, pkg Package, containers map[string]ContainerDefinition) (*ServiceContext, error) {
 	dockerClient := NewDockerClient()
-	fmt.Printf("Creating service context '%s'...\n", ctxId)
+	log.Infof("Creating service context '%s'...", ctxId)
 
 	// Find network by context Id
 
@@ -723,11 +734,12 @@ func NewServiceContextWithId(ctxId string, pkg Package, containers map[string]Co
 	}
 
 	sc := &ServiceContext{
-		Package:      pkg,
-		Id:           ctxId,
-		DockerClient: dockerClient,
-		Containers:   containers,
-		NetworkId:    network.ID,
+		Package:         pkg,
+		Id:              ctxId,
+		DockerClient:    dockerClient,
+		Containers:      containers,
+		NetworkId:       network.ID,
+		BuildContainers: make(map[string]*BuildContainer),
 	}
 
 	return sc, nil
@@ -743,7 +755,7 @@ func (sc *ServiceContext) SetupNetwork() (string, error) {
 	dockerClient := sc.DockerClient
 	opts := types.NetworkCreate{}
 
-	log.Printf("Creating network %s...\n", sc.Id)
+	log.Printf("Creating network %s...", sc.Id)
 	response, err := dockerClient.NetworkCreate(ctx, sc.Id, opts)
 
 	if err != nil {
@@ -760,7 +772,7 @@ func (sc *ServiceContext) Cleanup() error {
 		ctx := context.Background()
 		dockerClient := sc.DockerClient
 
-		log.Printf("Removing network %s\n", sc.Id)
+		log.Printf("Removing network %s", sc.Id)
 		err := dockerClient.NetworkRemove(ctx, sc.Id)
 
 		if err != nil {
@@ -771,28 +783,33 @@ func (sc *ServiceContext) Cleanup() error {
 
 }
 func (sc *ServiceContext) TearDown() error {
-	fmt.Printf("Terminating services...\n")
+	log.Infof("Terminating services...")
 
 	for _, c := range sc.Containers {
-		fmt.Printf("  %s...", c.Image)
+		log.Infof("  %s...", c.Image)
 
 		container, err := sc.FindContainer(c)
 
 		if err != nil {
-			fmt.Printf("Problem searching for container: %v\n", err)
+			log.Infof("Problem searching for container: %v", err)
 		}
 
 		if container != nil {
-			fmt.Printf(" %s\n", container.Id)
+			log.Infof(" %s", container.Id)
 			container.Stop(0)
+		}
+
+		err = container.Destroy()
+		if err != nil {
+			log.Warnf("Unable to destroy container: %v", err)
 		}
 	}
 
 	client := sc.DockerClient
-	fmt.Printf("Removing network...\n")
+	log.Infof("Removing network...")
 	err := client.RemoveNetwork(sc.NetworkId)
 	if err != nil {
-		fmt.Printf("Unable to remove network %s: %v", sc.NetworkId, err)
+		log.Infof("Unable to remove network %s: %v", sc.NetworkId, err)
 	}
 
 	return nil
@@ -825,10 +842,7 @@ func (sc *ServiceContext) StandUp() error {
 				return err
 			}
 			container = &c
-			log.Infof("Created container: %s\n", container.Id)
-
-			// Disconnect from existing networks if needed
-			container.DisconnectFromNetworks()
+			log.Infof("Created container: %s", container.Id)
 
 			// Attach to network
 			log.Infof("Attaching container to network ... ")
@@ -844,6 +858,9 @@ func (sc *ServiceContext) StandUp() error {
 			}
 
 		}
+
+		// Add to list of build containers
+		sc.BuildContainers[label] = container
 
 		running, err := container.IsRunning()
 		if err != nil {
@@ -868,15 +885,11 @@ func (sc *ServiceContext) StandUp() error {
 		log.Infof("Container IP: %s", ipv4)
 
 		if c.PortWaitCheck.Port != 0 {
-			fmt.Printf(" Waiting for %s:%d for %d sec... ", ipv4, c.PortWaitCheck.Port, c.PortWaitCheck.Timeout)
+			log.Infof("Waiting for %s:%d for %d sec... ", ipv4, c.PortWaitCheck.Port, c.PortWaitCheck.Timeout)
 			if err := container.WaitForTcpPort(c.PortWaitCheck.Port, c.PortWaitCheck.Timeout); err != nil {
-				fmt.Printf(" timed out!")
-			} else {
-				fmt.Printf(" OK!")
+				log.Warnf("Timed out!")
 			}
 		}
-
-		fmt.Println()
 
 		/*//TODO: stream logs from each dependency to the build dir
 		containerLogFile := filepath.Join(logDir, fmt.Sprintf("%s.log", imageName))
@@ -884,7 +897,7 @@ func (sc *ServiceContext) StandUp() error {
 		f, err := os.Create(containerLogFile)
 
 		if err != nil {
-			fmt.Printf("Unable to write to log file %s: %v\n", containerLogFile, err)
+			log.Infof("Unable to write to log file %s: %v", containerLogFile, err)
 			return err
 		}
 
@@ -896,7 +909,7 @@ func (sc *ServiceContext) StandUp() error {
 			Tail:       "40",
 		})
 		if err != nil {
-			fmt.Printf("Can't get log handle for container %s: %v\n", dependencyContainer.ID, err)
+			log.Infof("Can't get log handle for container %s: %v", dependencyContainer.ID, err)
 			return err
 		}
 		go func() {
@@ -929,7 +942,7 @@ func archiveFileInMemory(source string, target string) (*tar.Reader, error) {
 
 	header.Name = target
 
-	fmt.Printf("Adding %s as %s...\n", info.Name(), header.Name)
+	log.Infof("Adding %s as %s...", info.Name(), header.Name)
 
 	if err := tarball.WriteHeader(header); err != nil {
 		return nil, err
@@ -971,7 +984,7 @@ func archiveFile(source string, target string, tarfile string) error {
 
 	header.Name = target
 
-	fmt.Printf("Adding %s as %s...\n", info.Name(), header.Name)
+	log.Infof("Adding %s as %s...", info.Name(), header.Name)
 
 	if err := tarball.WriteHeader(header); err != nil {
 		return err

@@ -85,5 +85,7 @@ func (p Package) SetupBuildDependencies() ([]CommandTimer, error) {
 }
 
 func (p Package) SetupRuntimeDependencies() ([]CommandTimer, error) {
-	return LoadBuildPacks(p.Manifest.Dependencies.Runtime, p.BuildRoot(), p.Path)
+	deps := p.Manifest.Dependencies.Runtime
+	deps = append(deps, p.Manifest.Dependencies.Build...)
+	return LoadBuildPacks(deps, p.BuildRoot(), p.Path)
 }

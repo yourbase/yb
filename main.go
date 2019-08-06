@@ -16,6 +16,7 @@ var (
 )
 
 func main() {
+	SetupOutput()
 
 	cmdr := subcommands.NewCommander(flag.CommandLine, path.Base(os.Args[0]))
 	cmdr.Register(cmdr.HelpCommand(), "")
