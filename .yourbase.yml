@@ -1,8 +1,6 @@
 dependencies:
   build:
     - go:1.12.9
-  runtime:
-    - go:1.12.9
 
 build_targets:
   - name: default

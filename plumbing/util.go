@@ -550,3 +550,22 @@ func CloneRepository(remote GitRemote, inMem bool, basePath string) (rep *git.Re
 
 	return
 }
+
+func CloneInMemoryRepo(uri, branch string) (rep *git.Repository, err error) {
+	if branch == "" {
+		return nil, fmt.Errorf("No branch defined to clone repo %v", uri)
+	}
+
+	fs := memfs.New()
+	storer := memory.NewStorage()
+
+	rep, err = git.Clone(storer, fs,
+		&git.CloneOptions{
+			URL:           uri,
+			ReferenceName: plumbing.NewBranchReferenceName(branch),
+			SingleBranch:  true,
+			Depth:         50,
+			Tags:          git.NoTags,
+		})
+	return
+}

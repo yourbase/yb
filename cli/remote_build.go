@@ -20,6 +20,7 @@ import (
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	"github.com/johnewart/subcommands"
+	"github.com/sergi/go-diff/diffmatchpatch"
 
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing"
