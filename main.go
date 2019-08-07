@@ -28,7 +28,6 @@ func main() {
 	cmdr.Register(&WorkspaceCmd{}, "")
 	cmdr.Register(&RemoteCmd{}, "")
 	cmdr.Register(&PackageCmd{}, "")
-	cmdr.Register(&PatchCmd{}, "")
 	cmdr.Register(&LoginCmd{}, "")
 	cmdr.Register(&PlatformCmd{}, "")
 	cmdr.Register(&UpdateCmd{}, "")
