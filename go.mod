@@ -1,6 +1,6 @@
 module github.com/yourbase/yb
 
-replace github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.0
+replace github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.2
 
 require (
 	github.com/alexcesaro/log v0.0.0-20150915221235-61e686294e58
@@ -8,7 +8,6 @@ require (
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/equinox-io/equinox v1.2.0
 	github.com/fsouza/go-dockerclient v1.4.1 // indirect
-	github.com/gliderlabs/ssh v0.2.2 // indirect
 	github.com/gobwas/httphead v0.0.0-20180130184737-2c6c146eadee // indirect
 	github.com/gobwas/pool v0.2.0 // indirect
 	github.com/gobwas/ws v1.0.2
@@ -25,6 +24,7 @@ require (
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
 	github.com/nwaples/rardecode v1.0.0 // indirect
 	github.com/pierrec/lz4 v2.0.5+incompatible // indirect
+	github.com/sergi/go-diff v1.0.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/smartystreets/assertions v1.0.0 // indirect
 	github.com/smartystreets/goconvey v0.0.0-20190330032615-68dc04aab96a // indirect
@@ -36,7 +36,7 @@ require (
 	golang.org/x/sys v0.0.0-20190626221950-04f50cda93cb // indirect
 	golang.org/x/text v0.3.2 // indirect
 	gopkg.in/ini.v1 v1.44.0
-	gopkg.in/src-d/go-billy.v4 v4.3.1 // indirect
-	gopkg.in/src-d/go-git.v4 v4.12.0
+	gopkg.in/src-d/go-billy.v4 v4.3.2
+	gopkg.in/src-d/go-git.v4 v4.13.1
 	gopkg.in/yaml.v2 v2.2.2
 )

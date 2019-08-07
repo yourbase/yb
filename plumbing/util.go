@@ -19,8 +19,11 @@ import (
 
 	"github.com/google/shlex"
 	"github.com/ulikunitz/xz"
+
+	"gopkg.in/src-d/go-billy.v4/memfs"
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing"
+	"gopkg.in/src-d/go-git.v4/storage/memory"
 )
 
 func ExecToStdoutWithExtraEnv(cmdString string, targetDir string, env []string) error {
@@ -531,4 +534,23 @@ func CloneRepository(uri string, basePath string, branch string) (*git.Repositor
 	}
 
 	return r, nil
+}
+
+func CloneInMemoryRepo(uri, branch string) (rep *git.Repository, err error) {
+	if branch == "" {
+		return nil, fmt.Errorf("No branch defined to clone repo %v", uri)
+	}
+
+	fs := memfs.New()
+	storer := memory.NewStorage()
+
+	rep, err = git.Clone(storer, fs,
+		&git.CloneOptions{
+			URL:           uri,
+			ReferenceName: plumbing.NewBranchReferenceName(branch),
+			SingleBranch:  true,
+			Depth:         50,
+			Tags:          git.NoTags,
+		})
+	return
 }
