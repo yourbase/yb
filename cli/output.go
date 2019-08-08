@@ -26,6 +26,7 @@ func NewYbFormatter() *YbFormatter {
 func SetupOutput() {
 	log.SetOutput(os.Stderr)
 	log.SetFormatter(formatter)
+	log.SetLevel(log.DebugLevel)
 }
 
 func ActiveSection(section string) {

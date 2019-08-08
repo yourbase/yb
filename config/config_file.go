@@ -10,8 +10,13 @@ import (
 	"github.com/yourbase/yb/plumbing"
 )
 
-func configFilePath() string {
-	u, _ := user.Current()
+func configFilePath() (string, error) {
+	u, err := user.Current()
+
+	if err != nil {
+		return "", err
+	}
+
 	configDir := filepath.Join(u.HomeDir, ".config", "yb")
 	plumbing.MkdirAsNeeded(configDir)
 	iniPath := filepath.Join(configDir, "settings.ini")
@@ -21,11 +26,15 @@ func configFilePath() string {
 		emptyFile.Close()
 	}
 
-	return iniPath
+	return iniPath, nil
 }
 
 func loadConfigFile() (*ini.File, error) {
-	iniPath := configFilePath()
+	iniPath, err := configFilePath()
+	if err != nil {
+		return nil, fmt.Errorf("Couldn't determine config file path: %v", err)
+	}
+
 	cfg, err := ini.Load(iniPath)
 
 	if err != nil {
@@ -65,8 +74,11 @@ func SetConfigValue(section string, key string, value string) error {
 		return err
 	} else {
 		cfg.Section(cfgSection).Key(key).SetValue(value)
-		iniPath := configFilePath()
-		cfg.SaveTo(iniPath)
+		if iniPath, err := configFilePath(); err != nil {
+			return err
+		} else {
+			cfg.SaveTo(iniPath)
+		}
 		return nil
 	}
 }

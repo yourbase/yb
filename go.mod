@@ -4,6 +4,7 @@ replace github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.0
 
 require (
 	cloud.google.com/go v0.41.0 // indirect
+	github.com/Sirupsen/logrus v0.0.0-00010101000000-000000000000
 	github.com/alexcesaro/log v0.0.0-20150915221235-61e686294e58
 	github.com/containerd/continuity v0.0.0-20190426062206-aaeac12a7ffc // indirect
 	github.com/dsnet/compress v0.0.1 // indirect
@@ -15,6 +16,7 @@ require (
 	github.com/gobwas/pool v0.2.0 // indirect
 	github.com/gobwas/ws v1.0.2
 	github.com/golang/snappy v0.0.1 // indirect
+	github.com/google/shlex v0.0.0-20181106134648-c34317bd91bf
 	github.com/gopherjs/gopherjs v0.0.0-20190430165422-3e4dfb77656c // indirect
 	github.com/gorilla/mux v1.7.3 // indirect
 	github.com/johnewart/archiver v3.1.4+incompatible

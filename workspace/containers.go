@@ -84,12 +84,15 @@ func FindContainer(opts BuildContainerOpts) (*BuildContainer, error) {
 
 	s := strings.Split(cd.Image, ":")
 	imageName := s[0]
+	containerImageName := strings.Replace(imageName, "/", "_", -1)
 
-	containerName := fmt.Sprintf("%s-%s", opts.Package.Name, imageName)
+	containerName := fmt.Sprintf("%s-%s", opts.Package.Name, containerImageName)
 	// Prefix container name with the namespace
 	if opts.Namespace != "" {
 		containerName = fmt.Sprintf("%s-%s", opts.Namespace, containerName)
 	}
+
+	log.Debugf("Looking for container: %s", containerName)
 
 	filters := make(map[string][]string)
 	filters["name"] = append(filters["name"], containerName)
@@ -194,10 +197,10 @@ func PullImage(imageLabel string) error {
 		log.Infof("Image %s not found, pulling", imageLabel)
 
 		pullOpts := docker.PullImageOptions{
-			Repository: imageName,
-			Tag:        imageTag,
-			//OutputStream: os.Stdout,
-			OutputStream: nil,
+			Repository:   imageName,
+			Tag:          imageTag,
+			OutputStream: os.Stdout,
+			//OutputStream: nil,
 		}
 
 		authConfig := docker.AuthConfiguration{}
@@ -750,38 +753,6 @@ func NewServiceContext(pkg Package, containers map[string]ContainerDefinition) (
 	return NewServiceContextWithId(ctxId.String(), pkg, containers)
 }
 
-func (sc *ServiceContext) SetupNetwork() (string, error) {
-	/*ctx := context.Background()
-	dockerClient := sc.DockerClient
-	opts := types.NetworkCreate{}
-
-	log.Printf("Creating network %s...", sc.Id)
-	response, err := dockerClient.NetworkCreate(ctx, sc.Id, opts)
-
-	if err != nil {
-		return "", err
-	}
-
-	return response.ID, nil
-	*/
-	return "", nil
-}
-
-func (sc *ServiceContext) Cleanup() error {
-	/*
-		ctx := context.Background()
-		dockerClient := sc.DockerClient
-
-		log.Printf("Removing network %s", sc.Id)
-		err := dockerClient.NetworkRemove(ctx, sc.Id)
-
-		if err != nil {
-			return err
-		}
-	*/
-	return nil
-
-}
 func (sc *ServiceContext) TearDown() error {
 	log.Infof("Terminating services...")
 
@@ -885,9 +856,11 @@ func (sc *ServiceContext) StandUp() error {
 		log.Infof("Container IP: %s", ipv4)
 
 		if c.PortWaitCheck.Port != 0 {
-			log.Infof("Waiting for %s:%d for %d sec... ", ipv4, c.PortWaitCheck.Port, c.PortWaitCheck.Timeout)
-			if err := container.WaitForTcpPort(c.PortWaitCheck.Port, c.PortWaitCheck.Timeout); err != nil {
+			check := c.PortWaitCheck
+			log.Infof("Waiting up to %ds for %s:%d to be ready... ", check.Timeout, ipv4, check.Port)
+			if err := container.WaitForTcpPort(check.Port, check.Timeout); err != nil {
 				log.Warnf("Timed out!")
+				return fmt.Errorf("Timeout occured waiting for container '%s' to be ready", label)
 			}
 		}
 
