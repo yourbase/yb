@@ -160,8 +160,6 @@ func NewDockerClient() *docker.Client {
 
 func PullImage(imageLabel string) error {
 	client := NewDockerClient()
-	filters := make(map[string][]string)
-
 	parts := strings.Split(imageLabel, ":")
 	imageName := parts[0]
 	imageTag := ""
@@ -170,7 +168,26 @@ func PullImage(imageLabel string) error {
 		imageTag = parts[1]
 	}
 
-	log.Debugf("Pulling %s if needed...", imageLabel)
+	pullOpts := docker.PullImageOptions{
+		Repository:   imageName,
+		Tag:          imageTag,
+		OutputStream: os.Stdout,
+	}
+
+	authConfig := docker.AuthConfiguration{}
+
+	if err := client.PullImage(pullOpts, authConfig); err != nil {
+		return fmt.Errorf("Unable to pull image '%s': %v", imageLabel, err)
+	}
+
+	return nil
+}
+
+func PullImageIfNotHere(imageLabel string) error {
+	client := NewDockerClient()
+	filters := make(map[string][]string)
+
+	fmt.Printf("Pulling %s if needed...\n", imageLabel)
 
 	opts := docker.ListImagesOptions{
 		Filters: filters,
@@ -195,20 +212,7 @@ func PullImage(imageLabel string) error {
 
 	if !foundImage {
 		log.Infof("Image %s not found, pulling", imageLabel)
-
-		pullOpts := docker.PullImageOptions{
-			Repository:   imageName,
-			Tag:          imageTag,
-			OutputStream: os.Stdout,
-			//OutputStream: nil,
-		}
-
-		authConfig := docker.AuthConfiguration{}
-
-		if err = client.PullImage(pullOpts, authConfig); err != nil {
-			return fmt.Errorf("Unable to pull image: %v", err)
-		}
-
+		return PullImage(imageLabel)
 	}
 
 	return nil
@@ -716,32 +720,12 @@ func NewServiceContextWithId(ctxId string, pkg Package, containers map[string]Co
 	log.Infof("Creating service context '%s'...", ctxId)
 
 	// Find network by context Id
-
-	network, err := FindNetworkByName(ctxId)
-
-	if err != nil {
-		return nil, fmt.Errorf("Couldn't find existing network: %v", err)
-	}
-
-	if err == nil && network == nil {
-		opts := docker.CreateNetworkOptions{
-			Name:   ctxId,
-			Driver: "bridge",
-		}
-
-		network, err = dockerClient.CreateNetwork(opts)
-
-		if err != nil {
-			return nil, fmt.Errorf("Unable to create Docker network: %v", err)
-		}
-	}
-
 	sc := &ServiceContext{
 		Package:         pkg,
 		Id:              ctxId,
 		DockerClient:    dockerClient,
 		Containers:      containers,
-		NetworkId:       network.ID,
+		NetworkId:       "",
 		BuildContainers: make(map[string]*BuildContainer),
 	}
 
@@ -751,6 +735,34 @@ func NewServiceContextWithId(ctxId string, pkg Package, containers map[string]Co
 func NewServiceContext(pkg Package, containers map[string]ContainerDefinition) (*ServiceContext, error) {
 	ctxId, _ := uuid.NewV4()
 	return NewServiceContextWithId(ctxId.String(), pkg, containers)
+}
+
+func (sc *ServiceContext) CreateNetwork() error {
+	dockerClient := NewDockerClient()
+
+	network, err := FindNetworkByName(sc.Id)
+
+	if err != nil {
+		return fmt.Errorf("Error trying to find existing network: %v", err)
+	}
+
+	if err == nil && network == nil {
+		opts := docker.CreateNetworkOptions{
+			Name:   sc.Id,
+			Driver: "bridge",
+		}
+
+		network, err = dockerClient.CreateNetwork(opts)
+
+		if err != nil {
+			return fmt.Errorf("Unable to create Docker network: %v", err)
+		}
+
+	}
+
+	sc.NetworkId = network.ID
+
+	return nil
 }
 
 func (sc *ServiceContext) TearDown() error {
@@ -768,19 +780,19 @@ func (sc *ServiceContext) TearDown() error {
 		if container != nil {
 			log.Infof(" %s", container.Id)
 			container.Stop(0)
-		}
-
-		err = container.Destroy()
-		if err != nil {
-			log.Warnf("Unable to destroy container: %v", err)
+			if err := container.Destroy(); err != nil {
+				log.Warnf("Unable to destroy container: %v", err)
+			}
 		}
 	}
 
 	client := sc.DockerClient
-	log.Infof("Removing network...")
-	err := client.RemoveNetwork(sc.NetworkId)
-	if err != nil {
-		log.Infof("Unable to remove network %s: %v", sc.NetworkId, err)
+	if sc.NetworkId != "" {
+		log.Infof("Removing network...")
+		err := client.RemoveNetwork(sc.NetworkId)
+		if err != nil {
+			log.Warnf("Unable to remove network %s: %v", sc.NetworkId, err)
+		}
 	}
 
 	return nil
@@ -788,6 +800,11 @@ func (sc *ServiceContext) TearDown() error {
 
 func (sc *ServiceContext) StandUp() error {
 	dockerClient := sc.DockerClient
+
+	if err := sc.CreateNetwork(); err != nil {
+		return fmt.Errorf("Problem establishing service network: %v", err)
+	}
+
 	buildRoot := sc.Package.BuildRoot()
 	pkgWorkdir := filepath.Join(buildRoot, sc.Package.Name)
 	MkdirAsNeeded(pkgWorkdir)
