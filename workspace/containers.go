@@ -129,6 +129,8 @@ func FindContainer(opts BuildContainerOpts) (*BuildContainer, error) {
 	client := NewDockerClient()
 	log.Debugf("Looking for container: %s", containerName)
 
+	log.Debugf("Looking for container: %s", containerName)
+
 	filters := make(map[string][]string)
 	filters["name"] = append(filters["name"], containerName)
 
