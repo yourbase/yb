@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -12,9 +13,11 @@ import (
 	"regexp"
 	"strings"
 	"text/template"
+	"time"
 
 	. "github.com/yourbase/yb/types"
 
+	"github.com/google/shlex"
 	"github.com/ulikunitz/xz"
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing"
@@ -27,7 +30,11 @@ func ExecToStdoutWithExtraEnv(cmdString string, targetDir string, env []string) 
 
 func ExecToStdoutWithEnv(cmdString string, targetDir string, env []string) error {
 	fmt.Printf("Running: %s in %s\n", cmdString, targetDir)
-	cmdArgs := strings.Fields(cmdString)
+	cmdArgs, err := shlex.Split(cmdString)
+	if err != nil {
+		return fmt.Errorf("Can't parse command string '%s': %v", cmdString, err)
+	}
+
 	cmd := exec.Command(cmdArgs[0], cmdArgs[1:len(cmdArgs)]...)
 	cmd.Dir = targetDir
 	cmd.Stdout = os.Stdout
@@ -35,7 +42,7 @@ func ExecToStdoutWithEnv(cmdString string, targetDir string, env []string) error
 	cmd.Stderr = os.Stdout
 	cmd.Env = env
 
-	err := cmd.Run()
+	err = cmd.Run()
 
 	if err != nil {
 		return fmt.Errorf("Command failed to run with error: %v\n", err)
@@ -46,6 +53,90 @@ func ExecToStdoutWithEnv(cmdString string, targetDir string, env []string) error
 
 func ExecToStdout(cmdString string, targetDir string) error {
 	return ExecToStdoutWithEnv(cmdString, targetDir, os.Environ())
+}
+
+func ExecToLog(cmdString string, targetDir string, logPath string) error {
+	cmdArgs, err := shlex.Split(cmdString)
+	if err != nil {
+		return fmt.Errorf("Can't parse command string '%s': %v", cmdString, err)
+	}
+
+	logfile, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
+		return fmt.Errorf("Couldn't open log file %s: %v", logPath, err)
+	}
+
+	defer logfile.Close()
+
+	cmd := exec.Command(cmdArgs[0], cmdArgs[1:len(cmdArgs)]...)
+	cmd.Dir = targetDir
+	cmd.Stdout = logfile
+	cmd.Stdin = os.Stdin
+	cmd.Stderr = logfile
+
+	err = cmd.Run()
+
+	if err != nil {
+		return fmt.Errorf("Command '%s' failed to run with error -- see log for information: %s", cmdString, logPath)
+	}
+
+	return nil
+
+}
+
+func ExecSilently(cmdString string, targetDir string) error {
+	cmdArgs, err := shlex.Split(cmdString)
+	if err != nil {
+		return fmt.Errorf("Can't parse command string '%s': %v", cmdString, err)
+	}
+
+	cmd := exec.Command(cmdArgs[0], cmdArgs[1:len(cmdArgs)]...)
+	cmd.Dir = targetDir
+	cmd.Stdout = ioutil.Discard
+	cmd.Stdin = os.Stdin
+	cmd.Stderr = ioutil.Discard
+
+	err = cmd.Run()
+
+	if err != nil {
+		return fmt.Errorf("Command '%s' failed to run with error %v", cmdString, err)
+	}
+
+	return nil
+
+}
+
+func ExecToLogWithProgressDots(cmdString string, targetDir string, logPath string) error {
+	stoppedchan := make(chan struct{})
+	dotchan := make(chan int)
+	defer close(stoppedchan)
+
+	go func() {
+		for {
+			select {
+			default:
+				dotchan <- 1
+				time.Sleep(3 * time.Second)
+			case <-stoppedchan:
+				return
+			}
+		}
+	}()
+
+	go func() {
+		for {
+			select {
+			default:
+			case <-dotchan:
+				fmt.Printf(".")
+			case <-stoppedchan:
+				fmt.Printf(" done!\n")
+				return
+			}
+		}
+	}()
+
+	return ExecToLog(cmdString, targetDir, logPath)
 }
 
 func PrependToPath(dir string) {
