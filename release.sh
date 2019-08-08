@@ -13,6 +13,11 @@ if [ -z "${CHANNEL}" ]; then
   CHANNEL="unstable"
 fi
 
+if [ "${CHANNEL}" == "development" ]; then 
+  echo "Channel is development, setting version to timestamp"
+  VERSION="$(date +"%Y%m%d%H%M%S")"
+fi
+
 umask 077
 
 cleanup() {
