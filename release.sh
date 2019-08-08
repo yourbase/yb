@@ -8,6 +8,11 @@ VERSION="$(echo $YB_GIT_BRANCH | sed -e 's|refs/tags/||g')"
 TOKEN="${RELEASE_TOKEN}"
 RELEASE_KEY="${RELEASE_KEY}"
 
+if [ -z "${CHANNEL}" ]; then
+  echo "Channel not set, will release as unstable"
+  CHANNEL="unstable"
+fi
+
 umask 077
 
 cleanup() {
@@ -31,6 +36,7 @@ tar zxvf release-tool-stable-linux-amd64.tgz
         --signing-key="${KEY_FILE}"  \
         --app="$APP" \
         --token="${TOKEN}" \
+        --channel"${CHANNEL}" \
 	-- \
 	-ldflags "-X main.version=$VERSION -X 'main.date=$(date)'" \
 	"github.com/yourbase/${PROJECT}"
