@@ -4,7 +4,6 @@ replace github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.0
 
 require (
 	cloud.google.com/go v0.41.0 // indirect
-	github.com/Sirupsen/logrus v0.0.0-00010101000000-000000000000
 	github.com/alexcesaro/log v0.0.0-20150915221235-61e686294e58
 	github.com/containerd/continuity v0.0.0-20190426062206-aaeac12a7ffc // indirect
 	github.com/dsnet/compress v0.0.1 // indirect

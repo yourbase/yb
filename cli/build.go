@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/johnewart/archiver"
 	"github.com/johnewart/subcommands"
 
 	log "github.com/sirupsen/logrus"
@@ -376,8 +377,8 @@ func BuildInsideContainer(target BuildTarget, containerOpts BuildContainerOpts, 
 
 	log.Infof("Building in container: %s", buildContainer.Id)
 
-	if localYbPath, err := os.Executable(); err != nil {
-		return fmt.Errorf("Couldn't determine local path to YB: %v", err)
+	if localYbPath, err := DownloadYB(); err != nil {
+		return fmt.Errorf("Couldn't download / determine local path to YB: %v", err)
 	} else {
 		log.Infof("Uploading YB from %s to /yb", localYbPath)
 		if err := buildContainer.UploadFile(localYbPath, "yb", "/"); err != nil {
@@ -390,7 +391,15 @@ func BuildInsideContainer(target BuildTarget, containerOpts BuildContainerOpts, 
 		containerWorkDir = containerOpts.ContainerOpts.WorkDir
 	}
 
-	cmdString := fmt.Sprintf("/yb build")
+	// TODO: env?
+	ybChannel := "development"
+	log.Infof("Updating YB in container from channel %s", ybChannel)
+	updateCmd := fmt.Sprintf("/yb update -channel=%s", ybChannel)
+	if err := buildContainer.ExecToStdout(updateCmd, containerWorkDir); err != nil {
+		return fmt.Errorf("Aborting build, unable to run %s: %v", updateCmd, err)
+	}
+
+	cmdString := "/yb build"
 
 	if len(execPrefix) > 0 {
 		cmdString = fmt.Sprintf("%s -exec-prefix %s", cmdString, execPrefix)
@@ -621,4 +630,29 @@ func (b BuildData) EnvironmentVariables() []string {
 		result = append(result, fmt.Sprintf("%s=%s", k, v))
 	}
 	return result
+}
+
+// TODO: non-linux things too
+func DownloadYB() (string, error) {
+	downloadUrl := "https://bin.equinox.io/a/7cFsiXnULxA/yb-0.0.33-linux-amd64.tar.gz"
+	currentPath, _ := filepath.Abs(".")
+	tmpPath := filepath.Join(currentPath, ".yb-tmp")
+	MkdirAsNeeded(tmpPath)
+	ybPath := filepath.Join(tmpPath, "yb")
+	if _, err := os.Stat(ybPath); err == nil {
+		return ybPath, nil
+	}
+
+	localFile, err := DownloadFileWithCache(downloadUrl)
+
+	if err != nil {
+		return "", err
+	}
+
+	err = archiver.Unarchive(localFile, tmpPath)
+	if err != nil {
+		return "", fmt.Errorf("Couldn't decompress: %v", err)
+	}
+
+	return ybPath, nil
 }
