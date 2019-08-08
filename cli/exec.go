@@ -3,13 +3,11 @@ package cli
 import (
 	"context"
 	"flag"
-	"fmt"
-	"log"
-	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/johnewart/subcommands"
+	log "github.com/sirupsen/logrus"
 
 	. "github.com/yourbase/yb/packages"
 	. "github.com/yourbase/yb/plumbing"
@@ -43,56 +41,66 @@ func (b *ExecCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 
 	var targetPackage Package
 
+	ActiveSection("Setup")
 	if PathExists(MANIFEST_FILE) {
 		currentPath, _ := filepath.Abs(".")
 		_, packageName := filepath.Split(currentPath)
 		pkg, err := LoadPackage(packageName, currentPath)
 		if err != nil {
-			fmt.Printf("Can't load package '%s': %v\n", packageName, err)
+			log.Infof("Can't load package '%s': %v\n", packageName, err)
 			return subcommands.ExitFailure
 		}
 		targetPackage = pkg
 	} else {
 		workspace, err := LoadWorkspace()
 		if err != nil {
-			fmt.Printf("Can't load workspace: %v\n", err)
+			log.Infof("Can't load workspace: %v\n", err)
 			return subcommands.ExitFailure
 		}
 		pkg, err := workspace.TargetPackage()
 		if err != nil {
-			fmt.Printf("Can't determine target package: %v\n", err)
+			log.Infof("Can't determine target package: %v\n", err)
 			return subcommands.ExitFailure
 		}
 
 		targetPackage = pkg
 	}
 
+	ActiveSection("Dependencies")
 	if _, err := targetPackage.SetupRuntimeDependencies(); err != nil {
-		fmt.Printf("Couldn't configure dependencies: %v\n", err)
+		log.Infof("Couldn't configure dependencies: %v\n", err)
 		return subcommands.ExitFailure
 	}
 
 	instructions := targetPackage.Manifest
 	containers := instructions.Exec.Dependencies.Containers
 
-	fmt.Printf("Starting %d dependencies...\n", len(containers))
+	buildData := NewBuildData()
+
+	contextId := targetPackage.Name
 	if len(containers) > 0 {
-		sc, err := NewServiceContext(targetPackage, containers)
+		ActiveSection("Containers")
+		log.Infof("Starting %d dependencies...", len(containers))
+		sc, err := NewServiceContextWithId(contextId, targetPackage, containers)
 		if err != nil {
-			fmt.Sprintf("Couldn't create service context for dependencies: %v\n", err)
+			log.Errorf("Couldn't create service context for dependencies: %v", err)
+			return subcommands.ExitFailure
 		}
 
 		if err = sc.StandUp(); err != nil {
-			fmt.Sprintf("Couldn't start dependencies: %v\n", err)
+			log.Infof("Couldn't start dependencies: %v\n", err)
+			return subcommands.ExitFailure
 		}
+
+		buildData.Containers.ServiceContext = sc
 	}
 
-	fmt.Printf("Setting environment variables...\n")
+	ActiveSection("Environment")
+	log.Infof("Setting environment variables...")
 	for _, property := range instructions.Exec.Environment["default"] {
 		s := strings.Split(property, "=")
 		if len(s) == 2 {
-			fmt.Printf("  %s\n", s[0])
-			os.Setenv(s[0], s[1])
+			buildData.SetEnv(s[0], s[1])
 		}
 	}
 
@@ -100,22 +108,26 @@ func (b *ExecCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		for _, property := range instructions.Exec.Environment[b.environment] {
 			s := strings.Split(property, "=")
 			if len(s) == 2 {
-				fmt.Printf("  %s\n", s[0])
-				os.Setenv(s[0], s[1])
+				buildData.SetEnv(s[0], s[1])
 			}
 		}
 	}
 
-	log.Printf("Execing target package %s...\n", targetPackage)
+	buildData.ExportEnvironmentPublicly()
+
+	ActiveSection("Exec")
+
+	log.Infof("Execing target package %s...\n", targetPackage.Name)
+
 	execDir := targetPackage.Path
 
 	for _, logFile := range instructions.Exec.LogFiles {
-		fmt.Printf("Will tail %s...\n", logFile)
+		log.Infof("Will tail %s...\n", logFile)
 	}
 
 	for _, cmdString := range instructions.Exec.Commands {
 		if err := ExecToStdout(cmdString, execDir); err != nil {
-			fmt.Printf("Failed to run %s: %v", cmdString, err)
+			log.Infof("Failed to run %s: %v", cmdString, err)
 			return subcommands.ExitFailure
 		}
 	}

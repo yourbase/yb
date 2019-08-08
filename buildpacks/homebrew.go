@@ -177,6 +177,9 @@ func (bt HomebrewBuildTool) InstallLinux() error {
 func (bt HomebrewBuildTool) Setup() error {
 	brewDir := bt.HomebrewDir()
 	brewBinDir := filepath.Join(brewDir, "bin")
+	brewLibDir := filepath.Join(brewDir, "lib")
+
+	os.Setenv("LD_LIBRARY_PATH", brewLibDir)
 
 	PrependToPath(brewBinDir)
 

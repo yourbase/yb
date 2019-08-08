@@ -410,7 +410,7 @@ func DecompressBuffer(b *bytes.Buffer) error {
 	var buf bytes.Buffer
 
 	if _, err := io.Copy(&buf, xzReader); err != nil {
-		return fmt.Errorf("Unable to decompress data", err)
+		return fmt.Errorf("Unable to decompress data: %v", err)
 	}
 
 	b.Reset()
