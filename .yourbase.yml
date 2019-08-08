@@ -15,6 +15,14 @@ build_targets:
     commands:
       - bash release.sh 
 
+  - name: development_release
+    build_after:
+      - default
+    environment:
+      - CHANNEL=development
+    commands:
+      - bash release.sh 
+
   - name: linux
     build_after: 
       - default
@@ -47,8 +55,13 @@ ci:
           in:
             - osx
 
+    - name: development_release
+      build_target: development_release
+      when: branch IS 'development'
+
     - name: release
       build_target: release
       conditions:
         branch:
           tag: true
+
