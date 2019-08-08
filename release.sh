@@ -36,7 +36,7 @@ tar zxvf release-tool-stable-linux-amd64.tgz
         --signing-key="${KEY_FILE}"  \
         --app="$APP" \
         --token="${TOKEN}" \
-        --channel"${CHANNEL}" \
+        --channel="${CHANNEL}" \
 	-- \
 	-ldflags "-X main.version=$VERSION -X 'main.date=$(date)'" \
 	"github.com/yourbase/${PROJECT}"
