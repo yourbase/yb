@@ -56,6 +56,8 @@ func LoadBuildPacks(dependencies []string, pkgCacheDir string, pkgDir string) ([
 			bt = NewHerokuBuildTool(spec)
 		case "node":
 			bt = NewNodeBuildTool(spec)
+		case "yarn":
+			bt = NewYarnBuildTool(spec)
 		case "glide":
 			bt = NewGlideBuildTool(spec)
 		case "androidndk":
