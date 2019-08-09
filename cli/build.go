@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"os/signal"
 	"os/user"
 	"path/filepath"
 	"strings"
@@ -170,16 +171,22 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 				return subcommands.ExitFailure
 			}
 
+			buildData.Containers.ServiceContext = sc
+
+			if !b.ReuseContainers {
+				log.Infof("Not reusing containers, will teardown existing ones and clean up after ourselves")
+				defer Cleanup(buildData)
+				if err := sc.TearDown(); err != nil {
+					log.Errorf("Couldn't terminate existing containers: %v", err)
+					// FAIL?
+				}
+			}
+
 			if err = sc.StandUp(); err != nil {
 				log.Errorf("Couldn't start dependencies: %v", err)
 				return subcommands.ExitFailure
 			}
 
-			buildData.Containers.ServiceContext = sc
-			if !b.ReuseContainers {
-				log.Infof("Not reusing containers, will cleanup after ourselves")
-				defer Cleanup(buildData)
-			}
 		}
 	}
 
@@ -218,7 +225,7 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		// Do our build in a container - don't do the build locally
 		buildErr := BuildInsideContainer(target, containerOpts, b.ExecPrefix, b.ReuseContainers)
 		if buildErr != nil {
-			log.Errorf("Unable to build %s inside container: %v", target.Name, err)
+			log.Errorf("Unable to build %s inside container: %v", target.Name, buildErr)
 			return subcommands.ExitFailure
 		}
 
@@ -333,7 +340,6 @@ func BuildInsideContainer(target BuildTarget, containerOpts BuildContainerOpts, 
 	// Perform build inside a container
 	image := target.Container.Image
 	log.Infof("Using container image: %s", image)
-
 	buildContainer, err := FindContainer(containerOpts)
 
 	if err != nil {
@@ -364,6 +370,14 @@ func BuildInsideContainer(target BuildTarget, containerOpts BuildContainerOpts, 
 			buildContainer = &c
 		}
 	}
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		<-c
+		buildContainer.Stop(0)
+		os.Exit(0)
+	}()
 
 	defer buildContainer.Stop(0)
 
