@@ -3,6 +3,8 @@ package types
 import (
 	"github.com/alexcesaro/log/stdlog"
 
+	"fmt"
+	"strings"
 	"time"
 )
 
@@ -66,6 +68,24 @@ type ContainerDefinition struct {
 	WorkDir       string   `yaml:"workdir"`
 	Privileged    bool
 	PortWaitCheck PortWaitCheck `yaml:"port_check"`
+}
+
+func (c ContainerDefinition) ImageNameWithTag() string {
+	return fmt.Sprintf("%s:%s", c.ImageName(), c.ImageTag())
+}
+
+func (c ContainerDefinition) ImageName() string {
+	parts := strings.Split(c.Image, ":")
+	return parts[0]
+}
+
+func (c ContainerDefinition) ImageTag() string {
+	parts := strings.Split(c.Image, ":")
+	if len(parts) != 2 {
+		return "latest"
+	} else {
+		return parts[1]
+	}
 }
 
 type PortWaitCheck struct {

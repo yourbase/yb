@@ -251,6 +251,14 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		return subcommands.ExitSuccess
 	}
 
+	if len(primaryTarget.Dependencies.Containers) > 0 {
+		log.Infof("\n\n Available side containers: \n\n")
+		for label, c := range primaryTarget.Dependencies.Containers {
+			ipv4 := buildData.Containers.IP(label)
+			log.Infof("  * %s (using %s) has IP address %s", label, c.ImageNameWithTag(), ipv4)
+		}
+	}
+
 	var targetTimers []TargetTimer
 	var buildError error
 

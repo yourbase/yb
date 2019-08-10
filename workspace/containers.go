@@ -158,15 +158,10 @@ func NewDockerClient() *docker.Client {
 
 }
 
-func PullImage(imageLabel string) error {
+func PullImage(c ContainerDefinition) error {
 	client := NewDockerClient()
-	parts := strings.Split(imageLabel, ":")
-	imageName := parts[0]
-	imageTag := ""
-
-	if len(parts) == 2 {
-		imageTag = parts[1]
-	}
+	imageName := c.ImageName()
+	imageTag := c.ImageTag()
 
 	pullOpts := docker.PullImageOptions{
 		Repository:   imageName,
@@ -177,16 +172,17 @@ func PullImage(imageLabel string) error {
 	authConfig := docker.AuthConfiguration{}
 
 	if err := client.PullImage(pullOpts, authConfig); err != nil {
-		return fmt.Errorf("Unable to pull image '%s': %v", imageLabel, err)
+		return fmt.Errorf("Unable to pull image '%s:%s': %v", imageName, imageTag, err)
 	}
 
 	return nil
 }
 
-func PullImageIfNotHere(imageLabel string) error {
+func PullImageIfNotHere(c ContainerDefinition) error {
 	client := NewDockerClient()
 	filters := make(map[string][]string)
 
+	imageLabel := c.ImageNameWithTag()
 	fmt.Printf("Pulling %s if needed...\n", imageLabel)
 
 	opts := docker.ListImagesOptions{
@@ -212,7 +208,7 @@ func PullImageIfNotHere(imageLabel string) error {
 
 	if !foundImage {
 		log.Infof("Image %s not found, pulling", imageLabel)
-		return PullImage(imageLabel)
+		return PullImage(c)
 	}
 
 	return nil
@@ -583,8 +579,8 @@ func (b BuildContainer) ExecToWriter(cmdString string, targetDir string, outputS
 
 func NewContainer(opts BuildContainerOpts) (BuildContainer, error) {
 	containerDef := opts.ContainerOpts
-	s := strings.Split(containerDef.Image, ":")
-	imageName := s[0]
+	imageName := containerDef.ImageName()
+
 	containerImageName := strings.Replace(imageName, "/", "_", -1)
 
 	containerName := fmt.Sprintf("%s-%s", opts.Package.Name, containerImageName)
@@ -597,7 +593,7 @@ func NewContainer(opts BuildContainerOpts) (BuildContainer, error) {
 
 	client := NewDockerClient()
 
-	PullImage(containerDef.Image)
+	PullImage(containerDef)
 
 	var mounts = make([]docker.HostMount, 0)
 
@@ -814,7 +810,8 @@ func (sc *ServiceContext) StandUp() error {
 	log.Infof("Starting up dependent containers and network...")
 
 	for label, c := range sc.Containers {
-		log.Infof("  ===  %s ===", c.Image)
+
+		log.Infof("  ===  %s (using %s:%s) ===", label, c.ImageName(), c.ImageTag())
 
 		container, err := sc.FindContainer(c)
 
