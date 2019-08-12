@@ -32,7 +32,10 @@ func (bt RubyBuildTool) DownloadUrl() string {
 	operatingSystem := OS()
 	if operatingSystem == "darwin" {
 		operatingSystem = "Darwin"
-		osVersion = "18.5.0"
+	}
+
+	if operatingSystem == "linux" {
+		operatingSystem = "Linux"
 	}
 
 	if operatingSystem == "linux" {
