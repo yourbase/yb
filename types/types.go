@@ -68,6 +68,7 @@ type ContainerDefinition struct {
 	WorkDir       string   `yaml:"workdir"`
 	Privileged    bool
 	PortWaitCheck PortWaitCheck `yaml:"port_check"`
+	Label         string        `yaml:"label"`
 }
 
 func (c ContainerDefinition) ImageNameWithTag() string {

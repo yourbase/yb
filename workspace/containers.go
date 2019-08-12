@@ -86,7 +86,7 @@ func FindContainer(opts BuildContainerOpts) (*BuildContainer, error) {
 	imageName := s[0]
 	containerImageName := strings.Replace(imageName, "/", "_", -1)
 
-	containerName := fmt.Sprintf("%s-%s", opts.Package.Name, containerImageName)
+	containerName := fmt.Sprintf("%s-%s-%s", opts.Package.Name, cd.Label, containerImageName)
 	// Prefix container name with the namespace
 	if opts.Namespace != "" {
 		containerName = fmt.Sprintf("%s-%s", opts.Namespace, containerName)
@@ -583,7 +583,7 @@ func NewContainer(opts BuildContainerOpts) (BuildContainer, error) {
 
 	containerImageName := strings.Replace(imageName, "/", "_", -1)
 
-	containerName := fmt.Sprintf("%s-%s", opts.Package.Name, containerImageName)
+	containerName := fmt.Sprintf("%s-%s-%s", opts.Package.Name, containerDef.Label, containerImageName)
 
 	if opts.Namespace != "" {
 		containerName = fmt.Sprintf("%s-%s", opts.Namespace, containerName)

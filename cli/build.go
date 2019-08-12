@@ -153,7 +153,11 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		return subcommands.ExitFailure
 	}
 
-	primaryTarget := buildTargets[0]
+	primaryTarget, err := manifest.BuildTarget(buildTargetName)
+	if err != nil {
+		log.Errorf("Couldn't get primary build target '%s' specs: %v", buildTargetName, err)
+		return subcommands.ExitFailure
+	}
 
 	buildData := NewBuildData()
 
@@ -397,24 +401,49 @@ func BuildInsideContainer(target BuildTarget, containerOpts BuildContainerOpts, 
 		return fmt.Errorf("Unable to start container %s: %v", buildContainer.Id, err)
 	}
 
-	log.Infof("Building in container: %s", buildContainer.Id)
-
-	if localYbPath, err := DownloadYB(); err != nil {
-		return fmt.Errorf("Couldn't download / determine local path to YB: %v", err)
-	} else {
-		log.Infof("Uploading YB from %s to /yb", localYbPath)
-		if err := buildContainer.UploadFile(localYbPath, "yb", "/"); err != nil {
-			return fmt.Errorf("Unable to upload YB to container: %v", err)
-		}
-	}
-
+	// Set container work dir
 	containerWorkDir := "/workspace"
 	if containerOpts.ContainerOpts.WorkDir != "" {
 		containerWorkDir = containerOpts.ContainerOpts.WorkDir
 	}
 
-	// TODO: env?
-	ybChannel := "development"
+	log.Infof("Building from %s in container: %s", containerWorkDir, buildContainer.Id)
+
+	// Local path to binary that we want to inject
+	// TODO: this only supports Linux containers
+	localYbPath := ""
+
+	// If this is development mode, use the YB binary currently running
+	// We can't do this by default because this only works if the host is
+	// Linux so we might as well behave the same on all platforms
+	// If not development mode, download the binary from the distribution channel
+	if _, devMode := os.LookupEnv("YB_DEVELOPMENT"); devMode {
+		if p, err := os.Executable(); err != nil {
+			return fmt.Errorf("Can't determine local path to YB: %v", err)
+		} else {
+			localYbPath = p
+		}
+	} else {
+		if p, err := DownloadYB(); err != nil {
+			return fmt.Errorf("Couldn't download YB: %v", err)
+		} else {
+			localYbPath = p
+		}
+	}
+
+	// Upload and update CLI
+	log.Infof("Uploading YB from %s to /yb", localYbPath)
+	if err := buildContainer.UploadFile(localYbPath, "yb", "/"); err != nil {
+		return fmt.Errorf("Unable to upload YB to container: %v", err)
+	}
+
+	// Default to stable, unless told otherwise
+	// TODO: Make the download URL used for downloading track the latest stable
+	ybChannel := "stable"
+	if envChannel, exists := os.LookupEnv("YB_UPDATE_CHANNEL"); exists {
+		ybChannel = envChannel
+	}
+
 	log.Infof("Updating YB in container from channel %s", ybChannel)
 	updateCmd := fmt.Sprintf("/yb update -channel=%s", ybChannel)
 	if err := buildContainer.ExecToStdout(updateCmd, containerWorkDir); err != nil {

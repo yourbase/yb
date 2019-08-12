@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/johnewart/archiver"
 	"github.com/matishsiao/goInfo"
 
@@ -20,7 +22,7 @@ const YBRubyDownloadTemplate = "https://yourbase-build-tools.s3-us-west-2.amazon
 
 func (bt RubyBuildTool) DownloadUrl() string {
 	extension := "tar.bz2"
-	osVersion := ""
+	osVersion := OSVersion()
 	arch := Arch()
 
 	if arch == "amd64" {
@@ -30,7 +32,10 @@ func (bt RubyBuildTool) DownloadUrl() string {
 	operatingSystem := OS()
 	if operatingSystem == "darwin" {
 		operatingSystem = "Darwin"
-		osVersion = "18.5.0"
+	}
+
+	if operatingSystem == "linux" {
+		operatingSystem = "Linux"
 	}
 
 	if operatingSystem == "windows" {
@@ -54,7 +59,7 @@ func (bt RubyBuildTool) DownloadUrl() string {
 	url, err := TemplateToString(YBRubyDownloadTemplate, data)
 
 	if err != nil {
-		fmt.Printf("Error generating download URL: %v\n", err)
+		log.Infof("Error generating download URL: %v", err)
 	}
 
 	return url
@@ -114,28 +119,28 @@ func (bt RubyBuildTool) Install() error {
 	rubyVersionDir := bt.RubyDir()
 
 	if _, err := os.Stat(rubyVersionDir); err == nil {
-		fmt.Printf("Ruby %s installed in %s\n", bt.Version(), rubyVersionDir)
+		log.Infof("Ruby %s installed in %s", bt.Version(), rubyVersionDir)
 	} else {
 
 		if bt.binaryExists() {
 			rubyVersionsDir := bt.versionsDir()
 			downloadUrl := bt.DownloadUrl()
-			fmt.Printf("Will download pre-built Ruby from %s\n", downloadUrl)
+			log.Infof("Will download pre-built Ruby from %s", downloadUrl)
 
 			localFile, err := DownloadFileWithCache(downloadUrl)
 			if err != nil {
-				fmt.Printf("Unable to download: %v\n", err)
+				log.Infof("Unable to download: %v", err)
 				return err
 			}
 			err = archiver.Unarchive(localFile, rubyVersionsDir)
 			if err != nil {
-				fmt.Printf("Unable to decompress: %v\n", err)
+				log.Infof("Unable to decompress: %v", err)
 				return err
 			}
 
 			return nil
 		} else {
-			fmt.Printf("Couldn't find a file at %s...\n", bt.DownloadUrl())
+			log.Infof("Couldn't find a file at %s...", bt.DownloadUrl())
 		}
 
 		rbenvGitUrl := "https://github.com/rbenv/rbenv.git"
@@ -144,9 +149,9 @@ func (bt RubyBuildTool) Install() error {
 		bt.InstallPlatformDependencies()
 
 		if _, err := os.Stat(rbenvDir); err == nil {
-			fmt.Printf("rbenv installed in %s\n", rbenvDir)
+			log.Infof("rbenv installed in %s", rbenvDir)
 		} else {
-			fmt.Printf("Installing rbenv\n")
+			log.Infof("Installing rbenv")
 
 			_, err := git.PlainClone(rbenvDir, false, &git.CloneOptions{
 				URL:      rbenvGitUrl,
@@ -154,8 +159,8 @@ func (bt RubyBuildTool) Install() error {
 			})
 
 			if err != nil {
-				fmt.Printf("Unable to clone rbenv!\n")
-				return fmt.Errorf("Couldn't clone rbenv: %v\n", err)
+				log.Infof("Unable to clone rbenv!")
+				return fmt.Errorf("Couldn't clone rbenv: %v", err)
 			}
 		}
 
@@ -166,9 +171,9 @@ func (bt RubyBuildTool) Install() error {
 		rubyBuildDir := filepath.Join(pluginsDir, "ruby-build")
 
 		if PathExists(rubyBuildDir) {
-			fmt.Printf("ruby-build installed in %s\n", rubyBuildDir)
+			log.Infof("ruby-build installed in %s", rubyBuildDir)
 		} else {
-			fmt.Printf("Installing ruby-build\n")
+			log.Infof("Installing ruby-build")
 
 			_, err := git.PlainClone(rubyBuildDir, false, &git.CloneOptions{
 				URL:      rubyBuildGitUrl,
@@ -176,8 +181,8 @@ func (bt RubyBuildTool) Install() error {
 			})
 
 			if err != nil {
-				fmt.Printf("Unable to clone ruby-build!\n")
-				return fmt.Errorf("Couldn't clone ruby-build: %v\n", err)
+				log.Infof("Unable to clone ruby-build!")
+				return fmt.Errorf("Couldn't clone ruby-build: %v", err)
 			}
 		}
 
@@ -195,7 +200,7 @@ func (bt RubyBuildTool) Setup() error {
 	gemsDir := filepath.Join(bt.spec.PackageCacheDir, "rubygems")
 	MkdirAsNeeded(gemsDir)
 
-	fmt.Printf("Setting GEM_HOME to %s\n", gemsDir)
+	log.Infof("Setting GEM_HOME to %s", gemsDir)
 	os.Setenv("GEM_HOME", gemsDir)
 
 	gemBinDir := filepath.Join(gemsDir, "bin")
@@ -214,7 +219,7 @@ func (bt RubyBuildTool) InstallPlatformDependencies() error {
 			// Need to install the headers on Mojave
 			if !PathExists("/usr/include/zlib.h") {
 				installCmd := "sudo -S installer -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg -target /"
-				fmt.Printf("Going to run: %s\n", installCmd)
+				log.Infof("Going to run: %s", installCmd)
 				cmdArgs := strings.Split(installCmd, " ")
 				cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
 				cmd.Stdout = os.Stdout
