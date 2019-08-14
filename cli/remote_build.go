@@ -16,10 +16,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/beholders-eye/diffparser"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	"github.com/johnewart/subcommands"
-	"github.com/waigani/diffparser"
 
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing"
