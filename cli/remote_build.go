@@ -19,7 +19,6 @@ import (
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	"github.com/johnewart/subcommands"
-	"github.com/sergi/go-diff/diffmatchpatch"
 	"github.com/waigani/diffparser"
 
 	"gopkg.in/src-d/go-git.v4"
@@ -523,87 +522,6 @@ func savePatch(cmd *RemoteCmd) error {
 	}
 
 	return nil
-}
-
-// Can be XXX
-func reportCommit(src, dst *object.Commit) {
-	template := "Source: %s (%s) <==> Destination: %s (%s)\n"
-	var srcMessage, dstMessage string
-
-	if src.Message == "" || dst.Message == "" {
-		srcMessage, dstMessage = "<empty>", "<empty>"
-	} else {
-		srcMessage = strings.Split(src.Message, "\n")[0]
-		dstMessage = strings.Split(dst.Message, "\n")[0]
-
-		if len(srcMessage) > 45 {
-			srcMessage = srcMessage[:45] + "..."
-		}
-
-		if len(dstMessage) > 45 {
-			dstMessage = dstMessage[:45] + "..."
-		}
-	}
-
-	fmt.Printf(template, src.Hash.String(), srcMessage, dst.Hash.String(), dstMessage)
-}
-
-// Wrong logic XXX
-func (cmd *RemoteCmd) retrievePatches(ancestor plumbing.Hash, cWorktree *git.Worktree, dstRepo, srcRepo *git.Repository) error {
-	if srcRepo == nil || dstRepo == nil {
-		return fmt.Errorf("Needs two repositories")
-	}
-
-	dstCommit, _ := dstRepo.CommitObject(ancestor)
-	//pBuff := bytes.NewBuffer(nil)
-
-	fmt.Println("Starting applying commits from local repo to the cloned one")
-	commitIter, _ := srcRepo.Log(&git.LogOptions{Order: git.LogOrderCommitterTime})
-	err := commitIter.ForEach(func(srcCommit *object.Commit) error {
-		reportCommit(srcCommit, dstCommit)
-		if srcCommit.Hash.String() == ancestor.String() {
-			// stop now, at the ancestor commit
-			return storer.ErrStop
-		}
-
-		patch, err := dstCommit.Patch(srcCommit)
-		if err != nil {
-			return fmt.Errorf("Unable to generate patch: %v\n", err)
-		}
-		err = UnifiedPatchApply(patch.String(), dstCommit, cWorktree, cWorktree, "")
-		if err != nil {
-			return fmt.Errorf("Patch apply failed: %v\n", err)
-		}
-
-		return nil
-	})
-	if err != nil && err != storer.ErrStop {
-		return fmt.Errorf("Unable to stage/commit intermediate changes: %v\n", err)
-	}
-
-	return nil
-}
-
-// dmApplyPatch tried to apply a patch string directly, using Sergi's DMP algorithm
-// It isn't working with git generated patches
-// If diffparser approach proves to be too slow, TODO fix this, based on changes on diffparser (DiffFile.Changes slice)
-func dmpApplyPatch(patch, from string) (to string, err error) {
-	dmp := diffmatchpatch.New()
-	patches, err := dmp.PatchFromText(patch)
-	if err != nil {
-		return
-	}
-	fmt.Println(dmp.PatchToText(patches))
-
-	to, checks := dmp.PatchApply(patches, from)
-	fmt.Printf("Patched:\n%s\n", to)
-	for i, check := range checks {
-		if !check {
-
-			return "", fmt.Errorf("Patch hunk #%d failed", i)
-		}
-	}
-	return
 }
 
 func applyPatch(file *diffparser.DiffFile, from string) (to string, err error) {
