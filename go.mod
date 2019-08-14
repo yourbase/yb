@@ -2,6 +2,10 @@ module github.com/yourbase/yb
 
 replace github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.2
 
+replace github.com/waigani/diffparser => /home/beholder/Workspaces/YourBase/rep/github.com/beholders-eye/diffparser
+
+replace github.com/sergi/go-diff => /home/beholder/Workspaces/YourBase/rep/github.com/beholders-eye/go-diff
+
 require (
 	github.com/alexcesaro/log v0.0.0-20150915221235-61e686294e58
 	github.com/containerd/continuity v0.0.0-20190426062206-aaeac12a7ffc // indirect
@@ -29,6 +33,7 @@ require (
 	github.com/smartystreets/assertions v1.0.0 // indirect
 	github.com/smartystreets/goconvey v0.0.0-20190330032615-68dc04aab96a // indirect
 	github.com/ulikunitz/xz v0.5.6
+	github.com/waigani/diffparser v0.0.0-20190426062500-1f7065f429b5
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4 // indirect
 	golang.org/x/net v0.0.0-20190628185345-da137c7871d7 // indirect

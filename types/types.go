@@ -115,13 +115,14 @@ type BuildTarget struct {
 	Dependencies BuildDependencies   `yaml:"dependencies"`
 }
 
-// API Responses -- use Swagger instead, this is silly
+// API Responses -- TODO use Swagger instead, this is silly
 type Project struct {
-	Id          int    `json:"id"`
-	Label       string `json:"label"`
-	Description string `json:"description"`
-	Repository  string `json:"repository"`
-	OrgSlug     string `json:"org_slug"`
+	Id              int    `json:"id"`
+	Label           string `json:"label"`
+	Description     string `json:"description"`
+	Repository      string `json:"repository"`
+	OrgSlug         string `json:"org_slug"`
+	LocalRepoRemote string `json:"local_repo_remote"`
 }
 
 type TokenResponse struct {
