@@ -211,7 +211,8 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		container.Command = "tail -f /dev/null"
 
 		// Append build environment variables
-		container.Environment = append(container.Environment, buildData.EnvironmentVariables()...)
+		//container.Environment = append(container.Environment, buildData.EnvironmentVariables()...)
+		container.Environment = []string{}
 
 		if false {
 			u, _ := user.Current()
@@ -227,7 +228,7 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		}
 
 		// Do our build in a container - don't do the build locally
-		buildErr := BuildInsideContainer(target, containerOpts, b.ExecPrefix, b.ReuseContainers)
+		buildErr := BuildInsideContainer(target, containerOpts, buildData, b.ExecPrefix, b.ReuseContainers)
 		if buildErr != nil {
 			log.Errorf("Unable to build %s inside container: %v", target.Name, buildErr)
 			return subcommands.ExitFailure
@@ -348,7 +349,7 @@ func Cleanup(b BuildData) {
 	}
 }
 
-func BuildInsideContainer(target BuildTarget, containerOpts BuildContainerOpts, execPrefix string, reuseOldContainer bool) error {
+func BuildInsideContainer(target BuildTarget, containerOpts BuildContainerOpts, buildData BuildData, execPrefix string, reuseOldContainer bool) error {
 	// Perform build inside a container
 	image := target.Container.Image
 	log.Infof("Using container image: %s", image)
@@ -448,7 +449,7 @@ func BuildInsideContainer(target BuildTarget, containerOpts BuildContainerOpts, 
 
 		log.Infof("Updating YB in container from channel %s", ybChannel)
 		updateCmd := fmt.Sprintf("/yb update -channel=%s", ybChannel)
-		if err := buildContainer.ExecToStdout(updateCmd, containerWorkDir); err != nil {
+		if err := buildContainer.ExecToStdoutWithEnv(updateCmd, containerWorkDir, buildData.EnvironmentVariables()); err != nil {
 			return fmt.Errorf("Aborting build, unable to run %s: %v", updateCmd, err)
 		}
 	}
@@ -463,7 +464,7 @@ func BuildInsideContainer(target BuildTarget, containerOpts BuildContainerOpts, 
 
 	log.Infof("Running %s in the container in directory %s", cmdString, containerWorkDir)
 
-	if err := buildContainer.ExecToStdout(cmdString, containerWorkDir); err != nil {
+	if err := buildContainer.ExecToStdoutWithEnv(cmdString, containerWorkDir, buildData.EnvironmentVariables()); err != nil {
 		log.Infof("Failed to run %s: %v", cmdString, err)
 		return fmt.Errorf("Aborting build, unable to run %s: %v", cmdString, err)
 	}

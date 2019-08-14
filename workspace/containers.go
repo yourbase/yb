@@ -524,17 +524,25 @@ func (b BuildContainer) MakeDirectoryInContainer(path string) error {
 
 }
 
+func (b BuildContainer) ExecToStdoutWithEnv(cmdString string, targetDir string, env []string) error {
+	return b.ExecToWriterWithEnv(cmdString, targetDir, os.Stdout, env)
+}
+
 func (b BuildContainer) ExecToStdout(cmdString string, targetDir string) error {
 	return b.ExecToWriter(cmdString, targetDir, os.Stdout)
 }
 
 func (b BuildContainer) ExecToWriter(cmdString string, targetDir string, outputSink io.Writer) error {
+	return b.ExecToWriterWithEnv(cmdString, targetDir, os.Stdout, []string{})
+}
+
+func (b BuildContainer) ExecToWriterWithEnv(cmdString string, targetDir string, outputSink io.Writer, env []string) error {
 	client := NewDockerClient()
 
 	shellCmd := []string{"bash", "-c", cmdString}
 
 	execOpts := docker.CreateExecOptions{
-		Env:          b.Options.ContainerOpts.Environment,
+		Env:          env,
 		Cmd:          shellCmd,
 		AttachStdout: true,
 		AttachStderr: true,
