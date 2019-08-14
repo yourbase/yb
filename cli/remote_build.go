@@ -49,7 +49,7 @@ func (*RemoteCmd) Usage() string {
 }
 
 func (p *RemoteCmd) SetFlags(f *flag.FlagSet) {
-	f.StringVar(&p.target, "target", "", "Repository to remote build")
+	f.StringVar(&p.target, "target", "", "Build target to remote build")
 	f.StringVar(&p.baseCommit, "base-commit", "", "Base commit hash as common ancestor")
 	f.StringVar(&p.branch, "branch", "", "Branch name")
 	f.StringVar(&p.patchPath, "patch-path", "", "Path to save the patch")
