@@ -417,7 +417,8 @@ func BuildInsideContainer(target BuildTarget, containerOpts BuildContainerOpts, 
 	// We can't do this by default because this only works if the host is
 	// Linux so we might as well behave the same on all platforms
 	// If not development mode, download the binary from the distribution channel
-	if _, devMode := os.LookupEnv("YB_DEVELOPMENT"); devMode {
+	_, devMode := os.LookupEnv("YB_DEVELOPMENT")
+	if devMode {
 		if p, err := os.Executable(); err != nil {
 			return fmt.Errorf("Can't determine local path to YB: %v", err)
 		} else {
@@ -439,15 +440,17 @@ func BuildInsideContainer(target BuildTarget, containerOpts BuildContainerOpts, 
 
 	// Default to stable, unless told otherwise
 	// TODO: Make the download URL used for downloading track the latest stable
-	ybChannel := "stable"
-	if envChannel, exists := os.LookupEnv("YB_UPDATE_CHANNEL"); exists {
-		ybChannel = envChannel
-	}
+	if !devMode {
+		ybChannel := "stable"
+		if envChannel, exists := os.LookupEnv("YB_UPDATE_CHANNEL"); exists {
+			ybChannel = envChannel
+		}
 
-	log.Infof("Updating YB in container from channel %s", ybChannel)
-	updateCmd := fmt.Sprintf("/yb update -channel=%s", ybChannel)
-	if err := buildContainer.ExecToStdout(updateCmd, containerWorkDir); err != nil {
-		return fmt.Errorf("Aborting build, unable to run %s: %v", updateCmd, err)
+		log.Infof("Updating YB in container from channel %s", ybChannel)
+		updateCmd := fmt.Sprintf("/yb update -channel=%s", ybChannel)
+		if err := buildContainer.ExecToStdout(updateCmd, containerWorkDir); err != nil {
+			return fmt.Errorf("Aborting build, unable to run %s: %v", updateCmd, err)
+		}
 	}
 
 	cmdString := "/yb build"
