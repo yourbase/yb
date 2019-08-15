@@ -23,6 +23,7 @@ func main() {
 	cmdr.Register(cmdr.FlagsCommand(), "")
 	cmdr.Register(cmdr.CommandsCommand(), "")
 	cmdr.Register(&BuildCmd{}, "")
+	cmdr.Register(&CheckConfigCmd{}, "")
 	cmdr.Register(&ExecCmd{}, "")
 	cmdr.Register(&RunCmd{}, "")
 	cmdr.Register(&WorkspaceCmd{}, "")
