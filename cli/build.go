@@ -488,10 +488,6 @@ func RunCommands(config BuildConfiguration) ([]CommandTimer, error) {
 		var stepError error
 
 		stepStartTime := time.Now()
-		if len(config.ExecPrefix) > 0 {
-			cmdString = fmt.Sprintf("%s %s", config.ExecPrefix, cmdString)
-		}
-
 		if strings.HasPrefix(cmdString, "cd ") {
 			parts := strings.SplitN(cmdString, " ", 2)
 			dir := filepath.Join(targetDir, parts[1])
@@ -499,6 +495,10 @@ func RunCommands(config BuildConfiguration) ([]CommandTimer, error) {
 			//os.Chdir(dir)
 			targetDir = dir
 		} else {
+			if len(config.ExecPrefix) > 0 {
+				cmdString = fmt.Sprintf("%s %s", config.ExecPrefix, cmdString)
+			}
+
 			if target.Root != "" {
 				log.Infof("Build root is %s", target.Root)
 				targetDir = filepath.Join(targetDir, target.Root)
