@@ -352,7 +352,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	if !p.dryRun {
-		fmt.Println("Submiting Remote Build ...")
+		fmt.Println("Submitting Remote Build ...")
 		err = submitBuild(project, p, target.Tags)
 
 		if err != nil {
