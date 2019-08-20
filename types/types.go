@@ -8,7 +8,10 @@ import (
 	"time"
 )
 
-const MANIFEST_FILE = ".yourbase.yml"
+const (
+	MANIFEST_FILE = ".yourbase.yml"
+	DOCS_URL      = "https://docs.yourbase.io"
+)
 
 type BuildManifest struct {
 	Dependencies DependencySet `yaml:"dependencies"`
