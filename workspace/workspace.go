@@ -123,8 +123,7 @@ func LoadWorkspace() (Workspace, error) {
 	workspacePath, err := FindWorkspaceRoot()
 
 	if err != nil {
-		log.Fatalf("Error getting workspace path: %v", err)
-		return Workspace{}, err
+		return Workspace{}, fmt.Errorf("Error getting workspace path: %v", err)
 	}
 
 	var workspace = Workspace{}
@@ -133,7 +132,7 @@ func LoadWorkspace() (Workspace, error) {
 	err = yaml.Unmarshal([]byte(configyaml), &workspace)
 
 	if err != nil {
-		log.Fatalf("Error loading workspace config!")
+		return Workspace{}, fmt.Errorf("Error loading workspace config!")
 	}
 
 	fmt.Printf("Workspace path: %s\n", workspacePath)
