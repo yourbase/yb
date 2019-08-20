@@ -34,7 +34,7 @@ func (b *CheckConfigCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interf
 		_, pkgName := filepath.Split(currentPath)
 		pkg, err := LoadPackage(pkgName, currentPath)
 		if err != nil {
-			fmt.Printf("Error loading package '%s': %v\n", pkgName, err)
+			fmt.Printf("Error loading package '%s': %v\n\nSee %s\n", pkgName, err, DOCS_URL)
 			return subcommands.ExitFailure
 		}
 		targetPackage = pkg
@@ -43,13 +43,13 @@ func (b *CheckConfigCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interf
 		workspace, err := LoadWorkspace()
 
 		if err != nil {
-			fmt.Printf("No package here, and no workspace, nothing to check!")
+			fmt.Printf("Could not find valid configuration: %v\n\nTry running in the package root dir or writing the YML config file (.yourbase.yml) if it is missing. See %s\n", err, DOCS_URL)
 			return subcommands.ExitFailure
 		}
 
 		pkg, err := workspace.TargetPackage()
 		if err != nil {
-			fmt.Printf("Can't load workspace's target package: %v\n", err)
+			fmt.Printf("Can't load workspace's target package: %v\n\nPackages under this Workspace may be missing a .yourbase.yml file or it's syntax is an invalid YML data. See %s\n", err, DOCS_URL)
 			return subcommands.ExitFailure
 		}
 
