@@ -44,6 +44,7 @@ type RemoteCmd struct {
 	noAcceleration bool
 	dryRun         bool
 	committed      bool
+	remotes        []GitRemote
 }
 
 func (*RemoteCmd) Name() string     { return "remotebuild" }
@@ -141,10 +142,15 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 	}
 
-	project, err := fetchProject(repoUrls)
+	project, remote, err := p.fetchProject(repoUrls)
 
 	if err != nil {
 		fmt.Printf("Error fetching project metadata: %v\n", err)
+		return subcommands.ExitFailure
+	}
+
+	if !remote.Validate() {
+		fmt.Printf("Unable to pick the correct remote")
 		return subcommands.ExitFailure
 	}
 
@@ -170,35 +176,30 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	//    5.3. Save the patch and compress it
 	// 6. Submit build!
 
-	foundBranch, err := defineBranch(workRepo, p.branch)
+	remote.Branch, err = defineBranch(workRepo, p.branch)
 	if err != nil {
 		fmt.Printf("Unable to define a branch: %v\n", err)
 		return subcommands.ExitFailure
 	}
 
-	LOGGER.Debugf("Cloning repo %s, using branch '%s'", project.Repository, foundBranch)
+	LOGGER.Debugf("Cloning repo %s, using branch '%s'", remote.Url, remote.Branch)
 
-	upstreamRepoUrl := project.Repository
-	if project.LocalRepoRemote != "" {
-		// API returns the only Url owned by the logged in user
-		upstreamRepoUrl = project.LocalRepoRemote
-	}
-
-	clonedRepo, err := CloneInMemoryRepo(upstreamRepoUrl, foundBranch)
+	clonedRepo, err := CloneRepository(remote, true, "")
 	if err != nil {
-		fmt.Printf("Unable to clone %v, using branch '%v': %v\n", upstreamRepoUrl, foundBranch, err)
+		fmt.Printf("Unable to clone %v, using branch '%v': %v\n", remote.Url, remote.Branch, err)
 
 		fmt.Println("So, trying to clone master...")
-		clonedRepo, err = CloneInMemoryRepo(upstreamRepoUrl, "master")
+		remote.Branch = "master"
+		clonedRepo, err = CloneRepository(remote, true, "")
 		if err != nil {
-			fmt.Printf("Unable to clone %v using the master branch: %v\n", upstreamRepoUrl, err)
+			fmt.Printf("Unable to clone %v using the master branch: %v\n", remote.Url, err)
 			return subcommands.ExitFailure
 		}
 		p.branch = "master"
 		fmt.Println("Cloned remote master branch")
 	} else {
-		p.branch = foundBranch
-		fmt.Printf("Cloned remote %s branch", foundBranch)
+		p.branch = remote.Branch
+		fmt.Printf("Cloned remote %s branch", remote.Branch)
 	}
 
 	targetSet := commitSet(workRepo)
@@ -480,25 +481,32 @@ func defineCommit(r *git.Repository, commit string) (string, error) {
 	return commit, nil
 }
 
-func fetchProject(urls []string) (*Project, error) {
+func (p *RemoteCmd) fetchProject(urls []string) (*Project, GitRemote, error) {
+	var empty GitRemote
 	v := url.Values{}
 	for _, u := range urls {
-		fmt.Printf("Adding remote URL %s to search...\n", u)
-		v.Add("urls[]", u)
+		rem := NewGitRemote(u)
+		if rem.Validate() {
+			p.remotes = append(p.remotes, rem)
+			fmt.Printf("Adding remote URL %s to search...\n", u)
+			v.Add("urls[]", u)
+		} else {
+			fmt.Printf("Invalid remote: '%s', ignoring\n", u)
+		}
 	}
 	resp, err := postToApi("search/projects", v)
 
 	if err != nil {
-		return nil, fmt.Errorf("Couldn't lookup project on api server: %v", err)
+		return nil, empty, fmt.Errorf("Couldn't lookup project on api server: %v", err)
 	}
 
 	if resp.StatusCode != 200 {
 		if resp.StatusCode == 404 {
-			return nil, fmt.Errorf("Couldn't find the project, make sure you have created one whose repository URL matches one of these repository's remotes.")
+			return nil, empty, fmt.Errorf("Couldn't find the project, make sure you have created one whose repository URL matches one of these repository's remotes.")
 		} else if resp.StatusCode == 401 {
-			return nil, fmt.Errorf("You don't have access to remotely build these repositories: %v", urls)
+			return nil, empty, fmt.Errorf("You don't have access to remotely build these repositories: %v", urls)
 		} else {
-			return nil, fmt.Errorf("Error fetching project from API, can't build remotely.")
+			return nil, empty, fmt.Errorf("Error fetching project from API, can't build remotely.")
 		}
 	}
 
@@ -507,10 +515,30 @@ func fetchProject(urls []string) (*Project, error) {
 	var project Project
 	err = json.Unmarshal(body, &project)
 	if err != nil {
-		return nil, err
+		return nil, empty, err
 	}
 
-	return &project, nil
+	remote := p.pickRemote(project.Repository)
+	if !remote.Validate() {
+		return nil, empty, fmt.Errorf("Can't pick a good remote to clone upstream")
+	}
+
+	return &project, remote, nil
+}
+
+func (p *RemoteCmd) pickRemote(url string) (remote GitRemote) {
+
+	for _, r := range p.remotes {
+		fmt.Printf("Checking url: %s, mine: %s\n", url, r.Url)
+		if strings.Contains(url, r.Url) || strings.Contains(r.Url, url) {
+			return r
+		}
+	}
+	if len(p.remotes) > 0 {
+		remote = p.remotes[0]
+	}
+
+	return
 }
 
 func savePatch(cmd *RemoteCmd) error {
