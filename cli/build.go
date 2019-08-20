@@ -208,7 +208,7 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 
 		target := primaryTarget
 		container := target.Container
-		container.Command = "tail -f /dev/null"
+		container.Command = "/usr/bin/tail -f /dev/null"
 
 		// Append build environment variables
 		//container.Environment = append(container.Environment, buildData.EnvironmentVariables()...)
@@ -483,6 +483,10 @@ func RunCommands(config BuildConfiguration) ([]CommandTimer, error) {
 	target := config.Target
 	sandboxed := config.Sandboxed
 	targetDir := config.TargetDir
+	if target.Root != "" {
+		log.Infof("Build root is %s", target.Root)
+		targetDir = filepath.Join(targetDir, target.Root)
+	}
 
 	for _, cmdString := range target.Commands {
 		var stepError error
@@ -497,11 +501,6 @@ func RunCommands(config BuildConfiguration) ([]CommandTimer, error) {
 		} else {
 			if len(config.ExecPrefix) > 0 {
 				cmdString = fmt.Sprintf("%s %s", config.ExecPrefix, cmdString)
-			}
-
-			if target.Root != "" {
-				log.Infof("Build root is %s", target.Root)
-				targetDir = filepath.Join(targetDir, target.Root)
 			}
 
 			if sandboxed {
