@@ -23,6 +23,7 @@ import (
 	"gopkg.in/src-d/go-billy.v4/memfs"
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing"
+	githttp "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 	"gopkg.in/src-d/go-git.v4/storage/memory"
 )
 
@@ -513,44 +514,39 @@ func DecompressBuffer(b *bytes.Buffer) error {
 	return nil
 }
 
-func CloneRepository(uri string, basePath string, branch string) (*git.Repository, error) {
-	if branch == "" {
-		return nil, fmt.Errorf("No branch defined to clone repo %v at dir %v", uri, basePath)
+func CloneRepository(remote GitRemote, inMem bool, basePath string) (rep *git.Repository, err error) {
+	if remote.Branch == "" {
+		return nil, fmt.Errorf("No branch defined to clone repo %v", remote.Url)
 	}
 
-	r, err := git.PlainClone(
-		basePath,
-		false,
-		&git.CloneOptions{
-			URL:           uri,
-			ReferenceName: plumbing.NewBranchReferenceName(branch),
-			SingleBranch:  true,
-			Depth:         50,
-			Tags:          git.NoTags,
-		})
-
-	if err != nil {
-		return nil, fmt.Errorf("Unable to clone: %v\n", err)
+	cloneOpts := &git.CloneOptions{
+		URL:           remote.String(),
+		ReferenceName: plumbing.NewBranchReferenceName(remote.Branch),
+		SingleBranch:  true,
+		Depth:         50,
+		Tags:          git.NoTags,
 	}
 
-	return r, nil
-}
-
-func CloneInMemoryRepo(uri, branch string) (rep *git.Repository, err error) {
-	if branch == "" {
-		return nil, fmt.Errorf("No branch defined to clone repo %v", uri)
+	if remote.Token != "" {
+		cloneOpts.Auth = &githttp.BasicAuth{
+			Username: remote.User,
+			Password: remote.Token,
+		}
+	} else if remote.Password != "" || remote.User != "" {
+		cloneOpts.Auth = &githttp.BasicAuth{
+			Username: remote.User,
+			Password: remote.Password,
+		}
 	}
 
-	fs := memfs.New()
-	storer := memory.NewStorage()
+	if inMem {
+		fs := memfs.New()
+		storer := memory.NewStorage()
 
-	rep, err = git.Clone(storer, fs,
-		&git.CloneOptions{
-			URL:           uri,
-			ReferenceName: plumbing.NewBranchReferenceName(branch),
-			SingleBranch:  true,
-			Depth:         50,
-			Tags:          git.NoTags,
-		})
+		rep, err = git.Clone(storer, fs, cloneOpts)
+	} else {
+		rep, err = git.PlainClone(basePath, false, cloneOpts)
+	}
+
 	return
 }
