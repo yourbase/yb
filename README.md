@@ -45,9 +45,17 @@ The primary features of the YB tooling are:
 
 # Documentation 
 
-We are working on publishing documentation but for now you can look at the
-`.yourbase.yml` file included in this repository or look in the Wiki for some
-examples of how to get started using the tool.
+See http://docs.yourbase.io.
+
+# Self-update
+
+To update to a new *stable* version of yb, use:
+
+`yb update`
+
+You can pick other channels by using `-channel`:
+
+`yb update -channel=development`
 
 # Contributing 
 
