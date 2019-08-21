@@ -49,7 +49,6 @@ func (*RemoteCmd) Usage() string {
 }
 
 func (p *RemoteCmd) SetFlags(f *flag.FlagSet) {
-	f.StringVar(&p.target, "target", "", "Build target to remote build")
 	f.StringVar(&p.baseCommit, "base-commit", "", "Base commit hash as common ancestor")
 	f.StringVar(&p.branch, "branch", "", "Branch name")
 	f.StringVar(&p.patchPath, "patch-path", "", "Path to save the patch")
@@ -60,8 +59,10 @@ func (p *RemoteCmd) SetFlags(f *flag.FlagSet) {
 
 func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 
-	if p.target == "" {
-		p.target = "default"
+	// Consistent with how the `build` cmd works
+	p.target = "default"
+	if len(f.Args()) > 0 {
+		p.target = f.Args()[0]
 	}
 
 	var targetPackage Package
@@ -107,6 +108,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		if _, err := manifest.BuildTarget(p.target); err != nil {
 			fmt.Printf("Build target %s specified but it doesn't exist!\n", p.target)
 			fmt.Printf("Valid build targets: %s\n", strings.Join(manifest.BuildTargetList(), ", "))
+			return subcommands.ExitFailure
 		}
 	}
 
