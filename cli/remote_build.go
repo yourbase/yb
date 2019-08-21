@@ -199,7 +199,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		fmt.Println("Cloned remote master branch")
 	} else {
 		p.branch = remote.Branch
-		fmt.Printf("Cloned remote %s branch", remote.Branch)
+		fmt.Printf("Cloned remote %s branch\n", remote.Branch)
 	}
 
 	targetSet := commitSet(workRepo)
