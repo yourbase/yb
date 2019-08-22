@@ -203,7 +203,7 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	}
 
 	// Should we build in a container?
-	if !b.NoContainer && primaryTarget.Container.Image != "" {
+	if !b.NoContainer && !target.HostOnly {
 		log.Infof("Executing build steps in container")
 
 		target := primaryTarget
