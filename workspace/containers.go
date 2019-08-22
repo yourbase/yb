@@ -601,7 +601,10 @@ func NewContainer(opts BuildContainerOpts) (BuildContainer, error) {
 
 	client := NewDockerClient()
 
-	PullImage(containerDef)
+	if containerDef.Image == "" {
+		containerDef.Image = DEFAULT_YB_CONTAINER
+	}
+	PullImage(containerDef.Image)
 
 	var mounts = make([]docker.HostMount, 0)
 

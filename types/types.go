@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	MANIFEST_FILE = ".yourbase.yml"
-	DOCS_URL      = "https://docs.yourbase.io"
+	MANIFEST_FILE        = ".yourbase.yml"
+	DOCS_URL             = "https://docs.yourbase.io"
+	DEFAULT_YB_CONTAINER = "yourbase/yb_ubuntu:18.04"
 )
 
 type BuildManifest struct {
@@ -51,6 +52,7 @@ type ExecPhase struct {
 	Environment  map[string][]string `yaml:"environment"`
 	LogFiles     []string            `yaml:"logfiles"`
 	Sandbox      bool                `yaml:"sandbox"`
+	HostOnly     bool                `yaml:"host_only"`
 	BuildFirst   []string            `yaml:"build_first"`
 }
 
@@ -105,6 +107,7 @@ type BuildTarget struct {
 	Artifacts    []string            `yaml:"artifacts"`
 	CachePaths   []string            `yaml:"cache_paths"`
 	Sandbox      bool                `yaml:"sandbox"`
+	HostOnly     bool                `yaml:"host_only"`
 	Root         string              `yaml:"root"`
 	Environment  []string            `yaml:"environment"`
 	Tags         map[string]string   `yaml:"tags"`
