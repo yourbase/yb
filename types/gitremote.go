@@ -79,8 +79,18 @@ func (r GitRemote) String() (str string) {
 func parseRemote(s string) (token, user, password, domain, path, protocol string, t RemoteType) {
 	var auth, afterAuth string
 
-	setType := func(prot string) {
+	clean := func() {
+		token = ""
+		user = ""
+		password = ""
+		domain = ""
+		path = ""
+		protocol = ""
+	}
+
+	setType := func(prot string) bool {
 		protocol = strings.ToLower(prot)
+		r := true
 		switch prot {
 		case "http":
 			t = HttpRemote
@@ -92,18 +102,29 @@ func parseRemote(s string) (token, user, password, domain, path, protocol string
 			t = GitRawRemote
 		case "file":
 			t = FileRemote
+		default:
+			r = false
 		}
-
+		return r
 	}
 
 	parts := strings.Split(s, "@")
 	if len(parts) > 1 {
 		protocolAndAuth := strings.Split(parts[0], "://")
 		if len(protocolAndAuth) == 2 {
-			setType(protocolAndAuth[0])
+			if !setType(protocolAndAuth[0]) {
+				// clean all, invalid protocol
+				clean()
+				return
+			}
 			auth = protocolAndAuth[1]
 		} else {
 			auth = parts[0]
+		}
+
+		if strings.Contains(auth, ":/") {
+			clean()
+			return
 		}
 
 		if strings.Contains(auth, ":") {
@@ -123,6 +144,12 @@ func parseRemote(s string) (token, user, password, domain, path, protocol string
 				} else {
 					token = password
 				}
+			} else {
+				if len(creds) > 2 {
+					// Malformed password (a lot of ":")
+					clean()
+					return
+				}
 			}
 		} else {
 			user = auth
@@ -131,10 +158,13 @@ func parseRemote(s string) (token, user, password, domain, path, protocol string
 			afterAuth = parts[1]
 		}
 	} else {
-		// No auth information
 		protocolAndLoc := strings.Split(s, "://")
 		if len(protocolAndLoc) > 1 {
-			setType(protocolAndLoc[0])
+			if !setType(protocolAndLoc[0]) {
+				// clean all, invalid protocol
+				clean()
+				return
+			}
 			afterAuth = protocolAndLoc[1]
 		}
 	}

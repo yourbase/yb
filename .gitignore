@@ -1,3 +1,4 @@
 **/*.tar
 **/*.swp
-Session.vim
+**/*.vim
+yb
