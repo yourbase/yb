@@ -6,11 +6,11 @@
 `yb build all-the-things!`
 
 A build tool that makes working on projects much more delightful. Stop worrying
-about dependencies and keep your CI build process in-sync with your local
-development process.
+about dependencies, keep your CI build process in-sync with your local
+development process and onboard new team members with ease.
 
-It is kind of like docker, but with composable build-packs, configurable with YAML
-and that can be used in CIs or in remote builds.
+YB was created for complex repositories, including monorepos, and for projects
+with multiple team members.
 
 The primary features of the YB tooling are:
 
