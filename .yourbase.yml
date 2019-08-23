@@ -16,6 +16,14 @@ build_targets:
     commands:
       - bash release.sh 
 
+  - name: release_unstable
+    build_after:
+      - default
+    environment:
+      - CHANNEL=unstable
+    commands:
+      - bash release.sh 
+
   - name: development_release
     build_after:
       - default
@@ -58,10 +66,15 @@ ci:
 
     - name: development_release
       build_target: development_release
-      when: branch IS 'development'
+      when: branch IS NOT 'master'
+
+    - name: release_unstable
+      build_target: release_unstable
+      when: branch IS 'master'
 
     - name: release
       build_target: release
+      when: branch IS 'master'
       conditions:
         branch:
           tag: true
