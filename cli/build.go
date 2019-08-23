@@ -202,8 +202,9 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		buildData.SetEnv(key, value)
 	}
 
+	_, exists := os.LookupEnv("YB_NO_CONTAINER_BUILDS")
 	// Should we build in a container?
-	if !b.NoContainer && !primaryTarget.HostOnly {
+	if !b.NoContainer && !primaryTarget.HostOnly && !exists {
 		log.Infof("Executing build steps in container")
 
 		target := primaryTarget
