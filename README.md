@@ -1,16 +1,13 @@
-# YourBase CLI 
+# Yourbase CLI 
 
 
 [![YourBase Community Slack](https://img.shields.io/badge/slack-@yourbase/community-blue.svg?logo=slack)](https://slack.yourbase.io)
 
 `yb build all-the-things!`
 
-A build tool that makes working on projects much more delightful. Stop worrying
+YourBase is a build tool that makes working on projects much more delightful. Stop worrying
 about dependencies, keep your CI build process in-sync with your local
 development process and onboard new team members with ease.
-
-YB was created for complex repositories, including monorepos, and for projects
-with multiple team members.
 
 The primary features of the YB tooling are:
 
