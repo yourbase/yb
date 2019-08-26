@@ -32,6 +32,8 @@ import (
 	. "github.com/yourbase/yb/workspace"
 
 	ybconfig "github.com/yourbase/yb/config"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type RemoteCmd struct {
@@ -78,7 +80,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		_, pkgName := filepath.Split(currentPath)
 		pkg, err := LoadPackage(pkgName, currentPath)
 		if err != nil {
-			fmt.Printf("Error loading package '%s': %v\n", pkgName, err)
+			log.Errorf("Error loading package '%s': %v\n", pkgName, err)
 			return subcommands.ExitFailure
 		}
 		targetPackage = pkg
@@ -87,13 +89,13 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		workspace, err := LoadWorkspace()
 
 		if err != nil {
-			fmt.Printf("No package here, and no workspace, nothing to build!")
+			log.Errorf("No package here, and no workspace, nothing to build!")
 			return subcommands.ExitFailure
 		}
 
 		pkg, err := workspace.TargetPackage()
 		if err != nil {
-			fmt.Printf("Can't load workspace's target package: %v\n", err)
+			log.Errorf("Can't load workspace's target package: %v\n", err)
 			return subcommands.ExitFailure
 		}
 
@@ -107,29 +109,29 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	if len(manifest.BuildTargets) == 0 {
 		target = manifest.Build
 		if len(target.Commands) == 0 {
-			fmt.Printf("Default build command has no steps and no targets described\n")
+			log.Errorf("Default build command has no steps and no targets described\n")
 		}
 	} else {
 		if _, err := manifest.BuildTarget(p.target); err != nil {
-			fmt.Printf("Build target %s specified but it doesn't exist!\n", p.target)
-			fmt.Printf("Valid build targets: %s\n", strings.Join(manifest.BuildTargetList(), ", "))
+			log.Errorf("Build target %s specified but it doesn't exist!\n", p.target)
+			log.Errorf("Valid build targets: %s\n", strings.Join(manifest.BuildTargetList(), ", "))
 			return subcommands.ExitFailure
 		}
 	}
 
-	fmt.Printf("Remotely building '%s' ...\n", p.target)
+	log.Infof("Remotely building '%s' ...\n", p.target)
 	p.repoDir = targetPackage.Path
 	workRepo, err := git.PlainOpen(p.repoDir)
 
 	if err != nil {
-		fmt.Printf("Error opening repository %s: %v\n", p.repoDir, err)
+		log.Errorf("Error opening repository %s: %v\n", p.repoDir, err)
 		return subcommands.ExitFailure
 	}
 
 	list, err := workRepo.Remotes()
 
 	if err != nil {
-		fmt.Printf("Error getting remotes for %s: %v\n", p.repoDir, err)
+		log.Errorf("Error getting remotes for %s: %v\n", p.repoDir, err)
 		return subcommands.ExitFailure
 	}
 
@@ -145,23 +147,23 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	project, remote, err := p.fetchProject(repoUrls)
 
 	if err != nil {
-		fmt.Printf("Error fetching project metadata: %v\n", err)
+		log.Errorf("Error fetching project metadata: %v\n", err)
 		return subcommands.ExitFailure
 	}
 
 	if !remote.Validate() {
-		fmt.Printf("Unable to pick the correct remote")
+		log.Errorf("Unable to pick the correct remote")
 		return subcommands.ExitFailure
 	}
 
 	if project.Repository == "" {
 		projectUrl, err := ybconfig.ManagementUrl(fmt.Sprintf("%s/%s", project.OrgSlug, project.Label))
 		if err != nil {
-			fmt.Printf("Unable to generate project URL: %v\n", err)
+			log.Errorf("Unable to generate project URL: %v\n", err)
 			return subcommands.ExitFailure
 		}
 
-		fmt.Printf("Empty repository for project %s, please check your project settings at %s", project.Label, projectUrl)
+		log.Errorf("Empty repository for project %s, please check your project settings at %s", project.Label, projectUrl)
 		return subcommands.ExitFailure
 	}
 
@@ -178,33 +180,33 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	remote.Branch, err = defineBranch(workRepo, p.branch)
 	if err != nil {
-		fmt.Printf("Unable to define a branch: %v\n", err)
+		log.Errorf("Unable to define a branch: %v\n", err)
 		return subcommands.ExitFailure
 	}
 
-	LOGGER.Debugf("Cloning repo %s, using branch '%s'", remote.Url, remote.Branch)
+	log.Debugf("Cloning repo %s, using branch '%s'", remote.Url, remote.Branch)
 
 	clonedRepo, err := CloneRepository(remote, true, "")
 	if err != nil {
-		fmt.Printf("Unable to clone %v, using branch '%v': %v\n", remote.Url, remote.Branch, err)
+		log.Warnf("Unable to clone %v, using branch '%v': %v\n", remote.Url, remote.Branch, err)
 
-		fmt.Println("So, trying to clone master...")
+		log.Errorln("So, trying to clone master...")
 		remote.Branch = "master"
 		clonedRepo, err = CloneRepository(remote, true, "")
 		if err != nil {
-			fmt.Printf("Unable to clone %v using the master branch: %v\n", remote.Url, err)
+			log.Errorf("Unable to clone %v using the master branch: %v\n", remote.Url, err)
 			return subcommands.ExitFailure
 		}
 		p.branch = "master"
-		fmt.Println("Cloned remote master branch")
+		log.Infoln("Cloned remote master branch")
 	} else {
 		p.branch = remote.Branch
-		fmt.Printf("Cloned remote %s branch\n", remote.Branch)
+		log.Infof("Cloned remote %s branch\n", remote.Branch)
 	}
 
 	targetSet := commitSet(workRepo)
 	if targetSet == nil {
-		fmt.Printf("Couldn't build a commit set for comparing\n")
+		log.Errorf("Couldn't build a commit set for comparing\n")
 		return subcommands.ExitFailure
 	}
 	commonAncestor := p.findCommonAncestor(clonedRepo, targetSet)
@@ -212,13 +214,13 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	// Commit workRepo local changes to the cloned in-memory repository
 	worktree, err := workRepo.Worktree() // current worktree
 	if err != nil {
-		fmt.Printf("Couldn't get current worktree: %v\n", err)
+		log.Errorf("Couldn't get current worktree: %v\n", err)
 		return subcommands.ExitFailure
 	}
 
 	clonedWorktree, err := clonedRepo.Worktree() // temporary worktree
 	if err != nil {
-		fmt.Printf("Couldn't get cloned worktree: %v\n", err)
+		log.Errorf("Couldn't get cloned worktree: %v\n", err)
 		return subcommands.ExitFailure
 	}
 
@@ -227,20 +229,20 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	clonedCommit, err := clonedRepo.CommitObject(commonAncestor)
 	if err != nil {
-		fmt.Printf("Commit definition failed: %v\n", err)
+		log.Errorf("Commit definition failed: %v\n", err)
 		return subcommands.ExitFailure
 	}
 
 	head, _ := workRepo.Head()
 	baseCommit, err := workRepo.CommitObject(head.Hash())
 	if err != nil {
-		fmt.Printf("Commit definition failed: %v\n", err)
+		log.Errorf("Commit definition failed: %v\n", err)
 		return subcommands.ExitFailure
 	}
 
 	patch, err := clonedCommit.Patch(baseCommit)
 	if err != nil {
-		fmt.Printf("Patch generation failed: %v\n", err)
+		log.Errorf("Patch generation failed: %v\n", err)
 		return subcommands.ExitFailure
 	}
 	p.patchData = []byte(patch.String())
@@ -249,20 +251,20 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		// Apply changes that were committed
 		err = UnifiedPatchApply(patch.String(), clonedCommit, clonedWorktree, worktree, "")
 		if err != nil {
-			fmt.Printf("Unable to apply local committed changes: %v\n", err)
+			log.Errorf("Unable to apply local committed changes: %v\n", err)
 			return subcommands.ExitFailure
 		}
 
 		latest, err = commitTempChanges(clonedWorktree)
 		if err != nil {
-			fmt.Printf("Commit to temporary cloned repository failed: %v\n", err)
+			log.Errorf("Commit to temporary cloned repository failed: %v\n", err)
 			return subcommands.ExitFailure
 		}
 
 		// Apply changes that weren't committed yet
 		status, err := worktree.Status()
 		if err != nil {
-			fmt.Printf("Couldn't get current worktree status: %v\n", err)
+			log.Errorf("Couldn't get current worktree status: %v\n", err)
 			return subcommands.ExitFailure
 		}
 
@@ -272,33 +274,33 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 				_, err := clonedWorktree.Remove(n)
 				if err != nil {
-					fmt.Printf("Unable to remove %s from the temporary cloned repository: %v\n", n, err)
+					log.Errorf("Unable to remove %s from the temporary cloned repository: %v\n", n, err)
 					return subcommands.ExitFailure
 				}
 			} else if s.Worktree == git.Renamed || s.Staging == git.Renamed {
 
 				_, err = clonedWorktree.Move(s.Extra, n)
 				if err != nil {
-					fmt.Printf("Unable to move %s -> %s in the temporary cloned repository: %v\n", s.Extra, n, err)
+					log.Errorf("Unable to move %s -> %s in the temporary cloned repository: %v\n", s.Extra, n, err)
 					return subcommands.ExitFailure
 				}
 			} else {
 				// Copy contents from the workRepo fs to cloneRepo fs
 				originalFile, err := worktree.Filesystem.Open(n)
 				if err != nil {
-					fmt.Printf("Unable to open %s on the work tree: %v\n", n, err)
+					log.Errorf("Unable to open %s on the work tree: %v\n", n, err)
 					return subcommands.ExitFailure
 				}
 
 				newFile, err := clonedWorktree.Filesystem.Create(n)
 				if err != nil {
-					fmt.Printf("Unable to open %s on the cloned tree: %v\n", n, err)
+					log.Errorf("Unable to open %s on the cloned tree: %v\n", n, err)
 					return subcommands.ExitFailure
 				}
 
 				_, err = io.Copy(newFile, originalFile)
 				if err != nil {
-					fmt.Printf("Unable to copy %s: %v\n", n, err)
+					log.Errorf("Unable to copy %s: %v\n", n, err)
 					return subcommands.ExitFailure
 				}
 				_ = originalFile.Close()
@@ -307,7 +309,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 				// Add each detected changed file to the clonedRepo index
 				_, err = clonedWorktree.Add(n)
 				if err != nil {
-					fmt.Printf("Unable to add %s to the temporary cloned repository: %v\n", n, err)
+					log.Errorf("Unable to add %s to the temporary cloned repository: %v\n", n, err)
 					return subcommands.ExitFailure
 				}
 			}
@@ -315,27 +317,27 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 		latest, err = commitTempChanges(clonedWorktree)
 		if err != nil {
-			fmt.Printf("Commit to temporary cloned repository failed: %v\n", err)
+			log.Errorf("Commit to temporary cloned repository failed: %v\n", err)
 			return subcommands.ExitFailure
 		}
 
 		baseCommit, err = clonedRepo.CommitObject(commonAncestor)
 		if err != nil {
-			fmt.Printf("Commit definition failed: %v\n", err)
+			log.Errorf("Commit definition failed: %v\n", err)
 			return subcommands.ExitFailure
 		}
 
 		tempCommit, err := clonedRepo.CommitObject(latest)
 		if err != nil {
-			fmt.Printf("Commit definition failed: %v\n", err)
+			log.Errorf("Commit definition failed: %v\n", err)
 			return subcommands.ExitFailure
 		}
 
-		fmt.Printf("Generating a patch from comparing %s to %s\n", baseCommit.Hash, tempCommit.Hash)
+		log.Infof("Generating a patch from comparing %s to %s\n", baseCommit.Hash, tempCommit.Hash)
 
 		patch, err = baseCommit.Patch(tempCommit)
 		if err != nil {
-			fmt.Printf("Patch generation failed: %v\n", err)
+			log.Errorf("Patch generation failed: %v\n", err)
 			return subcommands.ExitFailure
 		}
 
@@ -346,22 +348,22 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	if p.patchPath != "" {
 		if err := savePatch(p); err != nil {
-			fmt.Printf("\nUnable to save copy of generated patch: %v\n\n", err)
+			log.Errorf("\nUnable to save copy of generated patch: %v\n\n", err)
 		} else {
-			fmt.Printf("Patch saved at: %v\n", p.patchPath)
+			log.Infof("Patch saved at: %v\n", p.patchPath)
 		}
 	}
 
 	if !p.dryRun {
-		fmt.Println("Submitting Remote Build ...")
+		log.Infoln("Submitting Remote Build ...")
 		err = submitBuild(project, p, target.Tags)
 
 		if err != nil {
-			fmt.Printf("Unable to submit build: %v\n", err)
+			log.Errorf("Unable to submit build: %v\n", err)
 			return subcommands.ExitFailure
 		}
 	} else {
-		fmt.Println("Dry run ended, build not submitted")
+		log.Infoln("Dry run ended, build not submitted")
 	}
 
 	return subcommands.ExitSuccess
@@ -444,7 +446,7 @@ func defineBranch(r *git.Repository, hintBranch string) (string, error) {
 	if ref.Name().IsBranch() {
 		if hintBranch != "" {
 			if hintBranch == ref.Name().Short() {
-				fmt.Printf("Informed branch is the one used locally")
+				log.Infof("Informed branch is the one used locally")
 
 				return hintBranch, nil
 
@@ -452,7 +454,7 @@ func defineBranch(r *git.Repository, hintBranch string) (string, error) {
 				return hintBranch, fmt.Errorf("Informed branch (%v) isn't the same as the one used locally (%v)", hintBranch, ref.Name().String())
 			}
 		} else {
-			LOGGER.Debugf("Found branch reference name is %v", ref.Name().Short())
+			log.Debugf("Found branch reference name is %v", ref.Name().Short())
 			return ref.Name().Short(), nil
 		}
 
@@ -488,10 +490,10 @@ func (p *RemoteCmd) fetchProject(urls []string) (*Project, GitRemote, error) {
 		rem := NewGitRemote(u)
 		if rem.Validate() {
 			p.remotes = append(p.remotes, rem)
-			fmt.Printf("Adding remote URL %s to search...\n", u)
+			log.Infof("Adding remote URL %s to search...\n", u)
 			v.Add("urls[]", u)
 		} else {
-			fmt.Printf("Invalid remote: '%s', ignoring\n", u)
+			log.Warnf("Invalid remote: '%s', ignoring\n", u)
 		}
 	}
 	resp, err := postToApi("search/projects", v)
@@ -529,7 +531,7 @@ func (p *RemoteCmd) fetchProject(urls []string) (*Project, GitRemote, error) {
 func (p *RemoteCmd) pickRemote(url string) (remote GitRemote) {
 
 	for _, r := range p.remotes {
-		fmt.Printf("Checking url: %s, mine: %s\n", url, r.Url)
+		log.Infof("Checking url: %s, mine: %s\n", url, r.Url)
 		if strings.Contains(url, r.Url) || strings.Contains(r.Url, url) {
 			return r
 		}
@@ -570,7 +572,6 @@ func applyPatch(file *diffparser.DiffFile, from string) (to string, err error) {
 			index := idx + i
 			passedLine := lines[index]
 			if strings.EqualFold(line.Content, passedLine) {
-				//return "", fmt.Errorf("Malformed patch, unmatched lines: %v\n", strings.Join(file.Changes, "\n"))
 				unmatchedLines++
 			}
 		}
@@ -690,13 +691,6 @@ func UnifiedPatchApply(patch string, commit *object.Commit, w, originWorktree *g
 				return fmt.Errorf("Not implemented")
 			}
 		}
-
-		//fmt.Printf("%s --> %s\nHeader:\n%s\nChanges:\n%s\n", file.OrigName, file.NewName, file.DiffHeader, strings.Join(file.Changes, "\n"))
-		/* for n, hunk := range file.Hunks {
-			for l, line := range hunk.WholeRange.Lines {
-				fmt.Printf("hunk %d, line %d: %s\n", n, l, line.Content)
-			}
-		} */
 	}
 	return
 }
@@ -706,16 +700,16 @@ func (cmd *RemoteCmd) findCommonAncestor(r *git.Repository, commits map[string]b
 		// User requested specific commit
 		commit, err := r.CommitObject(plumbing.NewHash(cmd.baseCommit))
 		if err != nil {
-			fmt.Printf("Couldn't find %s commit on remote cloned repository: %v\n", cmd.baseCommit, err)
+			log.Errorf("Couldn't find %s commit on remote cloned repository: %v\n", cmd.baseCommit, err)
 		} else {
-			fmt.Printf("Decided commit: %s\n", commit.Hash)
+			log.Infof("Decided commit: %s\n", commit.Hash)
 			return commit.Hash
 		}
 	}
 
 	ref, err := r.Head()
 	if err != nil {
-		fmt.Printf("No Head: %v\n", err)
+		log.Debugf("No Head: %v\n", err)
 	}
 
 	commit, _ := r.CommitObject(ref.Hash())
@@ -724,9 +718,7 @@ func (cmd *RemoteCmd) findCommonAncestor(r *git.Repository, commits map[string]b
 
 	err = commitIter.ForEach(func(c *object.Commit) error {
 		hash := c.Hash.String()
-		if LOGGER.LogDebug() {
-			LOGGER.Debugf("Considering %s -> %v...\n", hash, commits[hash])
-		}
+		log.Debugf("Considering %s -> %v...\n", hash, commits[hash])
 		if commits[hash] {
 			commonCommit = c
 			return storer.ErrStop
@@ -735,8 +727,7 @@ func (cmd *RemoteCmd) findCommonAncestor(r *git.Repository, commits map[string]b
 		}
 	})
 
-	LOGGER.Debugf("Common commit hash: %s\n", commonCommit.Hash)
-	fmt.Printf("Decided commit: %s\n", commonCommit.Hash)
+	log.Infof("Decided commit: %s\n", commonCommit.Hash)
 	cmd.baseCommit = commonCommit.Hash.String()
 
 	return commonCommit.Hash
@@ -745,13 +736,13 @@ func (cmd *RemoteCmd) findCommonAncestor(r *git.Repository, commits map[string]b
 
 func commitSet(r *git.Repository) map[string]bool {
 	if r == nil {
-		fmt.Printf("Error getting the repo\n")
+		log.Errorf("Error getting the repo\n")
 		return nil
 	}
 	ref, err := r.Head()
 
 	if err != nil {
-		fmt.Printf("No Head: %v\n", err)
+		log.Errorf("No Head: %v\n", err)
 		return nil
 	}
 
@@ -806,9 +797,9 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 
 	cliUrl, err := ybconfig.ApiUrl("builds/cli")
 	if err != nil {
-		LOGGER.Debugf("Unable to generate CLI URL: %v\n", err)
+		log.Debugf("Unable to generate CLI URL: %v\n", err)
 	}
-	LOGGER.Debugf("Calling backend (%s) with the following values: %v\n", cliUrl, formData)
+	log.Debugf("Calling backend (%s) with the following values: %v\n", cliUrl, formData)
 
 	resp, err := postToApi("builds/cli", formData)
 	if err != nil {
@@ -817,7 +808,6 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
-	//fmt.Println(resp.Body)
 	if err != nil {
 		return fmt.Errorf("Couldn't read response body: %s\n", err)
 	}
@@ -835,7 +825,7 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 	}
 
 	if strings.HasPrefix(url, "ws:") || strings.HasPrefix(url, "wss:") {
-		fmt.Printf("Streaming build output from %s\n", url)
+		log.Infof("Streaming build output from %s\n", url)
 		conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), url)
 		if err != nil {
 			return fmt.Errorf("Can not connect: %v\n", err)
@@ -848,19 +838,19 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 						//fmt.Printf("can not receive: %v\n", err)
 						//return err
 					} else {
-						fmt.Println("\n\n\nBuild Completed!")
+						log.Infoln("\n\n\nBuild Completed!")
 						return nil
 					}
 				} else {
-					fmt.Printf("%s", msg)
+					log.Errorf("%s", msg)
 				}
 			}
 
 			err = conn.Close()
 			if err != nil {
-				fmt.Printf("Can not close: %v\n", err)
+				log.Errorf("Can not close: %v\n", err)
 			} else {
-				fmt.Printf("Closed\n")
+				log.Infof("Closed\n")
 			}
 		}
 	} else {
