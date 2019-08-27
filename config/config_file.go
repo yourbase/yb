@@ -56,7 +56,10 @@ func SectionPrefix() string {
 }
 
 func GetConfigValue(section string, key string) (string, error) {
-	sectionPrefix := SectionPrefix()
+	var sectionPrefix string
+	if section != "defaults" && key != "environment" {
+		sectionPrefix = SectionPrefix()
+	}
 	cfgSection := fmt.Sprintf("%s%s", sectionPrefix, section)
 
 	if cfg, err := loadConfigFile(); err != nil {
@@ -67,7 +70,10 @@ func GetConfigValue(section string, key string) (string, error) {
 }
 
 func SetConfigValue(section string, key string, value string) error {
-	sectionPrefix := SectionPrefix()
+	var sectionPrefix string
+	if section != "defaults" && key != "environment" {
+		sectionPrefix = SectionPrefix()
+	}
 	cfgSection := fmt.Sprintf("%s%s", sectionPrefix, section)
 
 	if cfg, err := loadConfigFile(); err != nil {

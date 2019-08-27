@@ -26,6 +26,7 @@ func main() {
 	cmdr.Register(&CheckConfigCmd{}, "")
 	cmdr.Register(&ExecCmd{}, "")
 	cmdr.Register(&RunCmd{}, "")
+	cmdr.Register(&ConfigCmd{}, "")
 	cmdr.Register(&WorkspaceCmd{}, "")
 	cmdr.Register(&RemoteCmd{}, "")
 	cmdr.Register(&PackageCmd{}, "")

@@ -30,6 +30,11 @@ func YourBaseProfile() string {
 		return profile
 	}
 
+	profile, err := GetConfigValue("defaults", "environment")
+	if err == nil {
+		return profile
+	}
+
 	return ""
 }
 
@@ -49,6 +54,8 @@ func apiBaseUrl() (string, error) {
 	switch profile {
 	case "staging":
 		return "https://api.staging.yourbase.io", nil
+	case "preview":
+		return "http://api.preview.yourbase.io:5000", nil
 	case "development":
 		return "http://localhost:5000", nil
 	case "production":
@@ -90,6 +97,8 @@ func managementBaseUrl() (string, error) {
 	switch profile {
 	case "staging":
 		return "https://app.staging.yourbase.io", nil
+	case "preview":
+		return "http://app.preview.yourbase.io:3000", nil
 	case "development":
 		return "http://localhost:3000", nil
 	case "production":
