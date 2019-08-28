@@ -503,9 +503,9 @@ func (p *RemoteCmd) fetchProject(urls []string) (*Project, GitRemote, error) {
 		if resp.StatusCode == 404 {
 			return nil, empty, fmt.Errorf("Couldn't find the project, make sure you have created one whose repository URL matches one of these repository's remotes.")
 		} else if resp.StatusCode == 401 {
-			return nil, empty, fmt.Errorf("You don't have access to remotely build these repositories: %v", urls)
+			return nil, empty, fmt.Errorf("Unauthorized, authentication failed.\nPlease `yb login` again.")
 		} else {
-			return nil, empty, fmt.Errorf("Error fetching project from API, can't build remotely.")
+			return nil, empty, fmt.Errorf("Error fetching project from API.")
 		}
 	}
 
@@ -805,7 +805,7 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 		return fmt.Errorf("Couldn't read response body: %s", err)
 	}
 	if resp.Status == "401" {
-		return fmt.Errorf("Access denied, please check your token: yb login again")
+		return fmt.Errorf("Unauthorized, authentication failed.\nPlease `yb login` again.")
 	}
 	if resp.Status == "400" {
 		return fmt.Errorf("Invalid data sent to the YB API")
