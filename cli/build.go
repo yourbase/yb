@@ -10,16 +10,19 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"os/signal"
 	"os/user"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/johnewart/archiver"
 	"github.com/johnewart/subcommands"
 
 	ybconfig "github.com/yourbase/yb/config"
 	. "github.com/yourbase/yb/packages"
 	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 	. "github.com/yourbase/yb/workspace"
 )
@@ -30,6 +33,7 @@ type BuildCmd struct {
 	ExecPrefix       string
 	NoContainer      bool
 	DependenciesOnly bool
+	ReuseContainers  bool
 }
 
 type BuildConfiguration struct {
@@ -39,6 +43,8 @@ type BuildConfiguration struct {
 	ExecPrefix       string
 	ForceNoContainer bool
 	TargetPackage    Package
+	BuildData        BuildData
+	ReuseContainers  bool
 }
 
 type BuildLog struct {
@@ -56,17 +62,17 @@ func (b *BuildCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&b.NoContainer, "no-container", false, "Bypass container even if specified")
 	f.BoolVar(&b.DependenciesOnly, "deps-only", false, "Install only dependencies, don't do anything else")
 	f.StringVar(&b.ExecPrefix, "exec-prefix", "", "Add a prefix to all executed commands (useful for timing or wrapping things)")
+	f.BoolVar(&b.ReuseContainers, "reuse-containers", true, "Reuse the container for building")
 }
 
 func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-
 	startTime := time.Now()
 
-	fmt.Println(" === BUILD HOST ===\n")
+	log.Infof(" === BUILD HOST ===")
 	gi := goInfo.GetInfo()
 	gi.VarDump()
 
-	fmt.Printf("Build started at %s\n", startTime.Format(TIME_FORMAT))
+	log.Infof("Build started at %s", startTime.Format(TIME_FORMAT))
 	realStdout := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
@@ -106,7 +112,7 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		_, pkgName := filepath.Split(currentPath)
 		pkg, err := LoadPackage(pkgName, currentPath)
 		if err != nil {
-			fmt.Printf("Error loading package '%s': %v\n", pkgName, err)
+			log.Infof("Error loading package '%s': %v", pkgName, err)
 			return subcommands.ExitFailure
 		}
 		targetPackage = pkg
@@ -115,18 +121,20 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		workspace, err := LoadWorkspace()
 
 		if err != nil {
-			fmt.Printf("No package here, and no workspace, nothing to build!")
+			log.Infof("No package here, and no workspace, nothing to build!")
 			return subcommands.ExitFailure
 		}
 
 		pkg, err := workspace.TargetPackage()
 		if err != nil {
-			fmt.Printf("Can't load workspace's target package: %v\n", err)
+			log.Infof("Can't load workspace's target package: %v", err)
 			return subcommands.ExitFailure
 		}
 
 		targetPackage = pkg
 	}
+
+	manifest := targetPackage.Manifest
 
 	// Determine build target
 	buildTargetName := "default"
@@ -135,31 +143,132 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		buildTargetName = f.Args()[0]
 	}
 
+	// Named target, look for that and resolve it
+	buildTargets, err := manifest.ResolveBuildTargets(buildTargetName)
+
+	if err != nil {
+		log.Errorf("Could not compute build target '%s': %v", buildTargetName, err)
+		log.Infof("Valid build targets: %s", strings.Join(manifest.BuildTargetList(), ", "))
+		return subcommands.ExitFailure
+	}
+
+	primaryTarget, err := manifest.BuildTarget(buildTargetName)
+	if err != nil {
+		log.Errorf("Couldn't get primary build target '%s' specs: %v", buildTargetName, err)
+		return subcommands.ExitFailure
+	}
+
+	buildData := NewBuildData()
+
+	if !b.NoContainer {
+		target := primaryTarget
+		// Setup dependencies
+		containers := target.Dependencies.Containers
+
+		if len(containers) > 0 {
+			contextId := fmt.Sprintf("%s-%s", targetPackage.Name, target.Name)
+			log.Infof("Starting %d containers with context id %s...", len(containers), contextId)
+			sc, err := NewServiceContextWithId(contextId, targetPackage, target.Dependencies.ContainerList())
+			if err != nil {
+				log.Errorf("Couldn't create service context for dependencies: %v", err)
+				return subcommands.ExitFailure
+			}
+
+			buildData.Containers.ServiceContext = sc
+
+			if !b.ReuseContainers {
+				log.Infof("Not reusing containers, will teardown existing ones and clean up after ourselves")
+				defer Cleanup(buildData)
+				if err := sc.TearDown(); err != nil {
+					log.Errorf("Couldn't terminate existing containers: %v", err)
+					// FAIL?
+				}
+			}
+
+			if err = sc.StandUp(); err != nil {
+				log.Errorf("Couldn't start dependencies: %v", err)
+				return subcommands.ExitFailure
+			}
+
+		}
+	}
+
+	// Do this after the containers are up
+	for _, envString := range primaryTarget.Environment {
+		parts := strings.Split(envString, "=")
+		key := parts[0]
+		value := parts[1]
+		buildData.SetEnv(key, value)
+	}
+
+	_, exists := os.LookupEnv("YB_NO_CONTAINER_BUILDS")
+	// Should we build in a container?
+	if !b.NoContainer && !primaryTarget.HostOnly && !exists {
+		log.Infof("Executing build steps in container")
+
+		target := primaryTarget
+		container := target.Container
+		container.Command = "/usr/bin/tail -f /dev/null"
+
+		// Append build environment variables
+		//container.Environment = append(container.Environment, buildData.EnvironmentVariables()...)
+		container.Environment = []string{}
+
+		if false {
+			u, _ := user.Current()
+			fmt.Printf("U! %s", u.Uid)
+		}
+
+		containerOpts := BuildContainerOpts{
+			ContainerOpts: container,
+			Package:       targetPackage,
+			Target:        target.Name,
+			//ExecUserId:    u.Uid,
+			//ExecGroupId:   u.Gid,
+			MountPackage: true,
+		}
+
+		// Do our build in a container - don't do the build locally
+		buildErr := BuildInsideContainer(target, containerOpts, buildData, b.ExecPrefix, b.ReuseContainers)
+		if buildErr != nil {
+			log.Errorf("Unable to build %s inside container: %v", target.Name, buildErr)
+			return subcommands.ExitFailure
+		}
+
+		return subcommands.ExitSuccess
+	}
+
+	// Do the build!
 	targetDir := targetPackage.Path
 
-	fmt.Printf("Building package %s in %s...\n", targetPackage.Name, targetDir)
-	manifest := targetPackage.Manifest
+	log.Infof("Building package %s in %s...", targetPackage.Name, targetDir)
+	log.Infof("Checksum of dependencies: %s", manifest.BuildDependenciesChecksum())
 
-	fmt.Printf("Checksum of dependencies: %s\n", manifest.BuildDependenciesChecksum())
-
-	//workspace.SetupEnv()
-	fmt.Println("\n\n === ENVIRONMENT SETUP ===\n")
+	log.Infof("\n === ENVIRONMENT SETUP ===\n")
 	setupTimer, err := SetupBuildDependencies(targetPackage)
 
 	if err != nil {
-		fmt.Printf("Error setting up dependencies: %v\n", err)
+		log.Infof("Error setting up dependencies: %v", err)
 		return subcommands.ExitFailure
 	}
 
 	if b.DependenciesOnly {
-		fmt.Printf("Only installing dependencies; done!\n")
+		log.Infof("Only installing dependencies; done!")
 		return subcommands.ExitSuccess
+	}
+
+	if len(primaryTarget.Dependencies.Containers) > 0 {
+		log.Infof("\n\n Available side containers: \n\n")
+		for label, c := range primaryTarget.Dependencies.Containers {
+			ipv4 := buildData.Containers.IP(label)
+			log.Infof("  * %s (using %s) has IP address %s", label, c.ImageNameWithTag(), ipv4)
+		}
 	}
 
 	var targetTimers []TargetTimer
 	var buildError error
 
-	fmt.Println("\n\n === BUILD ===\n")
+	log.Infof("\n\n === BUILD ===\n")
 	targetTimers = append(targetTimers, setupTimer)
 
 	config := BuildConfiguration{
@@ -167,57 +276,39 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		TargetDir:        targetDir,
 		ForceNoContainer: b.NoContainer,
 		TargetPackage:    targetPackage,
+		ReuseContainers:  b.ReuseContainers,
+		BuildData:        buildData,
 	}
 
-	// No targets, look for default build stanza
-	if len(manifest.BuildTargets) == 0 {
-		target := manifest.Build
-		if len(target.Commands) == 0 {
-			buildError = fmt.Errorf("Default build command has no steps and no targets described\n")
-		} else {
-			fmt.Printf("Building target %s in %s...\n", buildTargetName, targetDir)
+	log.Infof("Going to build targets in the following order: ")
+	for _, target := range buildTargets {
+		log.Infof("   - %s", target.Name)
+	}
+
+	var buildStepTimers []CommandTimer
+	for _, target := range buildTargets {
+		if buildError == nil {
+			log.Infof("\n\n -- Build target: %s -- \n\n", target.Name)
 			config.Target = target
 			config.Sandboxed = manifest.IsTargetSandboxed(target)
-			stepTimers, err := DoBuild(config)
-			buildError = err
-			targetTimers = append(targetTimers, TargetTimer{Name: target.Name, Timers: stepTimers})
-		}
-	} else {
-		// Named target, look for that and resolve it
-		buildTargets, err := manifest.ResolveBuildTargets(buildTargetName)
-
-		if err != nil {
-			fmt.Println(err)
-			fmt.Printf("Valid build targets: %s\n", strings.Join(manifest.BuildTargetList(), ", "))
-			return subcommands.ExitFailure
-		}
-
-		fmt.Printf("Going to build targets in the following order: \n")
-		for _, target := range buildTargets {
-			fmt.Printf("   - %s\n", target.Name)
-		}
-
-		var buildStepTimers []CommandTimer
-		for _, target := range buildTargets {
-			if buildError == nil {
-				config.Target = target
-				config.Sandboxed = manifest.IsTargetSandboxed(target)
-				buildStepTimers, buildError = DoBuild(config)
-				targetTimers = append(targetTimers, TargetTimer{Name: target.Name, Timers: buildStepTimers})
-			}
+			buildData.ExportEnvironmentPublicly()
+			log.Infof("Executing build steps...")
+			buildStepTimers, buildError = RunCommands(config)
+			targetTimers = append(targetTimers, TargetTimer{Name: target.Name, Timers: buildStepTimers})
 		}
 	}
 
 	endTime := time.Now()
 	buildTime := endTime.Sub(startTime)
+	time.Sleep(100 * time.Millisecond)
 
-	fmt.Printf("\nBuild finished at %s, taking %s\n", endTime.Format(TIME_FORMAT), buildTime)
-	fmt.Println()
-	fmt.Printf("%15s%15s%15s%24s   %s\n", "Start", "End", "Elapsed", "Target", "Command")
+	log.Infof("\n\n\nBuild finished at %s, taking %s\n", endTime.Format(TIME_FORMAT), buildTime)
+	log.Infof("\n\n")
+	log.Infof("%15s%15s%15s%24s   %s", "Start", "End", "Elapsed", "Target", "Command")
 	for _, timer := range targetTimers {
 		for _, step := range timer.Timers {
 			elapsed := step.EndTime.Sub(step.StartTime)
-			fmt.Printf("%15s%15s%15s%24s   %s\n",
+			log.Infof("%15s%15s%15s%24s   %s",
 				step.StartTime.Format(TIME_FORMAT),
 				step.EndTime.Format(TIME_FORMAT),
 				elapsed,
@@ -225,11 +316,11 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 				step.Command)
 		}
 	}
-	fmt.Printf("\n%15s%15s%15s   %s\n", "", "", buildTime, "TOTAL")
+	log.Infof("%15s%15s%15s   %s", "", "", buildTime, "TOTAL")
 
 	if buildError != nil {
 		fmt.Println("\n\n -- BUILD FAILED -- ")
-		fmt.Printf("\nBuild terminated with the following error: %v\n", buildError)
+		log.Infof("\nBuild terminated with the following error: %v\n", buildError)
 	} else {
 		fmt.Println("\n\n -- BUILD SUCCEEDED -- ")
 	}
@@ -250,145 +341,140 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	return subcommands.ExitSuccess
 }
 
-func DoBuild(config BuildConfiguration) ([]CommandTimer, error) {
-	target := config.Target
-	targetDir := config.TargetDir
-	targetPackage := config.TargetPackage
-
-	fmt.Printf("\n\n -- Build target: %s -- \n\n", target.Name)
-
-	// Set any environment variables as the last thing (override things we do in case people really want to do this)
-	// XXX: Should we though?
-	// XXX: In a perfect world we should force sandboxing by resetting all environment variables
-	// XXX: Saving old state and resetting it after for now
-	fmt.Printf("Setting target environment variables...\n")
-	oldEnvironment := make(map[string]string)
-	for _, envString := range target.Environment {
-		parts := strings.Split(envString, "=")
-		key := parts[0]
-		value := parts[1]
-		oldEnvironment[key] = os.Getenv(key)
-		value = strings.Replace(value, "{PKGDIR}", targetDir, -1)
-		fmt.Printf("  - %s = %s\n", key, value)
-		os.Setenv(key, value)
-	}
-
-	var stepTimers []CommandTimer
-	var buildError error
-
-	if target.Container.Image != "" && !config.ForceNoContainer {
-		fmt.Println("Executing build steps in container")
-		target.Container.Command = "tail -f /dev/null"
-
-		u, _ := user.Current()
-
-		containerOpts := BuildContainerOpts{
-			ContainerOpts: target.Container,
-			Package:       targetPackage,
-			ExecUserId:    u.Uid,
-			ExecGroupId:   u.Gid,
-			MountPackage:  true,
+func Cleanup(b BuildData) {
+	if b.Containers.ServiceContext != nil {
+		log.Infof("Cleaning up containers...")
+		if err := b.Containers.ServiceContext.TearDown(); err != nil {
+			log.Warnf("Problem tearing down containers: %v", err)
 		}
-
-		stepTimers, buildError = RunCommandsInContainer(config, containerOpts)
-	} else {
-		// Do the commands
-		fmt.Println("Executing build steps...\n")
-		stepTimers, buildError = RunCommands(config)
 	}
-
-	fmt.Printf("\nResetting target environment variables...\n")
-	for _, envString := range target.Environment {
-		parts := strings.Split(envString, "=")
-		key := parts[0]
-		value := oldEnvironment[key]
-		fmt.Printf("  - %s = %s\n", key, value)
-		os.Setenv(key, value)
-	}
-
-	return stepTimers, buildError
-
 }
 
-func RunCommandsInContainer(config BuildConfiguration, containerOpts BuildContainerOpts) ([]CommandTimer, error) {
-	stepTimes := make([]CommandTimer, 0)
-	target := config.Target
-
+func BuildInsideContainer(target BuildTarget, containerOpts BuildContainerOpts, buildData BuildData, execPrefix string, reuseOldContainer bool) error {
 	// Perform build inside a container
 	image := target.Container.Image
-	fmt.Printf("Invoking build in a container: %s\n", image)
-
-	var buildContainer BuildContainer
-
-	existing, err := FindContainer(containerOpts)
+	log.Infof("Using container image: %s", image)
+	buildContainer, err := FindContainer(containerOpts)
 
 	if err != nil {
-		fmt.Printf("Failed trying to find container: %v\n", err)
-		return stepTimes, err
+		return fmt.Errorf("Failed trying to find container: %v", err)
 	}
 
-	if existing != nil {
-		fmt.Printf("Found existing container %s, removing...\n", existing.Id)
-		// Try stopping it first if needed
-		_ = existing.Stop(0)
-		if err = RemoveContainerById(existing.Id); err != nil {
-			fmt.Printf("Unable to remove existing container: %v\n", err)
-			return stepTimes, err
+	if buildContainer != nil {
+		log.Infof("Found existing container %s", buildContainer.Id[0:12])
+
+		_ = buildContainer.Stop(0)
+
+		if !reuseOldContainer {
+			log.Infof("Elected to not re-use containers, will remove the container")
+			// Try stopping it first if needed
+			if err = RemoveContainerById(buildContainer.Id); err != nil {
+				return fmt.Errorf("Unable to remove existing container: %v", err)
+			}
 		}
 	}
 
-	buildContainer, err = NewContainer(containerOpts)
+	if buildContainer != nil && reuseOldContainer {
+		log.Infof("Reusing existing build container %s", buildContainer.Id[0:12])
+	} else {
+		log.Infof("Creating a new build container...")
+		if c, err := NewContainer(containerOpts); err != nil {
+			return fmt.Errorf("Couldn't create a new build container: %v", err)
+		} else {
+			buildContainer = &c
+		}
+	}
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		<-c
+		buildContainer.Stop(0)
+		os.Exit(0)
+	}()
+
 	defer buildContainer.Stop(0)
 
 	if err != nil {
-		fmt.Printf("Error creating build container: %v\n", err)
-		return stepTimes, err
+		return fmt.Errorf("Error creating build container: %v", err)
 	}
 
 	if err := buildContainer.Start(); err != nil {
-		fmt.Printf("Unable to start container %s: %v", buildContainer.Id, err)
-		return stepTimes, err
+		return fmt.Errorf("Unable to start container %s: %v", buildContainer.Id, err)
 	}
 
-	fmt.Printf("Building in container: %s\n", buildContainer.Id)
-
+	// Set container work dir
 	containerWorkDir := "/workspace"
 	if containerOpts.ContainerOpts.WorkDir != "" {
 		containerWorkDir = containerOpts.ContainerOpts.WorkDir
 	}
 
-	for _, cmdString := range target.Commands {
-		stepStartTime := time.Now()
-		if len(config.ExecPrefix) > 0 {
-			cmdString = fmt.Sprintf("%s %s", config.ExecPrefix, cmdString)
+	log.Infof("Building from %s in container: %s", containerWorkDir, buildContainer.Id)
+
+	// Local path to binary that we want to inject
+	// TODO: this only supports Linux containers
+	localYbPath := ""
+
+	// If this is development mode, use the YB binary currently running
+	// We can't do this by default because this only works if the host is
+	// Linux so we might as well behave the same on all platforms
+	// If not development mode, download the binary from the distribution channel
+	_, devMode := os.LookupEnv("YB_DEVELOPMENT")
+	if devMode {
+		if p, err := os.Executable(); err != nil {
+			return fmt.Errorf("Can't determine local path to YB: %v", err)
+		} else {
+			localYbPath = p
 		}
-
-		fmt.Printf("Running %s in the container in directory %s\n", cmdString, containerWorkDir)
-
-		if err := buildContainer.ExecToStdout(cmdString, containerWorkDir); err != nil {
-			fmt.Printf("Failed to run %s: %v", cmdString, err)
-			return stepTimes, fmt.Errorf("Aborting build, unable to run %s: %v\n", cmdString, err)
+	} else {
+		if p, err := DownloadYB(); err != nil {
+			return fmt.Errorf("Couldn't download YB: %v", err)
+		} else {
+			localYbPath = p
 		}
-
-		stepEndTime := time.Now()
-		stepTotalTime := stepEndTime.Sub(stepStartTime)
-
-		fmt.Printf("Completed '%s' in %s\n", cmdString, stepTotalTime)
-
-		cmdTimer := CommandTimer{
-			Command:   cmdString,
-			StartTime: stepStartTime,
-			EndTime:   stepEndTime,
-		}
-
-		stepTimes = append(stepTimes, cmdTimer)
-		// Make sure our goroutine gets this from stdout
-		// TODO: There must be a better way...
-		time.Sleep(10 * time.Millisecond)
-
 	}
 
-	return stepTimes, nil
+	// Upload and update CLI
+	log.Infof("Uploading YB from %s to /yb", localYbPath)
+	if err := buildContainer.UploadFile(localYbPath, "yb", "/"); err != nil {
+		return fmt.Errorf("Unable to upload YB to container: %v", err)
+	}
+
+	// Default to stable, unless told otherwise
+	// TODO: Make the download URL used for downloading track the latest stable
+	if !devMode {
+		ybChannel := "stable"
+		if envChannel, exists := os.LookupEnv("YB_UPDATE_CHANNEL"); exists {
+			ybChannel = envChannel
+		}
+
+		log.Infof("Updating YB in container from channel %s", ybChannel)
+		updateCmd := fmt.Sprintf("/yb update -channel=%s", ybChannel)
+		if err := buildContainer.ExecToStdoutWithEnv(updateCmd, containerWorkDir, buildData.EnvironmentVariables()); err != nil {
+			return fmt.Errorf("Aborting build, unable to run %s: %v", updateCmd, err)
+		}
+	}
+
+	cmdString := "/yb build"
+
+	if len(execPrefix) > 0 {
+		cmdString = fmt.Sprintf("%s -exec-prefix %s", cmdString, execPrefix)
+	}
+
+	cmdString = fmt.Sprintf("%s -no-container %s", cmdString, target.Name)
+
+	log.Infof("Running %s in the container in directory %s", cmdString, containerWorkDir)
+
+	if err := buildContainer.ExecToStdoutWithEnv(cmdString, containerWorkDir, buildData.EnvironmentVariables()); err != nil {
+		log.Infof("Failed to run %s: %v", cmdString, err)
+		return fmt.Errorf("Aborting build, unable to run %s: %v", cmdString, err)
+	}
+
+	// Make sure our goroutine gets this from stdout
+	// TODO: There must be a better way...
+	time.Sleep(10 * time.Millisecond)
+
+	return nil
 }
 
 func RunCommands(config BuildConfiguration) ([]CommandTimer, error) {
@@ -398,36 +484,35 @@ func RunCommands(config BuildConfiguration) ([]CommandTimer, error) {
 	target := config.Target
 	sandboxed := config.Sandboxed
 	targetDir := config.TargetDir
+	if target.Root != "" {
+		log.Infof("Build root is %s", target.Root)
+		targetDir = filepath.Join(targetDir, target.Root)
+	}
 
 	for _, cmdString := range target.Commands {
 		var stepError error
 
 		stepStartTime := time.Now()
-		if len(config.ExecPrefix) > 0 {
-			cmdString = fmt.Sprintf("%s %s", config.ExecPrefix, cmdString)
-		}
-
 		if strings.HasPrefix(cmdString, "cd ") {
 			parts := strings.SplitN(cmdString, " ", 2)
 			dir := filepath.Join(targetDir, parts[1])
-			//fmt.Printf("Chdir to %s\n", dir)
+			//log.Infof("Chdir to %s", dir)
 			//os.Chdir(dir)
 			targetDir = dir
 		} else {
-			if target.Root != "" {
-				fmt.Printf("Build root is %s\n", target.Root)
-				targetDir = filepath.Join(targetDir, target.Root)
+			if len(config.ExecPrefix) > 0 {
+				cmdString = fmt.Sprintf("%s %s", config.ExecPrefix, cmdString)
 			}
 
 			if sandboxed {
 				fmt.Println("Running build in a sandbox!")
 				if err := ExecInSandbox(cmdString, targetDir); err != nil {
-					fmt.Printf("Failed to run %s: %v", cmdString, err)
+					log.Infof("Failed to run %s: %v", cmdString, err)
 					stepError = err
 				}
 			} else {
 				if err := ExecToStdout(cmdString, targetDir); err != nil {
-					fmt.Printf("Failed to run %s: %v", cmdString, err)
+					log.Infof("Failed to run %s: %v", cmdString, err)
 					stepError = err
 				}
 			}
@@ -436,7 +521,7 @@ func RunCommands(config BuildConfiguration) ([]CommandTimer, error) {
 		stepEndTime := time.Now()
 		stepTotalTime := stepEndTime.Sub(stepStartTime)
 
-		fmt.Printf("Completed '%s' in %s\n", cmdString, stepTotalTime)
+		log.Infof("Completed '%s' in %s", cmdString, stepTotalTime)
 
 		cmdTimer := CommandTimer{
 			Command:   cmdString,
@@ -465,24 +550,24 @@ func UploadBuildLogsToAPI(buf *bytes.Buffer) {
 	resp, err := postJsonToApi("/buildlogs", jsonData)
 
 	if err != nil {
-		fmt.Printf("Couldn't upload logs: %v\n", err)
+		log.Infof("Couldn't upload logs: %v", err)
 		return
 	}
 
 	if resp.StatusCode != 200 {
-		fmt.Printf("Status code uploading log: %d\n", resp.StatusCode)
+		log.Infof("Status code uploading log: %d", resp.StatusCode)
 		return
 	} else {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			fmt.Printf("Couldn't read response body: %s\n", err)
+			log.Infof("Couldn't read response body: %s", err)
 			return
 		}
 
 		var buildLog BuildLog
 		err = json.Unmarshal(body, &buildLog)
 		if err != nil {
-			fmt.Printf("Failed to parse response: %v\n", err)
+			log.Infof("Failed to parse response: %v", err)
 			return
 		}
 
@@ -490,10 +575,10 @@ func UploadBuildLogsToAPI(buf *bytes.Buffer) {
 		buildLogUrl, err := ybconfig.ManagementUrl(logViewPath)
 
 		if err != nil {
-			fmt.Printf("Unable to determine build log url: %v\n", err)
+			log.Infof("Unable to determine build log url: %v", err)
 		}
 
-		fmt.Printf("View your build log here: %s\n", buildLogUrl)
+		log.Infof("View your build log here: %s", buildLogUrl)
 	}
 
 }
@@ -507,7 +592,7 @@ func SetupBuildDependencies(pkg Package) (TargetTimer, error) {
 	endTime := time.Now()
 	elapsedTime := endTime.Sub(startTime)
 
-	fmt.Printf("\nDependency setup happened in %s\n\n", elapsedTime)
+	log.Infof("Dependency setup happened in %s", elapsedTime)
 
 	setupTimer := TargetTimer{
 		Name:   "dependency_setup",
@@ -515,4 +600,114 @@ func SetupBuildDependencies(pkg Package) (TargetTimer, error) {
 	}
 
 	return setupTimer, err
+}
+
+// Build metadata; used for things like interpolation in environment variables
+type ContainerData struct {
+	ServiceContext *ServiceContext
+}
+
+func (c ContainerData) IP(label string) string {
+	// Check service context
+	if c.ServiceContext != nil {
+		if buildContainer, ok := c.ServiceContext.BuildContainers[label]; ok {
+			if ipv4, err := buildContainer.IPv4Address(); err == nil {
+				return ipv4
+			}
+		}
+	}
+
+	// Look for environment variable (injected into containers)
+	envKey := fmt.Sprintf("YB_CONTAINER_%s_IP", strings.ToUpper(label))
+	if ip, exists := os.LookupEnv(envKey); exists {
+		return ip
+	}
+
+	return ""
+}
+
+func (c ContainerData) Environment() map[string]string {
+	result := make(map[string]string)
+	if c.ServiceContext != nil {
+		for label, container := range c.ServiceContext.BuildContainers {
+			if ipv4, err := container.IPv4Address(); err == nil {
+				key := fmt.Sprintf("YB_CONTAINER_%s_IP", strings.ToUpper(label))
+				result[key] = ipv4
+			}
+		}
+	}
+	return result
+}
+
+type BuildData struct {
+	Containers  ContainerData
+	Environment map[string]string
+}
+
+func NewBuildData() BuildData {
+	return BuildData{
+		Containers:  ContainerData{},
+		Environment: make(map[string]string),
+	}
+}
+
+func (b BuildData) SetEnv(key string, value string) {
+	interpolated, err := TemplateToString(value, b)
+	if err != nil {
+		b.Environment[key] = value
+	} else {
+		b.Environment[key] = interpolated
+	}
+}
+
+func (b BuildData) mergedEnvironment() map[string]string {
+	result := make(map[string]string)
+	for k, v := range b.Containers.Environment() {
+		result[k] = v
+	}
+	for k, v := range b.Environment {
+		result[k] = v
+	}
+	return result
+}
+
+func (b BuildData) ExportEnvironmentPublicly() {
+	log.Infof("Exporting environment")
+	for k, v := range b.mergedEnvironment() {
+		log.Infof(" * %s = %s", k, v)
+		os.Setenv(k, v)
+	}
+}
+
+func (b BuildData) EnvironmentVariables() []string {
+	result := make([]string, 0)
+	for k, v := range b.mergedEnvironment() {
+		result = append(result, fmt.Sprintf("%s=%s", k, v))
+	}
+	return result
+}
+
+// TODO: non-linux things too
+func DownloadYB() (string, error) {
+	downloadUrl := "https://bin.equinox.io/a/7cFsiXnULxA/yb-0.0.33-linux-amd64.tar.gz"
+	currentPath, _ := filepath.Abs(".")
+	tmpPath := filepath.Join(currentPath, ".yb-tmp")
+	MkdirAsNeeded(tmpPath)
+	ybPath := filepath.Join(tmpPath, "yb")
+	if _, err := os.Stat(ybPath); err == nil {
+		return ybPath, nil
+	}
+
+	localFile, err := DownloadFileWithCache(downloadUrl)
+
+	if err != nil {
+		return "", err
+	}
+
+	err = archiver.Unarchive(localFile, tmpPath)
+	if err != nil {
+		return "", fmt.Errorf("Couldn't decompress: %v", err)
+	}
+
+	return ybPath, nil
 }

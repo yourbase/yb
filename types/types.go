@@ -1,14 +1,15 @@
 package types
 
 import (
-	"github.com/alexcesaro/log/stdlog"
-
+	"fmt"
+	"strings"
 	"time"
 )
 
 const (
-	MANIFEST_FILE = ".yourbase.yml"
-	DOCS_URL      = "https://docs.yourbase.io"
+	MANIFEST_FILE        = ".yourbase.yml"
+	DOCS_URL             = "https://docs.yourbase.io"
+	DEFAULT_YB_CONTAINER = "yourbase/yb_ubuntu:18.04"
 )
 
 type BuildManifest struct {
@@ -49,44 +50,95 @@ type ExecPhase struct {
 	Environment  map[string][]string `yaml:"environment"`
 	LogFiles     []string            `yaml:"logfiles"`
 	Sandbox      bool                `yaml:"sandbox"`
+	HostOnly     bool                `yaml:"host_only"`
 	BuildFirst   []string            `yaml:"build_first"`
+}
+
+type BuildDependencies struct {
+	Containers map[string]ContainerDefinition `yaml:"containers"`
+}
+
+func (b BuildDependencies) ContainerList() []ContainerDefinition {
+	containers := make([]ContainerDefinition, 0)
+	for label, c := range b.Containers {
+		c.Label = label
+		containers = append(containers, c)
+	}
+	return containers
 }
 
 type ExecDependencies struct {
 	Containers map[string]ContainerDefinition `yaml:"containers"`
 }
 
+func (b ExecDependencies) ContainerList() []ContainerDefinition {
+	containers := make([]ContainerDefinition, 0)
+	for label, c := range b.Containers {
+		c.Label = label
+		containers = append(containers, c)
+	}
+	return containers
+}
+
 type ContainerDefinition struct {
-	Image       string   `yaml:"image"`
-	Mounts      []string `yaml:"mounts"`
-	Ports       []string `yaml:"ports"`
-	Environment []string `yaml:"environment"`
-	Command     string   `yaml:"command"`
-	WorkDir     string   `yaml:"workdir"`
-	Privileged  bool
+	Image         string   `yaml:"image"`
+	Mounts        []string `yaml:"mounts"`
+	Ports         []string `yaml:"ports"`
+	Environment   []string `yaml:"environment"`
+	Command       string   `yaml:"command"`
+	WorkDir       string   `yaml:"workdir"`
+	Privileged    bool
+	PortWaitCheck PortWaitCheck `yaml:"port_check"`
+	Label         string        `yaml:"label"`
+}
+
+func (c ContainerDefinition) ImageNameWithTag() string {
+	return fmt.Sprintf("%s:%s", c.ImageName(), c.ImageTag())
+}
+
+func (c ContainerDefinition) ImageName() string {
+	parts := strings.Split(c.Image, ":")
+	return parts[0]
+}
+
+func (c ContainerDefinition) ImageTag() string {
+	parts := strings.Split(c.Image, ":")
+	if len(parts) != 2 {
+		return "latest"
+	} else {
+		return parts[1]
+	}
+}
+
+type PortWaitCheck struct {
+	Port    int `yaml:"port"`
+	Timeout int `yaml:"timeout"`
 }
 
 type BuildTarget struct {
-	Name        string              `yaml:"name"`
-	Container   ContainerDefinition `yaml:"container"`
-	Tools       []string            `yaml:"tools"`
-	Commands    []string            `yaml:"commands"`
-	Artifacts   []string            `yaml:"artifacts"`
-	CachePaths  []string            `yaml:"cache_paths"`
-	Sandbox     bool                `yaml:"sandbox"`
-	Root        string              `yaml:"root"`
-	Environment []string            `yaml:"environment"`
-	Tags        map[string]string   `yaml:"tags"`
-	BuildAfter  []string            `yaml:"build_after"`
+	Name         string              `yaml:"name"`
+	Container    ContainerDefinition `yaml:"container"`
+	Tools        []string            `yaml:"tools"`
+	Commands     []string            `yaml:"commands"`
+	Artifacts    []string            `yaml:"artifacts"`
+	CachePaths   []string            `yaml:"cache_paths"`
+	Sandbox      bool                `yaml:"sandbox"`
+	HostOnly     bool                `yaml:"host_only"`
+	Root         string              `yaml:"root"`
+	Environment  []string            `yaml:"environment"`
+	Tags         map[string]string   `yaml:"tags"`
+	BuildAfter   []string            `yaml:"build_after"`
+	Dependencies BuildDependencies   `yaml:"dependencies"`
 }
 
-// API Responses -- use Swagger instead, this is silly
+// API Responses -- TODO use Swagger instead, this is silly
 type Project struct {
-	Id          int    `json:"id"`
-	Label       string `json:"label"`
-	Description string `json:"description"`
-	Repository  string `json:"repository"`
-	OrgSlug     string `json:"org_slug"`
+	Id              int    `json:"id"`
+	Label           string `json:"label"`
+	Description     string `json:"description"`
+	Repository      string `json:"repository"`
+	OrgSlug         string `json:"org_slug"`
+	LocalRepoRemote string `json:"local_repo_remote"`
 }
 
 type TokenResponse struct {
@@ -109,6 +161,3 @@ type BuildTool interface {
 	Setup() error
 	Version() string
 }
-
-// Logger used by everyone
-var LOGGER = stdlog.GetFromFlags()

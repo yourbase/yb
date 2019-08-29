@@ -16,6 +16,7 @@ var (
 )
 
 func main() {
+	SetupOutput()
 
 	cmdr := subcommands.NewCommander(flag.CommandLine, path.Base(os.Args[0]))
 	cmdr.Register(cmdr.HelpCommand(), "")
@@ -25,10 +26,10 @@ func main() {
 	cmdr.Register(&CheckConfigCmd{}, "")
 	cmdr.Register(&ExecCmd{}, "")
 	cmdr.Register(&RunCmd{}, "")
+	cmdr.Register(&ConfigCmd{}, "")
 	cmdr.Register(&WorkspaceCmd{}, "")
 	cmdr.Register(&RemoteCmd{}, "")
 	cmdr.Register(&PackageCmd{}, "")
-	cmdr.Register(&PatchCmd{}, "")
 	cmdr.Register(&LoginCmd{}, "")
 	cmdr.Register(&PlatformCmd{}, "")
 	cmdr.Register(&UpdateCmd{}, "")

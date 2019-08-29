@@ -19,8 +19,12 @@ import (
 
 	"github.com/google/shlex"
 	"github.com/ulikunitz/xz"
+
+	"gopkg.in/src-d/go-billy.v4/memfs"
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing"
+	githttp "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
+	"gopkg.in/src-d/go-git.v4/storage/memory"
 )
 
 func ExecToStdoutWithExtraEnv(cmdString string, targetDir string, env []string) error {
@@ -501,7 +505,7 @@ func DecompressBuffer(b *bytes.Buffer) error {
 	var buf bytes.Buffer
 
 	if _, err := io.Copy(&buf, xzReader); err != nil {
-		return fmt.Errorf("Unable to decompress data", err)
+		return fmt.Errorf("Unable to decompress data: %v", err)
 	}
 
 	b.Reset()
@@ -510,14 +514,52 @@ func DecompressBuffer(b *bytes.Buffer) error {
 	return nil
 }
 
-func CloneRepository(uri string, basePath string, branch string) (*git.Repository, error) {
-	if branch == "" {
-		return nil, fmt.Errorf("No branch defined to clone repo %v at dir %v", uri, basePath)
+func CloneRepository(remote GitRemote, inMem bool, basePath string) (rep *git.Repository, err error) {
+	if remote.Branch == "" {
+		return nil, fmt.Errorf("No branch defined to clone repo %v", remote.Url)
 	}
 
-	r, err := git.PlainClone(
-		basePath,
-		false,
+	cloneOpts := &git.CloneOptions{
+		URL:           remote.String(),
+		ReferenceName: plumbing.NewBranchReferenceName(remote.Branch),
+		SingleBranch:  true,
+		Depth:         50,
+		Tags:          git.NoTags,
+	}
+
+	if remote.Token != "" {
+		cloneOpts.Auth = &githttp.BasicAuth{
+			Username: remote.User,
+			Password: remote.Token,
+		}
+	} else if remote.Password != "" || remote.User != "" {
+		cloneOpts.Auth = &githttp.BasicAuth{
+			Username: remote.User,
+			Password: remote.Password,
+		}
+	}
+
+	if inMem {
+		fs := memfs.New()
+		storer := memory.NewStorage()
+
+		rep, err = git.Clone(storer, fs, cloneOpts)
+	} else {
+		rep, err = git.PlainClone(basePath, false, cloneOpts)
+	}
+
+	return
+}
+
+func CloneInMemoryRepo(uri, branch string) (rep *git.Repository, err error) {
+	if branch == "" {
+		return nil, fmt.Errorf("No branch defined to clone repo %v", uri)
+	}
+
+	fs := memfs.New()
+	storer := memory.NewStorage()
+
+	rep, err = git.Clone(storer, fs,
 		&git.CloneOptions{
 			URL:           uri,
 			ReferenceName: plumbing.NewBranchReferenceName(branch),
@@ -525,10 +567,5 @@ func CloneRepository(uri string, basePath string, branch string) (*git.Repositor
 			Depth:         50,
 			Tags:          git.NoTags,
 		})
-
-	if err != nil {
-		return nil, fmt.Errorf("Unable to clone: %v\n", err)
-	}
-
-	return r, nil
+	return
 }

@@ -14,6 +14,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	pkg "github.com/yourbase/yb/packages"
+	util "github.com/yourbase/yb/plumbing"
+	ybtypes "github.com/yourbase/yb/types"
 	. "github.com/yourbase/yb/workspace"
 )
 
@@ -33,8 +36,48 @@ func (w *WorkspaceCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interf
 	cmdr.Register(&workspaceCreateCmd{}, "")
 	cmdr.Register(&workspaceAddCmd{}, "")
 	cmdr.Register(&workspaceTargetCmd{}, "")
+	cmdr.Register(&workspaceLocationCmd{}, "")
 	return (cmdr.Execute(ctx))
 	//return subcommands.ExitFailure
+}
+
+// LOCATION
+type workspaceLocationCmd struct{}
+
+func (*workspaceLocationCmd) Name() string     { return "locate" }
+func (*workspaceLocationCmd) Synopsis() string { return "Location of workspace" }
+func (*workspaceLocationCmd) Usage() string {
+	return `locate`
+}
+
+func (w *workspaceLocationCmd) SetFlags(f *flag.FlagSet) {
+}
+
+func (w *workspaceLocationCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+	// check if we're just a package
+	if util.PathExists(ybtypes.MANIFEST_FILE) {
+		currentPath, _ := filepath.Abs(".")
+		_, pkgName := filepath.Split(currentPath)
+		pkg, err := pkg.LoadPackage(pkgName, currentPath)
+		if err != nil {
+			fmt.Printf("Error loading package '%s': %v\n", pkgName, err)
+			return subcommands.ExitFailure
+		}
+
+		fmt.Println(pkg.BuildRoot())
+		return subcommands.ExitSuccess
+	} else {
+		ws, err := LoadWorkspace()
+
+		if err != nil {
+			fmt.Printf("No package here, and no workspace, nothing to do!")
+			return subcommands.ExitFailure
+		}
+		fmt.Println(ws.Root())
+		return subcommands.ExitSuccess
+	}
+
+	return subcommands.ExitFailure
 }
 
 // CREATION

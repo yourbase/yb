@@ -13,6 +13,11 @@ if [ -z "${CHANNEL}" ]; then
   CHANNEL="unstable"
 fi
 
+if [ "${CHANNEL}" == "development" ]; then 
+  echo "Channel is development, setting version to timestamp"
+  VERSION="$(date +"%Y%m%d%H%M%S")"
+fi
+
 umask 077
 
 cleanup() {
@@ -36,7 +41,7 @@ tar zxvf release-tool-stable-linux-amd64.tgz
         --signing-key="${KEY_FILE}"  \
         --app="$APP" \
         --token="${TOKEN}" \
-        --channel"${CHANNEL}" \
+        --channel="${CHANNEL}" \
 	-- \
 	-ldflags "-X main.version=$VERSION -X 'main.date=$(date)'" \
 	"github.com/yourbase/${PROJECT}"
