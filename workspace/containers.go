@@ -650,14 +650,20 @@ func NewContainer(opts BuildContainerOpts) (BuildContainer, error) {
 	}
 
 	var bindings = make(map[docker.Port][]docker.PortBinding)
-	for _, portSpec := range containerDef.Ports {
-		parts := strings.Split(portSpec, ":")
-		externalPort := parts[0]
-		internalPort := parts[1]
-		portKey := docker.Port(fmt.Sprintf("%s/tcp", internalPort))
-		var pb = make([]docker.PortBinding, 0)
-		pb = append(pb, docker.PortBinding{HostIP: "0.0.0.0", HostPort: externalPort})
-		bindings[portKey] = pb
+
+	if len(ports) > 0 {
+		log.Infof("Will map the following ports: ")
+
+		for _, portSpec := range containerDef.Ports {
+			parts := strings.Split(portSpec, ":")
+			externalPort := parts[0]
+			internalPort := parts[1]
+			log.Infof("  * %s -> %s in container", externalPort, internalPort)
+			portKey := docker.Port(fmt.Sprintf("%s/tcp", internalPort))
+			var pb = make([]docker.PortBinding, 0)
+			pb = append(pb, docker.PortBinding{HostIP: "0.0.0.0", HostPort: externalPort})
+			bindings[portKey] = pb
+		}
 	}
 
 	hostConfig := docker.HostConfig{
