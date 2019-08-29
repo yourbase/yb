@@ -58,8 +58,26 @@ type BuildDependencies struct {
 	Containers map[string]ContainerDefinition `yaml:"containers"`
 }
 
+func (b BuildDependencies) ContainerList() []ContainerDefinition {
+	containers := make([]ContainerDefinition, 0)
+	for label, c := range b.Containers {
+		c.Label = label
+		containers = append(containers, c)
+	}
+	return containers
+}
+
 type ExecDependencies struct {
 	Containers map[string]ContainerDefinition `yaml:"containers"`
+}
+
+func (b ExecDependencies) ContainerList() []ContainerDefinition {
+	containers := make([]ContainerDefinition, 0)
+	for label, c := range b.Containers {
+		c.Label = label
+		containers = append(containers, c)
+	}
+	return containers
 }
 
 type ContainerDefinition struct {

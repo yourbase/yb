@@ -26,7 +26,7 @@ import (
 type ServiceContext struct {
 	DockerClient    *docker.Client
 	Id              string
-	Containers      map[string]ContainerDefinition
+	Containers      []ContainerDefinition
 	Package         Package
 	NetworkId       string
 	BuildContainers map[string]*BuildContainer
@@ -35,10 +35,35 @@ type ServiceContext struct {
 type BuildContainerOpts struct {
 	ContainerOpts ContainerDefinition
 	Package       Package
+	Target        string
 	ExecUserId    string // who to run exec as (useful for local container builds which map the source)
 	ExecGroupId   string
 	MountPackage  bool
 	Namespace     string // A namespace for prefixing container names
+}
+
+func (opts BuildContainerOpts) containerName() string {
+	cd := opts.ContainerOpts
+	s := strings.Split(cd.Image, ":")
+	imageName := s[0]
+	containerImageName := strings.Replace(imageName, "/", "_", -1)
+
+	containerName := fmt.Sprintf("%s-%s", opts.Package.Name, containerImageName)
+
+	if opts.Target != "" {
+		containerName = fmt.Sprintf("%s-%s", containerName, opts.Target)
+	}
+
+	if cd.Label != "" {
+		containerName = fmt.Sprintf("%s-%s", containerName, cd.Label)
+	}
+
+	// Prefix container name with the namespace
+	if opts.Namespace != "" {
+		containerName = fmt.Sprintf("%s-%s", opts.Namespace, containerName)
+	}
+
+	return sanitizeContainerName(containerName)
 }
 
 type BuildContainer struct {
@@ -79,19 +104,9 @@ func (sc *ServiceContext) FindContainer(cd ContainerDefinition) (*BuildContainer
 // TODO: make sure the opts match the existing container
 func FindContainer(opts BuildContainerOpts) (*BuildContainer, error) {
 
+	containerName := opts.containerName()
+
 	client := NewDockerClient()
-	cd := opts.ContainerOpts
-
-	s := strings.Split(cd.Image, ":")
-	imageName := s[0]
-	containerImageName := strings.Replace(imageName, "/", "_", -1)
-
-	containerName := fmt.Sprintf("%s-%s-%s", opts.Package.Name, cd.Label, containerImageName)
-	// Prefix container name with the namespace
-	if opts.Namespace != "" {
-		containerName = fmt.Sprintf("%s-%s", opts.Namespace, containerName)
-	}
-
 	log.Debugf("Looking for container: %s", containerName)
 
 	filters := make(map[string][]string)
@@ -587,15 +602,7 @@ func (b BuildContainer) ExecToWriterWithEnv(cmdString string, targetDir string, 
 
 func NewContainer(opts BuildContainerOpts) (BuildContainer, error) {
 	containerDef := opts.ContainerOpts
-	imageName := containerDef.ImageName()
-
-	containerImageName := strings.Replace(imageName, "/", "_", -1)
-
-	containerName := fmt.Sprintf("%s-%s-%s", opts.Package.Name, containerDef.Label, containerImageName)
-
-	if opts.Namespace != "" {
-		containerName = fmt.Sprintf("%s-%s", opts.Namespace, containerName)
-	}
+	containerName := opts.containerName()
 
 	log.Infof("Creating container '%s'", containerName)
 
@@ -728,7 +735,7 @@ func FindNetworkByName(name string) (*docker.Network, error) {
 	return &network, nil
 }
 
-func NewServiceContextWithId(ctxId string, pkg Package, containers map[string]ContainerDefinition) (*ServiceContext, error) {
+func NewServiceContextWithId(ctxId string, pkg Package, containers []ContainerDefinition) (*ServiceContext, error) {
 	dockerClient := NewDockerClient()
 	log.Infof("Creating service context '%s'...", ctxId)
 
@@ -745,7 +752,7 @@ func NewServiceContextWithId(ctxId string, pkg Package, containers map[string]Co
 	return sc, nil
 }
 
-func NewServiceContext(pkg Package, containers map[string]ContainerDefinition) (*ServiceContext, error) {
+func NewServiceContext(pkg Package, containers []ContainerDefinition) (*ServiceContext, error) {
 	ctxId, _ := uuid.NewV4()
 	return NewServiceContextWithId(ctxId.String(), pkg, containers)
 }
@@ -826,9 +833,10 @@ func (sc *ServiceContext) StandUp() error {
 
 	log.Infof("Starting up dependent containers and network...")
 
-	for label, c := range sc.Containers {
+	// TODO: Move away from this dict and just have people use an array
+	for _, c := range sc.Containers {
 
-		log.Infof("  ===  %s (using %s:%s) ===", label, c.ImageName(), c.ImageTag())
+		log.Infof("  ===  %s (using %s:%s) ===", c.Label, c.ImageName(), c.ImageTag())
 
 		container, err := sc.FindContainer(c)
 
@@ -862,7 +870,7 @@ func (sc *ServiceContext) StandUp() error {
 		}
 
 		// Add to list of build containers
-		sc.BuildContainers[label] = container
+		sc.BuildContainers[c.Label] = container
 
 		running, err := container.IsRunning()
 		if err != nil {
@@ -878,7 +886,7 @@ func (sc *ServiceContext) StandUp() error {
 
 		ipv4, err := container.IPv4Address()
 		if err != nil {
-			return fmt.Errorf("Couldn't determine IP of container dependency %s (%s): %v", label, container.Id, err)
+			return fmt.Errorf("Couldn't determine IP of container dependency %s (%s): %v", c.Label, container.Id, err)
 		}
 
 		if ipv4 == "" {
@@ -891,7 +899,7 @@ func (sc *ServiceContext) StandUp() error {
 			log.Infof("Waiting up to %ds for %s:%d to be ready... ", check.Timeout, ipv4, check.Port)
 			if err := container.WaitForTcpPort(check.Port, check.Timeout); err != nil {
 				log.Warnf("Timed out!")
-				return fmt.Errorf("Timeout occured waiting for container '%s' to be ready", label)
+				return fmt.Errorf("Timeout occured waiting for container '%s' to be ready", c.Label)
 			}
 		}
 

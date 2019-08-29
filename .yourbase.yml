@@ -6,6 +6,7 @@ dependencies:
 
 build_targets:
   - name: default
+    host_only: true
     commands:
       - go test ./...
       - go build
