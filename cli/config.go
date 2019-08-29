@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/johnewart/subcommands"
-	log "github.com/sirupsen/logrus"
 	"github.com/yourbase/yb/config"
+	"github.com/yourbase/yb/plumbing/log"
 )
 
 type ConfigCmd struct {

@@ -19,11 +19,10 @@ import (
 	"github.com/johnewart/archiver"
 	"github.com/johnewart/subcommands"
 
-	log "github.com/sirupsen/logrus"
-
 	ybconfig "github.com/yourbase/yb/config"
 	. "github.com/yourbase/yb/packages"
 	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 	. "github.com/yourbase/yb/workspace"
 )

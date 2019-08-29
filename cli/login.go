@@ -15,6 +15,7 @@ import (
 	. "github.com/yourbase/yb/types"
 
 	ybconfig "github.com/yourbase/yb/config"
+	"github.com/yourbase/yb/plumbing/log"
 )
 
 type LoginCmd struct {
@@ -33,7 +34,7 @@ func (p *LoginCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	reader := bufio.NewReader(os.Stdin)
 	tokenUrl, err := ybconfig.ManagementUrl("user/apitoken")
 	if err != nil {
-		fmt.Printf("Couldn't determine login URL: %v\n", err)
+		log.Errorf("Couldn't determine login URL: %v\n", err)
 		return subcommands.ExitFailure
 	}
 
@@ -46,26 +47,26 @@ func (p *LoginCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	validationUrl, err := ybconfig.ApiUrl(fmt.Sprintf("/apikey/validate/%s", apiToken))
 
 	if err != nil {
-		fmt.Printf("Unable to get token validation URL: %v\n", err)
+		log.Errorf("Unable to get token validation URL: %v\n", err)
 		return subcommands.ExitFailure
 	}
 
 	resp, err := http.Get(validationUrl)
 
 	if err != nil {
-		fmt.Printf("Couldn't make validation request: %v\n", err)
+		log.Errorf("Couldn't make validation request: %v\n", err)
 		return subcommands.ExitFailure
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode == 404 || resp.StatusCode == 401 {
-		fmt.Printf("Invalid token provided, please check it\n")
+		log.Errorf("Invalid token provided, please check it\n")
 		return subcommands.ExitFailure
 	}
 
 	if resp.StatusCode != 200 {
-		fmt.Printf("Oops: HTTP Status %d that's us, not you, please try again later\n", resp.StatusCode)
+		log.Errorf("Oops: HTTP Status %d that's us, not you, please try again later\n", resp.StatusCode)
 		return subcommands.ExitFailure
 	}
 
@@ -74,21 +75,20 @@ func (p *LoginCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	err = json.Unmarshal(body, &tokenResponse)
 
 	if err != nil {
-		fmt.Printf("Couldn't parse response body: %s\n", err)
+		log.Errorf("Couldn't parse response body: %s\n", err)
 		return subcommands.ExitFailure
 	}
 
 	if !tokenResponse.TokenOK {
-		fmt.Printf("Token provided is invalid, please check it\n")
+		log.Errorf("Token provided is invalid, please check it\n")
 		return subcommands.ExitFailure
 	}
 
 	if err = ybconfig.SetConfigValue("user", "api_key", apiToken); err != nil {
-		fmt.Printf("Cannot store API token: %v\n", err)
+		log.Errorf("Cannot store API token: %v\n", err)
 		return subcommands.ExitFailure
-	} else {
-		fmt.Println("API token saved to the config file")
 	}
 
+	log.Infoln("API token saved to the config file")
 	return subcommands.ExitSuccess
 }

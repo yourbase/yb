@@ -28,12 +28,11 @@ import (
 
 	. "github.com/yourbase/yb/packages"
 	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 	. "github.com/yourbase/yb/workspace"
 
 	ybconfig "github.com/yourbase/yb/config"
-
-	log "github.com/sirupsen/logrus"
 )
 
 type RemoteCmd struct {
@@ -188,9 +187,8 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	clonedRepo, err := CloneRepository(remote, true, "")
 	if err != nil {
-		log.Warnf("Unable to clone %v, using branch '%v': %v", remote.Url, remote.Branch, err)
+		log.Warnf("Unable to clone %v branch '%v': '%v'. Cloning master...", remote.Url, remote.Branch, err)
 
-		log.Errorln("So, trying to clone master...")
 		remote.Branch = "master"
 		clonedRepo, err = CloneRepository(remote, true, "")
 		if err != nil {
@@ -587,7 +585,7 @@ func applyPatch(file *diffparser.DiffFile, from string) (to string, err error) {
 	}
 	if unmatchedLines > 0 {
 		// TODO log this?
-		//fmt.Printf("%d unmatched lines in this file\n", unmatchedLines)
+		//log.Warnf("%d unmatched lines in this file\n", unmatchedLines)
 	}
 	to = strings.Join(lines, "\n")
 
@@ -837,7 +835,7 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 				if err != nil {
 					if err != io.EOF {
 						// Ignore
-						//fmt.Printf("can not receive: %v", err)
+						//log.Warnf("can not receive: %v", err)
 						//return err
 					} else {
 						log.Infoln("\n\n\nBuild Completed!")
