@@ -548,7 +548,7 @@ func (b BuildContainer) ExecToStdout(cmdString string, targetDir string) error {
 }
 
 func (b BuildContainer) ExecToWriter(cmdString string, targetDir string, outputSink io.Writer) error {
-	return b.ExecToWriterWithEnv(cmdString, targetDir, os.Stdout, []string{})
+	return b.ExecToWriterWithEnv(cmdString, targetDir, outputSink, []string{})
 }
 
 func (b BuildContainer) ExecToWriterWithEnv(cmdString string, targetDir string, outputSink io.Writer, env []string) error {
