@@ -9,17 +9,10 @@ build_targets:
       - go test ./...
       - go build
 
+    # This will release to unstable
   - name: release
     build_after:
       - default
-    commands:
-      - bash release.sh 
-
-  - name: release_unstable
-    build_after:
-      - default
-    environment:
-      - CHANNEL=unstable
     commands:
       - bash release.sh 
 
@@ -66,10 +59,6 @@ ci:
     - name: development_release
       build_target: development_release
       when: branch IS NOT 'master'
-
-    - name: release_unstable
-      build_target: release_unstable
-      when: branch IS 'master'
 
     - name: release
       build_target: release
