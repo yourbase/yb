@@ -38,10 +38,6 @@ func (bt RubyBuildTool) DownloadUrl() string {
 		operatingSystem = "Linux"
 	}
 
-	if operatingSystem == "linux" {
-		operatingSystem = "Linux"
-	}
-
 	if operatingSystem == "windows" {
 		extension = "zip"
 	}
