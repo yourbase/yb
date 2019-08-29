@@ -2,13 +2,8 @@ module github.com/yourbase/yb
 
 replace github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.2
 
-replace github.com/waigani/diffparser => /home/beholder/Workspaces/YourBase/rep/github.com/beholders-eye/diffparser
-
-replace github.com/sergi/go-diff => /home/beholder/Workspaces/YourBase/rep/github.com/beholders-eye/go-diff
-
 require (
 	cloud.google.com/go v0.41.0 // indirect
-	github.com/Sirupsen/logrus v0.0.0-00010101000000-000000000000
 	github.com/alexcesaro/log v0.0.0-20150915221235-61e686294e58
 	github.com/beholders-eye/diffparser v0.0.0-20190814025112-fcedf0a097ba
 	github.com/containerd/continuity v0.0.0-20190426062206-aaeac12a7ffc // indirect
@@ -18,7 +13,6 @@ require (
 	github.com/gobwas/httphead v0.0.0-20180130184737-2c6c146eadee // indirect
 	github.com/gobwas/pool v0.2.0 // indirect
 	github.com/gobwas/ws v1.0.2
-	github.com/golang/protobuf v1.3.1 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/google/shlex v0.0.0-20181106134648-c34317bd91bf
 	github.com/gopherjs/gopherjs v0.0.0-20190430165422-3e4dfb77656c // indirect
@@ -31,17 +25,12 @@ require (
 	github.com/nwaples/rardecode v1.0.0 // indirect
 	github.com/pierrec/lz4 v2.0.5+incompatible // indirect
 	github.com/sergi/go-diff v1.0.0
-	github.com/sirupsen/logrus v1.4.2
+	github.com/sirupsen/logrus v1.3.0
 	github.com/smartystreets/assertions v1.0.0 // indirect
 	github.com/smartystreets/goconvey v0.0.0-20190330032615-68dc04aab96a // indirect
 	github.com/ulikunitz/xz v0.5.6
-	github.com/waigani/diffparser v0.0.0-20190426062500-1f7065f429b5
+	github.com/waigani/diffparser v0.0.0-20190810221810-79c8f4e68fb4
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
-	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4 // indirect
-	golang.org/x/net v0.0.0-20190628185345-da137c7871d7 // indirect
-	golang.org/x/sync v0.0.0-20190423024810-112230192c58 // indirect
-	golang.org/x/sys v0.0.0-20190626221950-04f50cda93cb // indirect
-	golang.org/x/text v0.3.2 // indirect
 	gopkg.in/ini.v1 v1.44.0
 	gopkg.in/src-d/go-billy.v4 v4.3.2
 	gopkg.in/src-d/go-git.v4 v4.13.1

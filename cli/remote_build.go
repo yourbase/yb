@@ -20,8 +20,6 @@ import (
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	"github.com/johnewart/subcommands"
-	"github.com/sergi/go-diff/diffmatchpatch"
-	"github.com/waigani/diffparser"
 
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing"
@@ -245,20 +243,6 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	patch, err := clonedCommit.Patch(baseCommit)
 	if err != nil {
 		log.Errorf("Patch generation failed: %v", err)
-		return subcommands.ExitFailure
-	}
-	p.patchData = []byte(patch.String())
-
-	head, _ := workRepo.Head()
-	baseCommit, err := workRepo.CommitObject(head.Hash())
-	if err != nil {
-		fmt.Printf("Commit definition failed: %v\n", err)
-		return subcommands.ExitFailure
-	}
-
-	patch, err := clonedCommit.Patch(baseCommit)
-	if err != nil {
-		fmt.Printf("Patch generation failed: %v\n", err)
 		return subcommands.ExitFailure
 	}
 	p.patchData = []byte(patch.String())
@@ -617,7 +601,6 @@ func UnifiedPatchApply(patch string, commit *object.Commit, w, originWorktree *g
 	if commit == nil && w == nil && wd == "" {
 		return fmt.Errorf("Nowhere to apply the patch on, please pass a git commit + git worktree, or a workdir to work on files")
 	}
-	fmt.Println(dmp.PatchToText(patches))
 
 	getCommitFileContents := func(file *diffparser.DiffFile) (contents string) {
 		tree, err := commit.Tree()
