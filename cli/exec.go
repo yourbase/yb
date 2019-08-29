@@ -77,11 +77,10 @@ func (b *ExecCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 
 	buildData := NewBuildData()
 
-	contextId := targetPackage.Name
 	if len(containers) > 0 {
 		ActiveSection("Containers")
 		log.Infof("Starting %d dependencies...", len(containers))
-		sc, err := NewServiceContextWithId(contextId, targetPackage, containers)
+		sc, err := NewServiceContextWithId("exec", targetPackage, containers)
 		if err != nil {
 			log.Errorf("Couldn't create service context for dependencies: %v", err)
 			return subcommands.ExitFailure
