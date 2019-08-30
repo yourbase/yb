@@ -1,19 +1,54 @@
 package log
 
 import (
+	"fmt"
 	"github.com/sirupsen/logrus"
+	"os"
+	"strings"
 )
 
 var (
-	log   *logrus.Logger
-	level logrus.Level
+	log       *logrus.Logger
+	level     logrus.Level
+	formatter = NewYbFormatter()
 )
+
+type YbFormatter struct {
+	logrus.TextFormatter
+	Section    string
+	LogSection bool
+}
+
+func NewYbFormatter() *YbFormatter {
+	return &YbFormatter{
+		Section:    "",
+		LogSection: false,
+	}
+}
 
 func init() {
 	log = logrus.New()
 	// TODO use settings/config to set another default level
 	level = logrus.InfoLevel
 	log.SetLevel(level)
+	log.SetOutput(os.Stderr)
+	log.SetFormatter(formatter)
+}
+func ActiveSection(section string) {
+	formatter.Section = section
+}
+
+func (f *YbFormatter) Format(entry *logrus.Entry) ([]byte, error) {
+	prefix := ""
+	if f.LogSection {
+		s := f.Section
+		if len(s) > 3 {
+			s = s[0:3]
+		}
+		prefix = fmt.Sprintf("[%3s] ", strings.ToUpper(s))
+	}
+	message := fmt.Sprintf("%s%s\n", prefix, entry.Message)
+	return []byte(message), nil
 }
 
 func SetLevel(l logrus.Level) { level = l }
