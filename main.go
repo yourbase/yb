@@ -16,23 +16,21 @@ var (
 )
 
 func main() {
-	SetupOutput()
-
 	cmdr := subcommands.NewCommander(flag.CommandLine, path.Base(os.Args[0]))
 	cmdr.Register(cmdr.HelpCommand(), "")
 	cmdr.Register(cmdr.FlagsCommand(), "")
 	cmdr.Register(cmdr.CommandsCommand(), "")
 	cmdr.Register(&BuildCmd{}, "")
 	cmdr.Register(&CheckConfigCmd{}, "")
-	cmdr.Register(&ExecCmd{}, "")
-	cmdr.Register(&RunCmd{}, "")
 	cmdr.Register(&ConfigCmd{}, "")
-	cmdr.Register(&WorkspaceCmd{}, "")
-	cmdr.Register(&RemoteCmd{}, "")
-	cmdr.Register(&PackageCmd{}, "")
+	cmdr.Register(&ExecCmd{}, "")
 	cmdr.Register(&LoginCmd{}, "")
+	cmdr.Register(&PackageCmd{}, "")
 	cmdr.Register(&PlatformCmd{}, "")
+	cmdr.Register(&RemoteCmd{}, "")
+	cmdr.Register(&RunCmd{}, "")
 	cmdr.Register(&UpdateCmd{}, "")
+	cmdr.Register(&WorkspaceCmd{}, "")
 	cmdr.Register(&VersionCmd{Version: version}, "")
 
 	flag.Parse()

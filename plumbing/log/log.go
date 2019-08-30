@@ -2,40 +2,53 @@ package log
 
 import (
 	"fmt"
-	"github.com/sirupsen/logrus"
+	"io"
 	"os"
 	"strings"
+
+	"golang.org/x/crypto/ssh/terminal"
+
+	"github.com/sirupsen/logrus"
 )
 
 var (
 	log       *logrus.Logger
 	level     logrus.Level
-	formatter = NewYbFormatter()
+	Formatter = NewYbFormatter()
 )
-
-type YbFormatter struct {
-	logrus.TextFormatter
-	Section    string
-	LogSection bool
-}
-
-func NewYbFormatter() *YbFormatter {
-	return &YbFormatter{
-		Section:    "",
-		LogSection: false,
-	}
-}
 
 func init() {
 	log = logrus.New()
-	// TODO use settings/config to set another default level
-	level = logrus.InfoLevel
-	log.SetLevel(level)
-	log.SetOutput(os.Stderr)
-	log.SetFormatter(formatter)
+	// TODO use settings/config to set default level
+
+	log.SetFormatter(Formatter)
 }
+
+type YbFormatter struct {
+	logrus.TextFormatter
+	Section        string
+	LogSection     bool
+	innerFormatter *logrus.TextFormatter
+}
+
+func NewYbFormatter() *YbFormatter {
+	ft := &YbFormatter{
+		Section:    "",
+		LogSection: false,
+		innerFormatter: &logrus.TextFormatter{
+			DisableTimestamp: true,
+
+			// from https://bixense.com/clicolors/
+			// Set CLICOLOR to 0 to force plain "black/white" text colors
+			EnvironmentOverrideColors: true,
+		},
+	}
+
+	return ft
+}
+
 func ActiveSection(section string) {
-	formatter.Section = section
+	Formatter.Section = section
 }
 
 func (f *YbFormatter) Format(entry *logrus.Entry) ([]byte, error) {
@@ -47,8 +60,22 @@ func (f *YbFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 		}
 		prefix = fmt.Sprintf("[%3s] ", strings.ToUpper(s))
 	}
-	message := fmt.Sprintf("%s%s\n", prefix, entry.Message)
-	return []byte(message), nil
+
+	entry.Message = fmt.Sprintf("%s%s\n", prefix, entry.Message)
+	if checkIfTerminal(log.Out) {
+		return f.innerFormatter.Format(entry)
+	}
+	// Plain old boring logging
+	return []byte(entry.Message), nil
+}
+
+func checkIfTerminal(w io.Writer) bool {
+	switch v := w.(type) {
+	case *os.File:
+		return terminal.IsTerminal(int(v.Fd()))
+	default:
+		return false
+	}
 }
 
 func SetLevel(l logrus.Level) { level = l }

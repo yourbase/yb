@@ -41,7 +41,8 @@ func (b *ExecCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 
 	var targetPackage Package
 
-	ActiveSection("Setup")
+	log.Formatter.LogSection = true
+	log.ActiveSection("Setup")
 	if PathExists(MANIFEST_FILE) {
 		currentPath, _ := filepath.Abs(".")
 		_, packageName := filepath.Split(currentPath)
@@ -66,7 +67,7 @@ func (b *ExecCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		targetPackage = pkg
 	}
 
-	ActiveSection("Dependencies")
+	log.ActiveSection("Dependencies")
 	if _, err := targetPackage.SetupRuntimeDependencies(); err != nil {
 		log.Infof("Couldn't configure dependencies: %v\n", err)
 		return subcommands.ExitFailure
@@ -78,7 +79,7 @@ func (b *ExecCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	buildData := NewBuildData()
 
 	if len(containers) > 0 {
-		ActiveSection("Containers")
+		log.ActiveSection("Containers")
 		log.Infof("Starting %d dependencies...", len(containers))
 		sc, err := NewServiceContextWithId("exec", targetPackage, containers)
 		if err != nil {
@@ -94,7 +95,7 @@ func (b *ExecCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		buildData.Containers.ServiceContext = sc
 	}
 
-	ActiveSection("Environment")
+	log.ActiveSection("Environment")
 	log.Infof("Setting environment variables...")
 	for _, property := range instructions.Exec.Environment["default"] {
 		s := strings.Split(property, "=")
@@ -114,7 +115,7 @@ func (b *ExecCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 
 	buildData.ExportEnvironmentPublicly()
 
-	ActiveSection("Exec")
+	log.ActiveSection("Exec")
 
 	log.Infof("Execing target package %s...\n", targetPackage.Name)
 

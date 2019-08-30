@@ -73,6 +73,9 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	var targetPackage Package
 
+	log.Formatter.LogSection = true
+	log.ActiveSection("Setup")
+
 	// check if we're just a package
 	if PathExists(MANIFEST_FILE) {
 		currentPath, _ := filepath.Abs(".")
@@ -109,6 +112,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		target = manifest.Build
 		if len(target.Commands) == 0 {
 			log.Errorf("Default build command has no steps and no targets described")
+			return subcommands.ExitFailure
 		}
 	} else {
 		if _, err := manifest.BuildTarget(p.target); err != nil {
@@ -118,7 +122,8 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 	}
 
-	log.Infof("Remotely building '%s' ...", p.target)
+	log.ActiveSection("Clone")
+
 	p.repoDir = targetPackage.Path
 	workRepo, err := git.PlainOpen(p.repoDir)
 
@@ -202,6 +207,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		log.Infof("Cloned remote %s branch", remote.Branch)
 	}
 
+	log.ActiveSection("Commit search")
 	targetSet := commitSet(workRepo)
 	if targetSet == nil {
 		log.Errorf("Couldn't build a commit set for comparing")
@@ -238,6 +244,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		return subcommands.ExitFailure
 	}
 
+	log.ActiveSection("Patch")
 	patch, err := clonedCommit.Patch(baseCommit)
 	if err != nil {
 		log.Errorf("Patch generation failed: %v", err)
@@ -351,6 +358,8 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	if !p.dryRun {
+		log.ActiveSection("Submit")
+
 		log.Infoln("Submitting Remote Build ...")
 		err = submitBuild(project, p, target.Tags)
 
@@ -823,6 +832,8 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 	} else {
 		url = response
 	}
+
+	log.ActiveSection("Remote")
 
 	if strings.HasPrefix(url, "ws:") || strings.HasPrefix(url, "wss:") {
 		log.Infof("Streaming build output from %s", url)
