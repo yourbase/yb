@@ -3,15 +3,12 @@ package cli
 import (
 	"context"
 	"flag"
-	"path/filepath"
 	"strings"
 
 	"github.com/johnewart/subcommands"
 
-	. "github.com/yourbase/yb/packages"
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
 	. "github.com/yourbase/yb/workspace"
 )
 
@@ -39,32 +36,10 @@ Executing the target involves:
 */
 func (b *ExecCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 
-	var targetPackage Package
-
-	log.Formatter.LogSection = true
-	log.ActiveSection("Setup")
-	if PathExists(MANIFEST_FILE) {
-		currentPath, _ := filepath.Abs(".")
-		_, packageName := filepath.Split(currentPath)
-		pkg, err := LoadPackage(packageName, currentPath)
-		if err != nil {
-			log.Infof("Can't load package '%s': %v\n", packageName, err)
-			return subcommands.ExitFailure
-		}
-		targetPackage = pkg
-	} else {
-		workspace, err := LoadWorkspace()
-		if err != nil {
-			log.Infof("Can't load workspace: %v\n", err)
-			return subcommands.ExitFailure
-		}
-		pkg, err := workspace.TargetPackage()
-		if err != nil {
-			log.Infof("Can't determine target package: %v\n", err)
-			return subcommands.ExitFailure
-		}
-
-		targetPackage = pkg
+	targetPackage, err := GetTargetPackage()
+	if err != nil {
+		log.Errorf("%v", err)
+		return subcommands.ExitFailure
 	}
 
 	log.ActiveSection("Dependencies")

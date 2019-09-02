@@ -9,6 +9,7 @@ import (
 	"github.com/johnewart/archiver"
 
 	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 )
 
@@ -94,21 +95,21 @@ func (bt ProtocBuildTool) Install() error {
 	installDir := bt.InstallDir()
 
 	if _, err := os.Stat(protocDir); err == nil {
-		fmt.Printf("Protoc v%s located in %s!\n", bt.Version(), protocDir)
+		log.Infof("Protoc v%s located in %s!", bt.Version(), protocDir)
 		return nil
 	}
-	fmt.Printf("Will install Protoc v%s into %s\n", bt.Version(), protocDir)
+	log.Infof("Will install Protoc v%s into %s", bt.Version(), protocDir)
 	downloadUrl := bt.DownloadUrl()
 
-	fmt.Printf("Downloading Protoc from URL %s...\n", downloadUrl)
+	log.Infof("Downloading Protoc from URL %s...", downloadUrl)
 	localFile, err := DownloadFileWithCache(downloadUrl)
 	if err != nil {
-		fmt.Printf("Unable to download: %v\n", err)
+		log.Errorf("Unable to download: %v", err)
 		return err
 	}
 	err = archiver.Unarchive(localFile, installDir)
 	if err != nil {
-		fmt.Printf("Unable to decompress: %v\n", err)
+		log.Errorf("Unable to decompress: %v", err)
 		return err
 	}
 

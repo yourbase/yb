@@ -8,14 +8,18 @@ import (
 	"path"
 
 	. "github.com/yourbase/yb/cli"
+	"github.com/yourbase/yb/plumbing/log"
 )
 
 var (
-	version string = "DEVELOPMENT"
-	date    string
+	version     string = "DEVELOPMENT"
+	date        string
+	noPrettyOut bool
 )
 
 func main() {
+	log.Formatter.NoPrettyOut = noPrettyOut
+
 	cmdr := subcommands.NewCommander(flag.CommandLine, path.Base(os.Args[0]))
 	cmdr.Register(cmdr.HelpCommand(), "")
 	cmdr.Register(cmdr.FlagsCommand(), "")

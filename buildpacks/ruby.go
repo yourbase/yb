@@ -8,12 +8,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/johnewart/archiver"
 	"github.com/matishsiao/goInfo"
 
 	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 	"gopkg.in/src-d/go-git.v4"
 )
@@ -129,12 +128,12 @@ func (bt RubyBuildTool) Install() error {
 
 			localFile, err := DownloadFileWithCache(downloadUrl)
 			if err != nil {
-				log.Infof("Unable to download: %v", err)
+				log.Errorf("Unable to download: %v", err)
 				return err
 			}
 			err = archiver.Unarchive(localFile, rubyVersionsDir)
 			if err != nil {
-				log.Infof("Unable to decompress: %v", err)
+				log.Errorf("Unable to decompress: %v", err)
 				return err
 			}
 
@@ -181,7 +180,7 @@ func (bt RubyBuildTool) Install() error {
 			})
 
 			if err != nil {
-				log.Infof("Unable to clone ruby-build!")
+				log.Errorf("Unable to clone ruby-build!")
 				return fmt.Errorf("Couldn't clone ruby-build: %v", err)
 			}
 		}

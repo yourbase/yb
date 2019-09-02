@@ -8,6 +8,7 @@ import (
 
 	"github.com/johnewart/archiver"
 	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 )
 
@@ -69,7 +70,7 @@ func (bt AntBuildTool) Setup() error {
 	cmdPath := filepath.Join(antDir, "bin")
 	currentPath := os.Getenv("PATH")
 	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
-	fmt.Printf("Setting PATH to %s\n", newPath)
+	log.Infof("Setting PATH to %s\n", newPath)
 	os.Setenv("PATH", newPath)
 
 	return nil

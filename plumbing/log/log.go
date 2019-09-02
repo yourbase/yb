@@ -9,6 +9,7 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/sirupsen/logrus"
+	ybconfig "github.com/yourbase/yb/config"
 )
 
 var (
@@ -19,7 +20,14 @@ var (
 
 func init() {
 	log = logrus.New()
-	// TODO use settings/config to set default level
+
+	sLevel, _ := ybconfig.GetConfigValue("defaults", "log-level")
+	level, err := logrus.ParseLevel(sLevel)
+	if err == nil {
+		log.SetLevel(level)
+	}
+	out, _ := ybconfig.GetConfigValue("defaults", "no-pretty-output")
+	Formatter.NoPrettyOut = out == "true"
 
 	log.SetFormatter(Formatter)
 }
@@ -28,6 +36,7 @@ type YbFormatter struct {
 	logrus.TextFormatter
 	Section        string
 	LogSection     bool
+	NoPrettyOut    bool
 	innerFormatter *logrus.TextFormatter
 }
 
@@ -47,8 +56,27 @@ func NewYbFormatter() *YbFormatter {
 	return ft
 }
 
+func StartSection(name, section string) {
+	ActiveSection(section)
+	Formatter.LogSection = true
+	fmt.Printf("\n === %s ===\n\n", name)
+}
+
+func SubSection(name string) {
+	fmt.Printf("\n -- %s -- \n\n", name)
+}
+
 func ActiveSection(section string) {
 	Formatter.Section = section
+}
+
+func EndSection() {
+	Formatter.Section = ""
+	Formatter.LogSection = false
+}
+
+func Title(t string) {
+	fmt.Println(strings.ToUpper(t))
 }
 
 func (f *YbFormatter) Format(entry *logrus.Entry) ([]byte, error) {
@@ -62,7 +90,7 @@ func (f *YbFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	}
 
 	entry.Message = fmt.Sprintf("%s%s\n", prefix, entry.Message)
-	if checkIfTerminal(log.Out) {
+	if !f.NoPrettyOut && checkIfTerminal(log.Out) {
 		return f.innerFormatter.Format(entry)
 	}
 	// Plain old boring logging

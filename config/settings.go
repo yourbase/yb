@@ -57,7 +57,7 @@ func apiBaseUrl() (string, error) {
 	case "preview":
 		return "https://api.preview.yourbase.io", nil
 	case "development":
-		return "http://localhost:5000", nil
+		return "http://localhost:5001", nil
 	case "production":
 		return "https://api.yourbase.io", nil
 	case "":

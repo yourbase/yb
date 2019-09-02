@@ -68,70 +68,18 @@ func (b *BuildCmd) SetFlags(f *flag.FlagSet) {
 func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	startTime := time.Now()
 
-	log.Infof(" === BUILD HOST ===")
+	log.StartSection("BUILD HOST", "HOST")
 	gi := goInfo.GetInfo()
 	gi.VarDump()
+	log.EndSection()
 
+	log.StartSection("BUILD PACKAGE SETUP", "SETUP")
 	log.Infof("Build started at %s", startTime.Format(TIME_FORMAT))
-	realStdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
 
-	outputs := io.MultiWriter(realStdout)
-	var buf bytes.Buffer
-	uploadBuildLogs := ybconfig.ShouldUploadBuildLogs()
-
-	if uploadBuildLogs {
-		outputs = io.MultiWriter(realStdout, &buf)
-	}
-
-	c := make(chan bool)
-
-	// copy the output in a separate goroutine so printing can't block indefinitely
-	go func() {
-		for {
-			select {
-			case <-c:
-				return
-			case <-time.After(100 * time.Millisecond):
-				io.Copy(outputs, r)
-			}
-		}
-	}()
-	defer func() {
-		w.Close()
-		io.Copy(outputs, r)
-		close(c)
-		r.Close()
-	}()
-	var targetPackage Package
-
-	// check if we're just a package
-	if PathExists(MANIFEST_FILE) {
-		currentPath, _ := filepath.Abs(".")
-		_, pkgName := filepath.Split(currentPath)
-		pkg, err := LoadPackage(pkgName, currentPath)
-		if err != nil {
-			log.Infof("Error loading package '%s': %v", pkgName, err)
-			return subcommands.ExitFailure
-		}
-		targetPackage = pkg
-	} else {
-
-		workspace, err := LoadWorkspace()
-
-		if err != nil {
-			log.Infof("No package here, and no workspace, nothing to build!")
-			return subcommands.ExitFailure
-		}
-
-		pkg, err := workspace.TargetPackage()
-		if err != nil {
-			log.Infof("Can't load workspace's target package: %v", err)
-			return subcommands.ExitFailure
-		}
-
-		targetPackage = pkg
+	targetPackage, err := GetTargetPackage()
+	if err != nil {
+		log.Errorf("%v", err)
+		return subcommands.ExitFailure
 	}
 
 	manifest := targetPackage.Manifest
@@ -204,6 +152,7 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	_, exists := os.LookupEnv("YB_NO_CONTAINER_BUILDS")
 	// Should we build in a container?
 	if !b.NoContainer && !primaryTarget.HostOnly && !exists {
+		log.StartSection("BUILD IN CONTAINER", "BCONTAINER")
 		log.Infof("Executing build steps in container")
 
 		target := primaryTarget
@@ -244,7 +193,9 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	log.Infof("Building package %s in %s...", targetPackage.Name, targetDir)
 	log.Infof("Checksum of dependencies: %s", manifest.BuildDependenciesChecksum())
 
-	log.Infof("\n === ENVIRONMENT SETUP ===\n")
+	log.EndSection()
+
+	log.StartSection("ENVIRONMENT SETUP", "ENVIRONMENT")
 	setupTimer, err := SetupBuildDependencies(targetPackage)
 
 	if err != nil {
@@ -258,17 +209,20 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	}
 
 	if len(primaryTarget.Dependencies.Containers) > 0 {
-		log.Infof("\n\n Available side containers: \n\n")
+		fmt.Println()
+		fmt.Println()
+		log.Infof("Available side containers:\n")
 		for label, c := range primaryTarget.Dependencies.Containers {
 			ipv4 := buildData.Containers.IP(label)
 			log.Infof("  * %s (using %s) has IP address %s", label, c.ImageNameWithTag(), ipv4)
 		}
 	}
+	log.EndSection()
 
 	var targetTimers []TargetTimer
 	var buildError error
 
-	log.Infof("\n\n === BUILD ===\n")
+	log.StartSection("BUILD", "BUILD")
 	targetTimers = append(targetTimers, setupTimer)
 
 	config := BuildConfiguration{
@@ -288,7 +242,7 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	var buildStepTimers []CommandTimer
 	for _, target := range buildTargets {
 		if buildError == nil {
-			log.Infof("\n\n -- Build target: %s -- \n\n", target.Name)
+			log.SubSection(fmt.Sprintf("Build target: %s", target.Name))
 			config.Target = target
 			config.Sandboxed = manifest.IsTargetSandboxed(target)
 			buildData.ExportEnvironmentPublicly()
@@ -302,8 +256,9 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	buildTime := endTime.Sub(startTime)
 	time.Sleep(100 * time.Millisecond)
 
-	log.Infof("\n\n\nBuild finished at %s, taking %s\n", endTime.Format(TIME_FORMAT), buildTime)
-	log.Infof("\n\n")
+	log.Info("")
+	log.Infof("Build finished at %s, taking %s", endTime.Format(TIME_FORMAT), buildTime)
+	log.Info("")
 	log.Infof("%15s%15s%15s%24s   %s", "Start", "End", "Elapsed", "Target", "Command")
 	for _, timer := range targetTimers {
 		for _, step := range timer.Timers {
@@ -317,13 +272,48 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		}
 	}
 	log.Infof("%15s%15s%15s   %s", "", "", buildTime, "TOTAL")
+	//log.Formatter.NoPrettyOut = false //Forced
 
 	if buildError != nil {
-		fmt.Println("\n\n -- BUILD FAILED -- ")
-		log.Infof("\nBuild terminated with the following error: %v\n", buildError)
+		log.SubSection("BUILD FAILED")
+		log.Errorf("Build terminated with the following error: %v", buildError)
 	} else {
-		fmt.Println("\n\n -- BUILD SUCCEEDED -- ")
+		log.SubSection("BUILD SUCCEEDED")
 	}
+
+	// Output duplication start
+	realStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	outputs := io.MultiWriter(realStdout)
+	var buf bytes.Buffer
+	uploadBuildLogs := ybconfig.ShouldUploadBuildLogs()
+
+	if uploadBuildLogs {
+		outputs = io.MultiWriter(realStdout, &buf)
+	}
+
+	c := make(chan bool)
+
+	// copy the output in a separate goroutine so printing can't block indefinitely
+	go func() {
+		for {
+			select {
+			case <-c:
+				return
+			case <-time.After(100 * time.Millisecond):
+				io.Copy(outputs, r)
+			}
+		}
+	}()
+	defer func() {
+		w.Close()
+		io.Copy(outputs, r)
+		close(c)
+		r.Close()
+	}()
+	// Output duplication end
 
 	time.Sleep(10 * time.Millisecond)
 	// Reset stdout
@@ -444,6 +434,14 @@ func BuildInsideContainer(target BuildTarget, containerOpts BuildContainerOpts, 
 	// TODO: Make the download URL used for downloading track the latest stable
 	if !devMode {
 		ybChannel := "stable"
+		if configChannel, err := ybconfig.GetConfigValue("defaults", "environment"); err != nil && configChannel != "" {
+			ybChannel = configChannel
+			if ybChannel == "preview" {
+				ybChannel = "development"
+			}
+		}
+
+		// Overwrites local configuration
 		if envChannel, exists := os.LookupEnv("YB_UPDATE_CHANNEL"); exists {
 			ybChannel = envChannel
 		}
@@ -466,7 +464,7 @@ func BuildInsideContainer(target BuildTarget, containerOpts BuildContainerOpts, 
 	log.Infof("Running %s in the container in directory %s", cmdString, containerWorkDir)
 
 	if err := buildContainer.ExecToStdoutWithEnv(cmdString, containerWorkDir, buildData.EnvironmentVariables()); err != nil {
-		log.Infof("Failed to run %s: %v", cmdString, err)
+		log.Errorf("Failed to run %s: %v", cmdString, err)
 		return fmt.Errorf("Aborting build, unable to run %s: %v", cmdString, err)
 	}
 
@@ -505,7 +503,7 @@ func RunCommands(config BuildConfiguration) ([]CommandTimer, error) {
 			}
 
 			if sandboxed {
-				fmt.Println("Running build in a sandbox!")
+				log.Infoln("Running build in a sandbox!")
 				if err := ExecInSandbox(cmdString, targetDir); err != nil {
 					log.Infof("Failed to run %s: %v", cmdString, err)
 					stepError = err
@@ -542,7 +540,7 @@ func RunCommands(config BuildConfiguration) ([]CommandTimer, error) {
 }
 
 func UploadBuildLogsToAPI(buf *bytes.Buffer) {
-	fmt.Println("Uploading build logs...")
+	log.Infof("Uploading build logs...")
 	buildLog := BuildLog{
 		Contents: buf.String(),
 	}
@@ -550,24 +548,24 @@ func UploadBuildLogsToAPI(buf *bytes.Buffer) {
 	resp, err := postJsonToApi("/buildlogs", jsonData)
 
 	if err != nil {
-		log.Infof("Couldn't upload logs: %v", err)
+		log.Errorf("Couldn't upload logs: %v", err)
 		return
 	}
 
 	if resp.StatusCode != 200 {
-		log.Infof("Status code uploading log: %d", resp.StatusCode)
+		log.Warnf("Status code uploading log: %d", resp.StatusCode)
 		return
 	} else {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			log.Infof("Couldn't read response body: %s", err)
+			log.Errorf("Couldn't read response body: %s", err)
 			return
 		}
 
 		var buildLog BuildLog
 		err = json.Unmarshal(body, &buildLog)
 		if err != nil {
-			log.Infof("Failed to parse response: %v", err)
+			log.Errorf("Failed to parse response: %v", err)
 			return
 		}
 
@@ -575,7 +573,7 @@ func UploadBuildLogsToAPI(buf *bytes.Buffer) {
 		buildLogUrl, err := ybconfig.ManagementUrl(logViewPath)
 
 		if err != nil {
-			log.Infof("Unable to determine build log url: %v", err)
+			log.Errorf("Unable to determine build log url: %v", err)
 		}
 
 		log.Infof("View your build log here: %s", buildLogUrl)
