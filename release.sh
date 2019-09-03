@@ -18,6 +18,12 @@ if [ "${CHANNEL}" == "development" ]; then
   VERSION="$(date +"%Y%m%d%H%M%S")"
 fi
 
+if [ "${CHANNEL}" == "unstable" ]; then 
+  echo "Channel is unstable, setting version to timestamp"
+  VERSION="$(date +"%Y%m%d%H%M%S")"
+fi
+
+
 umask 077
 
 cleanup() {
