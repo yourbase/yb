@@ -48,17 +48,3 @@ FLAGS="-X main.version=$VERSION -X 'main.date=$(date)'"
 	-ldflags "${FLAGS}" \
 	"github.com/yourbase/${PROJECT}"
 
-#WIP, may need some tweak
-
-#S3 deploy
-AWS_PROFILE="yb-bins"
-
-FLAGS="$FLAGS -X main.noPrettyOut=true"
-go build -ldflags "${FLAGS}"
-
-mv yb{,-${VERSION}}
-ln -snf yb-${VERSION} yb
-
-tar zcf yb-${VERSION}.tar.gz yb*
-
-aws s3 sync yb-${VERSION}.tar.gz s3://yourbase-binaries/

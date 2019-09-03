@@ -29,6 +29,10 @@ func init() {
 	out, _ := ybconfig.GetConfigValue("defaults", "no-pretty-output")
 	Formatter.NoPrettyOut = out == "true"
 
+	if out, exists := os.LookupEnv("YB_NO_PRETTY_OUTPUT"); exists {
+		Formatter.NoPrettyOut = out == "true"
+	}
+
 	log.SetFormatter(Formatter)
 }
 
