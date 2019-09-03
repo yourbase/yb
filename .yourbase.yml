@@ -57,5 +57,5 @@ ci:
 
     - name: release
       build_target: release
-      when: branch IS 'master' and tagged IS true
+      when: tagged IS true
 
