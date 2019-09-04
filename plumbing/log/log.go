@@ -63,11 +63,11 @@ func NewYbFormatter() *YbFormatter {
 func StartSection(name, section string) {
 	ActiveSection(section)
 	Formatter.LogSection = true
-	fmt.Printf("\n === %s ===\n\n", name)
+	fmt.Printf(" === %s ===\n", name)
 }
 
 func SubSection(name string) {
-	fmt.Printf("\n -- %s -- \n\n", name)
+	fmt.Printf(" -- %s -- \n", name)
 }
 
 func ActiveSection(section string) {
