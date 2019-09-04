@@ -8,6 +8,7 @@ import (
 
 	"github.com/johnewart/archiver"
 	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 )
 
@@ -69,7 +70,7 @@ func (bt AntBuildTool) Setup() error {
 	cmdPath := filepath.Join(antDir, "bin")
 	currentPath := os.Getenv("PATH")
 	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
-	fmt.Printf("Setting PATH to %s\n", newPath)
+	log.Infof("Setting PATH to %s", newPath)
 	os.Setenv("PATH", newPath)
 
 	return nil
@@ -81,20 +82,20 @@ func (bt AntBuildTool) Install() error {
 	installDir := bt.InstallDir()
 
 	if _, err := os.Stat(antDir); err == nil {
-		fmt.Printf("Ant v%s located in %s!\n", bt.Version(), antDir)
+		log.Infof("Ant v%s located in %s!", bt.Version(), antDir)
 	} else {
-		fmt.Printf("Will install Ant v%s into %s\n", bt.Version(), antDir)
+		log.Infof("Will install Ant v%s into %s", bt.Version(), antDir)
 		downloadUrl := bt.DownloadUrl()
 
-		fmt.Printf("Downloading Ant from URL %s...\n", downloadUrl)
+		log.Infof("Downloading Ant from URL %s...", downloadUrl)
 		localFile, err := DownloadFileWithCache(downloadUrl)
 		if err != nil {
-			fmt.Printf("Unable to download: %v\n", err)
+			log.Errorf("Unable to download: %v", err)
 			return err
 		}
 		err = archiver.Unarchive(localFile, installDir)
 		if err != nil {
-			fmt.Printf("Unable to decompress: %v\n", err)
+			log.Errorf("Unable to decompress: %v", err)
 			return err
 		}
 

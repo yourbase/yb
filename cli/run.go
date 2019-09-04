@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/johnewart/subcommands"
+	"github.com/yourbase/yb/plumbing/log"
 	//"path/filepath"
 )
 
@@ -38,23 +39,23 @@ func (b *RunCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 		fmt.Println(b.Usage())
 		return subcommands.ExitFailure
 	}
-	targetPackage, err := GetTargetPackage()
 
+	targetPackage, err := GetTargetPackage()
 	if err != nil {
-		fmt.Printf("Can't get target package: %v\n", err)
+		log.Errorf("%v", err)
 		return subcommands.ExitFailure
 	}
 
 	instructions := targetPackage.Manifest
 
-	fmt.Printf("Setting up dependencies...\n")
+	log.Infof("Setting up dependencies...")
 	targetPackage.SetupRuntimeDependencies()
 
-	fmt.Printf("Setting environment variables...\n")
+	log.Infof("Setting environment variables...")
 	for _, property := range instructions.Exec.Environment["default"] {
 		s := strings.Split(property, "=")
 		if len(s) == 2 {
-			fmt.Printf("  %s\n", s[0])
+			log.Infof("  %s", s[0])
 			os.Setenv(s[0], s[1])
 		}
 	}
@@ -63,7 +64,7 @@ func (b *RunCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 		for _, property := range instructions.Exec.Environment[b.environment] {
 			s := strings.Split(property, "=")
 			if len(s) == 2 {
-				fmt.Printf("  %s\n", s[0])
+				log.Infof("  %s", s[0])
 				os.Setenv(s[0], s[1])
 			}
 		}
@@ -72,7 +73,7 @@ func (b *RunCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	execDir, _ := os.Getwd()
 	//execDir := filepath.Join(workspace.Path, targetPackage)
 
-	fmt.Printf("Running %s from %s\n", strings.Join(f.Args(), " "), execDir)
+	log.Infof("Running %s from %s", strings.Join(f.Args(), " "), execDir)
 	cmdName := f.Args()[0]
 	cmdArgs := f.Args()[1:]
 	cmd := exec.Command(cmdName, cmdArgs...)

@@ -18,9 +18,8 @@ import (
 
 	. "github.com/yourbase/yb/packages"
 	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
-
-	log "github.com/sirupsen/logrus"
 )
 
 type ServiceContext struct {

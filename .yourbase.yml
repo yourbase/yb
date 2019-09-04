@@ -9,10 +9,12 @@ build_targets:
       - go test ./...
       - go build
 
-    # This will release to unstable
+    # Tagged releases will go to unstable
   - name: release
     build_after:
       - default
+    environment:
+      - CHANNEL=unstable
     commands:
       - bash release.sh 
 
@@ -49,21 +51,11 @@ ci:
     - name: test_build
       build_target: default
 
-    - name: build_darwin
-      build_target: darwin
-      conditions:
-        branch:
-          in:
-            - osx
-
     - name: development_release
       build_target: development_release
       when: branch IS NOT 'master'
 
     - name: release
       build_target: release
-      when: branch IS 'master'
-      conditions:
-        branch:
-          tag: true
+      when: tagged IS true
 

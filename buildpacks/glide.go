@@ -7,6 +7,7 @@ import (
 
 	"github.com/johnewart/archiver"
 	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 )
 
@@ -46,7 +47,7 @@ func (bt GlideBuildTool) Setup() error {
 	cmdPath := fmt.Sprintf("%s/%s-%s", glideDir, OS(), Arch())
 	currentPath := os.Getenv("PATH")
 	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
-	fmt.Printf("Setting PATH to %s\n", newPath)
+	log.Infof("Setting PATH to %s", newPath)
 	os.Setenv("PATH", newPath)
 
 	return nil
@@ -57,9 +58,9 @@ func (bt GlideBuildTool) Install() error {
 	glidePath := bt.GlideDir()
 
 	if _, err := os.Stat(glidePath); err == nil {
-		fmt.Printf("Glide v%s located in %s!\n", bt.Version(), glidePath)
+		log.Infof("Glide v%s located in %s!", bt.Version(), glidePath)
 	} else {
-		fmt.Printf("Will install Glide v%s into %s\n", bt.Version(), glidePath)
+		log.Infof("Will install Glide v%s into %s", bt.Version(), glidePath)
 		params := DownloadParameters{
 			OS:      OS(),
 			Arch:    Arch(),
@@ -68,23 +69,23 @@ func (bt GlideBuildTool) Install() error {
 
 		downloadUrl, err := TemplateToString(GLIDE_DIST_MIRROR, params)
 		if err != nil {
-			fmt.Printf("Unable to generate download URL: %v\n", err)
+			log.Errorf("Unable to generate download URL: %v", err)
 			return err
 		}
 
-		fmt.Printf("Downloading from URL %s ...\n", downloadUrl)
+		log.Infof("Downloading from URL %s ...", downloadUrl)
 		localFile, err := DownloadFileWithCache(downloadUrl)
 		if err != nil {
-			fmt.Printf("Unable to download: %v\n", err)
+			log.Errorf("Unable to download: %v", err)
 			return err
 		}
 
 		extractDir := bt.GlideDir()
 		MkdirAsNeeded(extractDir)
-		fmt.Printf("Extracting glide %s to %s...\n", bt.Version(), extractDir)
+		log.Infof("Extracting glide %s to %s...", bt.Version(), extractDir)
 		err = archiver.Unarchive(localFile, extractDir)
 		if err != nil {
-			fmt.Printf("Unable to decompress: %v\n", err)
+			log.Errorf("Unable to decompress: %v", err)
 			return err
 		}
 

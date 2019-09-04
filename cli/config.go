@@ -51,8 +51,12 @@ func (w *configSetCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interf
 			switch parts[0] {
 			case "environment":
 				config.SetConfigValue("defaults", "environment", parts[1])
+			case "no-pretty-output":
+				config.SetConfigValue("defaults", "no-pretty-output", parts[1])
+			case "log-level":
+				config.SetConfigValue("defaults", "log-level", parts[1])
 			default:
-				log.Infoln("Currently only supports 'environment' config")
+				log.Infoln("Currently only supports 'environment' and 'no-pretty-output' config")
 			}
 		} else {
 			log.Errorln("Please give a full <key=value>")
@@ -63,6 +67,7 @@ func (w *configSetCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interf
 		return subcommands.ExitFailure
 	}
 
+	log.Infoln("Configuration done")
 	return subcommands.ExitSuccess
 }
 

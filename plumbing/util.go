@@ -15,6 +15,8 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/yourbase/yb/plumbing/log"
+	//log "github.com/sirupsen/logrus"
 	. "github.com/yourbase/yb/types"
 
 	"github.com/google/shlex"
@@ -33,7 +35,7 @@ func ExecToStdoutWithExtraEnv(cmdString string, targetDir string, env []string) 
 }
 
 func ExecToStdoutWithEnv(cmdString string, targetDir string, env []string) error {
-	fmt.Printf("Running: %s in %s\n", cmdString, targetDir)
+	log.Infof("Running: %s in %s", cmdString, targetDir)
 	cmdArgs, err := shlex.Split(cmdString)
 	if err != nil {
 		return fmt.Errorf("Can't parse command string '%s': %v", cmdString, err)
@@ -180,9 +182,9 @@ func DirectoryExists(dir string) bool {
 
 func MkdirAsNeeded(dir string) error {
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		fmt.Printf("Making dir: %s\n", dir)
+		log.Infof("Making dir: %s", dir)
 		if err := os.MkdirAll(dir, 0700); err != nil {
-			fmt.Printf("Unable to create dir: %v\n", err)
+			log.Errorf("Unable to create dir: %v", err)
 			return err
 		}
 	}
@@ -197,7 +199,7 @@ func TemplateToString(templateText string, data interface{}) (string, error) {
 	}
 	var tpl bytes.Buffer
 	if err := t.Execute(&tpl, data); err != nil {
-		fmt.Printf("Can't render template:: %v\n", err)
+		log.Errorf("Can't render template:: %v", err)
 		return "", err
 	}
 
@@ -291,7 +293,7 @@ func DownloadFileWithCache(url string) (string, error) {
 
 	// Exists, don't re-download
 	if _, err := os.Stat(cacheFilename); !os.IsNotExist(err) {
-		fmt.Printf("Cached version of %s already downloaded as %s, skipping!\n", url, cacheFilename)
+		log.Warnf("Cached version of %s already downloaded as %s, skipping!", url, cacheFilename)
 		return cacheFilename, nil
 	}
 
@@ -548,24 +550,5 @@ func CloneRepository(remote GitRemote, inMem bool, basePath string) (rep *git.Re
 		rep, err = git.PlainClone(basePath, false, cloneOpts)
 	}
 
-	return
-}
-
-func CloneInMemoryRepo(uri, branch string) (rep *git.Repository, err error) {
-	if branch == "" {
-		return nil, fmt.Errorf("No branch defined to clone repo %v", uri)
-	}
-
-	fs := memfs.New()
-	storer := memory.NewStorage()
-
-	rep, err = git.Clone(storer, fs,
-		&git.CloneOptions{
-			URL:           uri,
-			ReferenceName: plumbing.NewBranchReferenceName(branch),
-			SingleBranch:  true,
-			Depth:         50,
-			Tags:          git.NoTags,
-		})
 	return
 }

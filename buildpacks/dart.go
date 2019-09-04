@@ -1,13 +1,13 @@
 package buildpacks
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/johnewart/archiver"
 	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 )
 
@@ -92,20 +92,20 @@ func (bt DartBuildTool) Install() error {
 	installDir := bt.InstallDir()
 
 	if _, err := os.Stat(dartDir); err == nil {
-		fmt.Printf("Dart v%s located in %s!\n", bt.Version(), dartDir)
+		log.Infof("Dart v%s located in %s!", bt.Version(), dartDir)
 	} else {
-		fmt.Printf("Will install Dart v%s into %s\n", bt.Version(), dartDir)
+		log.Infof("Will install Dart v%s into %s", bt.Version(), dartDir)
 		downloadUrl := bt.DownloadUrl()
 
-		fmt.Printf("Downloading Dart from URL %s...\n", downloadUrl)
+		log.Infof("Downloading Dart from URL %s...", downloadUrl)
 		localFile, err := DownloadFileWithCache(downloadUrl)
 		if err != nil {
-			fmt.Printf("Unable to download: %v\n", err)
+			log.Errorf("Unable to download: %v", err)
 			return err
 		}
 		err = archiver.Unarchive(localFile, installDir)
 		if err != nil {
-			fmt.Printf("Unable to decompress: %v\n", err)
+			log.Errorf("Unable to decompress: %v", err)
 			return err
 		}
 	}

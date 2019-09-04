@@ -1,5 +1,4 @@
-# Yourbase CLI 
-
+![YourBase](docs/images/Logo-Horiz-On-White@1x.jpg "YourBase")
 
 [![YourBase Community Slack](https://img.shields.io/badge/slack-@yourbase/community-blue.svg?logo=slack)](https://slack.yourbase.io)
 

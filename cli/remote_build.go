@@ -11,7 +11,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -26,11 +25,9 @@ import (
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
 	"gopkg.in/src-d/go-git.v4/plumbing/storer"
 
-	. "github.com/yourbase/yb/packages"
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
-	. "github.com/yourbase/yb/workspace"
 
 	ybconfig "github.com/yourbase/yb/config"
 )
@@ -71,38 +68,14 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		p.target = f.Args()[0]
 	}
 
-	var targetPackage Package
+	targetPackage, err := GetTargetPackage()
+	if err != nil {
+		log.Errorf("%v", err)
+		return subcommands.ExitFailure
+	}
 
 	log.Formatter.LogSection = true
 	log.ActiveSection("Setup")
-
-	// check if we're just a package
-	if PathExists(MANIFEST_FILE) {
-		currentPath, _ := filepath.Abs(".")
-		_, pkgName := filepath.Split(currentPath)
-		pkg, err := LoadPackage(pkgName, currentPath)
-		if err != nil {
-			log.Errorf("Error loading package '%s': %v", pkgName, err)
-			return subcommands.ExitFailure
-		}
-		targetPackage = pkg
-	} else {
-
-		workspace, err := LoadWorkspace()
-
-		if err != nil {
-			log.Errorf("No package here, and no workspace, nothing to build!")
-			return subcommands.ExitFailure
-		}
-
-		pkg, err := workspace.TargetPackage()
-		if err != nil {
-			log.Errorf("Can't load workspace's target package: %v", err)
-			return subcommands.ExitFailure
-		}
-
-		targetPackage = pkg
-	}
 
 	manifest := targetPackage.Manifest
 
@@ -122,7 +95,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 	}
 
-	log.ActiveSection("Clone")
+	log.StartSection("Clone repositories", "Clone")
 
 	p.repoDir = targetPackage.Path
 	workRepo, err := git.PlainOpen(p.repoDir)
@@ -206,8 +179,9 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		p.branch = remote.Branch
 		log.Infof("Cloned remote %s branch", remote.Branch)
 	}
+	log.EndSection()
 
-	log.ActiveSection("Commit search")
+	log.StartSection("COMMIT DEF", "COMMIT")
 	targetSet := commitSet(workRepo)
 	if targetSet == nil {
 		log.Errorf("Couldn't build a commit set for comparing")
@@ -244,7 +218,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		return subcommands.ExitFailure
 	}
 
-	log.ActiveSection("Patch")
+	log.StartSection("PATCH Handling", "Patch")
 	patch, err := clonedCommit.Patch(baseCommit)
 	if err != nil {
 		log.Errorf("Patch generation failed: %v", err)
@@ -273,6 +247,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			return subcommands.ExitFailure
 		}
 
+		log.SubSection("Local Changes")
 		for n, s := range status {
 			// Deleted (staged removal or not)
 			if s.Worktree == git.Deleted || s.Staging == git.Deleted {
@@ -356,11 +331,11 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			log.Infof("Patch saved at: %v", p.patchPath)
 		}
 	}
+	log.EndSection()
 
 	if !p.dryRun {
-		log.ActiveSection("Submit")
+		log.StartSection("Remote build submit", "Submit")
 
-		log.Infoln("Submitting Remote Build ...")
 		err = submitBuild(project, p, target.Tags)
 
 		if err != nil {
@@ -867,6 +842,7 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 	} else {
 		return fmt.Errorf("Unable to stream build output!")
 	}
+	log.EndSection()
 
 	return nil
 

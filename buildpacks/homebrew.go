@@ -8,6 +8,7 @@ import (
 
 	"github.com/matishsiao/goInfo"
 	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 	"gopkg.in/src-d/go-git.v4"
 )
@@ -75,7 +76,7 @@ func (bt HomebrewBuildTool) Install() error {
 		return fmt.Errorf("Unable to install Homebrew: %v", err)
 	}
 
-	fmt.Printf("Installing package %s\n", bt.pkgName)
+	log.Infof("Installing package %s", bt.pkgName)
 	if bt.pkgName != "" {
 		err = bt.InstallPackage()
 		if err != nil {
@@ -102,7 +103,7 @@ func (bt HomebrewBuildTool) InstallPackage() error {
 		pkgVersion = fmt.Sprintf("@%s", bt.version)
 	}
 
-	fmt.Printf("Going to install %s%s from Homebrew...\n", bt.pkgName, pkgVersion)
+	log.Infof("Going to install %s%s from Homebrew...", bt.pkgName, pkgVersion)
 	installCmd := fmt.Sprintf("brew install %s%s", bt.pkgName, pkgVersion)
 	err = ExecToStdout(installCmd, brewDir)
 
@@ -122,9 +123,9 @@ func (bt HomebrewBuildTool) InstallDarwin() error {
 	brewGitUrl := "https://github.com/Homebrew/brew.git"
 
 	if _, err := os.Stat(brewDir); err == nil {
-		fmt.Printf("brew installed in %s\n", brewDir)
+		log.Infof("brew installed in %s", brewDir)
 	} else {
-		fmt.Printf("Installing brew\n")
+		log.Infof("Installing brew")
 
 		_, err := git.PlainClone(brewDir, false, &git.CloneOptions{
 			URL:      brewGitUrl,
@@ -132,11 +133,11 @@ func (bt HomebrewBuildTool) InstallDarwin() error {
 		})
 
 		if err != nil {
-			fmt.Printf("Unable to clone brew!\n")
-			return fmt.Errorf("Couldn't clone brew: %v\n", err)
+			log.Errorf("Unable to clone brew!")
+			return fmt.Errorf("Couldn't clone brew: %v", err)
 		}
 	}
-	fmt.Printf("Updating brew\n")
+	log.Infof("Updating brew")
 	updateCmd := "brew update"
 	ExecToStdout(updateCmd, brewDir)
 
@@ -154,9 +155,9 @@ func (bt HomebrewBuildTool) InstallLinux() error {
 	bt.InstallPlatformDependencies()
 
 	if _, err := os.Stat(brewDir); err == nil {
-		fmt.Printf("brew installed in %s\n", brewDir)
+		log.Infof("brew installed in %s", brewDir)
 	} else {
-		fmt.Printf("Installing brew\n")
+		log.Infof("Installing brew")
 
 		_, err := git.PlainClone(brewDir, false, &git.CloneOptions{
 			URL:      brewGitUrl,
@@ -164,11 +165,11 @@ func (bt HomebrewBuildTool) InstallLinux() error {
 		})
 
 		if err != nil {
-			fmt.Printf("Unable to clone brew!\n")
-			return fmt.Errorf("Couldn't clone brew: %v\n", err)
+			log.Errorf("Unable to clone brew!")
+			return fmt.Errorf("Couldn't clone brew: %v", err)
 		}
 	}
-	fmt.Printf("Updating brew\n")
+	log.Infof("Updating brew")
 	updateCmd := "brew update"
 	ExecToStdout(updateCmd, brewDir)
 	return nil

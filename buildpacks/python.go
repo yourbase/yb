@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 )
 
@@ -45,16 +46,16 @@ func (bt PythonBuildTool) Install() error {
 	setupDir := bt.spec.PackageDir
 
 	if _, err := os.Stat(anacondaDir); err == nil {
-		fmt.Printf("anaconda installed in %s\n", anacondaDir)
+		log.Infof("anaconda installed in %s", anacondaDir)
 	} else {
-		fmt.Printf("Installing anaconda\n")
+		log.Infof("Installing anaconda")
 
 		downloadUrl := bt.DownloadUrl()
 
-		fmt.Printf("Downloading Miniconda from URL %s...\n", downloadUrl)
+		log.Infof("Downloading Miniconda from URL %s...", downloadUrl)
 		localFile, err := DownloadFileWithCache(downloadUrl)
 		if err != nil {
-			fmt.Printf("Unable to download: %v\n", err)
+			log.Errorf("Unable to download: %v", err)
 			return err
 		}
 
@@ -63,7 +64,7 @@ func (bt PythonBuildTool) Install() error {
 			fmt.Sprintf("chmod +x %s", localFile),
 			fmt.Sprintf("bash %s -b -p %s", localFile, anacondaDir),
 		} {
-			fmt.Printf("Running: '%v' ", cmd)
+			log.Infof("Running: '%v' ", cmd)
 			ExecToStdout(cmd, setupDir)
 		}
 
@@ -123,7 +124,7 @@ func (bt PythonBuildTool) Setup() error {
 	envDir := bt.EnvironmentDir()
 
 	if _, err := os.Stat(envDir); err == nil {
-		fmt.Printf("environment installed in %s\n", envDir)
+		log.Infof("environment installed in %s", envDir)
 	} else {
 		currentPath := os.Getenv("PATH")
 		newPath := fmt.Sprintf("PATH=%s:%s", filepath.Join(condaDir, "bin"), currentPath)
@@ -135,9 +136,9 @@ func (bt PythonBuildTool) Setup() error {
 			fmt.Sprintf("%s update -q conda", condaBin),
 			fmt.Sprintf("%s create --prefix %s python=%s", condaBin, envDir, bt.Version()),
 		} {
-			fmt.Printf("Running: '%v' ", cmd)
+			log.Infof("Running: '%v' ", cmd)
 			if err := ExecToStdoutWithEnv(cmd, setupDir, []string{newPath}); err != nil {
-				fmt.Printf("Unable to run setup command: %s\n", cmd)
+				log.Errorf("Unable to run setup command: %s", cmd)
 				return fmt.Errorf("Unable to run '%s': %v", cmd, err)
 			}
 		}
