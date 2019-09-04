@@ -209,8 +209,8 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	}
 
 	if len(primaryTarget.Dependencies.Containers) > 0 {
-		fmt.Println()
-		fmt.Println()
+		log.Info("")
+		log.Info("")
 		log.Infof("Available side containers:\n")
 		for label, c := range primaryTarget.Dependencies.Containers {
 			ipv4 := buildData.Containers.IP(label)
@@ -272,7 +272,6 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		}
 	}
 	log.Infof("%15s%15s%15s   %s", "", "", buildTime, "TOTAL")
-	//log.Formatter.NoPrettyOut = false //Forced
 
 	if buildError != nil {
 		log.SubSection("BUILD FAILED")
