@@ -549,6 +549,9 @@ func CloneRepository(remote GitRemote, inMem bool, basePath string) (rep *git.Re
 	} else {
 		rep, err = git.PlainClone(basePath, false, cloneOpts)
 	}
+	if strings.Count(err.Error(), "SSH") > 0 {
+		err = fmt.Errorf("Please check your SSH agent/key configuration")
+	}
 
 	return
 }

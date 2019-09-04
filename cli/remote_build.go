@@ -62,6 +62,7 @@ func (p *RemoteCmd) SetFlags(f *flag.FlagSet) {
 
 func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 
+	log.StartSection("Remote build setup", "RSU")
 	// Consistent with how the `build` cmd works
 	p.target = "default"
 	if len(f.Args()) > 0 {
@@ -73,9 +74,6 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		log.Errorf("%v", err)
 		return subcommands.ExitFailure
 	}
-
-	log.Formatter.LogSection = true
-	log.ActiveSection("Setup")
 
 	manifest := targetPackage.Manifest
 
@@ -94,8 +92,6 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			return subcommands.ExitFailure
 		}
 	}
-
-	log.StartSection("Clone repositories", "Clone")
 
 	p.repoDir = targetPackage.Path
 	workRepo, err := git.PlainOpen(p.repoDir)
@@ -165,12 +161,17 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	clonedRepo, err := CloneRepository(remote, true, "")
 	if err != nil {
-		log.Warnf("Unable to clone %v branch '%v': '%v'. Cloning master...", remote.Url, remote.Branch, err)
+		if strings.Count(err.Error(), "SSH") > 0 {
+			log.Errorf("Unable to clone: '%v'", err)
+			return subcommands.ExitFailure
+		}
+
+		log.Warnf("Unable to clone branch '%v': '%v'. Cloning master...", remote.Branch, err)
 
 		remote.Branch = "master"
 		clonedRepo, err = CloneRepository(remote, true, "")
 		if err != nil {
-			log.Errorf("Unable to clone %v using the master branch: %v", remote.Url, err)
+			log.Errorf("Unable to clone using the master branch: %v", err)
 			return subcommands.ExitFailure
 		}
 		p.branch = "master"
@@ -179,9 +180,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		p.branch = remote.Branch
 		log.Infof("Cloned remote %s branch", remote.Branch)
 	}
-	log.EndSection()
 
-	log.StartSection("COMMIT DEF", "COMMIT")
 	targetSet := commitSet(workRepo)
 	if targetSet == nil {
 		log.Errorf("Couldn't build a commit set for comparing")
@@ -218,7 +217,6 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		return subcommands.ExitFailure
 	}
 
-	log.StartSection("PATCH Handling", "Patch")
 	patch, err := clonedCommit.Patch(baseCommit)
 	if err != nil {
 		log.Errorf("Patch generation failed: %v", err)
@@ -247,7 +245,6 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			return subcommands.ExitFailure
 		}
 
-		log.SubSection("Local Changes")
 		for n, s := range status {
 			// Deleted (staged removal or not)
 			if s.Worktree == git.Deleted || s.Staging == git.Deleted {
@@ -326,7 +323,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	if p.patchPath != "" {
 		if err := savePatch(p); err != nil {
-			log.Errorf("\nUnable to save copy of generated patch: %v\n", err)
+			log.Errorf("Unable to save copy of generated patch: %v", err)
 		} else {
 			log.Infof("Patch saved at: %v", p.patchPath)
 		}
@@ -334,7 +331,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	log.EndSection()
 
 	if !p.dryRun {
-		log.StartSection("Remote build submit", "Submit")
+		log.StartSection("Remote build submit", "RMB")
 
 		err = submitBuild(project, p, target.Tags)
 
@@ -342,6 +339,8 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			log.Errorf("Unable to submit build: %v", err)
 			return subcommands.ExitFailure
 		}
+		log.EndSection()
+
 	} else {
 		log.Infoln("Dry run ended, build not submitted")
 	}
@@ -808,8 +807,6 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 		url = response
 	}
 
-	log.ActiveSection("Remote")
-
 	if strings.HasPrefix(url, "ws:") || strings.HasPrefix(url, "wss:") {
 		log.Infof("Streaming build output from %s", url)
 		conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), url)
@@ -824,11 +821,11 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 						//log.Warnf("can not receive: %v", err)
 						//return err
 					} else {
-						log.Infoln("\n\n\nBuild Completed!")
+						log.Infoln("Build Completed!")
 						return nil
 					}
 				} else {
-					log.Errorf("%s", msg)
+					fmt.Printf("%s", msg)
 				}
 			}
 
@@ -842,7 +839,6 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 	} else {
 		return fmt.Errorf("Unable to stream build output!")
 	}
-	log.EndSection()
 
 	return nil
 

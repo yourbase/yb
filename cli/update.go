@@ -28,7 +28,7 @@ func (p *UpdateCmd) SetFlags(f *flag.FlagSet) {
 
 func (p *UpdateCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	if err := selfupdate.Update(p.Version, p.Channel); err != nil {
-		log.Errorf("Unable to self update: %v\n", err)
+		log.Errorf("Unable to self update: %v", err)
 		return subcommands.ExitFailure
 	}
 	return subcommands.ExitSuccess
