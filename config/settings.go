@@ -124,6 +124,25 @@ func ManagementUrl(path string) (string, error) {
 	}
 }
 
+func CurrentGHAppUrl() (gh string) {
+	profile := YourBaseProfile()
+
+	switch profile {
+	case "staging":
+		gh = "https://github.com/apps/yourbase-staging"
+	case "preview":
+		gh = "https://github.com/apps/yourbase-preview"
+	case "development":
+		gh = "https://github.com/apps/my-yourbase" // ;-)
+	case "production":
+		gh = "https://github.com/apps/yourbase"
+	default:
+		gh = "https://github.com/apps/yourbase"
+	}
+
+	return
+}
+
 func UserToken() (string, error) {
 	token, exists := os.LookupEnv("YB_USER_TOKEN")
 	if !exists {

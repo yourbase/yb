@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -62,7 +63,6 @@ func (p *RemoteCmd) SetFlags(f *flag.FlagSet) {
 
 func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 
-	log.StartSection("Remote build setup", "RSU")
 	// Consistent with how the `build` cmd works
 	p.target = "default"
 	if len(f.Args()) > 0 {
@@ -328,19 +328,15 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			log.Infof("Patch saved at: %v", p.patchPath)
 		}
 	}
-	log.EndSection()
 
 	if !p.dryRun {
-		log.StartSection("Remote build submit", "RMB")
-
+		log.Infoln("Submitting remote build")
 		err = submitBuild(project, p, target.Tags)
 
 		if err != nil {
 			log.Errorf("Unable to submit build: %v", err)
 			return subcommands.ExitFailure
 		}
-		log.EndSection()
-
 	} else {
 		log.Infoln("Dry run ended, build not submitted")
 	}
@@ -482,9 +478,11 @@ func (p *RemoteCmd) fetchProject(urls []string) (*Project, GitRemote, error) {
 
 	if resp.StatusCode != 200 {
 		if resp.StatusCode == 404 {
-			return nil, empty, fmt.Errorf("Couldn't find the project, make sure you have created one whose repository URL matches one of these repository's remotes.")
+			return nil, empty, fmt.Errorf("Is YourBase GitHub App installed?\nPlease check '%v'", ybconfig.CurrentGHAppUrl())
 		} else if resp.StatusCode == 401 {
 			return nil, empty, fmt.Errorf("Unauthorized, authentication failed.\nPlease `yb login` again.")
+		} else if resp.StatusCode == 403 {
+			return nil, empty, fmt.Errorf("Access denied, tried to build a repository from a organization that you don't belong to.")
 		} else {
 			return nil, empty, fmt.Errorf("Error fetching project from API.")
 		}
@@ -808,11 +806,21 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 	}
 
 	if strings.HasPrefix(url, "ws:") || strings.HasPrefix(url, "wss:") {
+		log.Infof("Check the logs in the App: %v", managementLogUrl(url, project.OrgSlug, project.Label))
 		log.Infof("Streaming build output from %s", url)
+		//XXX
+		return nil
 		conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), url)
 		if err != nil {
 			return fmt.Errorf("Can not connect: %v", err)
 		} else {
+
+			defer func() {
+				if err = conn.Close(); err != nil {
+					log.Debugf("Cannot close: %v", err)
+				}
+			}()
+
 			for {
 				msg, _, err := wsutil.ReadServerData(conn)
 				if err != nil {
@@ -828,13 +836,6 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 					fmt.Printf("%s", msg)
 				}
 			}
-
-			err = conn.Close()
-			if err != nil {
-				log.Errorf("Can not close: %v", err)
-			} else {
-				log.Infof("Closed")
-			}
 		}
 	} else {
 		return fmt.Errorf("Unable to stream build output!")
@@ -842,4 +843,27 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 
 	return nil
 
+}
+
+func managementLogUrl(url, org, label string) string {
+	wsUrlRegexp := regexp.MustCompile(`^wss?://[^:/]+/builds/([0-9a-f-]+)/progress$`)
+
+	if wsUrlRegexp.MatchString(url) {
+		submatches := wsUrlRegexp.FindStringSubmatch(url)
+		build := ""
+		if len(submatches) > 1 {
+			build = submatches[1]
+		}
+		if len(build) == 0 {
+			return ""
+		}
+
+		u, err := ybconfig.ManagementUrl(fmt.Sprintf("/%s/%s/%s", org, label, build))
+		if err != nil {
+			log.Errorf("Unable to generate App Url: %v", err)
+		}
+
+		return u
+	}
+	return ""
 }

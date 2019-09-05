@@ -49,7 +49,8 @@ func NewYbFormatter() *YbFormatter {
 		Section:    "",
 		LogSection: false,
 		innerFormatter: &logrus.TextFormatter{
-			DisableTimestamp: true,
+			DisableTimestamp:       true,
+			DisableLevelTruncation: true,
 
 			// from https://bixense.com/clicolors/
 			// Set CLICOLOR to 0 to force plain "black/white" text colors
