@@ -805,8 +805,7 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 	}
 
 	if strings.HasPrefix(url, "ws:") || strings.HasPrefix(url, "wss:") {
-		log.Infof("Check the logs in the App: %v", managementLogUrl(url, project.OrgSlug, project.Label))
-		log.Infof("Streaming build output from %s", url)
+		log.Infof("Build Log: %v", managementLogUrl(url, project.OrgSlug, project.Label))
 		conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), url)
 		if err != nil {
 			return fmt.Errorf("Can not connect: %v", err)
@@ -855,7 +854,7 @@ func managementLogUrl(url, org, label string) string {
 			return ""
 		}
 
-		u, err := ybconfig.ManagementUrl(fmt.Sprintf("/%s/%s/%s", org, label, build))
+		u, err := ybconfig.ManagementUrl(fmt.Sprintf("/%s/%s/builds/%s", org, label, build))
 		if err != nil {
 			log.Errorf("Unable to generate App Url: %v", err)
 		}

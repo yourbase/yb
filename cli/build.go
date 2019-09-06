@@ -409,6 +409,10 @@ func BuildInsideContainer(target BuildTarget, containerOpts BuildContainerOpts, 
 	// Linux so we might as well behave the same on all platforms
 	// If not development mode, download the binary from the distribution channel
 	_, devMode := os.LookupEnv("YB_DEVELOPMENT")
+	// TODO, test dev mode better:
+	// _, devEnvExists := os.LookupEnv("YB_DEVELOPMENT")
+	// ybEnv, _ := ybconfig.GetConfigValue("defaults", "environment")
+	// devMode := devEnvExists || ybEnv == "development"
 	if devMode {
 		if p, err := os.Executable(); err != nil {
 			return fmt.Errorf("Can't determine local path to YB: %v", err)
@@ -421,6 +425,12 @@ func BuildInsideContainer(target BuildTarget, containerOpts BuildContainerOpts, 
 		} else {
 			localYbPath = p
 		}
+		// After downloading YB and uploading it to the container, we should delete it locally
+		defer func() {
+			if err := DeleteLocalYB(); err != nil {
+				log.Warnf("Could not remove local downloaded yb: %v", err)
+			}
+		}()
 	}
 
 	// Upload and update CLI
@@ -707,4 +717,9 @@ func DownloadYB() (string, error) {
 	}
 
 	return ybPath, nil
+}
+
+func DeleteLocalYB() error {
+	currentPath, _ := filepath.Abs(".")
+	return os.RemoveAll(filepath.Join(currentPath, ".yb-tmp"))
 }
