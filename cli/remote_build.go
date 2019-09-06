@@ -88,7 +88,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	} else {
 		if _, err := manifest.BuildTarget(p.target); err != nil {
 			log.Errorf("Build target %s specified but it doesn't exist!", p.target)
-			log.Errorf("Valid build targets: %s", strings.Join(manifest.BuildTargetList(), ", "))
+			log.Infof("Valid build targets: %s", strings.Join(manifest.BuildTargetList(), ", "))
 			return subcommands.ExitFailure
 		}
 	}
@@ -533,7 +533,7 @@ func applyPatch(file *diffparser.DiffFile, from string) (to string, err error) {
 	if file == nil {
 		return "", fmt.Errorf("Needs a file to process")
 	}
-	lines := strings.Split(from, "")
+	lines := strings.Split(from, "\n")
 	if len(lines) == 0 {
 		return "", fmt.Errorf("Won't process an empty string")
 	}
@@ -546,7 +546,7 @@ func applyPatch(file *diffparser.DiffFile, from string) (to string, err error) {
 		for i, line := range hunk.OrigRange.Lines {
 			index := idx + i
 			passedLine := lines[index]
-			if strings.EqualFold(line.Content, passedLine) {
+			if !strings.EqualFold(line.Content, passedLine) {
 				unmatchedLines++
 			}
 		}
@@ -565,8 +565,7 @@ func applyPatch(file *diffparser.DiffFile, from string) (to string, err error) {
 		lines = newLines
 	}
 	if unmatchedLines > 0 {
-		// TODO log this?
-		//log.Warnf("%d unmatched lines in this file\n", unmatchedLines)
+		log.Debugf("%d unmatched lines in this file\n", unmatchedLines)
 	}
 	to = strings.Join(lines, "\n")
 
@@ -844,7 +843,7 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 }
 
 func managementLogUrl(url, org, label string) string {
-	wsUrlRegexp := regexp.MustCompile(`^wss?://[^:/]+/builds/([0-9a-f-]+)/progress$`)
+	wsUrlRegexp := regexp.MustCompile(`^wss?://[^/]+/builds/([0-9a-f-]+)/progress$`)
 
 	if wsUrlRegexp.MatchString(url) {
 		submatches := wsUrlRegexp.FindStringSubmatch(url)

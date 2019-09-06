@@ -137,7 +137,7 @@ type Project struct {
 	Label       string `json:"label"`
 	Description string `json:"description"`
 	Repository  string `json:"repository"`
-	OrgSlug     string `json:"org_slug"`
+	OrgSlug     string `json:"organization_slug"`
 }
 
 type TokenResponse struct {
