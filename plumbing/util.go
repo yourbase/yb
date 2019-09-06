@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/yourbase/yb/plumbing/log"
-	//log "github.com/sirupsen/logrus"
 	. "github.com/yourbase/yb/types"
 
 	"github.com/google/shlex"

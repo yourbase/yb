@@ -808,8 +808,6 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 	if strings.HasPrefix(url, "ws:") || strings.HasPrefix(url, "wss:") {
 		log.Infof("Check the logs in the App: %v", managementLogUrl(url, project.OrgSlug, project.Label))
 		log.Infof("Streaming build output from %s", url)
-		//XXX
-		return nil
 		conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), url)
 		if err != nil {
 			return fmt.Errorf("Can not connect: %v", err)

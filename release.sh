@@ -35,8 +35,6 @@ echo "${RELEASE_KEY}" > "${KEY_FILE}"
 wget https://bin.equinox.io/c/mBWdkfai63v/release-tool-stable-linux-amd64.tgz
 tar zxvf release-tool-stable-linux-amd64.tgz
 
-FLAGS="-X main.version=$VERSION -X 'main.date=$(date)'"
-
 ./equinox release \
         --version=$VERSION \
         --platforms="darwin_amd64 linux_amd64" \
@@ -45,6 +43,6 @@ FLAGS="-X main.version=$VERSION -X 'main.date=$(date)'"
         --token="${TOKEN}" \
         --channel="${CHANNEL}" \
 	-- \
-	-ldflags "${FLAGS}" \
+	-ldflags "-X main.version=$VERSION -X 'main.date=$(date)'" \
 	"github.com/yourbase/${PROJECT}"
 
