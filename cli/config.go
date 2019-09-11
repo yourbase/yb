@@ -10,6 +10,10 @@ import (
 	"github.com/yourbase/yb/plumbing/log"
 )
 
+var (
+	VARS = []string{"environment", "log-level", "log-section", "no-pretty-output"}
+)
+
 type ConfigCmd struct {
 }
 
@@ -29,6 +33,7 @@ func (w *ConfigCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface
 }
 
 type configSetCmd struct {
+	vars []string
 }
 
 func (*configSetCmd) Name() string     { return "set" }
@@ -37,7 +42,8 @@ func (*configSetCmd) Usage() string {
 	return `set environment=<production|staging|preview|development>`
 }
 
-func (w *configSetCmd) SetFlags(f *flag.FlagSet) {}
+func (w *configSetCmd) SetFlags(f *flag.FlagSet) {
+}
 
 func (w *configSetCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	if len(f.Args()) < 1 {
@@ -48,15 +54,15 @@ func (w *configSetCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interf
 	if strings.Contains(f.Args()[0], "=") {
 		parts := strings.Split(f.Args()[0], "=")
 		if len(parts) > 1 {
-			switch parts[0] {
-			case "environment":
-				config.SetConfigValue("defaults", "environment", parts[1])
-			case "no-pretty-output":
-				config.SetConfigValue("defaults", "no-pretty-output", parts[1])
-			case "log-level":
-				config.SetConfigValue("defaults", "log-level", parts[1])
-			default:
-				log.Infoln("Currently only supports 'environment' and 'no-pretty-output' config")
+			found := false
+			for _, configVar := range VARS {
+				if parts[0] == configVar {
+					config.SetConfigValue("defaults", configVar, parts[1])
+					found = true
+				}
+			}
+			if !found {
+				log.Infof("Currently supports: '%v' config variables", strings.Join(VARS, ", "))
 			}
 		} else {
 			log.Errorln("Please give a full <key=value>")
@@ -88,16 +94,20 @@ func (w *configGetCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interf
 		return subcommands.ExitFailure
 	}
 
-	switch f.Args()[0] {
-	case "environment":
-		env, err := config.GetConfigValue("defaults", "environment")
-		if err != nil {
-			log.Errorf("Unable to get current environment: %v", err)
-			return subcommands.ExitFailure
+	found := false
+	for _, configVar := range VARS {
+		if passed := f.Args()[0]; passed == configVar {
+			env, err := config.GetConfigValue("defaults", configVar)
+			if err != nil {
+				log.Errorf("Unable to get current %v: %v", configVar, err)
+				return subcommands.ExitFailure
+			}
+			found = true
+			log.Infof("Current %v value: '%v'", configVar, env)
 		}
-		log.Infof("Current environment: '%s'", env)
-	default:
-		log.Infoln("Currently only supports 'environment' config")
+	}
+	if !found {
+		log.Infof("Currently supports: '%v' config variables", strings.Join(VARS, ", "))
 	}
 
 	return subcommands.ExitSuccess

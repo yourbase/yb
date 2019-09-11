@@ -26,11 +26,19 @@ func init() {
 	if err == nil {
 		log.SetLevel(level)
 	}
+
 	out, _ := ybconfig.GetConfigValue("defaults", "no-pretty-output")
 	Formatter.NoPrettyOut = out == "true"
 
 	if out, exists := os.LookupEnv("YB_NO_PRETTY_OUTPUT"); exists {
 		Formatter.NoPrettyOut = out == "true"
+	}
+
+	logSection, _ := ybconfig.GetConfigValue("defaults", "log-section")
+	Formatter.LogSection = logSection == "true"
+
+	if logSection, exists := os.LookupEnv("YB_LOG_SECTION"); exists {
+		Formatter.LogSection = logSection == "true"
 	}
 
 	log.SetFormatter(Formatter)
@@ -63,7 +71,6 @@ func NewYbFormatter() *YbFormatter {
 
 func StartSection(name, section string) {
 	ActiveSection(section)
-	Formatter.LogSection = true
 	fmt.Printf(" === %s ===\n", name)
 }
 
@@ -77,7 +84,6 @@ func ActiveSection(section string) {
 
 func EndSection() {
 	Formatter.Section = ""
-	Formatter.LogSection = false
 }
 
 func Title(t string) {

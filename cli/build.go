@@ -68,7 +68,11 @@ func (b *BuildCmd) SetFlags(f *flag.FlagSet) {
 func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	startTime := time.Now()
 
-	log.StartSection("BUILD HOST", "HOST")
+	if InsideTheMatrix() {
+		log.StartSection("BUILD CONTAINER", "CONTAINER")
+	} else {
+		log.StartSection("BUILD HOST", "HOST")
+	}
 	gi := goInfo.GetInfo()
 	gi.VarDump()
 	log.EndSection()

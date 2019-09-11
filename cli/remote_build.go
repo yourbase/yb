@@ -41,6 +41,8 @@ type RemoteCmd struct {
 	patchPath      string
 	repoDir        string
 	noAcceleration bool
+	disableCache   bool
+	disableSkipper bool
 	dryRun         bool
 	committed      bool
 	remotes        []GitRemote
@@ -56,7 +58,9 @@ func (p *RemoteCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&p.baseCommit, "base-commit", "", "Base commit hash as common ancestor")
 	f.StringVar(&p.branch, "branch", "", "Branch name")
 	f.StringVar(&p.patchPath, "patch-path", "", "Path to save the patch")
-	f.BoolVar(&p.noAcceleration, "no-accel", false, "Disable accelaration")
+	f.BoolVar(&p.noAcceleration, "no-accel", false, "Disable acceleration")
+	f.BoolVar(&p.disableCache, "disable-cache", false, "Disable cache acceleration")
+	f.BoolVar(&p.disableSkipper, "disable-skipper", false, "Disable skipping steps acceleration")
 	f.BoolVar(&p.dryRun, "dry-run", false, "Pretend to remote build")
 	f.BoolVar(&p.committed, "committed", false, "Only remote build committed changes")
 }
@@ -766,6 +770,18 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 		formData.Add("tags[]", tag)
 	}
 
+	if cmd.noAcceleration {
+		formData.Add("no-accel", "True")
+	}
+
+	if cmd.disableCache {
+		formData.Add("disable-cache", "True")
+	}
+
+	if cmd.disableSkipper {
+		formData.Add("disable-skipper", "True")
+	}
+
 	cliUrl, err := ybconfig.ApiUrl("builds/cli")
 	if err != nil {
 		log.Debugf("Unable to generate CLI URL: %v", err)
@@ -782,13 +798,12 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 	if err != nil {
 		return fmt.Errorf("Couldn't read response body: %s", err)
 	}
-	if resp.Status == "401" {
+	switch resp.StatusCode {
+	case 401:
 		return fmt.Errorf("Unauthorized, authentication failed.\nPlease `yb login` again.")
-	}
-	if resp.Status == "400" {
+	case 400:
 		return fmt.Errorf("Invalid data sent to the YB API")
-	}
-	if resp.Status == "500" {
+	case 500:
 		return fmt.Errorf("Internal server error")
 	}
 
@@ -808,7 +823,7 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 		log.Infof("Build Log: %v", managementLogUrl(url, project.OrgSlug, project.Label))
 		conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), url)
 		if err != nil {
-			return fmt.Errorf("Can not connect: %v", err)
+			return fmt.Errorf("Cannot connect: %v", err)
 		} else {
 
 			defer func() {

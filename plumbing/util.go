@@ -292,7 +292,7 @@ func DownloadFileWithCache(url string) (string, error) {
 
 	// Exists, don't re-download
 	if _, err := os.Stat(cacheFilename); !os.IsNotExist(err) {
-		log.Warnf("Cached version of %s already downloaded as %s, skipping!", url, cacheFilename)
+		log.Infof("Re-using cached version of %s", url)
 		return cacheFilename, nil
 	}
 
@@ -475,6 +475,20 @@ func FindFileUpTree(filename string) (string, error) {
 
 func FindNearestManifestFile() (string, error) {
 	return FindFileUpTree(MANIFEST_FILE)
+}
+
+// Because, why not?
+// Based on https://github.com/sindresorhus/is-docker/blob/master/index.js and https://github.com/moby/moby/issues/18355
+// Discussion is not settled yet: https://stackoverflow.com/questions/23513045/how-to-check-if-a-process-is-running-inside-docker-container#25518538
+func InsideTheMatrix() bool {
+	hasDockerEnv := PathExists("/.dockerenv")
+	hasDockerCGroup := false
+	dockerCGroupPath := "/proc/self/cgroup"
+	if PathExists(dockerCGroupPath) {
+		contents, _ := ioutil.ReadFile(dockerCGroupPath)
+		hasDockerCGroup = strings.Count(string(contents), "docker") > 0
+	}
+	return hasDockerEnv || hasDockerCGroup
 }
 
 func CompressBuffer(b *bytes.Buffer) error {
