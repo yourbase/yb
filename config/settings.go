@@ -133,7 +133,7 @@ func CurrentGHAppUrl() (gh string) {
 	case "preview":
 		gh = "https://github.com/apps/yourbase-preview"
 	case "development":
-		gh = "https://github.com/apps/my-yourbase" // ;-)
+		gh = "https://github.com/apps/yourbase-development"
 	case "production":
 		gh = "https://github.com/apps/yourbase"
 	default:

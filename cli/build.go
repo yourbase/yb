@@ -449,9 +449,11 @@ func BuildInsideContainer(target BuildTarget, containerOpts BuildContainerOpts, 
 		ybChannel := "stable"
 		if configChannel, err := ybconfig.GetConfigValue("defaults", "environment"); err != nil && configChannel != "" {
 			ybChannel = configChannel
-			if ybChannel == "preview" {
-				ybChannel = "development"
-			}
+			// XXX better think about this. Because YB doesn't have a preview channel yet,
+			//     not even in the ./release.sh
+			//if ybChannel == "preview" {
+			//	ybChannel = "development"
+			//}
 		}
 
 		// Overwrites local configuration
