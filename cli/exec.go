@@ -3,15 +3,12 @@ package cli
 import (
 	"context"
 	"flag"
-	"path/filepath"
 	"strings"
 
 	"github.com/johnewart/subcommands"
 
-	. "github.com/yourbase/yb/packages"
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
 	. "github.com/yourbase/yb/workspace"
 )
 
@@ -39,34 +36,13 @@ Executing the target involves:
 */
 func (b *ExecCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 
-	var targetPackage Package
-
-	ActiveSection("Setup")
-	if PathExists(MANIFEST_FILE) {
-		currentPath, _ := filepath.Abs(".")
-		_, packageName := filepath.Split(currentPath)
-		pkg, err := LoadPackage(packageName, currentPath)
-		if err != nil {
-			log.Infof("Can't load package '%s': %v\n", packageName, err)
-			return subcommands.ExitFailure
-		}
-		targetPackage = pkg
-	} else {
-		workspace, err := LoadWorkspace()
-		if err != nil {
-			log.Infof("Can't load workspace: %v\n", err)
-			return subcommands.ExitFailure
-		}
-		pkg, err := workspace.TargetPackage()
-		if err != nil {
-			log.Infof("Can't determine target package: %v\n", err)
-			return subcommands.ExitFailure
-		}
-
-		targetPackage = pkg
+	targetPackage, err := GetTargetPackage()
+	if err != nil {
+		log.Errorf("%v", err)
+		return subcommands.ExitFailure
 	}
 
-	ActiveSection("Dependencies")
+	log.ActiveSection("Dependencies")
 	if _, err := targetPackage.SetupRuntimeDependencies(); err != nil {
 		log.Infof("Couldn't configure dependencies: %v\n", err)
 		return subcommands.ExitFailure
@@ -78,7 +54,7 @@ func (b *ExecCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	buildData := NewBuildData()
 
 	if len(containers) > 0 {
-		ActiveSection("Containers")
+		log.ActiveSection("Containers")
 		log.Infof("Starting %d dependencies...", len(containers))
 		sc, err := NewServiceContextWithId("exec", targetPackage, containers)
 		if err != nil {
@@ -94,7 +70,7 @@ func (b *ExecCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		buildData.Containers.ServiceContext = sc
 	}
 
-	ActiveSection("Environment")
+	log.ActiveSection("Environment")
 	log.Infof("Setting environment variables...")
 	for _, property := range instructions.Exec.Environment["default"] {
 		s := strings.Split(property, "=")
@@ -114,7 +90,7 @@ func (b *ExecCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 
 	buildData.ExportEnvironmentPublicly()
 
-	ActiveSection("Exec")
+	log.ActiveSection("Exec")
 
 	log.Infof("Execing target package %s...\n", targetPackage.Name)
 

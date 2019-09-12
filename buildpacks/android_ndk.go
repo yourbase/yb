@@ -7,6 +7,7 @@ import (
 
 	"github.com/johnewart/archiver"
 	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 )
 
@@ -72,7 +73,7 @@ func (bt AndroidNdkBuildTool) NdkDir() string {
 func (bt AndroidNdkBuildTool) Setup() error {
 	ndkDir := bt.NdkDir()
 
-	fmt.Printf("Setting ANDROID_NDK_HOME to %s\n", ndkDir)
+	log.Infof("Setting ANDROID_NDK_HOME to %s", ndkDir)
 	os.Setenv("ANDROID_NDK_HOME", ndkDir)
 
 	return nil
@@ -84,20 +85,20 @@ func (bt AndroidNdkBuildTool) Install() error {
 	installDir := bt.InstallDir()
 
 	if _, err := os.Stat(ndkDir); err == nil {
-		fmt.Printf("Android NDK v%s located in %s!\n", bt.Version(), ndkDir)
+		log.Infof("Android NDK v%s located in %s!", bt.Version(), ndkDir)
 	} else {
-		fmt.Printf("Will install Android NDK v%s into %s\n", bt.Version(), ndkDir)
+		log.Infof("Will install Android NDK v%s into %s", bt.Version(), ndkDir)
 		downloadUrl := bt.DownloadUrl()
 
-		fmt.Printf("Downloading Android NDK v%s from URL %s...\n", bt.Version(), downloadUrl)
+		log.Infof("Downloading Android NDK v%s from URL %s...", bt.Version(), downloadUrl)
 		localFile, err := DownloadFileWithCache(downloadUrl)
 		if err != nil {
-			fmt.Printf("Unable to download: %v\n", err)
+			log.Errorf("Unable to download: %v", err)
 			return err
 		}
 		err = archiver.Unarchive(localFile, installDir)
 		if err != nil {
-			fmt.Printf("Unable to decompress: %v\n", err)
+			log.Errorf("Unable to decompress: %v", err)
 			return err
 		}
 

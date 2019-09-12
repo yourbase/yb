@@ -3,18 +3,14 @@ package cli
 import (
 	"context"
 	"flag"
-	"path/filepath"
 
 	"github.com/johnewart/subcommands"
 
-	. "github.com/yourbase/yb/packages"
-	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
-	. "github.com/yourbase/yb/workspace"
 )
 
 type CheckConfigCmd struct {
+	file string
 }
 
 func (*CheckConfigCmd) Name() string     { return "checkconfig" }
@@ -24,39 +20,18 @@ func (*CheckConfigCmd) Usage() string {
 }
 
 func (b *CheckConfigCmd) SetFlags(f *flag.FlagSet) {
+	f.StringVar(&b.file, "file", "", "YAML file to check, or else the default: .yourbase.yml")
 }
 
 func (b *CheckConfigCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	var targetPackage Package
 
-	if PathExists(MANIFEST_FILE) {
-		currentPath, _ := filepath.Abs(".")
-		_, pkgName := filepath.Split(currentPath)
-		pkg, err := LoadPackage(pkgName, currentPath)
-		if err != nil {
-			log.Infof("Error loading package '%s': %v\n\nSee %s\n", pkgName, err, DOCS_URL)
-			return subcommands.ExitFailure
-		}
-		targetPackage = pkg
-	} else {
-
-		workspace, err := LoadWorkspace()
-
-		if err != nil {
-			log.Infof("Could not find valid configuration: %v\n\nTry running in the package root dir or writing the YML config file (.yourbase.yml) if it is missing. See %s\n", err, DOCS_URL)
-			return subcommands.ExitFailure
-		}
-
-		pkg, err := workspace.TargetPackage()
-		if err != nil {
-			log.Infof("Can't load workspace's target package: %v\n\nPackages under this Workspace may be missing a .yourbase.yml file or it's syntax is an invalid YML data. See %s\n", err, DOCS_URL)
-			return subcommands.ExitFailure
-		}
-
-		targetPackage = pkg
+	targetPackage, err := GetTargetPackageNamed(b.file)
+	if err != nil {
+		log.Errorf("%v", err)
+		return subcommands.ExitFailure
 	}
 
-	log.Infof("Config syntax verified for package '%s', and it is successfully yourbased!\n", targetPackage.Name)
+	log.Infof("Config syntax for package '%s' is OK: your package is yourbased!", targetPackage.Name)
 
 	return subcommands.ExitSuccess
 }

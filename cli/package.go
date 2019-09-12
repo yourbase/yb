@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/workspace"
 )
 
@@ -52,18 +53,6 @@ func (b *PackageCmd) ArchiveWorkspace() subcommands.ExitStatus {
 
 	instructions := targetPackage.Manifest
 
-	/*	fmt.Printf("Setting up dependencies...\n")
-		workspace.SetupBuildDependencies(*instructions)
-
-		/*fmt.Printf("Setting environment variables...\n")
-		for _, property := range instructions.Exec.Environment {
-			s := strings.Split(property, "=")
-			if len(s) == 2 {
-				fmt.Printf("  %s\n", s[0])
-				os.Setenv(s[0], s[1])
-			}
-		}*/
-
 	buildDir := workspace.BuildRoot()
 	outputDir := filepath.Join(buildDir, "output")
 	MkdirAsNeeded(outputDir)
@@ -74,7 +63,7 @@ func (b *PackageCmd) ArchiveWorkspace() subcommands.ExitStatus {
 		os.Remove(pkgFile)
 	}
 
-	fmt.Printf("Generating package file %s...\n", pkgFile)
+	log.Infof("Generating package file %s...\n", pkgFile)
 
 	tar := archiver.Tar{
 		MkdirAll: true,
@@ -88,7 +77,7 @@ func (b *PackageCmd) ArchiveWorkspace() subcommands.ExitStatus {
 	_ = os.Chdir(oldCwd)
 
 	if err != nil {
-		fmt.Printf("Could not create archive: %v\n", err)
+		log.Errorf("Could not create archive: %v\n", err)
 		return subcommands.ExitFailure
 	}
 

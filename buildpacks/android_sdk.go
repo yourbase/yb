@@ -8,6 +8,7 @@ import (
 
 	"github.com/johnewart/archiver"
 	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 )
 
@@ -97,7 +98,7 @@ func (bt AndroidBuildTool) WriteAgreements() bool {
 		agreementFile := filepath.Join(licensesDir, filename)
 		f, err := os.Create(agreementFile)
 		if err != nil {
-			fmt.Printf("Can't create agreement file %s: %v\n", agreementFile, err)
+			log.Errorf("Can't create agreement file %s: %v", agreementFile, err)
 			return false
 		}
 
@@ -105,13 +106,13 @@ func (bt AndroidBuildTool) WriteAgreements() bool {
 		_, err = f.WriteString(hash)
 
 		if err != nil {
-			fmt.Printf("Can't write agreement file %s: %v\n", agreementFile, err)
+			log.Errorf("Can't write agreement file %s: %v", agreementFile, err)
 			return false
 		}
 
 		f.Sync()
 
-		fmt.Printf("Wrote hash for agreement: %s\n", agreementFile)
+		log.Infof("Wrote hash for agreement: %s", agreementFile)
 	}
 
 	return true
@@ -126,17 +127,17 @@ func (bt AndroidBuildTool) Setup() error {
 	currentPath := os.Getenv("PATH")
 	newPath := fmt.Sprintf("%s:%s", binPath, currentPath)
 	newPath = fmt.Sprintf("%s:%s", toolsPath, newPath)
-	fmt.Printf("Setting PATH to %s\n", newPath)
+	log.Infof("Setting PATH to %s", newPath)
 	os.Setenv("PATH", newPath)
 
 	//fmt.Printf("Setting ANDROID_HOME to %s\n", androidHomeDir)
 	//os.Setenv("ANDROID_HOME", androidHomeDir)
 
-	fmt.Printf("Setting ANDROID_SDK_ROOT to %s\n", androidDir)
+	log.Infof("Setting ANDROID_SDK_ROOT to %s", androidDir)
 	os.Setenv("ANDROID_SDK_ROOT", androidDir)
 	os.Setenv("ANDROID_HOME", androidDir)
 
-	fmt.Printf("Writing agreement hashes...\n")
+	log.Infof("Writing agreement hashes...")
 	bt.WriteAgreements()
 
 	return nil
@@ -148,20 +149,20 @@ func (bt AndroidBuildTool) Install() error {
 	installDir := bt.InstallDir()
 
 	if _, err := os.Stat(androidDir); err == nil {
-		fmt.Printf("Android v%s located in %s!\n", bt.Version(), androidDir)
+		log.Infof("Android v%s located in %s!", bt.Version(), androidDir)
 	} else {
-		fmt.Printf("Will install Android v%s into %s\n", bt.Version(), androidDir)
+		log.Infof("Will install Android v%s into %s", bt.Version(), androidDir)
 		downloadUrl := bt.DownloadUrl()
 
-		fmt.Printf("Downloading Android from URL %s...\n", downloadUrl)
+		log.Infof("Downloading Android from URL %s...", downloadUrl)
 		localFile, err := DownloadFileWithCache(downloadUrl)
 		if err != nil {
-			fmt.Printf("Unable to download: %v\n", err)
+			log.Errorf("Unable to download: %v", err)
 			return err
 		}
 		err = archiver.Unarchive(localFile, installDir)
 		if err != nil {
-			fmt.Printf("Unable to decompress: %v\n", err)
+			log.Errorf("Unable to decompress: %v", err)
 			return err
 		}
 

@@ -7,6 +7,7 @@ import (
 
 	"github.com/johnewart/archiver"
 	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 )
 
@@ -58,21 +59,21 @@ func (bt NodeBuildTool) Install() error {
 	nodePkgString := bt.PackageString()
 
 	if _, err := os.Stat(nodeDir); err == nil {
-		fmt.Printf("Node v%s located in %s!\n", bt.Version(), nodeDir)
+		log.Infof("Node v%s located in %s!", bt.Version(), nodeDir)
 	} else {
-		fmt.Printf("Would install Node v%s into %s\n", bt.Version(), installDir)
+		log.Infof("Would install Node v%s into %s", bt.Version(), installDir)
 		archiveFile := fmt.Sprintf("%s.tar.gz", nodePkgString)
 		downloadUrl := fmt.Sprintf("%s/v%s/%s", NODE_DIST_MIRROR, bt.Version(), archiveFile)
-		fmt.Printf("Downloading from URL %s...\n", downloadUrl)
+		log.Infof("Downloading from URL %s...", downloadUrl)
 		localFile, err := DownloadFileWithCache(downloadUrl)
 		if err != nil {
-			fmt.Printf("Unable to download: %v\n", err)
+			log.Errorf("Unable to download: %v", err)
 			return err
 		}
 
 		err = archiver.Unarchive(localFile, installDir)
 		if err != nil {
-			fmt.Printf("Unable to decompress: %v\n", err)
+			log.Errorf("Unable to decompress: %v", err)
 			return err
 		}
 	}
@@ -86,7 +87,7 @@ func (bt NodeBuildTool) Setup() error {
 	PrependToPath(cmdPath)
 	// TODO: Fix this to be the package cache?
 	nodePath := bt.spec.PackageDir
-	fmt.Printf("Setting NODE_PATH to %s\n", nodePath)
+	log.Infof("Setting NODE_PATH to %s", nodePath)
 	os.Setenv("NODE_PATH", nodePath)
 
 	npmBinPath := filepath.Join(nodePath, "node_modules", ".bin")

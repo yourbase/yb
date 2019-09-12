@@ -57,7 +57,7 @@ func apiBaseUrl() (string, error) {
 	case "preview":
 		return "https://api.preview.yourbase.io", nil
 	case "development":
-		return "http://localhost:5000", nil
+		return "http://localhost:5001", nil
 	case "production":
 		return "https://api.yourbase.io", nil
 	case "":
@@ -122,6 +122,25 @@ func ManagementUrl(path string) (string, error) {
 	} else {
 		return fmt.Sprintf("%s%s", baseUrl, path), nil
 	}
+}
+
+func CurrentGHAppUrl() (gh string) {
+	profile := YourBaseProfile()
+
+	switch profile {
+	case "staging":
+		gh = "https://github.com/apps/yourbase-staging"
+	case "preview":
+		gh = "https://github.com/apps/yourbase-preview"
+	case "development":
+		gh = "https://github.com/apps/yourbase-development"
+	case "production":
+		gh = "https://github.com/apps/yourbase"
+	default:
+		gh = "https://github.com/apps/yourbase"
+	}
+
+	return
 }
 
 func UserToken() (string, error) {

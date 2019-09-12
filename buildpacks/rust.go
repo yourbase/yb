@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 )
 
@@ -43,7 +44,7 @@ func (bt RustBuildTool) Setup() error {
 	cmdPath := fmt.Sprintf("%s/bin", rustDir)
 	currentPath := os.Getenv("PATH")
 	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
-	fmt.Printf("Setting PATH to %s\n", newPath)
+	log.Infof("Setting PATH to %s", newPath)
 	os.Setenv("PATH", newPath)
 
 	os.Setenv("CARGO_HOME", rustDir)
@@ -62,19 +63,19 @@ func (bt RustBuildTool) Install() error {
 	MkdirAsNeeded(installDir)
 
 	if _, err := os.Stat(rustDir); err == nil {
-		fmt.Printf("Rust v%s located in %s!\n", bt.Version(), rustDir)
+		log.Infof("Rust v%s located in %s!", bt.Version(), rustDir)
 	} else {
-		fmt.Printf("Will install Rust v%s into %s\n", bt.Version(), rustDir)
+		log.Infof("Will install Rust v%s into %s", bt.Version(), rustDir)
 		extension := ""
 		installerFile := fmt.Sprintf("rustup-init%s", extension)
 		downloadUrl := fmt.Sprintf("%s/%s-%s/%s", RUST_DIST_MIRROR, arch, operatingSystem, installerFile)
 
 		downloadDir := bt.spec.PackageCacheDir
 		localFile := filepath.Join(downloadDir, installerFile)
-		fmt.Printf("Downloading from URL %s to local file %s\n", downloadUrl, localFile)
+		log.Infof("Downloading from URL %s to local file %s", downloadUrl, localFile)
 		err := DownloadFile(localFile, downloadUrl)
 		if err != nil {
-			fmt.Printf("Unable to download: %v\n", err)
+			log.Errorf("Unable to download: %v", err)
 			return err
 		}
 

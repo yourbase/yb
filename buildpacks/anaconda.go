@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 )
 
@@ -51,23 +52,23 @@ func (bt AnacondaBuildTool) Install() error {
 	setupDir := bt.spec.PackageDir
 
 	if _, err := os.Stat(anacondaDir); err == nil {
-		fmt.Printf("anaconda installed in %s\n", anacondaDir)
+		log.Infof("anaconda installed in %s", anacondaDir)
 	} else {
-		fmt.Printf("Installing anaconda\n")
+		log.Infof("Installing anaconda")
 
 		downloadUrl := bt.DownloadUrl()
 
-		fmt.Printf("Downloading Miniconda from URL %s...\n", downloadUrl)
+		log.Infof("Downloading Miniconda from URL %s...", downloadUrl)
 		localFile, err := DownloadFileWithCache(downloadUrl)
 		if err != nil {
-			fmt.Printf("Unable to download: %v\n", err)
+			log.Errorf("Unable to download: %v\n", err)
 			return err
 		}
 		for _, cmd := range []string{
 			fmt.Sprintf("chmod +x %s", localFile),
 			fmt.Sprintf("bash %s -b -p %s", localFile, anacondaDir),
 		} {
-			fmt.Printf("Running: '%v' ", cmd)
+			log.Infof("Running: '%v' ", cmd)
 			ExecToStdout(cmd, setupDir)
 		}
 
@@ -131,7 +132,7 @@ func (bt AnacondaBuildTool) Setup() error {
 		fmt.Sprintf("conda config --set always_yes yes --set changeps1 no"),
 		fmt.Sprintf("conda update -q conda"),
 	} {
-		fmt.Printf("Running: '%v' ", cmd)
+		log.Infof("Running: '%v' ", cmd)
 		ExecToStdout(cmd, setupDir)
 	}
 

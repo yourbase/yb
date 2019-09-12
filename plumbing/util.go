@@ -15,6 +15,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 
 	"github.com/google/shlex"
@@ -33,7 +34,7 @@ func ExecToStdoutWithExtraEnv(cmdString string, targetDir string, env []string) 
 }
 
 func ExecToStdoutWithEnv(cmdString string, targetDir string, env []string) error {
-	fmt.Printf("Running: %s in %s\n", cmdString, targetDir)
+	log.Infof("Running: %s in %s", cmdString, targetDir)
 	cmdArgs, err := shlex.Split(cmdString)
 	if err != nil {
 		return fmt.Errorf("Can't parse command string '%s': %v", cmdString, err)
@@ -180,9 +181,9 @@ func DirectoryExists(dir string) bool {
 
 func MkdirAsNeeded(dir string) error {
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		fmt.Printf("Making dir: %s\n", dir)
+		log.Infof("Making dir: %s", dir)
 		if err := os.MkdirAll(dir, 0700); err != nil {
-			fmt.Printf("Unable to create dir: %v\n", err)
+			log.Errorf("Unable to create dir: %v", err)
 			return err
 		}
 	}
@@ -197,7 +198,7 @@ func TemplateToString(templateText string, data interface{}) (string, error) {
 	}
 	var tpl bytes.Buffer
 	if err := t.Execute(&tpl, data); err != nil {
-		fmt.Printf("Can't render template:: %v\n", err)
+		log.Errorf("Can't render template:: %v", err)
 		return "", err
 	}
 
@@ -291,7 +292,7 @@ func DownloadFileWithCache(url string) (string, error) {
 
 	// Exists, don't re-download
 	if _, err := os.Stat(cacheFilename); !os.IsNotExist(err) {
-		fmt.Printf("Cached version of %s already downloaded as %s, skipping!\n", url, cacheFilename)
+		log.Infof("Re-using cached version of %s", url)
 		return cacheFilename, nil
 	}
 
@@ -476,6 +477,20 @@ func FindNearestManifestFile() (string, error) {
 	return FindFileUpTree(MANIFEST_FILE)
 }
 
+// Because, why not?
+// Based on https://github.com/sindresorhus/is-docker/blob/master/index.js and https://github.com/moby/moby/issues/18355
+// Discussion is not settled yet: https://stackoverflow.com/questions/23513045/how-to-check-if-a-process-is-running-inside-docker-container#25518538
+func InsideTheMatrix() bool {
+	hasDockerEnv := PathExists("/.dockerenv")
+	hasDockerCGroup := false
+	dockerCGroupPath := "/proc/self/cgroup"
+	if PathExists(dockerCGroupPath) {
+		contents, _ := ioutil.ReadFile(dockerCGroupPath)
+		hasDockerCGroup = strings.Count(string(contents), "docker") > 0
+	}
+	return hasDockerEnv || hasDockerCGroup
+}
+
 func CompressBuffer(b *bytes.Buffer) error {
 	var buf bytes.Buffer
 
@@ -547,25 +562,9 @@ func CloneRepository(remote GitRemote, inMem bool, basePath string) (rep *git.Re
 	} else {
 		rep, err = git.PlainClone(basePath, false, cloneOpts)
 	}
-
-	return
-}
-
-func CloneInMemoryRepo(uri, branch string) (rep *git.Repository, err error) {
-	if branch == "" {
-		return nil, fmt.Errorf("No branch defined to clone repo %v", uri)
+	if err != nil && strings.Count(err.Error(), "SSH") > 0 {
+		err = fmt.Errorf("Please check your SSH agent/key configuration")
 	}
 
-	fs := memfs.New()
-	storer := memory.NewStorage()
-
-	rep, err = git.Clone(storer, fs,
-		&git.CloneOptions{
-			URL:           uri,
-			ReferenceName: plumbing.NewBranchReferenceName(branch),
-			SingleBranch:  true,
-			Depth:         50,
-			Tags:          git.NoTags,
-		})
 	return
 }

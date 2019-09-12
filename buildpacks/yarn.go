@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 
 	"github.com/johnewart/archiver"
-	log "github.com/sirupsen/logrus"
 	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 )
 
@@ -57,11 +57,11 @@ func (bt YarnBuildTool) Install() error {
 	installDir := bt.InstallDir()
 
 	if _, err := os.Stat(yarnDir); err == nil {
-		log.Infof("Yarn v%s located in %s!\n", bt.Version(), yarnDir)
+		log.Infof("Yarn v%s located in %s!", bt.Version(), yarnDir)
 	} else {
-		log.Infof("Will install Yarn v%s into %s\n", bt.Version(), installDir)
+		log.Infof("Will install Yarn v%s into %s", bt.Version(), installDir)
 		downloadUrl := bt.DownloadUrl()
-		log.Infof("Downloading from URL %s...\n", downloadUrl)
+		log.Infof("Downloading from URL %s...", downloadUrl)
 		localFile, err := DownloadFileWithCache(downloadUrl)
 		if err != nil {
 			return fmt.Errorf("Unable to download %s: %v", downloadUrl, err)

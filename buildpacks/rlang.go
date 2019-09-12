@@ -8,6 +8,7 @@ import (
 
 	"github.com/johnewart/archiver"
 	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 )
 
@@ -64,7 +65,7 @@ func (bt RLangBuildTool) Setup() error {
 	cmdPath := fmt.Sprintf("%s/bin", rlangDir)
 	currentPath := os.Getenv("PATH")
 	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
-	fmt.Printf("Setting PATH to %s\n", newPath)
+	log.Infof("Setting PATH to %s", newPath)
 	os.Setenv("PATH", newPath)
 
 	return nil
@@ -76,15 +77,15 @@ func (bt RLangBuildTool) Install() error {
 	rlangDir := bt.RLangDir()
 
 	if _, err := os.Stat(rlangDir); err == nil {
-		fmt.Printf("R v%s located in %s!\n", bt.Version(), rlangDir)
+		log.Infof("R v%s located in %s!", bt.Version(), rlangDir)
 	} else {
-		fmt.Printf("Will install R v%s into %s\n", bt.Version(), installDir)
+		log.Infof("Will install R v%s into %s", bt.Version(), installDir)
 		downloadUrl := bt.DownloadUrl()
 
-		fmt.Printf("Downloading from URL %s ...\n", downloadUrl)
+		log.Infof("Downloading from URL %s ...", downloadUrl)
 		localFile, err := DownloadFileWithCache(downloadUrl)
 		if err != nil {
-			fmt.Printf("Unable to download: %v\n", err)
+			log.Errorf("Unable to download: %v", err)
 			return err
 		}
 
@@ -94,7 +95,7 @@ func (bt RLangBuildTool) Install() error {
 		if !DirectoryExists(srcDir) {
 			err = archiver.Unarchive(localFile, tmpDir)
 			if err != nil {
-				fmt.Printf("Unable to decompress: %v\n", err)
+				log.Errorf("Unable to decompress: %v", err)
 				return err
 			}
 		}

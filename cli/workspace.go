@@ -16,6 +16,7 @@ import (
 
 	pkg "github.com/yourbase/yb/packages"
 	util "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing/log"
 	ybtypes "github.com/yourbase/yb/types"
 	. "github.com/yourbase/yb/workspace"
 )
@@ -60,20 +61,20 @@ func (w *workspaceLocationCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...
 		_, pkgName := filepath.Split(currentPath)
 		pkg, err := pkg.LoadPackage(pkgName, currentPath)
 		if err != nil {
-			fmt.Printf("Error loading package '%s': %v\n", pkgName, err)
+			log.Errorf("Error loading package '%s': %v", pkgName, err)
 			return subcommands.ExitFailure
 		}
 
-		fmt.Println(pkg.BuildRoot())
+		log.Infoln(pkg.BuildRoot())
 		return subcommands.ExitSuccess
 	} else {
 		ws, err := LoadWorkspace()
 
 		if err != nil {
-			fmt.Printf("No package here, and no workspace, nothing to do!")
+			log.Errorf("No package here, and no workspace, nothing to do!")
 			return subcommands.ExitFailure
 		}
-		fmt.Println(ws.Root())
+		fmt.Println(ws.Root()) // No logging used, because this can be used by scripts
 		return subcommands.ExitSuccess
 	}
 
@@ -97,24 +98,24 @@ func (w *workspaceCreateCmd) SetFlags(f *flag.FlagSet) {
 
 func (w *workspaceCreateCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	if len(w.name) == 0 {
-		fmt.Printf("No name provided!\n")
+		log.Errorf("No name provided!")
 		return subcommands.ExitFailure
 	}
 
 	err := os.Mkdir(w.name, 0700)
 	if err != nil {
-		fmt.Printf("Workspace already exists!\n")
+		log.Errorf("Workspace already exists!")
 		return subcommands.ExitFailure
 	}
 
 	configPath, _ := filepath.Abs(filepath.Join(w.name, "config.yml"))
 	header := fmt.Sprintf("# Workspace config for %s", w.name)
 	if err := ioutil.WriteFile(configPath, []byte(header), 0600); err != nil {
-		fmt.Printf("Unable to create initial config as %s: %v\n", configPath, err)
+		log.Errorf("Unable to create initial config as %s: %v", configPath, err)
 		return subcommands.ExitFailure
 	}
 
-	fmt.Printf("Created new workspace %s\n", w.name)
+	log.Infof("Created new workspace %s", w.name)
 	return subcommands.ExitSuccess
 
 }
@@ -155,17 +156,17 @@ func (w *workspaceAddCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...int
 		cloneDir = cloneDir[0:offset]
 	}
 
-	fmt.Printf("Cloning %s into %s...\n", repository, cloneDir)
+	log.Infof("Cloning %s into %s...", repository, cloneDir)
 
 	refName := "refs/heads/master"
 
 	if w.Branch != "" {
-		fmt.Printf("Using branch %s\n", w.Branch)
+		log.Infof("Using branch %s", w.Branch)
 		refName = fmt.Sprintf("refs/heads/%s", w.Branch)
 	}
 
 	if w.Tag != "" {
-		fmt.Printf("Using tag %s\n", w.Tag)
+		log.Infof("Using tag %s", w.Tag)
 		refName = fmt.Sprintf("refs/tags/%s", w.Tag)
 	}
 
@@ -181,8 +182,8 @@ func (w *workspaceAddCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...int
 	_, err := git.PlainClone(cloneDir, false, &cloneOpts)
 
 	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-		fmt.Println("Authentication required")
+		log.Errorf("Error: %v", err)
+		log.Warnln("Authentication required")
 
 		// Try again with HTTP Auth
 		// TODO only do this if the URL has github?
@@ -190,7 +191,7 @@ func (w *workspaceAddCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...int
 
 		var auth http.BasicAuth
 		if exists {
-			fmt.Println("Using GitHub token")
+			log.Infof("Using GitHub token")
 			auth = http.BasicAuth{Username: "yourbase", Password: githubtoken}
 		} else {
 
@@ -215,7 +216,7 @@ func (w *workspaceAddCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...int
 
 		_, err := git.PlainClone(cloneDir, false, &cloneOpts)
 		if err != nil {
-			fmt.Printf("Unable to clone repository, even with authentication: %v\n", err)
+			log.Errorf("Unable to clone repository, even with authentication: %v", err)
 			return subcommands.ExitFailure
 		}
 	}
@@ -238,11 +239,11 @@ func (w *workspaceTargetCmd) SetFlags(f *flag.FlagSet) {}
 func (w *workspaceTargetCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	packageName := f.Args()[0]
 
-	fmt.Printf("Setting %s as target\n", packageName)
+	log.Infof("Setting %s as target", packageName)
 
 	workspace, err := LoadWorkspace()
 	if err != nil {
-		fmt.Printf("Can't load workspace: %v\n", err)
+		log.Errorf("Can't load workspace: %v", err)
 		return subcommands.ExitFailure
 	}
 

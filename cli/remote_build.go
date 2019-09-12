@@ -11,7 +11,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -26,11 +26,9 @@ import (
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
 	"gopkg.in/src-d/go-git.v4/plumbing/storer"
 
-	. "github.com/yourbase/yb/packages"
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
-	. "github.com/yourbase/yb/workspace"
 
 	ybconfig "github.com/yourbase/yb/config"
 )
@@ -43,6 +41,8 @@ type RemoteCmd struct {
 	patchPath      string
 	repoDir        string
 	noAcceleration bool
+	disableCache   bool
+	disableSkipper bool
 	dryRun         bool
 	committed      bool
 	remotes        []GitRemote
@@ -58,7 +58,9 @@ func (p *RemoteCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&p.baseCommit, "base-commit", "", "Base commit hash as common ancestor")
 	f.StringVar(&p.branch, "branch", "", "Branch name")
 	f.StringVar(&p.patchPath, "patch-path", "", "Path to save the patch")
-	f.BoolVar(&p.noAcceleration, "no-accel", false, "Disable accelaration")
+	f.BoolVar(&p.noAcceleration, "no-accel", false, "Disable acceleration")
+	f.BoolVar(&p.disableCache, "disable-cache", false, "Disable cache acceleration")
+	f.BoolVar(&p.disableSkipper, "disable-skipper", false, "Disable skipping steps acceleration")
 	f.BoolVar(&p.dryRun, "dry-run", false, "Pretend to remote build")
 	f.BoolVar(&p.committed, "committed", false, "Only remote build committed changes")
 }
@@ -71,34 +73,10 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		p.target = f.Args()[0]
 	}
 
-	var targetPackage Package
-
-	// check if we're just a package
-	if PathExists(MANIFEST_FILE) {
-		currentPath, _ := filepath.Abs(".")
-		_, pkgName := filepath.Split(currentPath)
-		pkg, err := LoadPackage(pkgName, currentPath)
-		if err != nil {
-			log.Errorf("Error loading package '%s': %v", pkgName, err)
-			return subcommands.ExitFailure
-		}
-		targetPackage = pkg
-	} else {
-
-		workspace, err := LoadWorkspace()
-
-		if err != nil {
-			log.Errorf("No package here, and no workspace, nothing to build!")
-			return subcommands.ExitFailure
-		}
-
-		pkg, err := workspace.TargetPackage()
-		if err != nil {
-			log.Errorf("Can't load workspace's target package: %v", err)
-			return subcommands.ExitFailure
-		}
-
-		targetPackage = pkg
+	targetPackage, err := GetTargetPackage()
+	if err != nil {
+		log.Errorf("%v", err)
+		return subcommands.ExitFailure
 	}
 
 	manifest := targetPackage.Manifest
@@ -109,16 +87,16 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		target = manifest.Build
 		if len(target.Commands) == 0 {
 			log.Errorf("Default build command has no steps and no targets described")
+			return subcommands.ExitFailure
 		}
 	} else {
 		if _, err := manifest.BuildTarget(p.target); err != nil {
 			log.Errorf("Build target %s specified but it doesn't exist!", p.target)
-			log.Errorf("Valid build targets: %s", strings.Join(manifest.BuildTargetList(), ", "))
+			log.Infof("Valid build targets: %s", strings.Join(manifest.BuildTargetList(), ", "))
 			return subcommands.ExitFailure
 		}
 	}
 
-	log.Infof("Remotely building '%s' ...", p.target)
 	p.repoDir = targetPackage.Path
 	workRepo, err := git.PlainOpen(p.repoDir)
 
@@ -187,12 +165,17 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	clonedRepo, err := CloneRepository(remote, true, "")
 	if err != nil {
-		log.Warnf("Unable to clone %v branch '%v': '%v'. Cloning master...", remote.Url, remote.Branch, err)
+		if strings.Count(err.Error(), "SSH") > 0 {
+			log.Errorf("Unable to clone: '%v'", err)
+			return subcommands.ExitFailure
+		}
+
+		log.Warnf("Unable to clone branch '%v': '%v'. Cloning master...", remote.Branch, err)
 
 		remote.Branch = "master"
 		clonedRepo, err = CloneRepository(remote, true, "")
 		if err != nil {
-			log.Errorf("Unable to clone %v using the master branch: %v", remote.Url, err)
+			log.Errorf("Unable to clone using the master branch: %v", err)
 			return subcommands.ExitFailure
 		}
 		p.branch = "master"
@@ -344,14 +327,14 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	if p.patchPath != "" {
 		if err := savePatch(p); err != nil {
-			log.Errorf("\nUnable to save copy of generated patch: %v\n", err)
+			log.Errorf("Unable to save copy of generated patch: %v", err)
 		} else {
 			log.Infof("Patch saved at: %v", p.patchPath)
 		}
 	}
 
 	if !p.dryRun {
-		log.Infoln("Submitting Remote Build ...")
+		log.Infoln("Submitting remote build")
 		err = submitBuild(project, p, target.Tags)
 
 		if err != nil {
@@ -499,9 +482,11 @@ func (p *RemoteCmd) fetchProject(urls []string) (*Project, GitRemote, error) {
 
 	if resp.StatusCode != 200 {
 		if resp.StatusCode == 404 {
-			return nil, empty, fmt.Errorf("Couldn't find the project, make sure you have created one whose repository URL matches one of these repository's remotes.")
+			return nil, empty, fmt.Errorf("Is YourBase GitHub App installed?\nPlease check '%v'", ybconfig.CurrentGHAppUrl())
 		} else if resp.StatusCode == 401 {
 			return nil, empty, fmt.Errorf("Unauthorized, authentication failed.\nPlease `yb login` again.")
+		} else if resp.StatusCode == 403 {
+			return nil, empty, fmt.Errorf("Access denied, tried to build a repository from a organization that you don't belong to.")
 		} else {
 			return nil, empty, fmt.Errorf("Error fetching project from API.")
 		}
@@ -552,7 +537,7 @@ func applyPatch(file *diffparser.DiffFile, from string) (to string, err error) {
 	if file == nil {
 		return "", fmt.Errorf("Needs a file to process")
 	}
-	lines := strings.Split(from, "")
+	lines := strings.Split(from, "\n")
 	if len(lines) == 0 {
 		return "", fmt.Errorf("Won't process an empty string")
 	}
@@ -565,7 +550,7 @@ func applyPatch(file *diffparser.DiffFile, from string) (to string, err error) {
 		for i, line := range hunk.OrigRange.Lines {
 			index := idx + i
 			passedLine := lines[index]
-			if strings.EqualFold(line.Content, passedLine) {
+			if !strings.EqualFold(line.Content, passedLine) {
 				unmatchedLines++
 			}
 		}
@@ -584,8 +569,7 @@ func applyPatch(file *diffparser.DiffFile, from string) (to string, err error) {
 		lines = newLines
 	}
 	if unmatchedLines > 0 {
-		// TODO log this?
-		//log.Warnf("%d unmatched lines in this file\n", unmatchedLines)
+		log.Debugf("%d unmatched lines in this file\n", unmatchedLines)
 	}
 	to = strings.Join(lines, "\n")
 
@@ -786,6 +770,18 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 		formData.Add("tags[]", tag)
 	}
 
+	if cmd.noAcceleration {
+		formData.Add("no-accel", "True")
+	}
+
+	if cmd.disableCache {
+		formData.Add("disable-cache", "True")
+	}
+
+	if cmd.disableSkipper {
+		formData.Add("disable-skipper", "True")
+	}
+
 	cliUrl, err := ybconfig.ApiUrl("builds/cli")
 	if err != nil {
 		log.Debugf("Unable to generate CLI URL: %v", err)
@@ -802,13 +798,12 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 	if err != nil {
 		return fmt.Errorf("Couldn't read response body: %s", err)
 	}
-	if resp.Status == "401" {
+	switch resp.StatusCode {
+	case 401:
 		return fmt.Errorf("Unauthorized, authentication failed.\nPlease `yb login` again.")
-	}
-	if resp.Status == "400" {
+	case 400:
 		return fmt.Errorf("Invalid data sent to the YB API")
-	}
-	if resp.Status == "500" {
+	case 500:
 		return fmt.Errorf("Internal server error")
 	}
 
@@ -825,32 +820,39 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 	}
 
 	if strings.HasPrefix(url, "ws:") || strings.HasPrefix(url, "wss:") {
-		log.Infof("Streaming build output from %s", url)
+		log.Infof("Build Log: %v", managementLogUrl(url, project.OrgSlug, project.Label))
 		conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), url)
 		if err != nil {
-			return fmt.Errorf("Can not connect: %v", err)
+			return fmt.Errorf("Cannot connect: %v", err)
 		} else {
+
+			defer func() {
+				if err = conn.Close(); err != nil {
+					log.Debugf("Cannot close: %v", err)
+				}
+			}()
+
+			buildSuccess := false
 			for {
 				msg, _, err := wsutil.ReadServerData(conn)
 				if err != nil {
 					if err != io.EOF {
+						log.Errorf("Unstable connection: %v", err)
 						// Ignore
 						//log.Warnf("can not receive: %v", err)
 						//return err
 					} else {
-						log.Infoln("\n\n\nBuild Completed!")
+						if buildSuccess {
+							log.Infoln("Build Completed!")
+						} else {
+							log.Errorln("Build failed!")
+						}
 						return nil
 					}
 				} else {
-					log.Errorf("%s", msg)
+					fmt.Printf("%s", msg)
+					buildSuccess = strings.Count(string(msg), "-- BUILD SUCCEEDED --") > 0
 				}
-			}
-
-			err = conn.Close()
-			if err != nil {
-				log.Errorf("Can not close: %v", err)
-			} else {
-				log.Infof("Closed")
 			}
 		}
 	} else {
@@ -859,4 +861,27 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 
 	return nil
 
+}
+
+func managementLogUrl(url, org, label string) string {
+	wsUrlRegexp := regexp.MustCompile(`^wss?://[^/]+/builds/([0-9a-f-]+)/progress$`)
+
+	if wsUrlRegexp.MatchString(url) {
+		submatches := wsUrlRegexp.FindStringSubmatch(url)
+		build := ""
+		if len(submatches) > 1 {
+			build = submatches[1]
+		}
+		if len(build) == 0 {
+			return ""
+		}
+
+		u, err := ybconfig.ManagementUrl(fmt.Sprintf("/%s/%s/builds/%s", org, label, build))
+		if err != nil {
+			log.Errorf("Unable to generate App Url: %v", err)
+		}
+
+		return u
+	}
+	return ""
 }

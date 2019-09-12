@@ -66,7 +66,7 @@ func (p *LoginCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	}
 
 	if resp.StatusCode != 200 {
-		log.Errorf("Oops: HTTP Status %d that's us, not you, please try again later\n", resp.StatusCode)
+		log.Errorf("Oops: HTTP Status %d that's us, not you, please try again later", resp.StatusCode)
 		return subcommands.ExitFailure
 	}
 

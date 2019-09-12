@@ -34,7 +34,7 @@ require (
 	github.com/ulikunitz/xz v0.5.6
 	github.com/waigani/diffparser v0.0.0-20190828052634-7391f219313d // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
-	golang.org/x/crypto v0.0.0-20190829043050-9756ffdc2472 // indirect
+	golang.org/x/crypto v0.0.0-20190829043050-9756ffdc2472
 	golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297 // indirect
 	golang.org/x/sys v0.0.0-20190826190057-c7b8b68b1456 // indirect
 	google.golang.org/appengine v1.4.0 // indirect

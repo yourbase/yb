@@ -6,8 +6,6 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
-
-	"github.com/yourbase/yb/plumbing"
 )
 
 func configFilePath() (string, error) {
@@ -18,10 +16,10 @@ func configFilePath() (string, error) {
 	}
 
 	configDir := filepath.Join(u.HomeDir, ".config", "yb")
-	plumbing.MkdirAsNeeded(configDir)
+	mkdirAsNeeded(configDir)
 	iniPath := filepath.Join(configDir, "settings.ini")
 
-	if !plumbing.PathExists(iniPath) {
+	if !pathExists(iniPath) {
 		emptyFile, _ := os.Create(iniPath)
 		emptyFile.Close()
 	}
@@ -46,6 +44,26 @@ func loadConfigFile() (*ini.File, error) {
 
 }
 
+// To break an import cycle
+func pathExists(path string) bool {
+	if _, err := os.Lstat(path); os.IsNotExist(err) {
+		return false
+	}
+
+	return true
+}
+
+// To break an import cycle
+func mkdirAsNeeded(dir string) error {
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		if err := os.MkdirAll(dir, 0700); err != nil {
+			return fmt.Errorf("Unable to create dir: %v", err)
+		}
+	}
+
+	return nil
+}
+
 func SectionPrefix() string {
 	profile := YourBaseProfile()
 	if profile != "" {
@@ -57,7 +75,7 @@ func SectionPrefix() string {
 
 func GetConfigValue(section string, key string) (string, error) {
 	var sectionPrefix string
-	if section != "defaults" && key != "environment" {
+	if section != "defaults" {
 		sectionPrefix = SectionPrefix()
 	}
 	cfgSection := fmt.Sprintf("%s%s", sectionPrefix, section)
@@ -71,7 +89,7 @@ func GetConfigValue(section string, key string) (string, error) {
 
 func SetConfigValue(section string, key string, value string) error {
 	var sectionPrefix string
-	if section != "defaults" && key != "environment" {
+	if section != "defaults" {
 		sectionPrefix = SectionPrefix()
 	}
 	cfgSection := fmt.Sprintf("%s%s", sectionPrefix, section)

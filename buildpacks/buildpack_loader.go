@@ -6,6 +6,7 @@ import (
 	"time"
 
 	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 )
 
@@ -41,7 +42,7 @@ func LoadBuildPacks(dependencies []string, pkgCacheDir string, pkgDir string) ([
 		}
 
 		var bt BuildTool
-		fmt.Printf("Configuring build tool: %s\n", toolSpec)
+		log.Infof("Configuring build tool: %s", toolSpec)
 
 		switch buildpackName {
 		case "anaconda2":

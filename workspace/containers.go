@@ -18,9 +18,8 @@ import (
 
 	. "github.com/yourbase/yb/packages"
 	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
-
-	log "github.com/sirupsen/logrus"
 )
 
 type ServiceContext struct {
@@ -602,15 +601,16 @@ func (b BuildContainer) ExecToWriterWithEnv(cmdString string, targetDir string, 
 
 func NewContainer(opts BuildContainerOpts) (BuildContainer, error) {
 	containerDef := opts.ContainerOpts
-	containerName := opts.containerName()
-
-	log.Infof("Creating container '%s'", containerName)
 
 	client := NewDockerClient()
 
 	if containerDef.Image == "" {
 		containerDef.Image = DEFAULT_YB_CONTAINER
 	}
+
+	containerName := opts.containerName()
+	log.Infof("Creating container '%s'", containerName)
+
 	PullImage(containerDef)
 
 	var mounts = make([]docker.HostMount, 0)
