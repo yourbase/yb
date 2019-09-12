@@ -832,19 +832,26 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 				}
 			}()
 
+			buildSuccess := false
 			for {
 				msg, _, err := wsutil.ReadServerData(conn)
 				if err != nil {
 					if err != io.EOF {
+						log.Errorf("Unstable connection: %v", err)
 						// Ignore
 						//log.Warnf("can not receive: %v", err)
 						//return err
 					} else {
-						log.Infoln("Build Completed!")
+						if buildSuccess {
+							log.Infoln("Build Completed!")
+						} else {
+							log.Errorln("Build failed!")
+						}
 						return nil
 					}
 				} else {
 					fmt.Printf("%s", msg)
+					buildSuccess = strings.Count(string(msg), "-- BUILD SUCCEEDED --") > 0
 				}
 			}
 		}

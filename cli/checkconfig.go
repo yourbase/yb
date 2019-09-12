@@ -10,6 +10,7 @@ import (
 )
 
 type CheckConfigCmd struct {
+	file string
 }
 
 func (*CheckConfigCmd) Name() string     { return "checkconfig" }
@@ -19,11 +20,12 @@ func (*CheckConfigCmd) Usage() string {
 }
 
 func (b *CheckConfigCmd) SetFlags(f *flag.FlagSet) {
+	f.StringVar(&b.file, "file", "", "YAML file to check, or else the default: .yourbase.yml")
 }
 
 func (b *CheckConfigCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 
-	targetPackage, err := GetTargetPackage()
+	targetPackage, err := GetTargetPackageNamed(b.file)
 	if err != nil {
 		log.Errorf("%v", err)
 		return subcommands.ExitFailure
