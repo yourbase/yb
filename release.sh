@@ -10,6 +10,8 @@ RELEASE_KEY="${RELEASE_KEY}"
 
 if [ -z "${CHANNEL}" ]; then
   echo "Channel not set, will release as unstable"
+  echo "To promote to a new channel, use the equinox release tool:"
+  echo '$ equinox publish --token $TOKEN --app $APP  --channel stable --release 0.0.39'
   CHANNEL="unstable"
 fi
 
