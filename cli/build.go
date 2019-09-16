@@ -215,7 +215,7 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	if len(primaryTarget.Dependencies.Containers) > 0 {
 		log.Info("")
 		log.Info("")
-		log.Infof("Available side containers:\n")
+		log.Infof("Available side containers:")
 		for label, c := range primaryTarget.Dependencies.Containers {
 			ipv4 := buildData.Containers.IP(label)
 			log.Infof("  * %s (using %s) has IP address %s", label, c.ImageNameWithTag(), ipv4)
@@ -520,12 +520,12 @@ func RunCommands(config BuildConfiguration) ([]CommandTimer, error) {
 			if sandboxed {
 				log.Infoln("Running build in a sandbox!")
 				if err := ExecInSandbox(cmdString, targetDir); err != nil {
-					log.Infof("Failed to run %s: %v", cmdString, err)
+					log.Errorf("Failed to run %s: %v", cmdString, err)
 					stepError = err
 				}
 			} else {
 				if err := ExecToStdout(cmdString, targetDir); err != nil {
-					log.Infof("Failed to run %s: %v", cmdString, err)
+					log.Errorf("Failed to run %s: %v", cmdString, err)
 					stepError = err
 				}
 			}

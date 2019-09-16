@@ -102,7 +102,7 @@ func (b *ExecCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 
 	for _, cmdString := range instructions.Exec.Commands {
 		if err := ExecToStdout(cmdString, execDir); err != nil {
-			log.Infof("Failed to run %s: %v", cmdString, err)
+			log.Errorf("Failed to run %s: %v", cmdString, err)
 			return subcommands.ExitFailure
 		}
 	}
