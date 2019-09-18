@@ -114,12 +114,12 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 
 	buildData := NewBuildData()
 
-	if !b.NoSideContainer {
+	if !b.NoContainer {
 		target := primaryTarget
 		// Setup dependencies
 		containers := target.Dependencies.Containers
 
-		if len(containers) > 0 {
+		if len(containers) > 0 && !b.NoSideContainer {
 			contextId := fmt.Sprintf("%s-%s", targetPackage.Name, target.Name)
 			log.Infof("Starting %d containers with context id %s...", len(containers), contextId)
 			sc, err := NewServiceContextWithId(contextId, targetPackage, target.Dependencies.ContainerList())
