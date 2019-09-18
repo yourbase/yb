@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"strings"
 
 	"gopkg.in/src-d/go-git.v4"
@@ -9,36 +10,6 @@ import (
 
 	"github.com/yourbase/yb/plumbing/log"
 )
-
-/*
-type BestAncestorCmd struct {
-	target string
-}
-
-func (*BestAncestorCmd) Name() string { return "best-ancestor" }
-func (*BestAncestorCmd) Synopsis() string {
-	return "Finds de best common ancestor between HEAD and default remote's commit list"
-}
-func (p *BestAncestorCmd) SetFlags(f *flag.FlagSet) {}
-func (*BestAncestorCmd) Usage() string {
-	return "Build remotely using YB infrastructure"
-}
-
-func (b *BestAncestorCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	targetPackage, err := GetTargetPackage()
-	if err != nil {
-		log.Errorf("%v", err)
-		return subcommands.ExitFailure
-	}
-
-	repoDir := targetPackage.Path
-	repo, err := git.PlainOpen(repoDir)
-	commonHash := fastFindAncestor(repo)
-
-	log.Infof("Common ancestor is '%s'", commonHash.String())
-
-	return subcommands.ExitSuccess
-}*/
 
 func fastFindAncestor(r *git.Repository) (h plumbing.Hash, branchName string) {
 	/*
@@ -86,7 +57,7 @@ func fastFindAncestor(r *git.Repository) (h plumbing.Hash, branchName string) {
 	}
 
 	for i, ancestor := range commonAncestors {
-		log.Infof("Ancestor #%d: %v", i, ancestor)
+		log.Infof("Merge-base commit #%d: %v", i, strings.ReplaceAll(fmt.Sprintf("%12s (...)", ancestor.Message), "\n", ""))
 	}
 	// For now we'll return the first one
 	if len(commonAncestors) > 0 {

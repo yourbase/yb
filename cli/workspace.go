@@ -77,8 +77,6 @@ func (w *workspaceLocationCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...
 		fmt.Println(ws.Root()) // No logging used, because this can be used by scripts
 		return subcommands.ExitSuccess
 	}
-
-	return subcommands.ExitFailure
 }
 
 // CREATION

@@ -32,6 +32,7 @@ const TIME_FORMAT = "15:04:05 MST"
 type BuildCmd struct {
 	ExecPrefix       string
 	NoContainer      bool
+	NoSideContainer  bool
 	DependenciesOnly bool
 	ReuseContainers  bool
 }
@@ -63,6 +64,7 @@ func (b *BuildCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&b.DependenciesOnly, "deps-only", false, "Install only dependencies, don't do anything else")
 	f.StringVar(&b.ExecPrefix, "exec-prefix", "", "Add a prefix to all executed commands (useful for timing or wrapping things)")
 	f.BoolVar(&b.ReuseContainers, "reuse-containers", true, "Reuse the container for building")
+	f.BoolVar(&b.NoSideContainer, "no-side-container", false, "Don't run/create any side container")
 }
 
 func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
@@ -112,7 +114,7 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 
 	buildData := NewBuildData()
 
-	if !b.NoContainer {
+	if !b.NoSideContainer {
 		target := primaryTarget
 		// Setup dependencies
 		containers := target.Dependencies.Containers
@@ -702,7 +704,7 @@ func (b BuildData) EnvironmentVariables() []string {
 
 // TODO: non-linux things too
 func DownloadYB() (string, error) {
-	downloadUrl := "https://bin.equinox.io/a/7cFsiXnULxA/yb-0.0.33-linux-amd64.tar.gz"
+	downloadUrl := "https://bin.equinox.io/a/7G9uDXWDjh8/yb-0.0.39-linux-amd64.tar.gz"
 	currentPath, _ := filepath.Abs(".")
 	tmpPath := filepath.Join(currentPath, ".yb-tmp")
 	MkdirAsNeeded(tmpPath)

@@ -144,6 +144,12 @@ type TokenResponse struct {
 	TokenOK bool `json:"token_ok"`
 }
 
+type WorktreeSave struct {
+	Hash  string
+	Path  string
+	Files []string
+}
+
 type CommandTimer struct {
 	Command   string
 	StartTime time.Time

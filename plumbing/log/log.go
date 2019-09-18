@@ -108,6 +108,10 @@ func (f *YbFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	return []byte(entry.Message), nil
 }
 
+func CheckIfTerminal() bool {
+	return checkIfTerminal(log.Out)
+}
+
 func checkIfTerminal(w io.Writer) bool {
 	switch v := w.(type) {
 	case *os.File:

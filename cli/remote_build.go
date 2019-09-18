@@ -11,12 +11,12 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/beholders-eye/diffparser"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	"github.com/johnewart/subcommands"
@@ -24,7 +24,6 @@ import (
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
-	"gopkg.in/src-d/go-git.v4/plumbing/storer"
 
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
@@ -161,181 +160,176 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		return subcommands.ExitFailure
 	}
 
-	log.Debugf("Cloning repo %s, using branch '%s'", remote.Url, remote.Branch)
+	ancestorRef, branch := fastFindAncestor(workRepo)
+	p.branch = branch
 
-	clonedRepo, err := CloneRepository(remote, true, "")
-	if err != nil {
-		if strings.Count(err.Error(), "SSH") > 0 {
-			log.Errorf("Unable to clone: '%v'", err)
-			return subcommands.ExitFailure
-		}
-
-		log.Warnf("Unable to clone branch '%v': '%v'. Cloning master...", remote.Branch, err)
-
-		remote.Branch = "master"
-		clonedRepo, err = CloneRepository(remote, true, "")
-		if err != nil {
-			log.Errorf("Unable to clone using the master branch: %v", err)
-			return subcommands.ExitFailure
-		}
-		p.branch = "master"
-		log.Infoln("Cloned remote master branch")
-	} else {
-		p.branch = remote.Branch
-		log.Infof("Cloned remote %s branch", remote.Branch)
-	}
-
-	targetSet := commitSet(workRepo)
-	if targetSet == nil {
-		log.Errorf("Couldn't build a commit set for comparing")
-		return subcommands.ExitFailure
-	}
-	commonAncestor := p.findCommonAncestor(clonedRepo, targetSet)
-
-	// Commit workRepo local changes to the cloned in-memory repository
 	worktree, err := workRepo.Worktree() // current worktree
 	if err != nil {
 		log.Errorf("Couldn't get current worktree: %v", err)
 		return subcommands.ExitFailure
 	}
 
-	clonedWorktree, err := clonedRepo.Worktree() // temporary worktree
-	if err != nil {
-		log.Errorf("Couldn't get cloned worktree: %v", err)
-		return subcommands.ExitFailure
-	}
-
-	clonedHead, _ := clonedRepo.Head()
-	latest := clonedHead.Hash()
-
-	clonedCommit, err := clonedRepo.CommitObject(commonAncestor)
-	if err != nil {
-		log.Errorf("Commit definition failed: %v", err)
-		return subcommands.ExitFailure
-	}
-
 	head, _ := workRepo.Head()
-	baseCommit, err := workRepo.CommitObject(head.Hash())
+	headCommit, err := workRepo.CommitObject(head.Hash())
 	if err != nil {
-		log.Errorf("Commit definition failed: %v", err)
+		log.Errorf("Couldn't find HEAD commit: %v", err)
 		return subcommands.ExitFailure
 	}
 
-	patch, err := clonedCommit.Patch(baseCommit)
+	// Show timing feedback and start tracking spent time
+	startTime := time.Now()
+	var patchProgress *Progress
+	patchErrored := func() {
+		if patchProgress != nil {
+			patchProgress.Fail()
+		}
+	}
+
+	if log.CheckIfTerminal() {
+		patchProgress = NewProgressSpinner("Generating patch")
+		patchProgress.Start()
+	} else {
+		log.Info("Generating patch...")
+	}
+	ancestorCommit, err := workRepo.CommitObject(ancestorRef)
+	patch, err := ancestorCommit.Patch(headCommit)
 	if err != nil {
+		patchErrored()
 		log.Errorf("Patch generation failed: %v", err)
 		return subcommands.ExitFailure
 	}
+	p.baseCommit = ancestorCommit.Hash.String()
+	// This is where the patch is actually generated see #278
 	p.patchData = []byte(patch.String())
 
 	if !p.committed {
-		// Apply changes that were committed
-		err = UnifiedPatchApply(patch.String(), clonedCommit, clonedWorktree, worktree, "")
-		if err != nil {
-			log.Errorf("Unable to apply local committed changes: %v", err)
-			return subcommands.ExitFailure
-		}
-
-		latest, err = commitTempChanges(clonedWorktree)
-		if err != nil {
-			log.Errorf("Commit to temporary cloned repository failed: %v", err)
-			return subcommands.ExitFailure
-		}
-
 		// Apply changes that weren't committed yet
 		status, err := worktree.Status()
 		if err != nil {
+			patchErrored()
 			log.Errorf("Couldn't get current worktree status: %v", err)
 			return subcommands.ExitFailure
+		}
+
+		saver, err := NewWorktreeSave(targetPackage.Path, headCommit.Hash.String())
+		if err != nil {
+			patchErrored()
+			log.Errorf("%s", err)
 		}
 
 		for n, s := range status {
 			// Deleted (staged removal or not)
 			if s.Worktree == git.Deleted || s.Staging == git.Deleted {
 
-				_, err := clonedWorktree.Remove(n)
+				_, err := worktree.Remove(n)
 				if err != nil {
-					log.Errorf("Unable to remove %s from the temporary cloned repository: %v", n, err)
+					patchErrored()
+					log.Errorf("Unable to remove %s: %v", n, err)
 					return subcommands.ExitFailure
 				}
 			} else if s.Worktree == git.Renamed || s.Staging == git.Renamed {
 
-				_, err = clonedWorktree.Move(s.Extra, n)
+				if err := saver.Add(n); err != nil {
+					patchErrored()
+					log.Errorf("Need to save state, but couldn't: %v", err)
+					return subcommands.ExitFailure
+				}
+
+				_, err = worktree.Move(s.Extra, n)
 				if err != nil {
-					log.Errorf("Unable to move %s -> %s in the temporary cloned repository: %v", s.Extra, n, err)
+					patchErrored()
+					log.Errorf("Unable to move %s -> %s: %v", s.Extra, n, err)
 					return subcommands.ExitFailure
 				}
 			} else {
-				// Copy contents from the workRepo fs to cloneRepo fs
-				originalFile, err := worktree.Filesystem.Open(n)
-				if err != nil {
-					log.Errorf("Unable to open %s on the work tree: %v", n, err)
+				if err := saver.Add(n); err != nil {
+					patchErrored()
+					log.Errorf("Need to save state, but couldn't: %v", err)
 					return subcommands.ExitFailure
 				}
 
-				newFile, err := clonedWorktree.Filesystem.Create(n)
+				// Add each detected change
+				_, err = worktree.Add(n)
 				if err != nil {
-					log.Errorf("Unable to open %s on the cloned tree: %v", n, err)
-					return subcommands.ExitFailure
-				}
-
-				_, err = io.Copy(newFile, originalFile)
-				if err != nil {
-					log.Errorf("Unable to copy %s: %v", n, err)
-					return subcommands.ExitFailure
-				}
-				_ = originalFile.Close()
-				_ = newFile.Close()
-
-				// Add each detected changed file to the clonedRepo index
-				_, err = clonedWorktree.Add(n)
-				if err != nil {
-					log.Errorf("Unable to add %s to the temporary cloned repository: %v", n, err)
+					patchErrored()
+					log.Errorf("Unable to add %s: %v", n, err)
 					return subcommands.ExitFailure
 				}
 			}
 		}
 
-		latest, err = commitTempChanges(clonedWorktree)
+		resetDone := false
+		// Save them before committing
+		if saveFile, err := saver.Save(); err != nil {
+			patchErrored()
+			log.Errorf("Unable to keep worktree changes, won't commit: %v", err)
+			return subcommands.ExitFailure
+		} else {
+			defer func(s string) {
+				if !resetDone {
+					if err := saver.Restore(s); err != nil {
+						log.Errorf("Unable to restore kept files at %v: %v\n     Please consider unarchiving yourself that package", saveFile, err)
+					} else {
+						_ = os.Remove(s)
+					}
+				} else {
+					_ = os.Remove(s)
+				}
+			}(saveFile)
+		}
+		latest, err := commitTempChanges(worktree, headCommit)
 		if err != nil {
 			log.Errorf("Commit to temporary cloned repository failed: %v", err)
+			patchErrored()
 			return subcommands.ExitFailure
 		}
 
-		baseCommit, err = clonedRepo.CommitObject(commonAncestor)
+		tempCommit, err := workRepo.CommitObject(latest)
 		if err != nil {
-			log.Errorf("Commit definition failed: %v", err)
+			log.Errorf("Can't find commit '%v': %v", latest, err)
+			patchErrored()
 			return subcommands.ExitFailure
 		}
 
-		tempCommit, err := clonedRepo.CommitObject(latest)
-		if err != nil {
-			log.Errorf("Commit definition failed: %v", err)
-			return subcommands.ExitFailure
-		}
-
-		patch, err = baseCommit.Patch(tempCommit)
+		patch, err = ancestorCommit.Patch(tempCommit)
 		if err != nil {
 			log.Errorf("Patch generation failed: %v", err)
+			patchErrored()
 			return subcommands.ExitFailure
 		}
 
-		//p.patchData = append(p.patchData, []byte(patch.String())...)
+		// This is where the patch is actually generated see #278
 		p.patchData = []byte(patch.String())
+
+		// Reset back to HEAD
+		if err := worktree.Reset(&git.ResetOptions{
+			Commit: headCommit.Hash,
+		}); err != nil {
+			log.Errorf("Unable to reset temporary commit: %v\n    Please try `git reset --hard HEAD~1`", err)
+		} else {
+			resetDone = true
+		}
 
 	}
 
 	if p.patchPath != "" {
-		if err := savePatch(p); err != nil {
-			log.Errorf("Unable to save copy of generated patch: %v", err)
-		} else {
-			log.Infof("Patch saved at: %v", p.patchPath)
+		if err := p.savePatch(); err != nil {
+			if patchProgress != nil {
+				fmt.Println()
+			}
+			log.Warningf("Unable to save copy of generated patch: %v", err)
 		}
 	}
+	// Show feedback: end of patch generation
+	endTime := time.Now()
+	patchTime := endTime.Sub(startTime)
+	if patchProgress != nil {
+		patchProgress.Success()
+	}
+	log.Infof("Patch finished at %s, taking %s", endTime.Format(TIME_FORMAT), patchTime)
 
 	if !p.dryRun {
-		log.Infoln("Submitting remote build")
-		err = submitBuild(project, p, target.Tags)
+		err = p.submitBuild(project, target.Tags)
 
 		if err != nil {
 			log.Errorf("Unable to submit build: %v", err)
@@ -348,13 +342,17 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	return subcommands.ExitSuccess
 }
 
-func commitTempChanges(w *git.Worktree) (latest plumbing.Hash, err error) {
+func commitTempChanges(w *git.Worktree, c *object.Commit) (latest plumbing.Hash, err error) {
+	if w == nil || c == nil {
+		err = fmt.Errorf("Needs a worktree and a commit object")
+		return
+	}
 	latest, err = w.Commit(
 		"YourBase remote build",
 		&git.CommitOptions{
 			Author: &object.Signature{
-				Name:  "YourBase",
-				Email: "robot@yourbase.io",
+				Name:  c.Author.Name,
+				Email: c.Author.Email,
 				When:  time.Now(),
 			},
 		},
@@ -442,26 +440,6 @@ func defineBranch(r *git.Repository, hintBranch string) (string, error) {
 	}
 }
 
-func defineCommit(r *git.Repository, commit string) (string, error) {
-
-	if commit == "" {
-		ref, err := r.Head()
-		if err != nil {
-			return "", fmt.Errorf("No Head: %v", err)
-		}
-
-		return ref.Hash().String(), nil
-	}
-
-	_, err := r.CommitObject(plumbing.NewHash(commit))
-
-	if err == plumbing.ErrObjectNotFound {
-		return "", fmt.Errorf("No commit %s found in the current dir git worktree: %v", commit, err)
-	}
-
-	return commit, nil
-}
-
 func (p *RemoteCmd) fetchProject(urls []string) (*Project, GitRemote, error) {
 	var empty GitRemote
 	v := url.Values{}
@@ -522,7 +500,7 @@ func (p *RemoteCmd) pickRemote(url string) (remote GitRemote) {
 	return
 }
 
-func savePatch(cmd *RemoteCmd) error {
+func (cmd *RemoteCmd) savePatch() error {
 
 	err := ioutil.WriteFile(cmd.patchPath, cmd.patchData, 0644)
 
@@ -533,219 +511,31 @@ func savePatch(cmd *RemoteCmd) error {
 	return nil
 }
 
-func applyPatch(file *diffparser.DiffFile, from string) (to string, err error) {
-	if file == nil {
-		return "", fmt.Errorf("Needs a file to process")
-	}
-	lines := strings.Split(from, "\n")
-	if len(lines) == 0 {
-		return "", fmt.Errorf("Won't process an empty string")
-	}
-	var unmatchedLines int64
-	for _, hunk := range file.Hunks {
-		idx := hunk.OrigRange.Start - 1
-		if idx < 0 {
-			return "", fmt.Errorf("Malformed patch, wrong start position (%d): %v\n", idx, strings.Join(file.Changes, "\n"))
-		}
-		for i, line := range hunk.OrigRange.Lines {
-			index := idx + i
-			passedLine := lines[index]
-			if !strings.EqualFold(line.Content, passedLine) {
-				unmatchedLines++
-			}
-		}
+func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) error {
 
-		before := lines[:idx]
-		after := lines[idx+hunk.OrigRange.Length:]
-		var result []string
-
-		for _, line := range hunk.WholeRange.Lines {
-			if line.Mode != diffparser.REMOVED {
-				result = append(result, line.Content)
-			}
-		}
-		newLines := append(before, result...)
-		newLines = append(newLines, after...)
-		lines = newLines
-	}
-	if unmatchedLines > 0 {
-		log.Debugf("%d unmatched lines in this file\n", unmatchedLines)
-	}
-	to = strings.Join(lines, "\n")
-
-	return
-}
-
-// TODO use to replace calling the `patch -p1 -i` commmand on the Build Agent
-// UnifiedPatchApply apply git formated patches to a local directory or and git.Worktree
-//   If the worktree isn't passsed it will try working on the local directory
-func UnifiedPatchApply(patch string, commit *object.Commit, w, originWorktree *git.Worktree, wd string) (patchError error) {
-	if commit == nil && w == nil && wd == "" {
-		return fmt.Errorf("Nowhere to apply the patch on, please pass a git commit + git worktree, or a workdir to work on files")
-	}
-
-	getCommitFileContents := func(file *diffparser.DiffFile) (contents string) {
-		tree, err := commit.Tree()
-		if err != nil {
-			patchError = fmt.Errorf("Unable to resolve commit tree: %v", err)
-			return ""
-		}
-		var workFile *object.File
-		switch file.Mode {
-		case diffparser.DELETED:
-			return ""
-		case diffparser.MODIFIED:
-			workFile, err = tree.File(file.OrigName)
-			if err != nil {
-				patchError = fmt.Errorf("Unable to retrieve tree entry %s: %v", file.OrigName, err)
-				return ""
-			}
-			contents, err = workFile.Contents()
-		case diffparser.NEW:
-			newFile, err := originWorktree.Filesystem.Open(file.NewName)
-			if err != nil {
-				patchError = fmt.Errorf("Unable to open %s on the work tree: %v", file.NewName, err)
-				return ""
-			}
-			newBytes := bytes.NewBuffer(nil)
-			_, err = io.Copy(newBytes, newFile)
-			contents = newBytes.String()
-			_ = newFile.Close()
-		}
-		if err != nil {
-			patchError = fmt.Errorf("Couldn't get contents of %s: %v", file.OrigName, err)
-			return ""
-		}
-		return
-	}
-
-	// Detect in the patch string (unified) which files were affected and how
-	diff, err := diffparser.Parse(patch)
-	if err != nil {
-		return fmt.Errorf("Generated patch parse failed: %v", err)
-	}
-
-	for _, file := range diff.Files {
-		//TODO move files (should be implemented in github.com/beholders-eye/diffparser)
-		switch file.Mode {
-		case diffparser.DELETED:
-			w.Remove(file.OrigName)
-		case diffparser.MOVED:
-			return fmt.Errorf("Not implemented yet")
-		default:
-			contents := getCommitFileContents(file)
-			if contents == "" && patchError != nil {
-				return fmt.Errorf("Unable to fetch contents from %s: %v", file, patchError)
-			}
-
-			var fixedContents string
-			if file.Mode == diffparser.MODIFIED {
-				fixedContents, err = applyPatch(file, contents)
-				if err != nil {
-					return fmt.Errorf("Apply Patch failed for <%s>: %v", file, err)
-				}
-			}
-
-			if w != nil {
-				newFile, err := w.Filesystem.Create(file.NewName)
-				if err != nil {
-					return fmt.Errorf("Unable to open %s on the cloned tree: %v", file.NewName, err)
-				}
-
-				var c string
-				if file.Mode == diffparser.MODIFIED {
-					c = fixedContents
-				} else {
-					c = contents
-				}
-				if _, err = newFile.Write([]byte(c)); err != nil {
-					return fmt.Errorf("Unable to write patch hunk to %s: %v", file.NewName, err)
-				}
-				_ = newFile.Close()
-
-				w.Add(file.NewName)
-			} else if wd != "" {
-				//TODO Change file contents directly on the directory
-				return fmt.Errorf("Not implemented")
-			}
-		}
-	}
-	return
-}
-
-func (cmd *RemoteCmd) findCommonAncestor(r *git.Repository, commits map[string]bool) plumbing.Hash {
-	if commits[cmd.baseCommit] {
-		// User requested specific commit
-		commit, err := r.CommitObject(plumbing.NewHash(cmd.baseCommit))
-		if err != nil {
-			log.Errorf("Couldn't find %s commit on remote cloned repository: %v", cmd.baseCommit, err)
-		} else {
-			return commit.Hash
+	startTime := time.Now()
+	var submitProgress *Progress
+	submitErrored := func() {
+		if submitProgress != nil {
+			submitProgress.Fail()
 		}
 	}
 
-	ref, err := r.Head()
-	if err != nil {
-		log.Debugf("No Head: %v", err)
+	if log.CheckIfTerminal() {
+		submitProgress = NewProgressSpinner("Submitting remote build")
+		submitProgress.Start()
 	}
-
-	commit, _ := r.CommitObject(ref.Hash())
-	commitIter, _ := r.Log(&git.LogOptions{From: commit.Hash})
-	var commonCommit *object.Commit
-
-	err = commitIter.ForEach(func(c *object.Commit) error {
-		hash := c.Hash.String()
-		log.Debugf("Considering %s -> %v...", hash, commits[hash])
-		if commits[hash] {
-			commonCommit = c
-			return storer.ErrStop
-		} else {
-			return nil
-		}
-	})
-	cmd.baseCommit = commonCommit.Hash.String()
-
-	return commonCommit.Hash
-
-}
-
-func commitSet(r *git.Repository) map[string]bool {
-	if r == nil {
-		log.Errorf("Error getting the repo")
-		return nil
-	}
-	ref, err := r.Head()
-
-	if err != nil {
-		log.Errorf("No Head: %v", err)
-		return nil
-	}
-
-	commit, _ := r.CommitObject(ref.Hash())
-	commitIter, _ := r.Log(&git.LogOptions{From: commit.Hash, Order: git.LogOrderCommitterTime})
-	hashSet := make(map[string]bool)
-
-	err = commitIter.ForEach(func(c *object.Commit) error {
-		hash := c.Hash.String()
-		hashSet[hash] = true
-		return nil
-	})
-
-	return hashSet
-
-}
-
-func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) error {
 
 	userToken, err := ybconfig.UserToken()
-
 	if err != nil {
+		submitErrored()
 		return err
 	}
 
 	patchBuffer := bytes.NewBuffer(cmd.patchData)
 
 	if err = CompressBuffer(patchBuffer); err != nil {
+		submitErrored()
 		return fmt.Errorf("Couldn't compress the patch file: %s", err)
 	}
 
@@ -796,14 +586,18 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
+		submitErrored()
 		return fmt.Errorf("Couldn't read response body: %s", err)
 	}
 	switch resp.StatusCode {
 	case 401:
+		submitErrored()
 		return fmt.Errorf("Unauthorized, authentication failed.\nPlease `yb login` again.")
 	case 400:
+		submitErrored()
 		return fmt.Errorf("Invalid data sent to the YB API")
 	case 500:
+		submitErrored()
 		return fmt.Errorf("Internal server error")
 	}
 
@@ -818,6 +612,13 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 	} else {
 		url = response
 	}
+
+	if submitProgress != nil {
+		submitProgress.Success()
+	}
+	endTime := time.Now()
+	submitTime := endTime.Sub(startTime)
+	log.Infof("Submission finished at %s, taking %s", endTime.Format(TIME_FORMAT), submitTime)
 
 	if strings.HasPrefix(url, "ws:") || strings.HasPrefix(url, "wss:") {
 		log.Infof("Build Log: %v", managementLogUrl(url, project.OrgSlug, project.Label))
@@ -858,8 +659,6 @@ func submitBuild(project *Project, cmd *RemoteCmd, tagMap map[string]string) err
 	} else {
 		return fmt.Errorf("Unable to stream build output!")
 	}
-
-	return nil
 
 }
 
