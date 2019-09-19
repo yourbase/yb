@@ -17,6 +17,7 @@ build_targets:
     environment:
       - CHANNEL=unstable
     commands:
+      - pip install awscli
       - bash release.sh 
 
   - name: preview_release

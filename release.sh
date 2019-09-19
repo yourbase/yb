@@ -59,6 +59,10 @@ tar zxvf release-tool-stable-linux-amd64.tgz
 	-ldflags "-X main.version=$VERSION -X 'main.date=$(date)'" \
 	"github.com/yourbase/${PROJECT}"
 
+if [ "${CHANNEL}" == "preview" ]; then
+    exit 0
+fi
+
 # Now releasing to S3
 echo "Releasing yb version ${VERSION}..."
 
