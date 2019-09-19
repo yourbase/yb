@@ -413,6 +413,29 @@ func postToApi(path string, formData url.Values) (*http.Response, error) {
 	return res, nil
 }
 
+func managementLogUrl(url, org, label string) string {
+	wsUrlRegexp := regexp.MustCompile(`^wss?://[^/]+/builds/([0-9a-f-]+)/progress$`)
+
+	if wsUrlRegexp.MatchString(url) {
+		submatches := wsUrlRegexp.FindStringSubmatch(url)
+		build := ""
+		if len(submatches) > 1 {
+			build = submatches[1]
+		}
+		if len(build) == 0 {
+			return ""
+		}
+
+		u, err := ybconfig.ManagementUrl(fmt.Sprintf("/%s/%s/builds/%s", org, label, build))
+		if err != nil {
+			log.Errorf("Unable to generate App Url: %v", err)
+		}
+
+		return u
+	}
+	return ""
+}
+
 func defineBranch(r *git.Repository, hintBranch string) (string, error) {
 
 	ref, err := r.Head()
@@ -520,7 +543,6 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 			submitProgress.Fail()
 		}
 	}
-
 	if log.CheckIfTerminal() {
 		submitProgress = NewProgressSpinner("Submitting remote build")
 		submitProgress.Start()
@@ -620,10 +642,22 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 	submitTime := endTime.Sub(startTime)
 	log.Infof("Submission finished at %s, taking %s", endTime.Format(TIME_FORMAT), submitTime)
 
+	startTime = time.Now()
+	var remoteProgress *Progress
+	remoteErrored := func() {
+		if remoteProgress != nil {
+			remoteProgress.Fail()
+		}
+	}
+	if log.CheckIfTerminal() {
+		remoteProgress = NewProgressSpinner("Setting up remote build")
+		remoteProgress.Start()
+	}
+
 	if strings.HasPrefix(url, "ws:") || strings.HasPrefix(url, "wss:") {
-		log.Infof("Build Log: %v", managementLogUrl(url, project.OrgSlug, project.Label))
 		conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), url)
 		if err != nil {
+			remoteErrored()
 			return fmt.Errorf("Cannot connect: %v", err)
 		} else {
 
@@ -634,8 +668,9 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 			}()
 
 			buildSuccess := false
+			buildSetupFinished := false
 			for {
-				msg, _, err := wsutil.ReadServerData(conn)
+				msg, control, err := wsutil.ReadServerData(conn)
 				if err != nil {
 					if err != io.EOF {
 						log.Errorf("Unstable connection: %v", err)
@@ -651,6 +686,20 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 						return nil
 					}
 				} else {
+					// This depends on build agent output
+					if control.IsData() && strings.Count(string(msg), "Streaming results from build") > 0 {
+						fmt.Println()
+					}
+					if control.IsData() && !buildSetupFinished && len(msg) > 0 && strings.Count(string(msg), "BUILD DATA PATCHING") > 0 {
+						buildSetupFinished = true
+						if remoteProgress != nil {
+							remoteProgress.Success()
+						}
+						endTime := time.Now()
+						setupTime := endTime.Sub(startTime)
+						log.Infof("Set up finished at %s, taking %s", endTime.Format(TIME_FORMAT), setupTime)
+						log.Infof("Build Log: %v", managementLogUrl(url, project.OrgSlug, project.Label))
+					}
 					fmt.Printf("%s", msg)
 					buildSuccess = strings.Count(string(msg), "-- BUILD SUCCEEDED --") > 0
 				}
@@ -660,27 +709,4 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 		return fmt.Errorf("Unable to stream build output!")
 	}
 
-}
-
-func managementLogUrl(url, org, label string) string {
-	wsUrlRegexp := regexp.MustCompile(`^wss?://[^/]+/builds/([0-9a-f-]+)/progress$`)
-
-	if wsUrlRegexp.MatchString(url) {
-		submatches := wsUrlRegexp.FindStringSubmatch(url)
-		build := ""
-		if len(submatches) > 1 {
-			build = submatches[1]
-		}
-		if len(build) == 0 {
-			return ""
-		}
-
-		u, err := ybconfig.ManagementUrl(fmt.Sprintf("/%s/%s/builds/%s", org, label, build))
-		if err != nil {
-			log.Errorf("Unable to generate App Url: %v", err)
-		}
-
-		return u
-	}
-	return ""
 }
