@@ -1,6 +1,7 @@
 dependencies:
   build:
     - go:1.12.9
+    - python:3.6
 
 build_targets:
   - name: default
@@ -16,18 +17,19 @@ build_targets:
     environment:
       - CHANNEL=unstable
     commands:
+      - pip install awscli
       - bash release.sh 
 
-  - name: development_release
+  - name: preview_release
     build_after:
       - default
     environment:
-      - CHANNEL=development
+      - CHANNEL=preview
     commands:
       - bash release.sh 
 
   - name: linux
-    build_after: 
+    build_after:
       - default
     tags:
       os: linux
@@ -38,6 +40,8 @@ build_targets:
       - go build -o yb-linux-amd64
 
   - name: darwin
+    build_after:
+      - default
     tags:
       os: darwin
     environment:
@@ -51,8 +55,8 @@ ci:
     - name: test_build
       build_target: default
 
-    - name: development_release
-      build_target: development_release
+    - name: preview_release
+      build_target: preview_release
       when: branch IS NOT 'master'
 
     - name: release
