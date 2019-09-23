@@ -6,12 +6,13 @@ import (
 
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing"
+	"gopkg.in/src-d/go-git.v4/plumbing/object"
 	"gopkg.in/src-d/go-git.v4/plumbing/storer"
 
 	"github.com/yourbase/yb/plumbing/log"
 )
 
-func fastFindAncestor(r *git.Repository) (h plumbing.Hash, branchName string) {
+func fastFindAncestor(r *git.Repository) (h plumbing.Hash, c int, branchName string) {
 	/*
 		go doc gopkg.in/src-d/go-git.v4/plumbing/object Commit.MergeBase
 
@@ -20,6 +21,7 @@ func fastFindAncestor(r *git.Repository) (h plumbing.Hash, branchName string) {
 		the best common ancestor between the actual and the passed one. The best
 		common ancestors can not be reached from other common ancestors.
 	*/
+	c = -1
 
 	ref, err := r.Head()
 	if err != nil {
@@ -30,6 +32,11 @@ func fastFindAncestor(r *git.Repository) (h plumbing.Hash, branchName string) {
 	remoteBranch := findRemoteBranch(ref, r)
 	branchName = ref.Name().Short()
 	if remoteBranch == nil {
+		if branchName == "master" {
+			// Well, we don't need to try it again
+			log.Errorln("Unable to find remote master branch")
+			return
+		}
 		//Search again, on master
 		ref, err = r.Reference(plumbing.NewBranchReferenceName("master"), false)
 		if err != nil {
@@ -62,6 +69,21 @@ func fastFindAncestor(r *git.Repository) (h plumbing.Hash, branchName string) {
 	// For now we'll return the first one
 	if len(commonAncestors) > 0 {
 		h = commonAncestors[0].Hash
+	}
+	// Count commits between head and 'h'
+	if commitIter, err := r.Log(&git.LogOptions{}); err != nil {
+		return
+	} else {
+		x := 0
+		_ = commitIter.ForEach(func(cmt *object.Commit) error {
+			x++
+			if cmt.Hash.String() == h.String() {
+				// Stop here
+				c = x
+				return storer.ErrStop
+			}
+			return nil
+		})
 	}
 
 	return

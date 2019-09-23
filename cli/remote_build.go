@@ -104,6 +104,22 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		return subcommands.ExitFailure
 	}
 
+	// Show timing feedback and start tracking spent time
+	startTime := time.Now()
+	var bootProgress *Progress
+	bootErrored := func() {
+		if bootProgress != nil {
+			bootProgress.Fail()
+		}
+	}
+
+	if log.CheckIfTerminal() {
+		bootProgress = NewProgressSpinner("Bootstrapping")
+		bootProgress.Start()
+	} else {
+		log.Info("Bootstrapping...")
+	}
+
 	list, err := workRepo.Remotes()
 
 	if err != nil {
@@ -123,17 +139,20 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	project, remote, err := p.fetchProject(repoUrls)
 
 	if err != nil {
+		bootErrored()
 		log.Errorf("Error fetching project metadata: %v", err)
 		return subcommands.ExitFailure
 	}
 
 	if !remote.Validate() {
+		bootErrored()
 		log.Errorf("Unable to pick the correct remote")
 		return subcommands.ExitFailure
 	}
 
 	if project.Repository == "" {
 		projectUrl, err := ybconfig.ManagementUrl(fmt.Sprintf("%s/%s", project.OrgSlug, project.Label))
+		bootErrored()
 		if err != nil {
 			log.Errorf("Unable to generate project URL: %v", err)
 			return subcommands.ExitFailure
@@ -156,15 +175,25 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	remote.Branch, err = defineBranch(workRepo, p.branch)
 	if err != nil {
+		bootErrored()
 		log.Errorf("Unable to define a branch: %v", err)
 		return subcommands.ExitFailure
 	}
 
-	ancestorRef, branch := fastFindAncestor(workRepo)
+	if bootProgress != nil {
+		fmt.Println()
+	}
+	ancestorRef, commitCount, branch := fastFindAncestor(workRepo)
+	if commitCount == -1 { // Error
+		bootErrored()
+		return subcommands.ExitFailure
+	}
 	p.branch = branch
+	p.baseCommit = ancestorRef.String()
 
 	worktree, err := workRepo.Worktree() // current worktree
 	if err != nil {
+		bootErrored()
 		log.Errorf("Couldn't get current worktree: %v", err)
 		return subcommands.ExitFailure
 	}
@@ -172,12 +201,19 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	head, _ := workRepo.Head()
 	headCommit, err := workRepo.CommitObject(head.Hash())
 	if err != nil {
+		bootErrored()
 		log.Errorf("Couldn't find HEAD commit: %v", err)
 		return subcommands.ExitFailure
 	}
+	// Show feedback: end of patch generation
+	endTime := time.Now()
+	bootTime := endTime.Sub(startTime)
+	if bootProgress != nil {
+		bootProgress.Success()
+	}
+	log.Infof("Bootstrap finished at %s, taking %s", endTime.Format(TIME_FORMAT), bootTime)
 
-	// Show timing feedback and start tracking spent time
-	startTime := time.Now()
+	startTime = time.Now()
 	var patchProgress *Progress
 	patchErrored := func() {
 		if patchProgress != nil {
@@ -186,10 +222,10 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	if log.CheckIfTerminal() {
-		patchProgress = NewProgressSpinner("Generating patch")
+		patchProgress = NewProgressSpinner("Generating patch for %d commits", commitCount)
 		patchProgress.Start()
 	} else {
-		log.Info("Generating patch...")
+		log.Infof("Generating patch for %d commits...", commitCount)
 	}
 	ancestorCommit, err := workRepo.CommitObject(ancestorRef)
 	patch, err := ancestorCommit.Patch(headCommit)
@@ -198,7 +234,6 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		log.Errorf("Patch generation failed: %v", err)
 		return subcommands.ExitFailure
 	}
-	p.baseCommit = ancestorCommit.Hash.String()
 	// This is where the patch is actually generated see #278
 	p.patchData = []byte(patch.String())
 
@@ -268,7 +303,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			defer func(s string) {
 				if !resetDone {
 					if err := saver.Restore(s); err != nil {
-						log.Errorf("Unable to restore kept files at %v: %v\n     Please consider unarchiving yourself that package", saveFile, err)
+						log.Errorf("Unable to restore kept files at %v: %v\n     Please consider unarchiving that package", saveFile, err)
 					} else {
 						_ = os.Remove(s)
 					}
@@ -321,7 +356,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 	}
 	// Show feedback: end of patch generation
-	endTime := time.Now()
+	endTime = time.Now()
 	patchTime := endTime.Sub(startTime)
 	if patchProgress != nil {
 		patchProgress.Success()
@@ -667,6 +702,7 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 				}
 			}()
 
+			// TODO Prometheus based telemetry of how well the CLI behaves
 			buildSuccess := false
 			buildSetupFinished := false
 			for {
