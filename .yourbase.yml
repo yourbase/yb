@@ -57,7 +57,7 @@ ci:
 
     - name: preview_release
       build_target: preview_release
-      when: branch IS NOT 'master'
+      when: branch IS NOT 'master' AND tagged IS false
 
     - name: release
       build_target: release

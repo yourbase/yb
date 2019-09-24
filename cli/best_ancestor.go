@@ -64,7 +64,7 @@ func fastFindAncestor(r *git.Repository) (h plumbing.Hash, c int, branchName str
 	}
 
 	for i, ancestor := range commonAncestors {
-		log.Infof("Merge-base commit #%d: %v", i, strings.ReplaceAll(fmt.Sprintf("%12s (...)", ancestor.Message), "\n", ""))
+		log.Infof("Merge-base commit #%d '%v': %v", i, ancestor.Hash.String(), strings.ReplaceAll(fmt.Sprintf("%12s (...)", ancestor.Message), "\n", ""))
 	}
 	// For now we'll return the first one
 	if len(commonAncestors) > 0 {

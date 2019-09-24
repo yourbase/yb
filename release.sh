@@ -27,7 +27,7 @@ if [ "${CHANNEL}" == "preview" ]; then
   VERSION="$(date +"%Y%m%d%H%M%S")"
 elif [ "${CHANNEL}" == "stable" ]; then
   echo "To promote to stable, use the equinox release tool:"
-  echo '$ equinox publish --token $TOKEN --app $APP  --channel stable --release 0.0.40'
+  echo '$ equinox publish --token $TOKEN --app $APP  --channel stable --release $VERSION'
   exit 0
 fi
 
