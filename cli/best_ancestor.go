@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"gopkg.in/src-d/go-git.v4"
@@ -70,6 +71,25 @@ func fastFindAncestor(r *git.Repository) (h plumbing.Hash, c int, branchName str
 	if len(commonAncestors) > 0 {
 		h = commonAncestors[0].Hash
 	}
+
+	// Show remote name from branch complete name
+	remoteName := remoteBranch.Name().String()
+	remoteRefRegexp := regexp.MustCompile(`refs/remotes/(\w+)/(\w+)`)
+
+	if remoteRefRegexp.MatchString(remoteName) {
+		submatches := remoteRefRegexp.FindStringSubmatch(remoteName)
+
+		if len(submatches) > 1 {
+			remoteInfo := submatches[1]
+			if config, err := r.Config(); err == nil {
+				remoteInfo = fmt.Sprintf("\"%s [ %s ]\"", remoteInfo, config.Remotes[submatches[1]].URLs[0])
+			}
+			log.Infof("Remote found for branch '%v': %v", branchName, remoteInfo)
+		} else {
+			log.Errorf("Unable to parse remote branch '%v'", branchName)
+		}
+	}
+
 	// Count commits between head and 'h'
 	if commitIter, err := r.Log(&git.LogOptions{}); err != nil {
 		return
