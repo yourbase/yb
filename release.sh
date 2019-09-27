@@ -56,7 +56,7 @@ tar zxvf release-tool-stable-linux-amd64.tgz
         --token="${TOKEN}" \
         --channel="${CHANNEL}" \
 	-- \
-	-ldflags "-X main.version=$VERSION -X 'main.date=$(date)'" \
+	-ldflags "-X main.version=$VERSION -X 'main.date=$(date)' -X main.channel=$CHANNEL" \
 	"github.com/yourbase/${PROJECT}"
 
 if [ "${CHANNEL}" == "preview" ]; then
@@ -76,7 +76,7 @@ for os in "${OSLIST[@]}"
 do
   for arch in "${ARCHLIST[@]}"
   do
-    GOOS=${os} GOARCH=${arch} go build -ldflags "-X 'github.com/yourbase/yb/main.version=$VERSION' -X 'github.com/yourbase/yb/main.buildDate=$(date)'" -o release/yb-${os}-${arch}
+    GOOS=${os} GOARCH=${arch} go build -ldflags "-X 'main.version=$VERSION' -X 'main.buildDate=$(date)' -X 'main.channel=$CHANNEL'" -o release/yb-${os}-${arch}
   done
 done
 

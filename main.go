@@ -8,10 +8,12 @@ import (
 	"path"
 
 	. "github.com/yourbase/yb/cli"
+	//. "github.com/yourbase/yb/server"
 )
 
 var (
 	version string = "DEVELOPMENT"
+	channel string
 	date    string
 )
 
@@ -31,7 +33,11 @@ func main() {
 	cmdr.Register(&RunCmd{}, "")
 	cmdr.Register(&UpdateCmd{}, "")
 	cmdr.Register(&WorkspaceCmd{}, "")
-	cmdr.Register(&VersionCmd{Version: version}, "")
+	cmdr.Register(&VersionCmd{Version: version, Channel: channel}, "")
+
+	// Experimental:
+	// TODO maybe enable Prometheus telemetry using this
+	// DaemonKickoff()
 
 	flag.Parse()
 	ctx := context.Background()

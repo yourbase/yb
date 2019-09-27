@@ -53,7 +53,7 @@ func (w *WorktreeSave) Restore(pkgFile string) (err error) {
 
 func NewWorktreeSave(path string, hash string) (w *WorktreeSave, err error) {
 	if !pathExists(path) {
-		err = fmt.Errorf("Path %v, for saving worktree state, doesn't exist", path)
+		err = fmt.Errorf("Path '%v', for saving worktree state, doesn't exist", path)
 		return
 	}
 

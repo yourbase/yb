@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -32,6 +33,11 @@ import (
 	ybconfig "github.com/yourbase/yb/config"
 )
 
+var (
+	gitExe       string = "git" // UNIX
+	gitStatusCmd string = "%s status -s --porcelain"
+)
+
 type RemoteCmd struct {
 	target         string
 	baseCommit     string
@@ -39,6 +45,8 @@ type RemoteCmd struct {
 	patchData      []byte
 	patchPath      string
 	repoDir        string
+	printStatus    bool
+	goGitStatus    bool
 	noAcceleration bool
 	disableCache   bool
 	disableSkipper bool
@@ -62,6 +70,8 @@ func (p *RemoteCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.disableSkipper, "disable-skipper", false, "Disable skipping steps acceleration")
 	f.BoolVar(&p.dryRun, "dry-run", false, "Pretend to remote build")
 	f.BoolVar(&p.committed, "committed", false, "Only remote build committed changes")
+	f.BoolVar(&p.printStatus, "print-status", false, "Print result of `git status` used to grab untracked/unstaged changes")
+	f.BoolVar(&p.goGitStatus, "go-git-status", false, "Use internal go-git.v4 status instead of calling `git status`, can be slow")
 }
 
 func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
@@ -102,6 +112,23 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	if err != nil {
 		log.Errorf("Error opening repository %s: %v", p.repoDir, err)
 		return subcommands.ExitFailure
+	}
+
+	if !p.goGitStatus && !p.committed {
+		// Need to check if `git` binary exists and works
+		if runtime.GOOS == "windows" {
+			gitExe = "git.exe"
+		}
+		cmdString := fmt.Sprintf("%s --version", gitExe)
+		if err := ExecSilently(cmdString, p.repoDir); err != nil {
+			if strings.Contains(err.Error(), "executable file not found in $PATH") {
+				log.Warnf("The flag -go-git-status wasn't specified and '%s' wasn't found in PATH", gitExe)
+			} else {
+				log.Warnf("The flag -go-git-status wasn't specified but calling '%s' gives: %v", cmdString, err)
+			}
+			log.Warn("Switching to using internal go-git status to detect local changes, it can be slower")
+			p.goGitStatus = true
+		}
 	}
 
 	// Show timing feedback and start tracking spent time
@@ -191,13 +218,6 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	p.branch = branch
 	p.baseCommit = ancestorRef.String()
 
-	worktree, err := workRepo.Worktree() // current worktree
-	if err != nil {
-		bootErrored()
-		log.Errorf("Couldn't get current worktree: %v", err)
-		return subcommands.ExitFailure
-	}
-
 	head, _ := workRepo.Head()
 	headCommit, err := workRepo.CommitObject(head.Hash())
 	if err != nil {
@@ -205,7 +225,14 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		log.Errorf("Couldn't find HEAD commit: %v", err)
 		return subcommands.ExitFailure
 	}
-	// Show feedback: end of patch generation
+	ancestorCommit, err := workRepo.CommitObject(ancestorRef)
+	if err != nil {
+		bootErrored()
+		log.Errorf("Couldn't find merge-base commit: %v", err)
+		return subcommands.ExitFailure
+	}
+
+	// Show feedback: end of bootstrap
 	endTime := time.Now()
 	bootTime := endTime.Sub(startTime)
 	if bootProgress != nil {
@@ -213,23 +240,24 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 	log.Infof("Bootstrap finished at %s, taking %s", endTime.Format(TIME_FORMAT), bootTime)
 
-	if headCommit.Hash.String() != p.baseCommit {
-		// Process patches
-		startTime = time.Now()
-		var patchProgress *Progress
-		patchErrored := func() {
-			if patchProgress != nil {
-				patchProgress.Fail()
-			}
+	// Process patches
+	startTime = time.Now()
+	var patchProgress *Progress
+	patchErrored := func() {
+		if patchProgress != nil {
+			patchProgress.Fail()
 		}
+	}
 
+	pGenerationChan := make(chan bool)
+	if headCommit.Hash.String() != p.baseCommit {
 		if log.CheckIfTerminal() {
 			patchProgress = NewProgressSpinner("Generating patch for %d commits", commitCount)
 			patchProgress.Start()
 		} else {
 			log.Infof("Generating patch for %d commits...", commitCount)
 		}
-		ancestorCommit, err := workRepo.CommitObject(ancestorRef)
+
 		patch, err := ancestorCommit.Patch(headCommit)
 		if err != nil {
 			patchErrored()
@@ -237,136 +265,112 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			return subcommands.ExitFailure
 		}
 		// This is where the patch is actually generated see #278
-		p.patchData = []byte(patch.String())
+		go func(ch chan<- bool) {
+			p.patchData = []byte(patch.String())
+			ch <- true
+		}(pGenerationChan)
+	} else if !p.committed {
+		// Apply changes that weren't committed yet
+		worktree, err := workRepo.Worktree() // current worktree
+		if err != nil {
+			patchErrored()
+			log.Errorf("Couldn't get current worktree: %v", err)
+			return subcommands.ExitFailure
+		}
 
-		if !p.committed {
-			// Apply changes that weren't committed yet
-			status, err := worktree.Status()
-			if err != nil {
+		if log.CheckIfTerminal() {
+			patchProgress = NewProgressSpinner("Generating patch for local changes")
+			patchProgress.Start()
+		} else {
+			log.Info("Generating patch for local changes")
+		}
+
+		saver, err := NewWorktreeSave(targetPackage.Path, headCommit.Hash.String())
+		if err != nil {
+			patchErrored()
+			log.Errorf("%s", err)
+		}
+
+		// TODO When go-git worktree.Status() get faster use this instead:
+		// There's also the problem detecting CRLF in Windows text/source files
+		//if err = worktree.AddGlob("."); err != nil {
+		if err = p.traverseChanges(worktree, saver); err != nil {
+			log.Errorf("%v", err)
+			patchErrored()
+			return subcommands.ExitFailure
+		}
+
+		resetDone := false
+		if len(saver.Files) > 0 {
+			// Save them before committing
+			if saveFile, err := saver.Save(); err != nil {
 				patchErrored()
-				log.Errorf("Couldn't get current worktree status: %v", err)
+				log.Errorf("Unable to keep worktree changes, won't commit: %v", err)
 				return subcommands.ExitFailure
-			}
-
-			saver, err := NewWorktreeSave(targetPackage.Path, headCommit.Hash.String())
-			if err != nil {
-				patchErrored()
-				log.Errorf("%s", err)
-			}
-
-			for n, s := range status {
-				// Deleted (staged removal or not)
-				if s.Worktree == git.Deleted || s.Staging == git.Deleted {
-
-					_, err := worktree.Remove(n)
-					if err != nil {
-						patchErrored()
-						log.Errorf("Unable to remove %s: %v", n, err)
-						return subcommands.ExitFailure
-					}
-				} else if s.Worktree == git.Renamed || s.Staging == git.Renamed {
-
-					if err := saver.Add(n); err != nil {
-						patchErrored()
-						log.Errorf("Need to save state, but couldn't: %v", err)
-						return subcommands.ExitFailure
-					}
-
-					_, err = worktree.Move(s.Extra, n)
-					if err != nil {
-						patchErrored()
-						log.Errorf("Unable to move %s -> %s: %v", s.Extra, n, err)
-						return subcommands.ExitFailure
-					}
-				} else {
-					if err := saver.Add(n); err != nil {
-						patchErrored()
-						log.Errorf("Need to save state, but couldn't: %v", err)
-						return subcommands.ExitFailure
-					}
-
-					// Add each detected change
-					_, err = worktree.Add(n)
-					if err != nil {
-						patchErrored()
-						log.Errorf("Unable to add %s: %v", n, err)
-						return subcommands.ExitFailure
-					}
-				}
-			}
-
-			resetDone := false
-			if len(saver.Files) > 0 {
-				// Save them before committing
-				if saveFile, err := saver.Save(); err != nil {
-					patchErrored()
-					log.Errorf("Unable to keep worktree changes, won't commit: %v", err)
-					return subcommands.ExitFailure
-				} else {
-					defer func(s string) {
-						if !resetDone {
-							if err := saver.Restore(s); err != nil {
-								log.Errorf("Unable to restore kept files at %v: %v\n     Please consider unarchiving that package", saveFile, err)
-							} else {
-								_ = os.Remove(s)
-							}
+			} else {
+				defer func(s string) {
+					if !resetDone {
+						if err := saver.Restore(s); err != nil {
+							log.Errorf("Unable to restore kept files at %v: %v\n     Please consider unarchiving that package", saveFile, err)
 						} else {
 							_ = os.Remove(s)
 						}
-					}(saveFile)
-				}
-			}
-
-			latest, err := commitTempChanges(worktree, headCommit)
-			if err != nil {
-				log.Errorf("Commit to temporary cloned repository failed: %v", err)
-				patchErrored()
-				return subcommands.ExitFailure
-			}
-
-			tempCommit, err := workRepo.CommitObject(latest)
-			if err != nil {
-				log.Errorf("Can't find commit '%v': %v", latest, err)
-				patchErrored()
-				return subcommands.ExitFailure
-			}
-
-			patch, err = ancestorCommit.Patch(tempCommit)
-			if err != nil {
-				log.Errorf("Patch generation failed: %v", err)
-				patchErrored()
-				return subcommands.ExitFailure
-			}
-
-			// This is where the patch is actually generated see #278
-			p.patchData = []byte(patch.String())
-
-			// Reset back to HEAD
-			if err := worktree.Reset(&git.ResetOptions{
-				Commit: headCommit.Hash,
-			}); err != nil {
-				log.Errorf("Unable to reset temporary commit: %v\n    Please try `git reset --hard HEAD~1`", err)
-			} else {
-				resetDone = true
-			}
-
-		}
-
-		if p.patchPath != "" {
-			if err := p.savePatch(); err != nil {
-				if patchProgress != nil {
-					fmt.Println()
-				}
-				log.Warningf("Unable to save copy of generated patch: %v", err)
+					} else {
+						_ = os.Remove(s)
+					}
+				}(saveFile)
 			}
 		}
-		// Show feedback: end of patch generation
-		endTime = time.Now()
-		patchTime := endTime.Sub(startTime)
-		if patchProgress != nil {
-			patchProgress.Success()
+
+		latest, err := commitTempChanges(worktree, headCommit)
+		if err != nil {
+			log.Errorf("Commit to temporary cloned repository failed: %v", err)
+			patchErrored()
+			return subcommands.ExitFailure
 		}
-		log.Infof("Patch finished at %s, taking %s", endTime.Format(TIME_FORMAT), patchTime)
+
+		tempCommit, err := workRepo.CommitObject(latest)
+		if err != nil {
+			log.Errorf("Can't find commit '%v': %v", latest, err)
+			patchErrored()
+			return subcommands.ExitFailure
+		}
+
+		patch, err := ancestorCommit.Patch(tempCommit)
+		if err != nil {
+			log.Errorf("Patch generation failed: %v", err)
+			patchErrored()
+			return subcommands.ExitFailure
+		}
+
+		// This is where the patch is actually generated see #278
+		p.patchData = []byte(patch.String())
+
+		// Reset back to HEAD
+		if err := worktree.Reset(&git.ResetOptions{
+			Commit: headCommit.Hash,
+		}); err != nil {
+			log.Errorf("Unable to reset temporary commit: %v\n    Please try `git reset --hard HEAD~1`", err)
+		} else {
+			resetDone = true
+		}
+
+	}
+
+	// Show feedback: end of patch generation
+	endTime = time.Now()
+	patchTime := endTime.Sub(startTime)
+	if patchProgress != nil {
+		patchProgress.Success()
+	}
+	log.Infof("Patch finished at %s, taking %s", endTime.Format(TIME_FORMAT), patchTime)
+	if len(p.patchPath) > 0 && len(p.patchData) > 0 {
+		if err := p.savePatch(); err != nil {
+			if patchProgress != nil {
+				fmt.Println()
+			}
+			log.Warningf("Unable to save copy of generated patch: %v", err)
+		}
 	}
 
 	if !p.dryRun {
@@ -399,6 +403,116 @@ func commitTempChanges(w *git.Worktree, c *object.Commit) (latest plumbing.Hash,
 		},
 	)
 	return
+}
+
+func (p *RemoteCmd) traverseChanges(worktree *git.Worktree, saver *WorktreeSave) (err error) {
+	if p.goGitStatus {
+		err = p.libTraverseChanges(worktree, saver)
+	} else {
+		err = p.commandTraverseChanges(worktree, saver)
+	}
+	return
+}
+
+func (p *RemoteCmd) commandTraverseChanges(worktree *git.Worktree, saver *WorktreeSave) (err error) {
+	// TODO When go-git worktree.Status() works faster, we'll disable this
+	// Get worktree path
+	repoDir := worktree.Filesystem.Root()
+	cmdString := fmt.Sprintf(gitStatusCmd, gitExe)
+	buf := bytes.NewBuffer(nil)
+	if err = ExecSilentlyToWriter(cmdString, repoDir, buf); err != nil {
+		return fmt.Errorf("When running git status: %v", err)
+	}
+
+	if buf.Len() > 0 {
+		if p.printStatus {
+			fmt.Println()
+			fmt.Print(buf.String())
+		}
+		for {
+			if line, err := buf.ReadString('\n'); len(line) > 4 && err == nil { // Line should have at least 4 chars
+				line = strings.Trim(line, "\n")
+				log.Tracef("Processing git status line:\n%s", line)
+				mode := line[:2]
+				file := line[3:]
+				modUnstagedMap := map[byte]bool{'?': true, 'M': true, 'D': true, 'R': true} // 'R' isn't really found at mode[1], but...
+
+				// Unstaged modifications of any kind
+				if modUnstagedMap[mode[1]] {
+					log.Tracef("Adding %s to the index", file)
+					// Add each detected change
+					if _, err = worktree.Add(file); err != nil {
+						return fmt.Errorf("Unable to add %s: %v", file, err)
+					}
+
+					if mode[1] != 'D' {
+						// No need to add deletion to the saver, right?
+						log.Tracef("Saving %s to the tarball", file)
+						if err = saver.Add(file); err != nil {
+							return fmt.Errorf("Need to save state, but couldn't: %v", err)
+						}
+					}
+
+				}
+				// discard len(line) bytes
+				//discard := make([]byte, len(line))
+				//_, _ = buf.Read(discard)
+
+			} else if err == io.EOF {
+				break
+			} else if err != nil {
+				return fmt.Errorf("When running git status: %v", err)
+			}
+		}
+	}
+	return
+}
+func (p *RemoteCmd) libTraverseChanges(worktree *git.Worktree, saver *WorktreeSave) (err error) {
+	// This could get real slow, check https://github.com/src-d/go-git/issues/844
+	status, err := worktree.Status()
+	if err != nil {
+		log.Errorf("Couldn't get current worktree status: %v", err)
+		return
+	}
+
+	if p.printStatus {
+		fmt.Println()
+		fmt.Print(status.String())
+	}
+	for n, s := range status {
+		log.Tracef("Checking status %v", n)
+		// Deleted (staged removal or not)
+		if s.Worktree == git.Deleted {
+
+			if _, err = worktree.Remove(n); err != nil {
+				return fmt.Errorf("Unable to remove %s: %v", n, err)
+			}
+		} else if s.Staging == git.Deleted {
+			// Ignore it
+		} else if s.Worktree == git.Renamed || s.Staging == git.Renamed {
+
+			log.Tracef("Saving %s to the tarball", n)
+			if err = saver.Add(n); err != nil {
+				return fmt.Errorf("Need to save state, but couldn't: %v", err)
+			}
+
+			if _, err = worktree.Move(s.Extra, n); err != nil {
+				return fmt.Errorf("Unable to move %s -> %s: %v", s.Extra, n, err)
+			}
+		} else {
+			log.Tracef("Saving %s to the tarball", n)
+			if err = saver.Add(n); err != nil {
+				return fmt.Errorf("Need to save state, but couldn't: %v", err)
+			}
+
+			// Add each detected change
+			if _, err = worktree.Add(n); err != nil {
+				return fmt.Errorf("Unable to add %s: %v", n, err)
+			}
+		}
+	}
+	return
+
 }
 
 func postJsonToApi(path string, jsonData []byte) (*http.Response, error) {
@@ -735,7 +849,7 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 						return nil
 					}
 				} else {
-					// This depends on build agent output
+					// TODO This depends on build agent output, try to structure this better
 					if control.IsData() && strings.Count(string(msg), "Streaming results from build") > 0 {
 						fmt.Println()
 					} else if control.IsData() && !buildSetupFinished && len(msg) > 0 {

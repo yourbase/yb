@@ -23,7 +23,7 @@ func (p *VersionCmd) SetFlags(f *flag.FlagSet) {
 }
 
 func (p *VersionCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	versionString := fmt.Sprintf("Version: %s channel: %s", p.Version, p.Channel)
+	versionString := fmt.Sprintf("Version: %s Channel: %s", p.Version, p.Channel)
 	fmt.Println(versionString)
 	return subcommands.ExitSuccess
 }
