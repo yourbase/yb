@@ -238,7 +238,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	if bootProgress != nil {
 		bootProgress.Success()
 	}
-	log.Infof("Bootstrap finished at %s, taking %s", endTime.Format(TIME_FORMAT), bootTime)
+	log.Infof("Bootstrap finished at %s, taking %s", endTime.Format(TIME_FORMAT), bootTime.Truncate(time.Millisecond))
 
 	// Process patches
 	startTime = time.Now()
@@ -363,7 +363,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	if patchProgress != nil {
 		patchProgress.Success()
 	}
-	log.Infof("Patch finished at %s, taking %s", endTime.Format(TIME_FORMAT), patchTime)
+	log.Infof("Patch finished at %s, taking %s", endTime.Format(TIME_FORMAT), patchTime.Truncate(time.Millisecond))
 	if len(p.patchPath) > 0 && len(p.patchData) > 0 {
 		if err := p.savePatch(); err != nil {
 			if patchProgress != nil {
@@ -805,7 +805,7 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 	}
 	endTime := time.Now()
 	submitTime := endTime.Sub(startTime)
-	log.Infof("Submission finished at %s, taking %s", endTime.Format(TIME_FORMAT), submitTime)
+	log.Infof("Submission finished at %s, taking %s", endTime.Format(TIME_FORMAT), submitTime.Truncate(time.Millisecond))
 
 	startTime = time.Now()
 	var remoteProgress *Progress
@@ -859,7 +859,7 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 						}
 						endTime := time.Now()
 						setupTime := endTime.Sub(startTime)
-						log.Infof("Set up finished at %s, taking %s", endTime.Format(TIME_FORMAT), setupTime)
+						log.Infof("Set up finished at %s, taking %s", endTime.Format(TIME_FORMAT), setupTime.Truncate(time.Millisecond))
 						log.Infof("Build Log: %v", managementLogUrl(url, project.OrgSlug, project.Label))
 					}
 					if !buildSuccess {
