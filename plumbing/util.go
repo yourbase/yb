@@ -90,6 +90,9 @@ func ExecToLog(cmdString string, targetDir string, logPath string) error {
 }
 
 func ExecSilently(cmdString string, targetDir string) error {
+	return ExecSilentlyToWriter(cmdString, targetDir, ioutil.Discard)
+}
+func ExecSilentlyToWriter(cmdString string, targetDir string, writer io.Writer) error {
 	cmdArgs, err := shlex.Split(cmdString)
 	if err != nil {
 		return fmt.Errorf("Can't parse command string '%s': %v", cmdString, err)
@@ -97,9 +100,9 @@ func ExecSilently(cmdString string, targetDir string) error {
 
 	cmd := exec.Command(cmdArgs[0], cmdArgs[1:len(cmdArgs)]...)
 	cmd.Dir = targetDir
-	cmd.Stdout = ioutil.Discard
+	cmd.Stdout = writer
 	cmd.Stdin = os.Stdin
-	cmd.Stderr = ioutil.Discard
+	cmd.Stderr = writer
 
 	err = cmd.Run()
 

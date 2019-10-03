@@ -32,6 +32,7 @@ const TIME_FORMAT = "15:04:05 MST"
 type BuildCmd struct {
 	ExecPrefix       string
 	NoContainer      bool
+	NoSideContainer  bool
 	DependenciesOnly bool
 	ReuseContainers  bool
 }
@@ -63,6 +64,7 @@ func (b *BuildCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&b.DependenciesOnly, "deps-only", false, "Install only dependencies, don't do anything else")
 	f.StringVar(&b.ExecPrefix, "exec-prefix", "", "Add a prefix to all executed commands (useful for timing or wrapping things)")
 	f.BoolVar(&b.ReuseContainers, "reuse-containers", true, "Reuse the container for building")
+	f.BoolVar(&b.NoSideContainer, "no-side-container", false, "Don't run/create any side container")
 }
 
 func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
@@ -117,7 +119,7 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		// Setup dependencies
 		containers := target.Dependencies.Containers
 
-		if len(containers) > 0 {
+		if len(containers) > 0 && !b.NoSideContainer {
 			contextId := fmt.Sprintf("%s-%s", targetPackage.Name, target.Name)
 			log.Infof("Starting %d containers with context id %s...", len(containers), contextId)
 			sc, err := NewServiceContextWithId(contextId, targetPackage, target.Dependencies.ContainerList())
@@ -215,7 +217,7 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	if len(primaryTarget.Dependencies.Containers) > 0 {
 		log.Info("")
 		log.Info("")
-		log.Infof("Available side containers:\n")
+		log.Infof("Available side containers:")
 		for label, c := range primaryTarget.Dependencies.Containers {
 			ipv4 := buildData.Containers.IP(label)
 			log.Infof("  * %s (using %s) has IP address %s", label, c.ImageNameWithTag(), ipv4)
@@ -520,12 +522,12 @@ func RunCommands(config BuildConfiguration) ([]CommandTimer, error) {
 			if sandboxed {
 				log.Infoln("Running build in a sandbox!")
 				if err := ExecInSandbox(cmdString, targetDir); err != nil {
-					log.Infof("Failed to run %s: %v", cmdString, err)
+					log.Errorf("Failed to run %s: %v", cmdString, err)
 					stepError = err
 				}
 			} else {
 				if err := ExecToStdout(cmdString, targetDir); err != nil {
-					log.Infof("Failed to run %s: %v", cmdString, err)
+					log.Errorf("Failed to run %s: %v", cmdString, err)
 					stepError = err
 				}
 			}
@@ -702,7 +704,7 @@ func (b BuildData) EnvironmentVariables() []string {
 
 // TODO: non-linux things too
 func DownloadYB() (string, error) {
-	downloadUrl := "https://bin.equinox.io/a/7cFsiXnULxA/yb-0.0.33-linux-amd64.tar.gz"
+	downloadUrl := "https://bin.equinox.io/a/7G9uDXWDjh8/yb-0.0.39-linux-amd64.tar.gz"
 	currentPath, _ := filepath.Abs(".")
 	tmpPath := filepath.Join(currentPath, ".yb-tmp")
 	MkdirAsNeeded(tmpPath)
