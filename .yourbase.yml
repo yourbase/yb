@@ -8,6 +8,12 @@ build_targets:
     host_only: true
     commands:
       - go test ./...
+      - go build
+
+  - name: development
+    host_only: true
+    commands:
+      - go test ./...
       - go build -ldflags "-X 'main.channel=development'"
 
     # Tagged releases will go to unstable
