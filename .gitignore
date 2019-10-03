@@ -3,3 +3,4 @@
 **/*.vim
 yb
 .DS_Store
+release
