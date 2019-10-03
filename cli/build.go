@@ -266,7 +266,7 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	log.Infof("%15s%15s%15s%24s   %s", "Start", "End", "Elapsed", "Target", "Command")
 	for _, timer := range targetTimers {
 		for _, step := range timer.Timers {
-			elapsed := step.EndTime.Sub(step.StartTime)
+			elapsed := step.EndTime.Sub(step.StartTime).Truncate(time.Microsecond)
 			log.Infof("%15s%15s%15s%24s   %s",
 				step.StartTime.Format(TIME_FORMAT),
 				step.EndTime.Format(TIME_FORMAT),
@@ -275,7 +275,7 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 				step.Command)
 		}
 	}
-	log.Infof("%15s%15s%15s   %s", "", "", buildTime, "TOTAL")
+	log.Infof("%15s%15s%15s   %s", "", "", buildTime.Truncate(time.Millisecond), "TOTAL")
 
 	if buildError != nil {
 		log.SubSection("BUILD FAILED")
