@@ -37,6 +37,7 @@ do
     GOOS=${os} GOARCH=${arch} go build -ldflags "-X 'main.version=$VERSION' -X 'main.buildDate=$(date)' -X 'main.channel=$CHANNEL'" -o release/yb-${os}-${arch}-${CHANNEL}
     if [ "$os" == "linux" ]; then
         xz -ve release/yb-${os}-${arch}-${CHANNEL}
+        chmod -x release/yb-${os}-${arch}-${CHANNEL}.xz
         echo "Please upload release/yb-${os}-${arch}-${CHANNEL}.zx to a GH release"
     else
         zip -v release/yb-${os}-${arch}-${CHANNEL} release/yb-${os}-${arch}-${CHANNEL}
