@@ -13,8 +13,7 @@ The primary features of the YB tooling are:
 * *Consistent local and CI tooling* How a project is built as part of the
   CI/CD process should not be any different than how it is built on a
   developer's machine. Keeping tooling in-sync means predictable results and 
-  a better developer experience for everyone. (Although local builds are not 
-  fully isolated yet)
+  a better developer experience for everyone.
 
 * *Accelerated on-boarding* Many projects have long sets of instructions that 
   are required for a developer to get started. With YB, the experience is as 
@@ -28,7 +27,7 @@ The primary features of the YB tooling are:
 
 * *Remote builds* Run your work and tests in the cloud just like you would 
   locally or as part of CI! Stream the results back to your machine in real-time
-  to offload the work. (Currently in-progress, requires a YourBase account)
+  to offload the work.
 
 ![magic!](http://www.reactiongifs.com/r/mgc.gif)
 
