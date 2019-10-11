@@ -52,6 +52,7 @@ type RemoteCmd struct {
 	disableSkipper bool
 	dryRun         bool
 	committed      bool
+	publicRepo     bool
 	remotes        []GitRemote
 }
 
@@ -639,12 +640,12 @@ func (p *RemoteCmd) fetchProject(urls []string) (*Project, GitRemote, error) {
 	}
 
 	if resp.StatusCode != 200 {
-		if resp.StatusCode == 404 {
-			return nil, empty, fmt.Errorf("Is YourBase GitHub App installed?\nPlease check '%v'", ybconfig.CurrentGHAppUrl())
+		if resp.StatusCode == 400 {
+			return nil, empty, fmt.Errorf("This is us, not you, please try again in some minutes.")
+		} else if resp.StatusCode == 203 {
+			p.publicRepo = true
 		} else if resp.StatusCode == 401 {
 			return nil, empty, fmt.Errorf("Unauthorized, authentication failed.\nPlease `yb login` again.")
-		} else if resp.StatusCode == 403 {
-			return nil, empty, fmt.Errorf("Access denied, tried to build a repository from a organization that you don't belong to.")
 		} else {
 			return nil, empty, fmt.Errorf("Error fetching project from API.")
 		}
@@ -662,6 +663,7 @@ func (p *RemoteCmd) fetchProject(urls []string) (*Project, GitRemote, error) {
 	if !remote.Validate() {
 		return nil, empty, fmt.Errorf("Can't pick a good remote to clone upstream")
 	}
+	log.Infof("Public GH repository detected by the API: '%s'", project.Repository)
 
 	return &project, remote, nil
 }
@@ -860,7 +862,11 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 						endTime := time.Now()
 						setupTime := endTime.Sub(startTime)
 						log.Infof("Set up finished at %s, taking %s", endTime.Format(TIME_FORMAT), setupTime.Truncate(time.Millisecond))
-						log.Infof("Build Log: %v", managementLogUrl(url, project.OrgSlug, project.Label))
+						if cmd.publicRepo {
+							log.Infof("We still doesn't support reporting of a public repo: '%s'", project.Repository)
+						} else {
+							log.Infof("Build Log: %v", managementLogUrl(url, project.OrgSlug, project.Label))
+						}
 					}
 					if !buildSuccess {
 						buildSuccess = strings.Count(string(msg), "-- BUILD SUCCEEDED --") > 0
