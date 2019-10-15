@@ -51,7 +51,7 @@ To update to a new *stable* version of yb, use:
 
 You can pick other channels by using `-channel`:
 
-`yb update -channel=development`
+`yb update -channel=preview`
 
 # Contributing 
 
