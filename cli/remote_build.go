@@ -663,7 +663,6 @@ func (p *RemoteCmd) fetchProject(urls []string) (*Project, GitRemote, error) {
 	if !remote.Validate() {
 		return nil, empty, fmt.Errorf("Can't pick a good remote to clone upstream")
 	}
-	log.Infof("Public GH repository detected by the API: '%s'", project.Repository)
 
 	return &project, remote, nil
 }
@@ -733,6 +732,7 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 	formData := url.Values{
 		"project_id": {strconv.Itoa(project.Id)},
 		"repository": {project.Repository},
+		"repo_name":  {project.Label},
 		"api_key":    {userToken},
 		"target":     {cmd.target},
 		"patch_data": {patchEncoded},
@@ -782,9 +782,15 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 	case 401:
 		submitErrored()
 		return fmt.Errorf("Unauthorized, authentication failed.\nPlease `yb login` again.")
-	case 400:
+	case 403:
 		submitErrored()
-		return fmt.Errorf("Invalid data sent to the YB API")
+		if cmd.publicRepo {
+			return fmt.Errorf("This should not happen, please open a support inquery with YB")
+		} else {
+			return fmt.Errorf("Tried to build a private repository of a organization of which you're not part of.\nPlease check with the '%s' admins", project.OrgSlug)
+		}
+	case 412:
+		// TODO Show helpfull message with App URL to fix GH App installation issue
 	case 500:
 		submitErrored()
 		return fmt.Errorf("Internal server error")
@@ -863,10 +869,9 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 						setupTime := endTime.Sub(startTime)
 						log.Infof("Set up finished at %s, taking %s", endTime.Format(TIME_FORMAT), setupTime.Truncate(time.Millisecond))
 						if cmd.publicRepo {
-							log.Infof("We still doesn't support reporting of a public repo: '%s'", project.Repository)
-						} else {
-							log.Infof("Build Log: %v", managementLogUrl(url, project.OrgSlug, project.Label))
+							log.Warnf("We doesn't support GH integration of a public repo, like: '%s'", project.Repository)
 						}
+						log.Infof("Build Log: %v", managementLogUrl(url, project.OrgSlug, project.Label))
 					}
 					if !buildSuccess {
 						buildSuccess = strings.Count(string(msg), "-- BUILD SUCCEEDED --") > 0
