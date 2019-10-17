@@ -26,6 +26,7 @@ import (
 	"gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
 
+	"github.com/yourbase/yb/config"
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
@@ -641,7 +642,7 @@ func (p *RemoteCmd) fetchProject(urls []string) (*Project, GitRemote, error) {
 
 	if resp.StatusCode != 200 {
 		if resp.StatusCode == 400 {
-			return nil, empty, fmt.Errorf("This is us, not you, please try again in some minutes.")
+			return nil, empty, fmt.Errorf("This is us, not you, please try again in a few minutes.")
 		} else if resp.StatusCode == 203 {
 			p.publicRepo = true
 		} else if resp.StatusCode == 401 {
@@ -787,10 +788,12 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 		if cmd.publicRepo {
 			return fmt.Errorf("This should not happen, please open a support inquery with YB")
 		} else {
-			return fmt.Errorf("Tried to build a private repository of a organization of which you're not part of.\nPlease check with the '%s' admins", project.OrgSlug)
+			return fmt.Errorf("Tried to build a private repository of a organization of which you're not part of.")
 		}
 	case 412:
 		// TODO Show helpfull message with App URL to fix GH App installation issue
+		submitErrored()
+		return fmt.Errorf("Please verify if this specific repo has %s installed", config.CurrentGHAppUrl())
 	case 500:
 		submitErrored()
 		return fmt.Errorf("Internal server error")
@@ -869,7 +872,7 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 						setupTime := endTime.Sub(startTime)
 						log.Infof("Set up finished at %s, taking %s", endTime.Format(TIME_FORMAT), setupTime.Truncate(time.Millisecond))
 						if cmd.publicRepo {
-							log.Warnf("We doesn't support GH integration of a public repo, like: '%s'", project.Repository)
+							log.Warnf("We don't support GH integration of a public repo, like: '%s'", project.Repository)
 						}
 						log.Infof("Build Log: %v", managementLogUrl(url, project.OrgSlug, project.Label))
 					}
