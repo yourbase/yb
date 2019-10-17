@@ -732,7 +732,6 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 	formData := url.Values{
 		"project_id": {strconv.Itoa(project.Id)},
 		"repository": {project.Repository},
-		"repo_name":  {project.Label},
 		"api_key":    {userToken},
 		"target":     {cmd.target},
 		"patch_data": {patchEncoded},
