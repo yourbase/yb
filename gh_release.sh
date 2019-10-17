@@ -14,11 +14,6 @@ if [ -z "${CHANNEL}" ]; then
   CHANNEL="unstable"
 fi
 
-if [ "${CHANNEL}" == "preview" ]; then
-  echo "Channel is preview, setting version to timestamp"
-  VERSION="$(date +"%Y%m%d%H%M%S")"
-fi
-
 umask 077
 
 # Now releasing to GH (but need manual upload)
@@ -38,11 +33,12 @@ do
     if [ "$os" == "linux" ]; then
         xz -ve release/yb-${os}-${arch}-${CHANNEL}
         chmod -x release/yb-${os}-${arch}-${CHANNEL}.xz
-        echo "Please upload release/yb-${os}-${arch}-${CHANNEL}.zx to a GH release"
+        mv release/yb-${os}-${arch}-${CHANNEL}.xz release/yb-${VERSION}-${os}-${arch}-${CHANNEL}.xz
+        echo "Please upload release/yb-${VERSION}-${os}-${arch}-${CHANNEL}.zx to a GH release"
     else
-        zip -v release/yb-${os}-${arch}-${CHANNEL} release/yb-${os}-${arch}-${CHANNEL}
+        zip -v release/yb-${VERSION}-${os}-${arch}-${CHANNEL} release/yb-${os}-${arch}-${CHANNEL}
         rm release/yb-${os}-${arch}-${CHANNEL} 
-        echo "Please upload release/yb-${os}-${arch}-${CHANNEL}.zip to a GH release"
+        echo "Please upload release/yb-${VERSION}-${os}-${arch}-${CHANNEL}.zip to a GH release"
     fi
   done
 done
