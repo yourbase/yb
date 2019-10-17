@@ -26,7 +26,6 @@ import (
 	"gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
 
-	"github.com/yourbase/yb/config"
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
@@ -793,7 +792,7 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 	case 412:
 		// TODO Show helpfull message with App URL to fix GH App installation issue
 		submitErrored()
-		return fmt.Errorf("Please verify if this specific repo has %s installed", config.CurrentGHAppUrl())
+		return fmt.Errorf("Please verify if this specific repo has %s installed", ybconfig.CurrentGHAppUrl())
 	case 500:
 		submitErrored()
 		return fmt.Errorf("Internal server error")
