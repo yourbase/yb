@@ -132,6 +132,7 @@ func (bt PythonBuildTool) Setup() error {
 		condaBin := filepath.Join(condaDir, "bin", "conda")
 
 		for _, cmd := range []string{
+			fmt.Sprintf("%s install -c anaconda setuptools", condaBin),
 			fmt.Sprintf("%s config --set always_yes yes --set changeps1 no", condaBin),
 			fmt.Sprintf("%s update -q conda", condaBin),
 			fmt.Sprintf("%s create --prefix %s python=%s", condaBin, envDir, bt.Version()),
