@@ -144,9 +144,13 @@ To update to a new *stable* version of yb, use:
 
 `yb update`
 
-You can pick other channels by using `-channel`:
+# Using non-stable ersions:
+
+You can change yb to other channels by using `-channel`:
 
 `yb update -channel=preview`
+
+Currently, the _inner_ yb that runs inside the build container will use the stable channel by default. To change that, set the environment variable `YB_UPDATE_CHANNEL=unstable` before running yb.
 
 # Contributing 
 
