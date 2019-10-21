@@ -144,7 +144,7 @@ To update to a new *stable* version of yb, use:
 
 `yb update`
 
-# Using non-stable ersions:
+# Using non-stable versions:
 
 You can change yb to other channels by using `-channel`:
 
