@@ -36,7 +36,7 @@ do
         mv release/yb-${os}-${arch}-${CHANNEL}.xz release/yb-${VERSION}-${os}-${arch}-${CHANNEL}.xz
         echo "Please upload release/yb-${VERSION}-${os}-${arch}-${CHANNEL}.zx to a GH release"
     else
-        zip -v release/yb-${VERSION}-${os}-${arch}-${CHANNEL} release/yb-${os}-${arch}-${CHANNEL}
+        zip -v release/yb-${VERSION}-${os}-${arch}-${CHANNEL}.zip release/yb-${os}-${arch}-${CHANNEL}
         rm release/yb-${os}-${arch}-${CHANNEL} 
         echo "Please upload release/yb-${VERSION}-${os}-${arch}-${CHANNEL}.zip to a GH release"
     fi
