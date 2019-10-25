@@ -250,7 +250,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	pGenerationChan := make(chan bool)
-	if headCommit.Hash.String() != p.baseCommit {
+	if p.committed && headCommit.Hash.String() != p.baseCommit {
 		if log.CheckIfTerminal() {
 			patchProgress = NewProgressSpinner("Generating patch for %d commits", commitCount)
 			patchProgress.Start()
