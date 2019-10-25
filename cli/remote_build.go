@@ -622,6 +622,8 @@ func defineBranch(r *git.Repository, hintBranch string) (string, error) {
 func (p *RemoteCmd) fetchProject(urls []string) (*Project, GitRemote, error) {
 	var empty GitRemote
 	v := url.Values{}
+	urlsList := fmt.Sprintf("URL's used to do the search: %s", urls)
+
 	for _, u := range urls {
 		rem := NewGitRemote(u)
 		// We only support GitHub by now
@@ -636,18 +638,18 @@ func (p *RemoteCmd) fetchProject(urls []string) (*Project, GitRemote, error) {
 	resp, err := postToApi("search/projects", v)
 
 	if err != nil {
-		return nil, empty, fmt.Errorf("Couldn't lookup project on api server: %v", err)
+		return nil, empty, fmt.Errorf("Couldn't lookup project on api server: %v.\n%s", err, urlsList)
 	}
 
 	if resp.StatusCode != 200 {
 		if resp.StatusCode == 400 {
-			return nil, empty, fmt.Errorf("This is us, not you, please try again in a few minutes.")
+			return nil, empty, fmt.Errorf("This is us, not you, please try again in a few minutes.\n%s", urlsList)
 		} else if resp.StatusCode == 203 {
 			p.publicRepo = true
 		} else if resp.StatusCode == 401 {
 			return nil, empty, fmt.Errorf("Unauthorized, authentication failed.\nPlease `yb login` again.")
 		} else {
-			return nil, empty, fmt.Errorf("Error fetching project from API.")
+			return nil, empty, fmt.Errorf("Error fetching project from API.\n%s", urlsList)
 		}
 	}
 
@@ -661,7 +663,7 @@ func (p *RemoteCmd) fetchProject(urls []string) (*Project, GitRemote, error) {
 
 	remote := p.pickRemote(project.Repository)
 	if !remote.Validate() {
-		return nil, empty, fmt.Errorf("Can't pick a good remote to clone upstream")
+		return nil, empty, fmt.Errorf("Can't pick a good remote to clone upstream.\n%s", urlsList)
 	}
 
 	return &project, remote, nil
