@@ -178,7 +178,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	if project.Repository == "" {
-		projectUrl, err := ybconfig.ManagementUrl(fmt.Sprintf("%s/%s", project.OrgSlug, project.Label))
+		projectUrl, err := ybconfig.ManagementUrl(fmt.Sprintf("/organizations/%s/projects/%s", project.OrgSlug, project.Label))
 		bootErrored()
 		if err != nil {
 			log.Errorf("Unable to generate project URL: %v", err)
@@ -581,7 +581,7 @@ func managementLogUrl(url, org, label string) string {
 			return ""
 		}
 
-		u, err := ybconfig.ManagementUrl(fmt.Sprintf("/%s/%s/builds/%s", org, label, build))
+		u, err := ybconfig.ManagementUrl(fmt.Sprintf("/organizations/%s/projects/%s/builds/%s", org, label, build))
 		if err != nil {
 			log.Errorf("Unable to generate App Url: %v", err)
 		}
