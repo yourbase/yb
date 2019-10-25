@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -x
-
 APP="app_gtQEt1zkGMj"
 PROJECT="yb"
 TOKEN="${RELEASE_TOKEN}"
@@ -17,7 +15,7 @@ if [ -z "${VERSION}" ]; then
   exit 1
 fi
 
-STABLE_TAGGED="$(echo $VERSION | grep -o '-stable')"
+STABLE_TAGGED="$(echo $VERSION | grep -o '\-stable')"
 
 if [ -z "${CHANNEL}" ]; then
   echo "Channel not set, will release as unstable"
@@ -25,6 +23,10 @@ if [ -z "${CHANNEL}" ]; then
 fi
 
 if [ "${STABLE_TAGGED}" == "-stable" ]; then
+    # Strips stable
+    STRIPPED_VERSION="$(echo "$VERSION" | sed -e 's/-stable.*//g')"
+    echo "Stable version $VERSION becomes $STRIPPED_VERSION, so decided to release as stable"
+    VERSION=$STRIPPED_VERSION
     CHANNEL="stable"
 fi
 
@@ -35,6 +37,8 @@ cleanup() {
     rm -rf "$tmpkeyfile"
     exit $rv
 }
+
+set -x
 
 tmpkeyfile="$(mktemp)"
 trap "cleanup" INT TERM EXIT
