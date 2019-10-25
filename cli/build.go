@@ -155,7 +155,10 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	for _, envString := range primaryTarget.Environment {
 		parts := strings.Split(envString, "=")
 		key := parts[0]
-		value := parts[1]
+		value := ""
+		if len(parts) > 1 {
+			value = parts[1]
+		}
 		buildData.SetEnv(key, value)
 	}
 
