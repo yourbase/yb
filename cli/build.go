@@ -13,6 +13,7 @@ import (
 	"os/signal"
 	"os/user"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -30,6 +31,8 @@ import (
 const TIME_FORMAT = "15:04:05 MST"
 
 type BuildCmd struct {
+	Channel          string
+	Version          string
 	ExecPrefix       string
 	NoContainer      bool
 	NoSideContainer  bool
@@ -184,7 +187,7 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		}
 
 		// Do our build in a container - don't do the build locally
-		buildErr := BuildInsideContainer(target, containerOpts, buildData, b.ExecPrefix, b.ReuseContainers)
+		buildErr := b.BuildInsideContainer(target, containerOpts, buildData, b.ExecPrefix, b.ReuseContainers)
 		if buildErr != nil {
 			log.Errorf("Unable to build %s inside container: %v", target.Name, buildErr)
 			return subcommands.ExitFailure
@@ -345,7 +348,7 @@ func Cleanup(b BuildData) {
 	}
 }
 
-func BuildInsideContainer(target BuildTarget, containerOpts BuildContainerOpts, buildData BuildData, execPrefix string, reuseOldContainer bool) error {
+func (b *BuildCmd) BuildInsideContainer(target BuildTarget, containerOpts BuildContainerOpts, buildData BuildData, execPrefix string, reuseOldContainer bool) error {
 	// Perform build inside a container
 	image := target.Container.Image
 	log.Infof("Using container image: %s", image)
@@ -409,16 +412,20 @@ func BuildInsideContainer(target BuildTarget, containerOpts BuildContainerOpts, 
 	// Local path to binary that we want to inject
 	// TODO: this only supports Linux containers
 	localYbPath := ""
+	devMode := false
 
 	// If this is development mode, use the YB binary currently running
 	// We can't do this by default because this only works if the host is
 	// Linux so we might as well behave the same on all platforms
 	// If not development mode, download the binary from the distribution channel
-	_, devMode := os.LookupEnv("YB_DEVELOPMENT")
-	// TODO, test dev mode better:
-	// _, devEnvExists := os.LookupEnv("YB_DEVELOPMENT")
-	// ybEnv, _ := ybconfig.GetConfigValue("defaults", "environment")
-	// devMode := devEnvExists || ybEnv == "development"
+	if b.Version == "DEVELOPMENT" {
+		if runtime.GOOS == "linux" {
+			// TODO: If we support building inside a container that's not Linux we will want to do something different
+			log.Infof("Development version in use, will upload development binary to the container")
+			devMode = true
+		}
+	}
+
 	if devMode {
 		if p, err := os.Executable(); err != nil {
 			return fmt.Errorf("Can't determine local path to YB: %v", err)
@@ -431,12 +438,6 @@ func BuildInsideContainer(target BuildTarget, containerOpts BuildContainerOpts, 
 		} else {
 			localYbPath = p
 		}
-		// After downloading YB and uploading it to the container, we should delete it locally
-		defer func() {
-			if err := DeleteLocalYB(); err != nil {
-				log.Warnf("Could not remove local downloaded yb: %v", err)
-			}
-		}()
 	}
 
 	// Upload and update CLI
@@ -445,18 +446,10 @@ func BuildInsideContainer(target BuildTarget, containerOpts BuildContainerOpts, 
 		return fmt.Errorf("Unable to upload YB to container: %v", err)
 	}
 
-	// Default to stable, unless told otherwise
-	// TODO: Make the download URL used for downloading track the latest stable
 	if !devMode {
-		ybChannel := "stable"
-		if configChannel, err := ybconfig.GetConfigValue("defaults", "environment"); err != nil && configChannel != "" {
-			ybChannel = configChannel
-			// XXX better think about this. Because YB doesn't have a preview channel yet,
-			//     not even in the ./release.sh
-			//if ybChannel == "preview" {
-			//	ybChannel = "development"
-			//}
-		}
+		// Default to whatever channel being used, unless told otherwise
+		// TODO: Make the download URL used for downloading track the latest stable
+		ybChannel := b.Channel
 
 		// Overwrites local configuration
 		if envChannel, exists := os.LookupEnv("YB_UPDATE_CHANNEL"); exists {
@@ -704,17 +697,14 @@ func (b BuildData) EnvironmentVariables() []string {
 
 // TODO: non-linux things too
 func DownloadYB() (string, error) {
-	downloadUrl := "https://bin.equinox.io/a/7G9uDXWDjh8/yb-0.0.39-linux-amd64.tar.gz"
+	// Stable version stable URL
+	downloadUrl := "https://bin.equinox.io/c/3fw6ZrH8UFD/yb-stable-linux-amd64.tgz"
 	currentPath, _ := filepath.Abs(".")
 	tmpPath := filepath.Join(currentPath, ".yb-tmp")
-	MkdirAsNeeded(tmpPath)
 	ybPath := filepath.Join(tmpPath, "yb")
-	if _, err := os.Stat(ybPath); err == nil {
-		return ybPath, nil
-	}
+	MkdirAsNeeded(tmpPath)
 
 	localFile, err := DownloadFileWithCache(downloadUrl)
-
 	if err != nil {
 		return "", err
 	}
@@ -725,9 +715,4 @@ func DownloadYB() (string, error) {
 	}
 
 	return ybPath, nil
-}
-
-func DeleteLocalYB() error {
-	currentPath, _ := filepath.Abs(".")
-	return os.RemoveAll(filepath.Join(currentPath, ".yb-tmp"))
 }

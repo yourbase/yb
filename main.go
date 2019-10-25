@@ -8,7 +8,6 @@ import (
 	"path"
 
 	. "github.com/yourbase/yb/cli"
-	//. "github.com/yourbase/yb/server"
 )
 
 var (
@@ -22,7 +21,7 @@ func main() {
 	cmdr.Register(cmdr.HelpCommand(), "")
 	cmdr.Register(cmdr.FlagsCommand(), "")
 	cmdr.Register(cmdr.CommandsCommand(), "")
-	cmdr.Register(&BuildCmd{}, "")
+	cmdr.Register(&BuildCmd{Version: version, Channel: channel}, "")
 	cmdr.Register(&CheckConfigCmd{}, "")
 	cmdr.Register(&ConfigCmd{}, "")
 	cmdr.Register(&ExecCmd{}, "")
@@ -34,10 +33,6 @@ func main() {
 	cmdr.Register(&UpdateCmd{}, "")
 	cmdr.Register(&WorkspaceCmd{}, "")
 	cmdr.Register(&VersionCmd{Version: version, Channel: channel}, "")
-
-	// Experimental:
-	// TODO maybe enable Prometheus telemetry using this
-	// DaemonKickoff()
 
 	flag.Parse()
 	ctx := context.Background()
