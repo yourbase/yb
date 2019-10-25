@@ -10,13 +10,6 @@ build_targets:
       - go test ./...
       - go build
 
-  - name: development
-    host_only: true
-    commands:
-      - go test ./...
-      - go build -ldflags "-X 'main.channel=development'"
-
-    # Tagged releases will go to unstable
   - name: release
     build_after:
       - default
@@ -64,7 +57,7 @@ ci:
 
     - name: pre_release
       build_target: preview_release
-      when: branch IS NOT 'master' AND tagged IS true
+      when: branch CONTAINS '-preview'
 
     - name: release
       build_target: release
