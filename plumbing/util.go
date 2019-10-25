@@ -293,19 +293,33 @@ func DownloadFileWithCache(url string) (string, error) {
 		return cacheFilename, err
 	}
 
+	fileExists := false
+	fileSizeMismatch := false
+
 	// Exists, don't re-download
-	if _, err := os.Stat(cacheFilename); !os.IsNotExist(err) {
+	if fi, err := os.Stat(cacheFilename); !os.IsNotExist(err) {
+		fileExists = true
+
+		// try HEAD'ing the URL and comparing to local file
+		resp, err := http.Head(url)
+		if err == nil {
+			if fi.Size() != resp.ContentLength {
+				log.Infof("Re-downloading %s because remote file and local file differ in size", url)
+				fileSizeMismatch = true
+			}
+		}
+
+	}
+
+	if fileExists && !fileSizeMismatch {
+		// No mismatch known, but exists, use cached version
 		log.Infof("Re-using cached version of %s", url)
 		return cacheFilename, nil
 	}
 
+	// Otherwise download
 	err = DownloadFile(cacheFilename, url)
-
-	if err != nil {
-		return cacheFilename, err
-	}
-
-	return cacheFilename, nil
+	return cacheFilename, err
 }
 
 func DownloadFile(filepath string, url string) error {
