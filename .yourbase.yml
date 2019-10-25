@@ -62,11 +62,11 @@ ci:
     - name: test_build
       build_target: default
 
-    - name: pre_release
-      build_target: preview_release
-      when: branch IS NOT 'master' AND tagged IS true
-
     - name: release
       build_target: release
       when: branch IS 'master' AND tagged IS true
+
+    - name: pre_release
+      build_target: preview_release
+      when: (branch IS NOT 'master') AND tagged IS true
 
