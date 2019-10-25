@@ -158,6 +158,8 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		value := ""
 		if len(parts) > 1 {
 			value = parts[1]
+		} else {
+			log.Warnf("'%s' doesn't look like an environment variable", envString)
 		}
 		buildData.SetEnv(key, value)
 	}
