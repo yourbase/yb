@@ -32,6 +32,7 @@ build_targets:
     environment:
       - CHANNEL=preview
     commands:
+      - pip install awscli
       - bash release.sh 
 
   - name: linux
@@ -63,7 +64,7 @@ ci:
 
     - name: preview_release
       build_target: preview_release
-      when: branch IS NOT 'master' AND tagged IS false
+      when: branch IS NOT 'master'
 
     - name: release
       build_target: release

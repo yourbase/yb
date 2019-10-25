@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -x
-
 APP="app_gtQEt1zkGMj"
 PROJECT="yb"
 TOKEN="${RELEASE_TOKEN}"
@@ -17,20 +15,19 @@ if [ -z "${VERSION}" ]; then
   exit 1
 fi
 
+STABLE_TAGGED="$(echo $VERSION | grep -o '\-stable')"
+
 if [ -z "${CHANNEL}" ]; then
   echo "Channel not set, will release as unstable"
-  echo "To promote to a new channel, use the equinox release tool:"
-  echo '$ equinox publish --token $TOKEN --app $APP  --channel stable --release 0.0.39'
   CHANNEL="unstable"
 fi
 
-if [ "${CHANNEL}" == "preview" ]; then
-  echo "Channel is preview, setting version to timestamp"
-  VERSION="$(date +"%Y%m%d%H%M%S")"
-elif [ "${CHANNEL}" == "stable" ]; then
-  echo "To promote to stable, use the equinox release tool:"
-  echo '$ equinox publish --token $TOKEN --app $APP  --channel stable --release $VERSION'
-  exit 0
+if [ "${STABLE_TAGGED}" == "-stable" ]; then
+    # Strips stable
+    STRIPPED_VERSION="$(echo "$VERSION" | sed -e 's/-stable.*//g')"
+    echo "Stable version $VERSION becomes $STRIPPED_VERSION, so decided to release as stable"
+    VERSION=$STRIPPED_VERSION
+    CHANNEL="stable"
 fi
 
 umask 077
@@ -40,6 +37,8 @@ cleanup() {
     rm -rf "$tmpkeyfile"
     exit $rv
 }
+
+set -x
 
 tmpkeyfile="$(mktemp)"
 trap "cleanup" INT TERM EXIT
@@ -61,11 +60,7 @@ tar zxvf release-tool-stable-linux-amd64.tgz
 	-ldflags "-X main.version=$VERSION -X 'main.date=$(date)' -X main.channel=$CHANNEL" \
 	"github.com/yourbase/${PROJECT}"
 
-if [ "${CHANNEL}" == "preview" ]; then
-    exit 0
-fi
-
-# Now releasing to S3
+# Now releasing to S3 and GH
 echo "Releasing yb version ${VERSION}..."
 
 rm -rf release
