@@ -622,7 +622,7 @@ func defineBranch(r *git.Repository, hintBranch string) (string, error) {
 func (p *RemoteCmd) fetchProject(urls []string) (*Project, GitRemote, error) {
 	var empty GitRemote
 	v := url.Values{}
-	log.Infof("URL's used to do the search: %s", urls)
+	log.Infof("URLs used to do the search: %s", urls)
 
 	for _, u := range urls {
 		rem := NewGitRemote(u)
