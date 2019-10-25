@@ -30,9 +30,9 @@ build_targets:
     build_after:
       - default
     environment:
-      - pip install awscli
       - CHANNEL=preview
     commands:
+      - pip install awscli
       - bash release.sh 
 
   - name: linux
