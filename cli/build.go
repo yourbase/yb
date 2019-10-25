@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -695,15 +696,44 @@ func (b BuildData) EnvironmentVariables() []string {
 	return result
 }
 
-// TODO: non-linux things too
+func sha256File(path string) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%x", h.Sum(nil)), nil
+}
+
+// TODO: non-linux things too if we ever support non-Linux containers
+// TODO: on non-Linux platforms we shouldn't constantly try to re-download it
 func DownloadYB() (string, error) {
-	// Stable version stable URL
-	downloadUrl := "https://bin.equinox.io/c/3fw6ZrH8UFD/yb-stable-linux-amd64.tgz"
-	currentPath, _ := filepath.Abs(".")
-	tmpPath := filepath.Join(currentPath, ".yb-tmp")
+	// Stick with this version, we can track some relatively recent version because
+	// we will just update anyway so it doesn't need to be super-new unless we broke something
+	downloadUrl := "https://bin.equinox.io/a/7G9uDXWDjh8/yb-0.0.39-linux-amd64.tar.gz"
+	binarySha256 := "3e21a9c98daa168ea95a5be45d14408c18688b5eea211d7936f6cd013bd23210"
+	cachePath := CacheDir()
+	tmpPath := filepath.Join(cachePath, ".yb-tmp")
 	ybPath := filepath.Join(tmpPath, "yb")
 	MkdirAsNeeded(tmpPath)
 
+	if PathExists(ybPath) {
+		checksum, err := sha256File(ybPath)
+		// Checksum match? We're good to go
+		if err == nil && checksum == binarySha256 {
+			return ybPath, nil
+		}
+
+		log.Infof("Local binary checksum mis-match, re-downloading YB")
+	}
+
+	// Couldn't tell, check if we need to and download the archive
 	localFile, err := DownloadFileWithCache(downloadUrl)
 	if err != nil {
 		return "", err
