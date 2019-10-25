@@ -622,6 +622,8 @@ func defineBranch(r *git.Repository, hintBranch string) (string, error) {
 func (p *RemoteCmd) fetchProject(urls []string) (*Project, GitRemote, error) {
 	var empty GitRemote
 	v := url.Values{}
+	log.Infof("URL's used to do the search: %s", urls)
+
 	for _, u := range urls {
 		rem := NewGitRemote(u)
 		// We only support GitHub by now
@@ -661,7 +663,7 @@ func (p *RemoteCmd) fetchProject(urls []string) (*Project, GitRemote, error) {
 
 	remote := p.pickRemote(project.Repository)
 	if !remote.Validate() {
-		return nil, empty, fmt.Errorf("Can't pick a good remote to clone upstream")
+		return nil, empty, fmt.Errorf("Can't pick a good remote to clone upstream.")
 	}
 
 	return &project, remote, nil
