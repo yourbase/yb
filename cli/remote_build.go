@@ -622,7 +622,8 @@ func defineBranch(r *git.Repository, hintBranch string) (string, error) {
 func (p *RemoteCmd) fetchProject(urls []string) (*Project, GitRemote, error) {
 	var empty GitRemote
 	v := url.Values{}
-	log.Infof("URLs used to do the search: %s", urls)
+	fmt.Println()
+	log.Infof("URLs used to search: %s", urls)
 
 	for _, u := range urls {
 		rem := NewGitRemote(u)
@@ -642,14 +643,13 @@ func (p *RemoteCmd) fetchProject(urls []string) (*Project, GitRemote, error) {
 	}
 
 	if resp.StatusCode != 200 {
-		if resp.StatusCode == 400 {
-			return nil, empty, fmt.Errorf("This is us, not you, please try again in a few minutes.")
-		} else if resp.StatusCode == 203 {
+		log.Debugf("Build server returned HTTP Status %d", resp.StatusCode)
+		if resp.StatusCode == 203 {
 			p.publicRepo = true
 		} else if resp.StatusCode == 401 {
 			return nil, empty, fmt.Errorf("Unauthorized, authentication failed.\nPlease `yb login` again.")
 		} else {
-			return nil, empty, fmt.Errorf("Error fetching project from API.")
+			return nil, empty, fmt.Errorf("This is us, not you, please try again in a few minutes.")
 		}
 	}
 
@@ -872,7 +872,7 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 						setupTime := endTime.Sub(startTime)
 						log.Infof("Set up finished at %s, taking %s", endTime.Format(TIME_FORMAT), setupTime.Truncate(time.Millisecond))
 						if cmd.publicRepo {
-							log.Warnf("We don't support GH integration of a public repo, like: '%s'", project.Repository)
+							log.Infof("Building a public repository: '%s'", project.Repository)
 						}
 						log.Infof("Build Log: %v", managementLogUrl(url, project.OrgSlug, project.Label))
 					}
