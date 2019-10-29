@@ -251,7 +251,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	pGenerationChan := make(chan bool)
-	if headCommit.Hash.String() != p.baseCommit {
+	if p.committed && headCommit.Hash.String() != p.baseCommit {
 		if log.CheckIfTerminal() {
 			patchProgress = NewProgressSpinner("Generating patch for %d commits", commitCount)
 			patchProgress.Start()
@@ -267,7 +267,9 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 		// This is where the patch is actually generated see #278
 		go func(ch chan<- bool) {
+			log.Debug("Starting the actual patch generation...")
 			p.patchData = []byte(patch.String())
+			log.Debug("Patch generation finished, only committed changes")
 			ch <- true
 		}(pGenerationChan)
 	} else if !p.committed {
@@ -286,6 +288,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			log.Info("Generating patch for local changes")
 		}
 
+		log.Debug("Start backing up the worktree save")
 		saver, err := NewWorktreeSave(targetPackage.Path, headCommit.Hash.String())
 		if err != nil {
 			patchErrored()
@@ -303,6 +306,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 		resetDone := false
 		if len(saver.Files) > 0 {
+			log.Debug("Saving a tarball  with all the worktree changes made")
 			// Save them before committing
 			if saveFile, err := saver.Save(); err != nil {
 				patchErrored()
@@ -311,6 +315,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			} else {
 				defer func(s string) {
 					if !resetDone {
+						log.Debug("Reset failed, restoring the tarball")
 						if err := saver.Restore(s); err != nil {
 							log.Errorf("Unable to restore kept files at %v: %v\n     Please consider unarchiving that package", saveFile, err)
 						} else {
@@ -323,6 +328,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			}
 		}
 
+		log.Debug("Committing temporary changes")
 		latest, err := commitTempChanges(worktree, headCommit)
 		if err != nil {
 			log.Errorf("Commit to temporary cloned repository failed: %v", err)
@@ -337,6 +343,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			return subcommands.ExitFailure
 		}
 
+		log.Debug("Starting the actual patch generation...")
 		patch, err := ancestorCommit.Patch(tempCommit)
 		if err != nil {
 			log.Errorf("Patch generation failed: %v", err)
@@ -346,7 +353,9 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 		// This is where the patch is actually generated see #278
 		p.patchData = []byte(patch.String())
+		log.Debug("Actual patch generation finished")
 
+		log.Debug("Reseting worktree to previous state...")
 		// Reset back to HEAD
 		if err := worktree.Reset(&git.ResetOptions{
 			Commit: headCommit.Hash,
@@ -355,6 +364,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		} else {
 			resetDone = true
 		}
+		log.Debug("Worktree reset done.")
 
 	}
 
@@ -408,8 +418,10 @@ func commitTempChanges(w *git.Worktree, c *object.Commit) (latest plumbing.Hash,
 
 func (p *RemoteCmd) traverseChanges(worktree *git.Worktree, saver *WorktreeSave) (err error) {
 	if p.goGitStatus {
+		log.Debug("Decided to use Go-Git")
 		err = p.libTraverseChanges(worktree, saver)
 	} else {
+		log.Debug("Decided to use `git status -s --porcelain`")
 		err = p.commandTraverseChanges(worktree, saver)
 	}
 	return
@@ -421,6 +433,7 @@ func (p *RemoteCmd) commandTraverseChanges(worktree *git.Worktree, saver *Worktr
 	repoDir := worktree.Filesystem.Root()
 	cmdString := fmt.Sprintf(gitStatusCmd, gitExe)
 	buf := bytes.NewBuffer(nil)
+	log.Debugf("Executing '%v'...", cmdString)
 	if err = ExecSilentlyToWriter(cmdString, repoDir, buf); err != nil {
 		return fmt.Errorf("When running git status: %v", err)
 	}
@@ -433,14 +446,14 @@ func (p *RemoteCmd) commandTraverseChanges(worktree *git.Worktree, saver *Worktr
 		for {
 			if line, err := buf.ReadString('\n'); len(line) > 4 && err == nil { // Line should have at least 4 chars
 				line = strings.Trim(line, "\n")
-				log.Tracef("Processing git status line:\n%s", line)
+				log.Debugf("Processing git status line:\n%s", line)
 				mode := line[:2]
 				file := line[3:]
 				modUnstagedMap := map[byte]bool{'?': true, 'M': true, 'D': true, 'R': true} // 'R' isn't really found at mode[1], but...
 
 				// Unstaged modifications of any kind
 				if modUnstagedMap[mode[1]] {
-					log.Tracef("Adding %s to the index", file)
+					log.Debugf("Adding %s to the index", file)
 					// Add each detected change
 					if _, err = worktree.Add(file); err != nil {
 						return fmt.Errorf("Unable to add %s: %v", file, err)
@@ -448,7 +461,7 @@ func (p *RemoteCmd) commandTraverseChanges(worktree *git.Worktree, saver *Worktr
 
 					if mode[1] != 'D' {
 						// No need to add deletion to the saver, right?
-						log.Tracef("Saving %s to the tarball", file)
+						log.Debugf("Saving %s to the tarball", file)
 						if err = saver.Add(file); err != nil {
 							return fmt.Errorf("Need to save state, but couldn't: %v", err)
 						}
@@ -481,7 +494,7 @@ func (p *RemoteCmd) libTraverseChanges(worktree *git.Worktree, saver *WorktreeSa
 		fmt.Print(status.String())
 	}
 	for n, s := range status {
-		log.Tracef("Checking status %v", n)
+		log.Debugf("Checking status %v", n)
 		// Deleted (staged removal or not)
 		if s.Worktree == git.Deleted {
 
@@ -492,7 +505,7 @@ func (p *RemoteCmd) libTraverseChanges(worktree *git.Worktree, saver *WorktreeSa
 			// Ignore it
 		} else if s.Worktree == git.Renamed || s.Staging == git.Renamed {
 
-			log.Tracef("Saving %s to the tarball", n)
+			log.Debugf("Saving %s to the tarball", n)
 			if err = saver.Add(n); err != nil {
 				return fmt.Errorf("Need to save state, but couldn't: %v", err)
 			}
@@ -501,7 +514,7 @@ func (p *RemoteCmd) libTraverseChanges(worktree *git.Worktree, saver *WorktreeSa
 				return fmt.Errorf("Unable to move %s -> %s: %v", s.Extra, n, err)
 			}
 		} else {
-			log.Tracef("Saving %s to the tarball", n)
+			log.Debugf("Saving %s to the tarball", n)
 			if err = saver.Add(n); err != nil {
 				return fmt.Errorf("Need to save state, but couldn't: %v", err)
 			}
@@ -762,12 +775,6 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 		formData.Add("disable-skipper", "True")
 	}
 
-	cliUrl, err := ybconfig.ApiUrl("builds/cli")
-	if err != nil {
-		log.Debugf("Unable to generate CLI URL: %v", err)
-	}
-	log.Debugf("Calling backend (%s) with the following values: %v", cliUrl, formData)
-
 	resp, err := postToApi("builds/cli", formData)
 	if err != nil {
 		return err
@@ -849,7 +856,7 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 				msg, control, err := wsutil.ReadServerData(conn)
 				if err != nil {
 					if err != io.EOF {
-						log.Debugf("Unstable connection: %v", err)
+						log.Tracef("Unstable connection: %v", err)
 					} else {
 						if buildSuccess {
 							log.Infoln("Build Completed!")
