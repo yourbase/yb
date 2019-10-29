@@ -52,6 +52,7 @@ type RemoteCmd struct {
 	disableSkipper bool
 	dryRun         bool
 	committed      bool
+	publicRepo     bool
 	remotes        []GitRemote
 }
 
@@ -621,6 +622,9 @@ func defineBranch(r *git.Repository, hintBranch string) (string, error) {
 func (p *RemoteCmd) fetchProject(urls []string) (*Project, GitRemote, error) {
 	var empty GitRemote
 	v := url.Values{}
+	fmt.Println()
+	log.Infof("URLs used to search: %s", urls)
+
 	for _, u := range urls {
 		rem := NewGitRemote(u)
 		// We only support GitHub by now
@@ -639,14 +643,13 @@ func (p *RemoteCmd) fetchProject(urls []string) (*Project, GitRemote, error) {
 	}
 
 	if resp.StatusCode != 200 {
-		if resp.StatusCode == 404 {
-			return nil, empty, fmt.Errorf("Is YourBase GitHub App installed?\nPlease check '%v'", ybconfig.CurrentGHAppUrl())
+		log.Debugf("Build server returned HTTP Status %d", resp.StatusCode)
+		if resp.StatusCode == 203 {
+			p.publicRepo = true
 		} else if resp.StatusCode == 401 {
 			return nil, empty, fmt.Errorf("Unauthorized, authentication failed.\nPlease `yb login` again.")
-		} else if resp.StatusCode == 403 {
-			return nil, empty, fmt.Errorf("Access denied, tried to build a repository from a organization that you don't belong to.")
 		} else {
-			return nil, empty, fmt.Errorf("Error fetching project from API.")
+			return nil, empty, fmt.Errorf("This is us, not you, please try again in a few minutes.")
 		}
 	}
 
@@ -660,7 +663,7 @@ func (p *RemoteCmd) fetchProject(urls []string) (*Project, GitRemote, error) {
 
 	remote := p.pickRemote(project.Repository)
 	if !remote.Validate() {
-		return nil, empty, fmt.Errorf("Can't pick a good remote to clone upstream")
+		return nil, empty, fmt.Errorf("Can't pick a good remote to clone upstream.")
 	}
 
 	return &project, remote, nil
@@ -780,9 +783,17 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 	case 401:
 		submitErrored()
 		return fmt.Errorf("Unauthorized, authentication failed.\nPlease `yb login` again.")
-	case 400:
+	case 403:
 		submitErrored()
-		return fmt.Errorf("Invalid data sent to the YB API")
+		if cmd.publicRepo {
+			return fmt.Errorf("This should not happen, please open a support inquery with YB")
+		} else {
+			return fmt.Errorf("Tried to build a private repository of a organization of which you're not part of.")
+		}
+	case 412:
+		// TODO Show helpfull message with App URL to fix GH App installation issue
+		submitErrored()
+		return fmt.Errorf("Please verify if this specific repo has %s installed", ybconfig.CurrentGHAppUrl())
 	case 500:
 		submitErrored()
 		return fmt.Errorf("Internal server error")
@@ -860,6 +871,9 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 						endTime := time.Now()
 						setupTime := endTime.Sub(startTime)
 						log.Infof("Set up finished at %s, taking %s", endTime.Format(TIME_FORMAT), setupTime.Truncate(time.Millisecond))
+						if cmd.publicRepo {
+							log.Infof("Building a public repository: '%s'", project.Repository)
+						}
 						log.Infof("Build Log: %v", managementLogUrl(url, project.OrgSlug, project.Label))
 					}
 					if !buildSuccess {
