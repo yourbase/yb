@@ -12,7 +12,7 @@ import (
 
 var (
 	version string = "DEVELOPMENT"
-	channel string
+	channel string = "development"
 	date    string
 )
 
