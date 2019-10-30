@@ -98,6 +98,10 @@ github.com/johnewart/archiver v3.1.4+incompatible h1:509GRUpPDmAvOLIeqRa1LnbhGvz
 github.com/johnewart/archiver v3.1.4+incompatible/go.mod h1:RZZSHcya+2fNoD31xh/kmPmwCa7hDaxCm3dFNlPDmaY=
 github.com/johnewart/go-dockerclient v1.3.7 h1:oyTFh8XsnQ/XdnK8D6RGHQYQSZmZ05sg2BbHbVzwIKQ=
 github.com/johnewart/go-dockerclient v1.3.7/go.mod h1:FCtHjONdIZH2BKTKbXFJ2Qp8h31iQkiXNboLI3M/TYg=
+github.com/johnewart/narwhal v0.0.0-20191030172955-5a51cfc5963a h1:CMttmUMYzeqbuex8Zk+hGIzJ1qbeEFfI54Z/f4ahsYM=
+github.com/johnewart/narwhal v0.0.0-20191030172955-5a51cfc5963a/go.mod h1:EsUUI8gi1HFwS6NoGEocjpErZEK2ER+b+D0b1qxKM/g=
+github.com/johnewart/narwhal v0.0.0-20191030181313-9828f6c923b0 h1:Hrt19BwfJaNsEK29v32epT4+ZPDfL7dZ2vHbkAKvBIQ=
+github.com/johnewart/narwhal v0.0.0-20191030181313-9828f6c923b0/go.mod h1:EsUUI8gi1HFwS6NoGEocjpErZEK2ER+b+D0b1qxKM/g=
 github.com/johnewart/subcommands v0.0.0-20181012225330-46f0354f6315 h1:IHd01G1+fdwW9G/AraiEZzx6GNbGdntaICZjP5PI+oM=
 github.com/johnewart/subcommands v0.0.0-20181012225330-46f0354f6315/go.mod h1:P9HfiwoEAZ8bQktefnfAuKGlAYDuwfmBqt/cgIBGt+M=
 github.com/jtolds/gls v4.20.0+incompatible h1:xdiiI2gbIgH/gLH7ADydsJ1uDOEzR8yvV7C0MuV77Wo=

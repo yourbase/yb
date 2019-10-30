@@ -1,9 +1,9 @@
 package types
 
 import (
-	"fmt"
-	"strings"
 	"time"
+
+	"github.com/johnewart/narwhal"
 )
 
 const (
@@ -42,24 +42,24 @@ type DependencySet struct {
 }
 
 type ExecPhase struct {
-	Name         string              `yaml:"name"`
-	Dependencies ExecDependencies    `yaml:"dependencies"`
-	Container    ContainerDefinition `yaml:"container"`
-	Commands     []string            `yaml:"commands"`
-	Ports        []string            `yaml:"ports"`
-	Environment  map[string][]string `yaml:"environment"`
-	LogFiles     []string            `yaml:"logfiles"`
-	Sandbox      bool                `yaml:"sandbox"`
-	HostOnly     bool                `yaml:"host_only"`
-	BuildFirst   []string            `yaml:"build_first"`
+	Name         string                      `yaml:"name"`
+	Dependencies ExecDependencies            `yaml:"dependencies"`
+	Container    narwhal.ContainerDefinition `yaml:"container"`
+	Commands     []string                    `yaml:"commands"`
+	Ports        []string                    `yaml:"ports"`
+	Environment  map[string][]string         `yaml:"environment"`
+	LogFiles     []string                    `yaml:"logfiles"`
+	Sandbox      bool                        `yaml:"sandbox"`
+	HostOnly     bool                        `yaml:"host_only"`
+	BuildFirst   []string                    `yaml:"build_first"`
 }
 
 type BuildDependencies struct {
-	Containers map[string]ContainerDefinition `yaml:"containers"`
+	Containers map[string]narwhal.ContainerDefinition `yaml:"containers"`
 }
 
-func (b BuildDependencies) ContainerList() []ContainerDefinition {
-	containers := make([]ContainerDefinition, 0)
+func (b BuildDependencies) ContainerList() []narwhal.ContainerDefinition {
+	containers := make([]narwhal.ContainerDefinition, 0)
 	for label, c := range b.Containers {
 		c.Label = label
 		containers = append(containers, c)
@@ -68,11 +68,11 @@ func (b BuildDependencies) ContainerList() []ContainerDefinition {
 }
 
 type ExecDependencies struct {
-	Containers map[string]ContainerDefinition `yaml:"containers"`
+	Containers map[string]narwhal.ContainerDefinition `yaml:"containers"`
 }
 
-func (b ExecDependencies) ContainerList() []ContainerDefinition {
-	containers := make([]ContainerDefinition, 0)
+func (b ExecDependencies) ContainerList() []narwhal.ContainerDefinition {
+	containers := make([]narwhal.ContainerDefinition, 0)
 	for label, c := range b.Containers {
 		c.Label = label
 		containers = append(containers, c)
@@ -80,55 +80,20 @@ func (b ExecDependencies) ContainerList() []ContainerDefinition {
 	return containers
 }
 
-type ContainerDefinition struct {
-	Image         string   `yaml:"image"`
-	Mounts        []string `yaml:"mounts"`
-	Ports         []string `yaml:"ports"`
-	Environment   []string `yaml:"environment"`
-	Command       string   `yaml:"command"`
-	WorkDir       string   `yaml:"workdir"`
-	Privileged    bool
-	PortWaitCheck PortWaitCheck `yaml:"port_check"`
-	Label         string        `yaml:"label"`
-}
-
-func (c ContainerDefinition) ImageNameWithTag() string {
-	return fmt.Sprintf("%s:%s", c.ImageName(), c.ImageTag())
-}
-
-func (c ContainerDefinition) ImageName() string {
-	parts := strings.Split(c.Image, ":")
-	return parts[0]
-}
-
-func (c ContainerDefinition) ImageTag() string {
-	parts := strings.Split(c.Image, ":")
-	if len(parts) != 2 {
-		return "latest"
-	} else {
-		return parts[1]
-	}
-}
-
-type PortWaitCheck struct {
-	Port    int `yaml:"port"`
-	Timeout int `yaml:"timeout"`
-}
-
 type BuildTarget struct {
-	Name         string              `yaml:"name"`
-	Container    ContainerDefinition `yaml:"container"`
-	Tools        []string            `yaml:"tools"`
-	Commands     []string            `yaml:"commands"`
-	Artifacts    []string            `yaml:"artifacts"`
-	CachePaths   []string            `yaml:"cache_paths"`
-	Sandbox      bool                `yaml:"sandbox"`
-	HostOnly     bool                `yaml:"host_only"`
-	Root         string              `yaml:"root"`
-	Environment  []string            `yaml:"environment"`
-	Tags         map[string]string   `yaml:"tags"`
-	BuildAfter   []string            `yaml:"build_after"`
-	Dependencies BuildDependencies   `yaml:"dependencies"`
+	Name         string                      `yaml:"name"`
+	Container    narwhal.ContainerDefinition `yaml:"container"`
+	Tools        []string                    `yaml:"tools"`
+	Commands     []string                    `yaml:"commands"`
+	Artifacts    []string                    `yaml:"artifacts"`
+	CachePaths   []string                    `yaml:"cache_paths"`
+	Sandbox      bool                        `yaml:"sandbox"`
+	HostOnly     bool                        `yaml:"host_only"`
+	Root         string                      `yaml:"root"`
+	Environment  []string                    `yaml:"environment"`
+	Tags         map[string]string           `yaml:"tags"`
+	BuildAfter   []string                    `yaml:"build_after"`
+	Dependencies BuildDependencies           `yaml:"dependencies"`
 }
 
 // API Responses -- TODO use Swagger instead, this is silly

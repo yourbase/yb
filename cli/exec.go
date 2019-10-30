@@ -3,13 +3,14 @@ package cli
 import (
 	"context"
 	"flag"
+	"path/filepath"
 	"strings"
 
+	"github.com/johnewart/narwhal"
 	"github.com/johnewart/subcommands"
 
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/workspace"
 )
 
 type ExecCmd struct {
@@ -55,16 +56,24 @@ func (b *ExecCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 
 	if len(containers) > 0 {
 		log.ActiveSection("Containers")
+		localContainerWorkDir := filepath.Join(targetPackage.BuildRoot(), "containers")
+		MkdirAsNeeded(localContainerWorkDir)
+
+		log.Infof("Will use %s as the dependency work dir", localContainerWorkDir)
 		log.Infof("Starting %d dependencies...", len(containers))
-		sc, err := NewServiceContextWithId("exec", targetPackage, containers)
+		sc, err := narwhal.NewServiceContextWithId("exec", targetPackage.BuildRoot())
 		if err != nil {
 			log.Errorf("Couldn't create service context for dependencies: %v", err)
 			return subcommands.ExitFailure
 		}
 
-		if err = sc.StandUp(); err != nil {
-			log.Infof("Couldn't start dependencies: %v\n", err)
-			return subcommands.ExitFailure
+		for _, c := range containers {
+			// TODO: avoid setting these here
+			c.LocalWorkDir = localContainerWorkDir
+			if _, err = sc.StartContainer(c); err != nil {
+				log.Infof("Couldn't start dependencies: %v\n", err)
+				return subcommands.ExitFailure
+			}
 		}
 
 		buildData.Containers.ServiceContext = sc
