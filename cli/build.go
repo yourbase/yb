@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/johnewart/archiver"
+	"github.com/johnewart/narwhal"
 	"github.com/johnewart/subcommands"
 
 	ybconfig "github.com/yourbase/yb/config"
@@ -26,7 +27,6 @@ import (
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
-	. "github.com/yourbase/yb/workspace"
 )
 
 const TIME_FORMAT = "15:04:05 MST"
@@ -93,6 +93,7 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	}
 
 	manifest := targetPackage.Manifest
+	workDir := targetPackage.BuildRoot()
 
 	// Determine build target
 	buildTargetName := "default"
@@ -126,7 +127,7 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		if len(containers) > 0 && !b.NoSideContainer {
 			contextId := fmt.Sprintf("%s-%s", targetPackage.Name, target.Name)
 			log.Infof("Starting %d containers with context id %s...", len(containers), contextId)
-			sc, err := NewServiceContextWithId(contextId, targetPackage, target.Dependencies.ContainerList())
+			sc, err := narwhal.NewServiceContextWithId(contextId, workDir)
 			if err != nil {
 				log.Errorf("Couldn't create service context for dependencies: %v", err)
 				return subcommands.ExitFailure
@@ -143,9 +144,12 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 				}
 			}
 
-			if err = sc.StandUp(); err != nil {
-				log.Errorf("Couldn't start dependencies: %v", err)
-				return subcommands.ExitFailure
+			for _, c := range containers {
+				_, err := sc.StartContainer(c)
+				if err != nil {
+					log.Errorf("Couldn't start dependencies: %v", err)
+					return subcommands.ExitFailure
+				}
 			}
 
 		}
@@ -171,29 +175,30 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		log.Infof("Executing build steps in container")
 
 		target := primaryTarget
-		container := target.Container
-		container.Command = "/usr/bin/tail -f /dev/null"
+		containerDef := target.Container
+		containerDef.Command = "/usr/bin/tail -f /dev/null"
 
 		// Append build environment variables
 		//container.Environment = append(container.Environment, buildData.EnvironmentVariables()...)
-		container.Environment = []string{}
+		containerDef.Environment = []string{}
+
+		// Add package to mounts @ /workspace
+		sourceMapDir := "/workspace"
+		if containerDef.WorkDir != "" {
+			sourceMapDir = containerDef.WorkDir
+		}
+
+		log.Infof("Will mount package %s at %s in container", targetPackage.Path, sourceMapDir)
+		mount := fmt.Sprintf("%s:%s", targetPackage.Path, sourceMapDir)
+		containerDef.Mounts = append(containerDef.Mounts, mount)
 
 		if false {
 			u, _ := user.Current()
 			fmt.Printf("U! %s", u.Uid)
 		}
 
-		containerOpts := BuildContainerOpts{
-			ContainerOpts: container,
-			Package:       targetPackage,
-			Target:        target.Name,
-			//ExecUserId:    u.Uid,
-			//ExecGroupId:   u.Gid,
-			MountPackage: true,
-		}
-
 		// Do our build in a container - don't do the build locally
-		buildErr := b.BuildInsideContainer(target, containerOpts, buildData, b.ExecPrefix, b.ReuseContainers)
+		buildErr := b.BuildInsideContainer(target, containerDef, buildData, b.ExecPrefix, b.ReuseContainers)
 		if buildErr != nil {
 			log.Errorf("Unable to build %s inside container: %v", target.Name, buildErr)
 			return subcommands.ExitFailure
@@ -354,11 +359,11 @@ func Cleanup(b BuildData) {
 	}
 }
 
-func (b *BuildCmd) BuildInsideContainer(target BuildTarget, containerOpts BuildContainerOpts, buildData BuildData, execPrefix string, reuseOldContainer bool) error {
+func (b *BuildCmd) BuildInsideContainer(target BuildTarget, containerDef narwhal.ContainerDefinition, buildData BuildData, execPrefix string, reuseOldContainer bool) error {
 	// Perform build inside a container
 	image := target.Container.Image
 	log.Infof("Using container image: %s", image)
-	buildContainer, err := FindContainer(containerOpts)
+	buildContainer, err := buildData.Containers.ServiceContext.StartContainer(containerDef)
 
 	if err != nil {
 		return fmt.Errorf("Failed trying to find container: %v", err)
@@ -372,7 +377,7 @@ func (b *BuildCmd) BuildInsideContainer(target BuildTarget, containerOpts BuildC
 		if !reuseOldContainer {
 			log.Infof("Elected to not re-use containers, will remove the container")
 			// Try stopping it first if needed
-			if err = RemoveContainerById(buildContainer.Id); err != nil {
+			if err = narwhal.RemoveContainerById(buildContainer.Id); err != nil {
 				return fmt.Errorf("Unable to remove existing container: %v", err)
 			}
 		}
@@ -382,10 +387,10 @@ func (b *BuildCmd) BuildInsideContainer(target BuildTarget, containerOpts BuildC
 		log.Infof("Reusing existing build container %s", buildContainer.Id[0:12])
 	} else {
 		log.Infof("Creating a new build container...")
-		if c, err := NewContainer(containerOpts); err != nil {
+		if c, err := buildData.Containers.ServiceContext.StartContainer(containerDef); err != nil {
 			return fmt.Errorf("Couldn't create a new build container: %v", err)
 		} else {
-			buildContainer = &c
+			buildContainer = c
 		}
 	}
 
@@ -409,8 +414,8 @@ func (b *BuildCmd) BuildInsideContainer(target BuildTarget, containerOpts BuildC
 
 	// Set container work dir
 	containerWorkDir := "/workspace"
-	if containerOpts.ContainerOpts.WorkDir != "" {
-		containerWorkDir = containerOpts.ContainerOpts.WorkDir
+	if containerDef.WorkDir != "" {
+		containerWorkDir = containerDef.WorkDir
 	}
 
 	log.Infof("Building from %s in container: %s", containerWorkDir, buildContainer.Id)
@@ -618,13 +623,13 @@ func SetupBuildDependencies(pkg Package) (TargetTimer, error) {
 
 // Build metadata; used for things like interpolation in environment variables
 type ContainerData struct {
-	ServiceContext *ServiceContext
+	ServiceContext *narwhal.ServiceContext
 }
 
 func (c ContainerData) IP(label string) string {
 	// Check service context
 	if c.ServiceContext != nil {
-		if buildContainer, ok := c.ServiceContext.BuildContainers[label]; ok {
+		if buildContainer, ok := c.ServiceContext.Containers[label]; ok {
 			if ipv4, err := buildContainer.IPv4Address(); err == nil {
 				return ipv4
 			}
@@ -643,7 +648,7 @@ func (c ContainerData) IP(label string) string {
 func (c ContainerData) Environment() map[string]string {
 	result := make(map[string]string)
 	if c.ServiceContext != nil {
-		for label, container := range c.ServiceContext.BuildContainers {
+		for label, container := range c.ServiceContext.Containers {
 			if ipv4, err := container.IPv4Address(); err == nil {
 				key := fmt.Sprintf("YB_CONTAINER_%s_IP", strings.ToUpper(label))
 				result[key] = ipv4
