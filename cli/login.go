@@ -18,6 +18,11 @@ import (
 	"github.com/yourbase/yb/plumbing/log"
 )
 
+const (
+	APP_SETTINGS       = "/user/settings"
+	API_TOKEN_VALIDATE = "/apikey/validate/%s"
+)
+
 type LoginCmd struct {
 }
 
@@ -32,7 +37,7 @@ func (p *LoginCmd) SetFlags(f *flag.FlagSet) {
 
 func (p *LoginCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	reader := bufio.NewReader(os.Stdin)
-	tokenUrl, err := ybconfig.ManagementUrl("user/apitoken")
+	tokenUrl, err := ybconfig.ManagementUrl(APP_SETTINGS)
 	if err != nil {
 		log.Errorf("Couldn't determine login URL: %v\n", err)
 		return subcommands.ExitFailure
@@ -44,7 +49,7 @@ func (p *LoginCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	apiToken, _ := reader.ReadString('\n')
 	apiToken = strings.TrimSuffix(apiToken, "\n")
 
-	validationUrl, err := ybconfig.ApiUrl(fmt.Sprintf("/apikey/validate/%s", apiToken))
+	validationUrl, err := ybconfig.ApiUrl(fmt.Sprintf(API_TOKEN_VALIDATE, apiToken))
 
 	if err != nil {
 		log.Errorf("Unable to get token validation URL: %v\n", err)
