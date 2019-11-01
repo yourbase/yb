@@ -124,17 +124,17 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		// Setup dependencies
 		containers := target.Dependencies.Containers
 
+		contextId := fmt.Sprintf("%s-%s", targetPackage.Name, target.Name)
+		sc, err := narwhal.NewServiceContextWithId(contextId, workDir)
+		if err != nil {
+			log.Errorf("Couldn't create service context for dependencies: %v", err)
+			return subcommands.ExitFailure
+		}
+
+		buildData.Containers.ServiceContext = sc
+
 		if len(containers) > 0 && !b.NoSideContainer {
-			contextId := fmt.Sprintf("%s-%s", targetPackage.Name, target.Name)
 			log.Infof("Starting %d containers with context id %s...", len(containers), contextId)
-			sc, err := narwhal.NewServiceContextWithId(contextId, workDir)
-			if err != nil {
-				log.Errorf("Couldn't create service context for dependencies: %v", err)
-				return subcommands.ExitFailure
-			}
-
-			buildData.Containers.ServiceContext = sc
-
 			if !b.ReuseContainers {
 				log.Infof("Not reusing containers, will teardown existing ones and clean up after ourselves")
 				defer Cleanup(buildData)
