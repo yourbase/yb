@@ -1,6 +1,7 @@
 package plumbing
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"io"
@@ -27,6 +28,8 @@ import (
 	githttp "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 	"gopkg.in/src-d/go-git.v4/storage/memory"
 )
+
+const SNIFFLEN = 8000
 
 func ExecToStdoutWithExtraEnv(cmdString string, targetDir string, env []string) error {
 	env = append(os.Environ(), env...)
@@ -584,4 +587,38 @@ func CloneRepository(remote GitRemote, inMem bool, basePath string) (rep *git.Re
 	}
 
 	return
+}
+
+// IsBinary detects if data is a binary value based on:
+// http://git.kernel.org/cgit/git/git.git/tree/xdiff-interface.c?id=HEAD#n198
+func IsBinary(filePath string) (bool, error) {
+	r, err := os.Open(filePath)
+	if err != nil {
+		return false, err
+	}
+	defer r.Close()
+
+	reader := bufio.NewReader(r)
+	c := 0
+	for {
+		if c == SNIFFLEN {
+			break
+		}
+
+		b, err := reader.ReadByte()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return false, err
+		}
+
+		if b == byte(0) {
+			return true, nil
+		}
+
+		c++
+	}
+
+	return false, nil
 }
