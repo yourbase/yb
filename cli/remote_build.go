@@ -455,6 +455,7 @@ func (p *RemoteCmd) commandTraverseChanges(worktree *git.Worktree, saver *Worktr
 				// Unstaged modifications of any kind
 				if modUnstagedMap[mode[1]] {
 					if is, _ := IsBinary(path.Join(worktree.Filesystem.Root(), file)); is {
+						log.Infof("Binary file '%s' skipped", file)
 						continue
 					}
 					log.Debugf("Adding %s to the index", file)
@@ -519,6 +520,7 @@ func (p *RemoteCmd) libTraverseChanges(worktree *git.Worktree, saver *WorktreeSa
 			}
 		} else {
 			if is, _ := IsBinary(path.Join(worktree.Filesystem.Root(), n)); is {
+				log.Infof("Binary file '%s' skipped", n)
 				continue
 			}
 			log.Debugf("Saving %s to the tarball", n)
