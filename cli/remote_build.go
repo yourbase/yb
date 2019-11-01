@@ -55,6 +55,7 @@ type RemoteCmd struct {
 	committed      bool
 	publicRepo     bool
 	remotes        []GitRemote
+	skipped        []string
 }
 
 func (*RemoteCmd) Name() string     { return "remotebuild" }
@@ -302,6 +303,16 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			return subcommands.ExitFailure
 		}
 
+		if len(p.skipped) > 0 {
+			if patchProgress != nil {
+				fmt.Println()
+			}
+			log.Infoln("Skipped binary files:")
+			for _, n := range p.skipped {
+				fmt.Printf("   '%s'\n", n)
+			}
+		}
+
 		resetDone := false
 		if len(saver.Files) > 0 {
 			// Save them before committing
@@ -416,6 +427,38 @@ func (p *RemoteCmd) traverseChanges(worktree *git.Worktree, saver *WorktreeSave)
 	return
 }
 
+func (p *RemoteCmd) skip(file string, worktree *git.Worktree) bool {
+	filePath := path.Join(worktree.Filesystem.Root(), file)
+	fi, err := os.Stat(filePath)
+	if err != nil {
+		return true
+	}
+
+	if fi.IsDir() {
+		log.Debugf("Added a dir, checking it's contents: %s", file)
+		f, err := os.Open(filePath)
+		if err != nil {
+			return true
+		}
+		dir, err := f.Readdir(0)
+		for _, f := range dir {
+			child := path.Join(file, f.Name())
+			if p.skip(child, worktree) {
+				continue
+			} else {
+				worktree.Add(child)
+			}
+		}
+		return true
+	} else {
+		if is, _ := IsBinary(filePath); is {
+			p.skipped = append(p.skipped, filePath)
+			return true
+		}
+	}
+	return false
+}
+
 func (p *RemoteCmd) commandTraverseChanges(worktree *git.Worktree, saver *WorktreeSave) (err error) {
 	// TODO When go-git worktree.Status() works faster, we'll disable this
 	// Get worktree path
@@ -441,8 +484,7 @@ func (p *RemoteCmd) commandTraverseChanges(worktree *git.Worktree, saver *Worktr
 
 				// Unstaged modifications of any kind
 				if modUnstagedMap[mode[1]] {
-					if is, _ := IsBinary(path.Join(worktree.Filesystem.Root(), file)); is {
-						log.Infof("Binary file '%s' skipped", file)
+					if p.skip(file, worktree) {
 						continue
 					}
 					log.Tracef("Adding %s to the index", file)
@@ -506,8 +548,7 @@ func (p *RemoteCmd) libTraverseChanges(worktree *git.Worktree, saver *WorktreeSa
 				return fmt.Errorf("Unable to move %s -> %s: %v", s.Extra, n, err)
 			}
 		} else {
-			if is, _ := IsBinary(path.Join(worktree.Filesystem.Root(), n)); is {
-				log.Infof("Binary file '%s' skipped", n)
+			if p.skip(n, worktree) {
 				continue
 			}
 			log.Tracef("Saving %s to the tarball", n)
