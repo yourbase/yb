@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -440,6 +441,9 @@ func (p *RemoteCmd) commandTraverseChanges(worktree *git.Worktree, saver *Worktr
 
 				// Unstaged modifications of any kind
 				if modUnstagedMap[mode[1]] {
+					if is, _ := IsBinary(path.Join(worktree.Filesystem.Root(), file)); is {
+						continue
+					}
 					log.Tracef("Adding %s to the index", file)
 					// Add each detected change
 					if _, err = worktree.Add(file); err != nil {
@@ -501,6 +505,9 @@ func (p *RemoteCmd) libTraverseChanges(worktree *git.Worktree, saver *WorktreeSa
 				return fmt.Errorf("Unable to move %s -> %s: %v", s.Extra, n, err)
 			}
 		} else {
+			if is, _ := IsBinary(path.Join(worktree.Filesystem.Root(), n)); is {
+				continue
+			}
 			log.Tracef("Saving %s to the tarball", n)
 			if err = saver.Add(n); err != nil {
 				return fmt.Errorf("Need to save state, but couldn't: %v", err)
