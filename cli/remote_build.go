@@ -170,7 +170,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	if err != nil {
 		bootErrored()
-		log.Errorf("Error fetching project metadata: %v", err)
+		log.Error(err)
 		return subcommands.ExitFailure
 	}
 
@@ -713,6 +713,8 @@ func (p *RemoteCmd) fetchProject(urls []string) (*Project, GitRemote, error) {
 			p.publicRepo = true
 		} else if resp.StatusCode == 401 {
 			return nil, empty, fmt.Errorf("Unauthorized, authentication failed.\nPlease `yb login` again.")
+		} else if resp.StatusCode == 412 || resp.StatusCode == 404 {
+			return nil, empty, fmt.Errorf("Please verify if this private repository has %s installed.", ybconfig.CurrentGHAppUrl())
 		} else {
 			return nil, empty, fmt.Errorf("This is us, not you, please try again in a few minutes.")
 		}
