@@ -34,10 +34,11 @@ The primary features of the YB tooling are:
 
 # How to use it
 
+1. Install docker if you don't have it: https://hub.docker.com/search/?type=edition&offering=community (we know this can be annoying,  sorry about that)
 1. Download and install `yb` from https://dl.equinox.io/yourbase/yb/stable - alternatively, build the code in this repository using `go build` with a recent version of go. 
-2. Clone a package from GitHub 
-3. Write a simple build manifest (more below)
-4. Build awesome things!
+1. Clone a package from GitHub 
+1. Write a simple build manifest (more below)
+1. Build awesome things!
 
 # Getting Started
 
