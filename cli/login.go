@@ -32,7 +32,7 @@ func (p *LoginCmd) SetFlags(f *flag.FlagSet) {
 
 func (p *LoginCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	reader := bufio.NewReader(os.Stdin)
-	tokenUrl, err := ybconfig.ManagementUrl("user/apitoken")
+	tokenUrl, err := ybconfig.UserSettingsUrl()
 	if err != nil {
 		log.Errorf("Couldn't determine login URL: %v\n", err)
 		return subcommands.ExitFailure
@@ -44,7 +44,7 @@ func (p *LoginCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	apiToken, _ := reader.ReadString('\n')
 	apiToken = strings.TrimSuffix(apiToken, "\n")
 
-	validationUrl, err := ybconfig.ApiUrl(fmt.Sprintf("/apikey/validate/%s", apiToken))
+	validationUrl, err := ybconfig.TokenValidationUrl(apiToken)
 
 	if err != nil {
 		log.Errorf("Unable to get token validation URL: %v\n", err)

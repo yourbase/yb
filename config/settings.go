@@ -6,6 +6,11 @@ import (
 	"strings"
 )
 
+const (
+	APP_SETTINGS       = "/user/settings"
+	API_TOKEN_VALIDATE = "/apikey/validate/%s"
+)
+
 func ShouldUploadBuildLogs() bool {
 
 	if v, err := GetConfigValue("user", "upload_build_logs"); err == nil {
@@ -81,6 +86,10 @@ func ApiUrl(path string) (string, error) {
 	}
 }
 
+func TokenValidationUrl(apiToken string) (string, error) {
+	return ApiUrl(fmt.Sprintf(API_TOKEN_VALIDATE, apiToken))
+}
+
 func managementBaseUrl() (string, error) {
 	if url, exists := os.LookupEnv("YOURBASE_UI_URL"); exists {
 		return url, nil
@@ -122,6 +131,10 @@ func ManagementUrl(path string) (string, error) {
 	} else {
 		return fmt.Sprintf("%s%s", baseUrl, path), nil
 	}
+}
+
+func UserSettingsUrl() (string, error) {
+	return ManagementUrl(APP_SETTINGS)
 }
 
 func CurrentGHAppUrl() (gh string) {
