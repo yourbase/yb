@@ -36,7 +36,7 @@ import (
 
 var (
 	gitExe       string = "git" // UNIX
-	gitStatusCmd string = "%s status -s --porcelain"
+	gitStatusCmd string = "%s status --porcelain"
 )
 
 type RemoteCmd struct {
@@ -54,6 +54,7 @@ type RemoteCmd struct {
 	dryRun         bool
 	committed      bool
 	publicRepo     bool
+	backupWorktree bool
 	remotes        []GitRemote
 }
 
@@ -74,6 +75,7 @@ func (p *RemoteCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.committed, "committed", false, "Only remote build committed changes")
 	f.BoolVar(&p.printStatus, "print-status", false, "Print result of `git status` used to grab untracked/unstaged changes")
 	f.BoolVar(&p.goGitStatus, "go-git-status", false, "Use internal go-git.v4 status instead of calling `git status`, can be slow")
+	f.BoolVar(&p.backupWorktree, "backup-worktree", false, "Saves uncommitted work into a tarball")
 }
 
 func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
@@ -193,14 +195,12 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	// First things first:
 	// 1. Define correct branch name
-	// 2. Try to clone the remote repository using the defined branch
-	// 3. Then try to clone it using the default 'master' branch
-	// 4. Define common ancestor commit
-	// 5. Generate patch file
-	//    5.1. Comparing every local commits with the one upstream
-	//    5.2. Comparing every unstaged/untracked changes with the one upstream
-	//    5.3. Save the patch and compress it
-	// 6. Submit build!
+	// 2. Define common ancestor commit
+	// 3. Generate patch file
+	//    3.1. Comparing every local commits with the one upstream
+	//    3.2. Comparing every unstaged/untracked changes with the one upstream
+	//    3.3. Save the patch and compress it
+	// 4. Submit build!
 
 	remote.Branch, err = defineBranch(workRepo, p.branch)
 	if err != nil {
@@ -289,8 +289,8 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			log.Info("Generating patch for local changes")
 		}
 
-		log.Debug("Start backing up the worktree save")
-		saver, err := NewWorktreeSave(targetPackage.Path, headCommit.Hash.String())
+		log.Debug("Start backing up the worktree-save")
+		saver, err := NewWorktreeSave(targetPackage.Path, headCommit.Hash.String(), p.backupWorktree)
 		if err != nil {
 			patchErrored()
 			log.Errorf("%s", err)
@@ -300,7 +300,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		// There's also the problem detecting CRLF in Windows text/source files
 		//if err = worktree.AddGlob("."); err != nil {
 		if skippedBinaries, err := p.traverseChanges(worktree, saver); err != nil {
-			log.Errorf("%v", err)
+			log.Error(err)
 			patchErrored()
 			return subcommands.ExitFailure
 		} else {
@@ -316,7 +316,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 
 		resetDone := false
-		if len(saver.Files) > 0 {
+		if p.backupWorktree && len(saver.Files) > 0 {
 			log.Debug("Saving a tarball  with all the worktree changes made")
 			// Save them before committing
 			if saveFile, err := saver.Save(); err != nil {
@@ -432,7 +432,7 @@ func (p *RemoteCmd) traverseChanges(worktree *git.Worktree, saver *WorktreeSave)
 		log.Debug("Decided to use Go-Git")
 		skipped, err = p.libTraverseChanges(worktree, saver)
 	} else {
-		log.Debug("Decided to use `git status -s --porcelain`")
+		log.Debugf("Decided to use `%s`", gitStatusCmd)
 		skipped, err = p.commandTraverseChanges(worktree, saver)
 	}
 	return
