@@ -110,9 +110,10 @@ type TokenResponse struct {
 }
 
 type WorktreeSave struct {
-	Hash  string
-	Path  string
-	Files []string
+	Hash    string
+	Path    string
+	Files   []string
+	Enabled bool
 }
 
 type CommandTimer struct {
