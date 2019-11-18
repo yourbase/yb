@@ -308,7 +308,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 				if patchProgress != nil {
 					fmt.Println()
 				}
-				log.Infoln("Skipped binary files:")
+				log.Infoln("Skipped binaries:")
 				for _, n := range skippedBinaries {
 					fmt.Printf("   '%s'\n", n)
 				}
