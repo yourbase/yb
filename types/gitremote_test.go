@@ -11,6 +11,8 @@ func TestGitRemoteParse(t *testing.T) {
 		token    string
 		user     string
 		password string
+		project  string
+		org      string
 		valid    bool
 		rType    RemoteType
 	}{
@@ -20,6 +22,8 @@ func TestGitRemoteParse(t *testing.T) {
 			user:     "x-access-token",
 			password: "X86jsl",
 			valid:    true,
+			project:  "spankpay",
+			org:      "SpankChain",
 			rType:    HttpsRemote,
 		},
 		{
@@ -28,6 +32,8 @@ func TestGitRemoteParse(t *testing.T) {
 			user:     "x-access-token",
 			password: "token",
 			valid:    true,
+			project:  "godif",
+			org:      "beholders-eye",
 			rType:    HttpsRemote,
 		},
 		{
@@ -36,6 +42,8 @@ func TestGitRemoteParse(t *testing.T) {
 			user:     "x-access-token",
 			password: "token",
 			valid:    true,
+			project:  "t",
+			org:      "something",
 			rType:    HttpsRemote,
 		},
 		{
@@ -49,6 +57,8 @@ func TestGitRemoteParse(t *testing.T) {
 			user:     "x-access-token",
 			password: "token",
 			valid:    true,
+			project:  "spankpay",
+			org:      "SpankChain",
 			rType:    HttpRemote,
 		},
 		{
@@ -74,6 +84,8 @@ func TestGitRemoteParse(t *testing.T) {
 			user:     "git",
 			password: "",
 			valid:    true,
+			project:  "ybdocs",
+			org:      "yourbase",
 			rType:    SshRemote,
 		},
 		{
@@ -81,6 +93,8 @@ func TestGitRemoteParse(t *testing.T) {
 			token:    "",
 			user:     "git",
 			password: "calhamba",
+			project:  "where",
+			org:      "something",
 			valid:    true,
 			rType:    SshRemote,
 		},
@@ -90,6 +104,8 @@ func TestGitRemoteParse(t *testing.T) {
 			user:     "git",
 			password: "",
 			valid:    true,
+			project:  "where",
+			org:      "something",
 			rType:    SshRemote,
 		},
 	} {
@@ -113,6 +129,14 @@ func TestGitRemoteParse(t *testing.T) {
 
 		if l.rType != got.Type {
 			t.Errorf("Password: got: '%v' wanted: '%v'", got.Type, l.rType)
+		}
+
+		if l.project != got.Project {
+			t.Errorf("Project: got: '%v' wanted: '%v'", got.Project, l.project)
+		}
+
+		if l.org != got.Org {
+			t.Errorf("Org: got: '%v' wanted: '%v'", got.Org, l.org)
 		}
 	}
 }

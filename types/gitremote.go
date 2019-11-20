@@ -23,6 +23,8 @@ type GitRemote struct {
 	Password string
 	Domain   string
 	Path     string
+	Org      string
+	Project  string
 	Branch   string
 	Type     RemoteType
 }
@@ -30,6 +32,14 @@ type GitRemote struct {
 func NewGitRemote(url string) (r GitRemote) {
 	r.Url = url
 	r.Token, r.User, r.Password, r.Domain, r.Path, r.Protocol, r.Type = parseRemote(url)
+
+	// NOTE maybe too GH-ish:
+	pathParts := strings.Split(r.Path, "/")
+	r.Org = pathParts[0]
+	if len(pathParts) > 1 {
+		project := pathParts[1]
+		r.Project = strings.Replace(project, ".git", "", -1)
+	}
 
 	return
 }
