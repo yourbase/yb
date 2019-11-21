@@ -2,6 +2,8 @@ module github.com/yourbase/yb
 
 replace github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.2
 
+replace github.com/mutagen-io/mutagen => /Users/jewart/Work/mutagen
+
 require (
 	github.com/beholders-eye/diffparser v0.0.0-20190814025112-fcedf0a097ba
 	github.com/containerd/continuity v0.0.0-20190827140505-75bee3e2ccb6 // indirect
@@ -29,9 +31,11 @@ require (
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/matishsiao/goInfo v0.0.0-20170803142006-617e6440957e
 	github.com/morikuni/aec v1.0.0 // indirect
+	github.com/mutagen-io/mutagen v0.10.0
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
 	github.com/nwaples/rardecode v1.0.0 // indirect
 	github.com/pierrec/lz4 v2.3.0+incompatible // indirect
+	github.com/pkg/errors v0.8.1
 	github.com/sirupsen/logrus v1.4.2
 	github.com/smartystreets/assertions v1.0.1 // indirect
 	github.com/smartystreets/goconvey v0.0.0-20190731233626-505e41936337 // indirect
@@ -44,7 +48,6 @@ require (
 	golang.org/x/sys v0.0.0-20191029155521-f43be2a4598c // indirect
 	google.golang.org/genproto v0.0.0-20191028173616-919d9bdd9fe6 // indirect
 	google.golang.org/grpc v1.24.0 // indirect
-	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/ini.v1 v1.49.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	gopkg.in/src-d/go-billy.v4 v4.3.2
