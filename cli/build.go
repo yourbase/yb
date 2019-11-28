@@ -15,6 +15,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -26,6 +27,7 @@ import (
 	. "github.com/yourbase/yb/packages"
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
+	"github.com/yourbase/yb/sync"
 	. "github.com/yourbase/yb/types"
 )
 
@@ -183,14 +185,16 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		containerDef.Environment = []string{}
 
 		// Add package to mounts @ /workspace
-		sourceMapDir := "/workspace"
-		if containerDef.WorkDir != "" {
-			sourceMapDir = containerDef.WorkDir
-		}
+		/*
+			sourceMapDir := "/workspace"
+			if containerDef.WorkDir != "" {
+				sourceMapDir = containerDef.WorkDir
+			}
 
-		log.Infof("Will mount package %s at %s in container", targetPackage.Path, sourceMapDir)
-		mount := fmt.Sprintf("%s:%s", targetPackage.Path, sourceMapDir)
-		containerDef.Mounts = append(containerDef.Mounts, mount)
+				log.Infof("Will mount package %s at %s in container", targetPackage.Path, sourceMapDir)
+				mount := fmt.Sprintf("%s:%s", targetPackage.Path, sourceMapDir)
+				containerDef.Mounts = append(containerDef.Mounts, mount)
+		*/
 
 		if false {
 			u, _ := user.Current()
@@ -420,6 +424,31 @@ func (b *BuildCmd) BuildInsideContainer(target BuildTarget, containerDef narwhal
 
 	log.Infof("Building from %s in container: %s", containerWorkDir, buildContainer.Id)
 
+	localDir, _ := os.Getwd()
+
+	log.Infof("Setting up synchronization between local working directory and %s...", containerWorkDir)
+	err = sync.StartSyncService(localDir, buildContainer.Id, containerWorkDir)
+	if err != nil {
+		return fmt.Errorf("Unable to start sync service between %s and %s in container %s: %v", localDir, containerWorkDir, buildContainer.Id, err)
+	}
+
+	log.Infof("Synchronization is running!")
+
+	for _, portDef := range containerDef.Ports {
+		parts := strings.Split(portDef, ":")
+		if len(parts) == 2 {
+			localPort, _ := strconv.Atoi(parts[0])
+			containerPort, _ := strconv.Atoi(parts[1])
+
+			//localPort = localPort + 10
+
+			log.Infof("Want to forward %d locally to %d in the container", localPort, containerPort)
+			if err := sync.StartForwardService(localPort, buildContainer.Id, containerPort); err != nil {
+				return fmt.Errorf("Couldn't start port forward: %v", err)
+			}
+		}
+	}
+
 	// Local path to binary that we want to inject
 	// TODO: this only supports Linux containers
 	localYbPath := ""
@@ -457,6 +486,11 @@ func (b *BuildCmd) BuildInsideContainer(target BuildTarget, containerDef narwhal
 		return fmt.Errorf("Unable to upload YB to container: %v", err)
 	}
 
+	mkdirCmd := fmt.Sprintf("mkdir -p %s", containerWorkDir)
+	if err := buildContainer.ExecToStdout(mkdirCmd, "/"); err != nil {
+		return fmt.Errorf("Aborting build, unable to run %s: %v", mkdirCmd, err)
+	}
+
 	if !devMode {
 		// Default to whatever channel being used, unless told otherwise
 		// TODO: Make the download URL used for downloading track the latest stable
@@ -473,7 +507,6 @@ func (b *BuildCmd) BuildInsideContainer(target BuildTarget, containerDef narwhal
 			return fmt.Errorf("Aborting build, unable to run %s: %v", updateCmd, err)
 		}
 	}
-
 	cmdString := "/yb build"
 
 	if len(execPrefix) > 0 {

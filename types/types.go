@@ -94,6 +94,7 @@ type BuildTarget struct {
 	Tags         map[string]string           `yaml:"tags"`
 	BuildAfter   []string                    `yaml:"build_after"`
 	Dependencies BuildDependencies           `yaml:"dependencies"`
+	Ports        []string                    `yaml:"ports"`
 }
 
 // API Responses -- TODO use Swagger instead, this is silly

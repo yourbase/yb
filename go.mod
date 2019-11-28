@@ -1,7 +1,5 @@
 module github.com/yourbase/yb
 
-replace github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.2
-
 require (
 	github.com/beholders-eye/diffparser v0.0.0-20190814025112-fcedf0a097ba
 	github.com/containerd/continuity v0.0.0-20190827140505-75bee3e2ccb6 // indirect
@@ -28,8 +26,11 @@ require (
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/matishsiao/goInfo v0.0.0-20170803142006-617e6440957e
 	github.com/morikuni/aec v1.0.0 // indirect
+	github.com/mutagen-io/mutagen v0.10.0
+	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
 	github.com/nwaples/rardecode v1.0.0 // indirect
 	github.com/pierrec/lz4 v2.3.0+incompatible // indirect
+	github.com/pkg/errors v0.8.1
 	github.com/sirupsen/logrus v1.4.2
 	github.com/smartystreets/assertions v1.0.1 // indirect
 	github.com/smartystreets/goconvey v0.0.0-20190731233626-505e41936337 // indirect
