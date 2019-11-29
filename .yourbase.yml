@@ -28,6 +28,15 @@ build_targets:
       - pip install awscli
       - bash release.sh 
 
+  - name: experimental_release
+    build_after:
+      - default
+    environment:
+      - CHANNEL=experimental
+    commands:
+      - pip install awscli
+      - bash release.sh 
+
   - name: linux
     build_after:
       - default
@@ -54,6 +63,10 @@ ci:
   builds:
     - name: test_build
       build_target: default
+
+    - name: exp_release
+      build_target: experimental_release
+      when: branch CONTAINS '-experimental' AND tagged IS true
 
     - name: pre_release
       build_target: preview_release
