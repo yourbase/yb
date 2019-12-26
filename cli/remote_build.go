@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -35,7 +36,7 @@ import (
 
 var (
 	gitExe       string = "git" // UNIX
-	gitStatusCmd string = "%s status -s --porcelain"
+	gitStatusCmd string = "%s status --porcelain"
 )
 
 type RemoteCmd struct {
@@ -53,6 +54,7 @@ type RemoteCmd struct {
 	dryRun         bool
 	committed      bool
 	publicRepo     bool
+	backupWorktree bool
 	remotes        []GitRemote
 }
 
@@ -73,6 +75,7 @@ func (p *RemoteCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.committed, "committed", false, "Only remote build committed changes")
 	f.BoolVar(&p.printStatus, "print-status", false, "Print result of `git status` used to grab untracked/unstaged changes")
 	f.BoolVar(&p.goGitStatus, "go-git-status", false, "Use internal go-git.v4 status instead of calling `git status`, can be slow")
+	f.BoolVar(&p.backupWorktree, "backup-worktree", false, "Saves uncommitted work into a tarball")
 }
 
 func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
@@ -192,14 +195,12 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	// First things first:
 	// 1. Define correct branch name
-	// 2. Try to clone the remote repository using the defined branch
-	// 3. Then try to clone it using the default 'master' branch
-	// 4. Define common ancestor commit
-	// 5. Generate patch file
-	//    5.1. Comparing every local commits with the one upstream
-	//    5.2. Comparing every unstaged/untracked changes with the one upstream
-	//    5.3. Save the patch and compress it
-	// 6. Submit build!
+	// 2. Define common ancestor commit
+	// 3. Generate patch file
+	//    3.1. Comparing every local commits with the one upstream
+	//    3.2. Comparing every unstaged/untracked changes with the one upstream
+	//    3.3. Save the patch and compress it
+	// 4. Submit build!
 
 	remote.Branch, err = defineBranch(workRepo, p.branch)
 	if err != nil {
@@ -288,8 +289,8 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			log.Info("Generating patch for local changes")
 		}
 
-		log.Debug("Start backing up the worktree save")
-		saver, err := NewWorktreeSave(targetPackage.Path, headCommit.Hash.String())
+		log.Debug("Start backing up the worktree-save")
+		saver, err := NewWorktreeSave(targetPackage.Path, headCommit.Hash.String(), p.backupWorktree)
 		if err != nil {
 			patchErrored()
 			log.Errorf("%s", err)
@@ -298,14 +299,24 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		// TODO When go-git worktree.Status() get faster use this instead:
 		// There's also the problem detecting CRLF in Windows text/source files
 		//if err = worktree.AddGlob("."); err != nil {
-		if err = p.traverseChanges(worktree, saver); err != nil {
-			log.Errorf("%v", err)
+		if skippedBinaries, err := p.traverseChanges(worktree, saver); err != nil {
+			log.Error(err)
 			patchErrored()
 			return subcommands.ExitFailure
+		} else {
+			if len(skippedBinaries) > 0 {
+				if patchProgress != nil {
+					fmt.Println()
+				}
+				log.Infoln("Skipped binaries:")
+				for _, n := range skippedBinaries {
+					fmt.Printf("   '%s'\n", n)
+				}
+			}
 		}
 
 		resetDone := false
-		if len(saver.Files) > 0 {
+		if p.backupWorktree && len(saver.Files) > 0 {
 			log.Debug("Saving a tarball  with all the worktree changes made")
 			// Save them before committing
 			if saveFile, err := saver.Save(); err != nil {
@@ -416,18 +427,52 @@ func commitTempChanges(w *git.Worktree, c *object.Commit) (latest plumbing.Hash,
 	return
 }
 
-func (p *RemoteCmd) traverseChanges(worktree *git.Worktree, saver *WorktreeSave) (err error) {
+func (p *RemoteCmd) traverseChanges(worktree *git.Worktree, saver *WorktreeSave) (skipped []string, err error) {
 	if p.goGitStatus {
 		log.Debug("Decided to use Go-Git")
-		err = p.libTraverseChanges(worktree, saver)
+		skipped, err = p.libTraverseChanges(worktree, saver)
 	} else {
-		log.Debug("Decided to use `git status -s --porcelain`")
-		err = p.commandTraverseChanges(worktree, saver)
+		log.Debugf("Decided to use `%s`", gitStatusCmd)
+		skipped, err = p.commandTraverseChanges(worktree, saver)
 	}
 	return
 }
 
-func (p *RemoteCmd) commandTraverseChanges(worktree *git.Worktree, saver *WorktreeSave) (err error) {
+func shouldSkip(file string, worktree *git.Worktree) bool {
+	filePath := path.Join(worktree.Filesystem.Root(), file)
+	fi, err := os.Stat(filePath)
+	if err != nil {
+		return true
+	}
+
+	if fi.IsDir() {
+		log.Debugf("Added a dir, checking it's contents: %s", file)
+		f, err := os.Open(filePath)
+		if err != nil {
+			return true
+		}
+		dir, err := f.Readdir(0)
+		log.Debugf("Ls dir %s", filePath)
+		for _, f := range dir {
+			child := path.Join(file, f.Name())
+			log.Debugf("Shoud skip child '%s'?", child)
+			if shouldSkip(child, worktree) {
+				continue
+			} else {
+				worktree.Add(child)
+			}
+		}
+		return true
+	} else {
+		log.Debugf("Should skip '%s'?", filePath)
+		if is, _ := IsBinary(filePath); is {
+			return true
+		}
+	}
+	return false
+}
+
+func (p *RemoteCmd) commandTraverseChanges(worktree *git.Worktree, saver *WorktreeSave) (skipped []string, err error) {
 	// TODO When go-git worktree.Status() works faster, we'll disable this
 	// Get worktree path
 	repoDir := worktree.Filesystem.Root()
@@ -435,7 +480,7 @@ func (p *RemoteCmd) commandTraverseChanges(worktree *git.Worktree, saver *Worktr
 	buf := bytes.NewBuffer(nil)
 	log.Debugf("Executing '%v'...", cmdString)
 	if err = ExecSilentlyToWriter(cmdString, repoDir, buf); err != nil {
-		return fmt.Errorf("When running git status: %v", err)
+		return skipped, fmt.Errorf("When running git status: %v", err)
 	}
 
 	if buf.Len() > 0 {
@@ -453,17 +498,21 @@ func (p *RemoteCmd) commandTraverseChanges(worktree *git.Worktree, saver *Worktr
 
 				// Unstaged modifications of any kind
 				if modUnstagedMap[mode[1]] {
+					if shouldSkip(file, worktree) {
+						skipped = append(skipped, file)
+						continue
+					}
 					log.Debugf("Adding %s to the index", file)
 					// Add each detected change
 					if _, err = worktree.Add(file); err != nil {
-						return fmt.Errorf("Unable to add %s: %v", file, err)
+						return skipped, fmt.Errorf("Unable to add %s: %v", file, err)
 					}
 
 					if mode[1] != 'D' {
 						// No need to add deletion to the saver, right?
 						log.Debugf("Saving %s to the tarball", file)
 						if err = saver.Add(file); err != nil {
-							return fmt.Errorf("Need to save state, but couldn't: %v", err)
+							return skipped, fmt.Errorf("Need to save state, but couldn't: %v", err)
 						}
 					}
 
@@ -475,13 +524,13 @@ func (p *RemoteCmd) commandTraverseChanges(worktree *git.Worktree, saver *Worktr
 			} else if err == io.EOF {
 				break
 			} else if err != nil {
-				return fmt.Errorf("When running git status: %v", err)
+				return skipped, fmt.Errorf("When running git status: %v", err)
 			}
 		}
 	}
 	return
 }
-func (p *RemoteCmd) libTraverseChanges(worktree *git.Worktree, saver *WorktreeSave) (err error) {
+func (p *RemoteCmd) libTraverseChanges(worktree *git.Worktree, saver *WorktreeSave) (skipped []string, err error) {
 	// This could get real slow, check https://github.com/src-d/go-git/issues/844
 	status, err := worktree.Status()
 	if err != nil {
@@ -499,7 +548,8 @@ func (p *RemoteCmd) libTraverseChanges(worktree *git.Worktree, saver *WorktreeSa
 		if s.Worktree == git.Deleted {
 
 			if _, err = worktree.Remove(n); err != nil {
-				return fmt.Errorf("Unable to remove %s: %v", n, err)
+				err = fmt.Errorf("Unable to remove %s: %v", n, err)
+				return
 			}
 		} else if s.Staging == git.Deleted {
 			// Ignore it
@@ -507,21 +557,29 @@ func (p *RemoteCmd) libTraverseChanges(worktree *git.Worktree, saver *WorktreeSa
 
 			log.Debugf("Saving %s to the tarball", n)
 			if err = saver.Add(n); err != nil {
-				return fmt.Errorf("Need to save state, but couldn't: %v", err)
+				err = fmt.Errorf("Need to save state, but couldn't: %v", err)
+				return
 			}
 
 			if _, err = worktree.Move(s.Extra, n); err != nil {
-				return fmt.Errorf("Unable to move %s -> %s: %v", s.Extra, n, err)
+				err = fmt.Errorf("Unable to move %s -> %s: %v", s.Extra, n, err)
+				return
 			}
 		} else {
+			if shouldSkip(n, worktree) {
+				skipped = append(skipped, n)
+				continue
+			}
 			log.Debugf("Saving %s to the tarball", n)
 			if err = saver.Add(n); err != nil {
-				return fmt.Errorf("Need to save state, but couldn't: %v", err)
+				err = fmt.Errorf("Need to save state, but couldn't: %v", err)
+				return
 			}
 
 			// Add each detected change
 			if _, err = worktree.Add(n); err != nil {
-				return fmt.Errorf("Unable to add %s: %v", n, err)
+				err = fmt.Errorf("Unable to add %s: %v", n, err)
+				return
 			}
 		}
 	}
