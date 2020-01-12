@@ -9,7 +9,9 @@ import (
 	"strings"
 
 	"github.com/johnewart/subcommands"
+	"github.com/yourbase/narwhal"
 	"github.com/yourbase/yb/plumbing/log"
+	"github.com/yourbase/yb/runtime"
 	//"path/filepath"
 )
 
@@ -35,6 +37,39 @@ Executing the target involves:
 3. Start target
 */
 func (b *RunCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+
+	if false {
+	containers := []narwhal.ContainerDefinition{
+		narwhal.ContainerDefinition{
+			Image: "redis:latest",
+			Label: "redis",
+		},
+	}
+
+	opts := runtime.ContainerRuntimeOpts{
+		Identifier:           "pkg-runtime",
+		ContainerDefinitions: containers,
+	}
+
+	r, err := runtime.NewContainerRuntime(opts)
+
+	if err != nil {
+		log.Errorf("%v", err)
+		return subcommands.ExitFailure
+	}
+
+	defer r.Shutdown()
+
+	p := runtime.Process{Command: "ls /", Interactive: false, Directory: "/"}
+
+	if err := r.Run(p, "redis"); err != nil {
+		log.Errorf("%v", err)
+		return subcommands.ExitFailure
+	}
+
+	return subcommands.ExitSuccess
+}
+
 	if len(f.Args()) == 0 {
 		fmt.Println(b.Usage())
 		return subcommands.ExitFailure
