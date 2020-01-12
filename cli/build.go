@@ -118,43 +118,6 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	}
 
 	buildData := NewBuildData()
-
-	if !b.NoContainer {
-		target := primaryTarget
-		// Setup dependencies
-		containers := target.Dependencies.Containers
-
-		contextId := fmt.Sprintf("%s-%s", targetPackage.Name, target.Name)
-		sc, err := narwhal.NewServiceContextWithId(contextId, workDir)
-		if err != nil {
-			log.Errorf("Couldn't create service context for dependencies: %v", err)
-			return subcommands.ExitFailure
-		}
-
-		buildData.Containers.ServiceContext = sc
-
-		if len(containers) > 0 && !b.NoSideContainer {
-			log.Infof("Starting %d containers with context id %s...", len(containers), contextId)
-			if !b.ReuseContainers {
-				log.Infof("Not reusing containers, will teardown existing ones and clean up after ourselves")
-				defer Cleanup(buildData)
-				if err := sc.TearDown(); err != nil {
-					log.Errorf("Couldn't terminate existing containers: %v", err)
-					// FAIL?
-				}
-			}
-
-			for _, c := range containers {
-				_, err := sc.StartContainer(c)
-				if err != nil {
-					log.Errorf("Couldn't start dependencies: %v", err)
-					return subcommands.ExitFailure
-				}
-			}
-
-		}
-	}
-
 	// Do this after the containers are up
 	for _, envString := range primaryTarget.Environment {
 		parts := strings.Split(envString, "=")
@@ -168,9 +131,20 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		buildData.SetEnv(key, value)
 	}
 
-	_, exists := os.LookupEnv("YB_NO_CONTAINER_BUILDS")
-	// Should we build in a container?
-	if !b.NoContainer && !primaryTarget.HostOnly && !exists {
+
+	var runtimeCtx *Runtime 
+	contextId := fmt.Sprintf("%s-%s", targetPackage.Name, target.Name)
+
+	if !b.NoContainer {
+		target := primaryTarget
+
+		opts := runtime.ContainerRuntimeOpts { 
+			Identifier: contextId, 
+			ContainerDefinitions: target.Dependencies.Containers,
+		}
+		runtimeCtx := runtime.NewContainerRuntime(opts)
+	}
+
 		log.StartSection("BUILD IN CONTAINER", "BCONTAINER")
 		log.Infof("Executing build steps in container")
 

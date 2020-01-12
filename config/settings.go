@@ -6,10 +6,22 @@ import (
 	"strings"
 )
 
+type IsolationType int
+
+const (
+	IsolationContainers IsolationType = 0
+	IsolationVMs        IsolationType = 1
+)
+
 const (
 	APP_SETTINGS       = "/user/settings"
 	API_TOKEN_VALIDATE = "/apikey/validate/%s"
 )
+
+// TODO per-project?
+func Isolation() IsolationType {
+	return IsolationContainers
+}
 
 func ShouldUploadBuildLogs() bool {
 
