@@ -3,7 +3,7 @@ package types
 import (
 	"time"
 
-	"github.com/johnewart/narwhal"
+	"github.com/yourbase/narwhal"
 )
 
 const (

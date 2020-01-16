@@ -3,11 +3,12 @@ package cli
 import (
 	"context"
 	"flag"
+	"fmt"
 	"path/filepath"
 	"strings"
 
-	"github.com/johnewart/narwhal"
 	"github.com/johnewart/subcommands"
+	"github.com/yourbase/narwhal"
 
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
@@ -61,7 +62,10 @@ func (b *ExecCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 
 		log.Infof("Will use %s as the dependency work dir", localContainerWorkDir)
 		log.Infof("Starting %d dependencies...", len(containers))
-		sc, err := narwhal.NewServiceContextWithId("exec", targetPackage.BuildRoot())
+
+		serviceContextName := fmt.Sprintf("exec-%s", targetPackage.Name)
+
+		sc, err := narwhal.NewServiceContextWithId(serviceContextName, targetPackage.BuildRoot())
 		if err != nil {
 			log.Errorf("Couldn't create service context for dependencies: %v", err)
 			return subcommands.ExitFailure
