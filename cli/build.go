@@ -19,8 +19,8 @@ import (
 	"time"
 
 	"github.com/johnewart/archiver"
-	"github.com/johnewart/narwhal"
 	"github.com/johnewart/subcommands"
+	"github.com/yourbase/narwhal"
 
 	ybconfig "github.com/yourbase/yb/config"
 	. "github.com/yourbase/yb/packages"
