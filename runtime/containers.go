@@ -21,10 +21,15 @@ type ContainerTarget struct {
 type ContainerRuntimeOpts struct {
 	Identifier           string
 	ContainerDefinitions []narwhal.ContainerDefinition
+	LocalWorkDir         string
 }
 
 func (t *ContainerTarget) Run(p Process) error {
-	return t.Container.ExecToStdout(p.Command, "/")
+	if p.Interactive {
+		return t.Container.ExecInteractively(p.Command, p.Directory)
+	} else {
+		return t.Container.ExecToStdout(p.Command, p.Directory)
+	}
 }
 
 func (r *ContainerRuntime) AddTarget(targetId string, t *ContainerTarget) error {
@@ -59,7 +64,7 @@ func (r *ContainerRuntime) AddContainer(cd narwhal.ContainerDefinition) error {
 
 func NewContainerRuntime(opts ContainerRuntimeOpts) (*ContainerRuntime, error) {
 
-	sc, err := narwhal.NewServiceContext(opts.Identifier)
+	sc, err := narwhal.NewServiceContextWithId(opts.Identifier, opts.LocalWorkDir)
 	if err != nil {
 		return nil, err
 	}

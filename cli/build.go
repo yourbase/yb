@@ -7,16 +7,17 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/matishsiao/goInfo"
 	"io"
 	"io/ioutil"
 	"os"
 	"os/signal"
 	"os/user"
 	"path/filepath"
-	"runtime"
+	goruntime "runtime"
 	"strings"
 	"time"
+
+	"github.com/matishsiao/goInfo"
 
 	"github.com/johnewart/archiver"
 	"github.com/johnewart/subcommands"
@@ -26,6 +27,7 @@ import (
 	. "github.com/yourbase/yb/packages"
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
+	"github.com/yourbase/yb/runtime"
 	. "github.com/yourbase/yb/types"
 )
 
@@ -93,7 +95,7 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	}
 
 	manifest := targetPackage.Manifest
-	workDir := targetPackage.BuildRoot()
+	//workDir := targetPackage.BuildRoot()
 
 	// Determine build target
 	buildTargetName := "default"
@@ -131,20 +133,20 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		buildData.SetEnv(key, value)
 	}
 
+	target := primaryTarget
 
-	var runtimeCtx *Runtime 
+	var runtimeCtx *runtime.ContainerRuntime
 	contextId := fmt.Sprintf("%s-%s", targetPackage.Name, target.Name)
 
-	if !b.NoContainer {
-		target := primaryTarget
+	if !b.NoContainer && len(target.Dependencies.ContainerList()) > 0 {
 
-		opts := runtime.ContainerRuntimeOpts { 
-			Identifier: contextId, 
-			ContainerDefinitions: target.Dependencies.Containers,
+		opts := runtime.ContainerRuntimeOpts{
+			Identifier:           contextId,
+			ContainerDefinitions: target.Dependencies.ContainerList(),
 		}
-		runtimeCtx := runtime.NewContainerRuntime(opts)
-	}
+		runtimeCtx, err = runtime.NewContainerRuntime(opts)
 
+		fmt.Printf("Service context: %s\n", runtimeCtx.ServiceContext.Id)
 		log.StartSection("BUILD IN CONTAINER", "BCONTAINER")
 		log.Infof("Executing build steps in container")
 
@@ -404,7 +406,7 @@ func (b *BuildCmd) BuildInsideContainer(target BuildTarget, containerDef narwhal
 	// Linux so we might as well behave the same on all platforms
 	// If not development mode, download the binary from the distribution channel
 	if b.Version == "DEVELOPMENT" {
-		if runtime.GOOS == "linux" {
+		if goruntime.GOOS == "linux" {
 			// TODO: If we support building inside a container that's not Linux we will want to do something different
 			log.Infof("Development version in use, will upload development binary to the container")
 			devMode = true
