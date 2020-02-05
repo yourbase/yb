@@ -81,8 +81,8 @@ func (bt PythonBuildTool) Install() error {
 }
 
 func (bt PythonBuildTool) DownloadUrl() string {
-	opsys := OS()
-	arch := Arch()
+	opsys := ""
+	arch := ""
 	extension := "sh"
 	version := bt.Version()
 
@@ -90,22 +90,21 @@ func (bt PythonBuildTool) DownloadUrl() string {
 		version = "latest"
 	}
 
-	if arch == "amd64" {
+	switch bt.spec.InstallTarget.Architecture() {
+	case runtime.Amd64:
 		arch = "x86_64"
 	}
 
-	if opsys == "darwin" {
-		opsys = "MacOSX"
-	}
-
-	if opsys == "linux" {
+	switch bt.spec.InstallTarget.OS() {
+	case runtime.Linux:
 		opsys = "Linux"
-	}
-
-	if opsys == "windows" {
+	case runtime.Darwin:
+		opsys = "MacOSX"
+	case runtime.Windows:
 		opsys = "Windows"
 		extension = "exe"
 	}
+
 
 	data := struct {
 		PyNum     int
