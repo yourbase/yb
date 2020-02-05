@@ -12,6 +12,7 @@ const (
 	Linux Os = iota
 	Darwin
 	Windows
+	Unknown
 )
 
 type Architecture int

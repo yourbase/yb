@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	goruntime "runtime"
 
 	"github.com/google/shlex"
 	"github.com/johnewart/archiver"
@@ -25,7 +26,17 @@ type MetalTarget struct {
 }
 
 func (t *MetalTarget) OS() Os {
-	return Darwin
+	switch goruntime.GOOS {
+	case "linux":
+		return Linux
+	case "darwin":
+		return Darwin
+	case "windows":
+		return Windows
+	}
+
+	log.Fatal("Running on an unknown OS - things will likely fail miserably...")
+	return Unknown
 }
 
 func (t *MetalTarget) Architecture() Architecture {
