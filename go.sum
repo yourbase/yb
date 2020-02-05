@@ -33,7 +33,9 @@ github.com/containerd/continuity v0.0.0-20190827140505-75bee3e2ccb6 h1:NmTXa/uVn
 github.com/containerd/continuity v0.0.0-20190827140505-75bee3e2ccb6/go.mod h1:GL3xCUCBDV3CZiTSEKksMWbLE66hEyuu9qyDOOqM47Y=
 github.com/containerd/fifo v0.0.0-20190226154929-a9fb20d87448/go.mod h1:ODA38xgv3Kuk8dQz2ZQXpnv/UZZUHUCL7pnLehbXgQI=
 github.com/containerd/go-runc v0.0.0-20180907222934-5a6d9f37cfa3/go.mod h1:IV7qH3hrUgRmyYrtgEeGWJfWbgcHL9CSRruz2Vqcph0=
+github.com/containerd/ttrpc v0.0.0-20190828154514-0e0f228740de h1:dlfGmNcE3jDAecLqwKPMNX6nk2qh1c1Vg1/YTzpOOF4=
 github.com/containerd/ttrpc v0.0.0-20190828154514-0e0f228740de/go.mod h1:PvCDdDGpgqzQIzDW1TphrGLssLDZp2GuS+X5DkEJB8o=
+github.com/containerd/typeurl v0.0.0-20180627222232-a93fcdb778cd h1:JNn81o/xG+8NEo3bC/vx9pbi/g2WI8mtP2/nXzu297Y=
 github.com/containerd/typeurl v0.0.0-20180627222232-a93fcdb778cd/go.mod h1:Cm3kwCdlkCfMSHURc+r6fwoGH6/F1hH3S4sg0rLFWPc=
 github.com/coreos/go-systemd v0.0.0-20190321100706-95778dfbb74e/go.mod h1:F5haX7vjVVG0kc13fIWeqUViNPyEJxv/OmvnBo0Yme4=
 github.com/creack/pty v1.1.7/go.mod h1:lj5s0c3V2DBrqTV7llrYr5NG6My20zk30Fl46Y7DoTY=
@@ -121,8 +123,6 @@ github.com/johnewart/archiver v3.1.4+incompatible h1:509GRUpPDmAvOLIeqRa1LnbhGvz
 github.com/johnewart/archiver v3.1.4+incompatible/go.mod h1:RZZSHcya+2fNoD31xh/kmPmwCa7hDaxCm3dFNlPDmaY=
 github.com/johnewart/go-dockerclient v1.3.7 h1:oyTFh8XsnQ/XdnK8D6RGHQYQSZmZ05sg2BbHbVzwIKQ=
 github.com/johnewart/go-dockerclient v1.3.7/go.mod h1:FCtHjONdIZH2BKTKbXFJ2Qp8h31iQkiXNboLI3M/TYg=
-github.com/johnewart/narwhal v0.0.0-20191030181313-9828f6c923b0 h1:Hrt19BwfJaNsEK29v32epT4+ZPDfL7dZ2vHbkAKvBIQ=
-github.com/johnewart/narwhal v0.0.0-20191030181313-9828f6c923b0/go.mod h1:EsUUI8gi1HFwS6NoGEocjpErZEK2ER+b+D0b1qxKM/g=
 github.com/johnewart/subcommands v0.0.0-20181012225330-46f0354f6315 h1:IHd01G1+fdwW9G/AraiEZzx6GNbGdntaICZjP5PI+oM=
 github.com/johnewart/subcommands v0.0.0-20181012225330-46f0354f6315/go.mod h1:P9HfiwoEAZ8bQktefnfAuKGlAYDuwfmBqt/cgIBGt+M=
 github.com/jtolds/gls v4.20.0+incompatible h1:xdiiI2gbIgH/gLH7ADydsJ1uDOEzR8yvV7C0MuV77Wo=
@@ -185,6 +185,7 @@ github.com/opencontainers/image-spec v1.0.1/go.mod h1:BtxoFyWECRxE4U/7sNtV5W15zM
 github.com/opencontainers/runc v0.0.0-20190115041553-12f6a991201f/go.mod h1:qT5XzbpPznkRYVz/mWwUaVBUv2rmF59PVA73FjuZG0U=
 github.com/opencontainers/runc v0.1.1 h1:GlxAyO6x8rfZYN9Tt0Kti5a/cP41iuiO2yYT0IJGY8Y=
 github.com/opencontainers/runc v0.1.1/go.mod h1:qT5XzbpPznkRYVz/mWwUaVBUv2rmF59PVA73FjuZG0U=
+github.com/opencontainers/runtime-spec v0.1.2-0.20190507144316-5b71a03e2700 h1:eNUVfm/RFLIi1G7flU5/ZRTHvd4kcVuzfRnL6OFlzCI=
 github.com/opencontainers/runtime-spec v0.1.2-0.20190507144316-5b71a03e2700/go.mod h1:jwyrGlmzljRJv/Fgzds9SsS/C5hL+LL3ko9hs6T5lQ0=
 github.com/opencontainers/runtime-tools v0.0.0-20181011054405-1d69bd0f9c39/go.mod h1:r3f7wjNzSs2extwzU3Y+6pKfobzPh+kKFJ3ofN+3nfs=
 github.com/pelletier/go-buffruneio v0.2.0 h1:U4t4R6YkofJ5xHm3dJzuRpPZ0mr5MMCoAWooScCR7aA=
@@ -238,6 +239,8 @@ github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 h1:nIPpBwaJSVYIxUFsDv3M8ofm
 github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8/go.mod h1:HUYIGzjTL3rfEspMxjDjgmT5uz5wzYJKVo23qUhYTos=
 github.com/yourbase/narwhal v0.0.0-20191114191353-caee4410000d h1:FykZlhsk2OryIGR5IoSVa3QsUuRAwFV3pxtJVfS8zhw=
 github.com/yourbase/narwhal v0.0.0-20191114191353-caee4410000d/go.mod h1:BmR9+0s1GcVi3dTGKmR2aqeQl9S096hQgKRCjxbG80s=
+github.com/yourbase/narwhal v0.0.0-20200114215906-9e90adabbd0e h1:AutjdPMLzRNXxvx57BjW2m5s9LiwOMWXF7uTiOcq6YM=
+github.com/yourbase/narwhal v0.0.0-20200114215906-9e90adabbd0e/go.mod h1:iZP/RlitkX0oZU3PAU1hGbxdkJbwNoXirCtsquN8Zfs=
 go.opencensus.io v0.22.0/go.mod h1:+kGneAE2xo2IficOXnaByMWTGM9T73dGwxeWcUqIpI8=
 golang.org/x/crypto v0.0.0-20160824173033-351dc6a5bf92/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=
 golang.org/x/crypto v0.0.0-20180904163835-0709b304e793/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=

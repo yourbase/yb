@@ -2,10 +2,10 @@ package buildpacks
 
 import (
 	"fmt"
+	"github.com/yourbase/yb/runtime"
 	"os"
 	"path/filepath"
 
-	"github.com/johnewart/archiver"
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
@@ -65,13 +65,13 @@ func (bt NodeBuildTool) Install() error {
 		archiveFile := fmt.Sprintf("%s.tar.gz", nodePkgString)
 		downloadUrl := fmt.Sprintf("%s/v%s/%s", NODE_DIST_MIRROR, bt.Version(), archiveFile)
 		log.Infof("Downloading from URL %s...", downloadUrl)
-		localFile, err := DownloadFileWithCache(downloadUrl)
+		localFile, err := bt.spec.InstallTarget.DownloadFile(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
 			return err
 		}
 
-		err = archiver.Unarchive(localFile, installDir)
+		err = bt.spec.InstallTarget.Unarchive(localFile, installDir)
 		if err != nil {
 			log.Errorf("Unable to decompress: %v", err)
 			return err
@@ -88,7 +88,7 @@ func (bt NodeBuildTool) Setup() error {
 	// TODO: Fix this to be the package cache?
 	nodePath := bt.spec.PackageDir
 	log.Infof("Setting NODE_PATH to %s", nodePath)
-	os.Setenv("NODE_PATH", nodePath)
+	runtime.SetEnv("NODE_PATH", nodePath)
 
 	npmBinPath := filepath.Join(nodePath, "node_modules", ".bin")
 	PrependToPath(npmBinPath)

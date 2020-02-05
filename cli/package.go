@@ -69,7 +69,7 @@ func (b *PackageCmd) ArchiveWorkspace() subcommands.ExitStatus {
 		MkdirAll: true,
 	}
 
-	packageDir := targetPackage.Path
+	packageDir := targetPackage.Path()
 
 	oldCwd, _ := os.Getwd()
 	_ = os.Chdir(packageDir)

@@ -2,10 +2,11 @@ module github.com/yourbase/yb
 
 replace github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.2
 
-replace github.com/yourbase/narwhal => /home/jewart/Work/narwhal
+//replace github.com/yourbase/narwhal => /home/jewart/Work/narwhal
 
 require (
 	github.com/beholders-eye/diffparser v0.0.0-20190814025112-fcedf0a097ba
+	github.com/containerd/containerd v1.3.0
 	github.com/containerd/continuity v0.0.0-20190827140505-75bee3e2ccb6 // indirect
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/equinox-io/equinox v1.2.0
@@ -18,7 +19,6 @@ require (
 	github.com/google/shlex v0.0.0-20181106134648-c34317bd91bf
 	github.com/gopherjs/gopherjs v0.0.0-20190915194858-d3ddacdb130f // indirect
 	github.com/johnewart/archiver v3.1.4+incompatible
-	github.com/johnewart/narwhal v0.0.0-20191030181313-9828f6c923b0
 	github.com/johnewart/subcommands v0.0.0-20181012225330-46f0354f6315
 	github.com/juju/clock v0.0.0-20190205081909-9c5c9712527c // indirect
 	github.com/juju/errors v0.0.0-20190930114154-d42613fe1ab9 // indirect
@@ -37,7 +37,7 @@ require (
 	github.com/ulikunitz/xz v0.5.6
 	github.com/waigani/diffparser v0.0.0-20190828052634-7391f219313d // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
-	github.com/yourbase/narwhal v0.0.0-00010101000000-000000000000
+	github.com/yourbase/narwhal v0.0.0-20200114215906-9e90adabbd0e
 	golang.org/x/crypto v0.0.0-20191112222119-e1110fd1c708
 	golang.org/x/net v0.0.0-20191112182307-2180aed22343 // indirect
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect

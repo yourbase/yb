@@ -46,16 +46,8 @@ func (b *RunCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 		return subcommands.ExitFailure
 	}
 
-	manifest := targetPackage.Manifest
-	containers := manifest.Exec.Dependencies.ContainerList()
-	contextId := fmt.Sprintf("%s-exec", targetPackage.Name)
+	runtimeEnv, err := targetPackage.ExecutionRuntime("default")
 
-	opts := runtime.ContainerRuntimeOpts{
-		Identifier:           contextId,
-		ContainerDefinitions: containers,
-	}
-
-	runtimeEnv, err := runtime.NewContainerRuntime(opts)
 	if err != nil {
 		log.Errorf("%v", err)
 		return subcommands.ExitFailure
@@ -75,7 +67,7 @@ func (b *RunCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 
 	p := runtime.Process{Command: cmdString, Interactive: true, Directory: "/"}
 
-	if err := runtimeEnv.Run(p, runtimeTarget); err != nil {
+	if err := runtimeEnv.Run(p); err != nil {
 		log.Errorf("%v", err)
 		return subcommands.ExitFailure
 	}
