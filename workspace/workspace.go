@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"fmt"
+	"github.com/yourbase/yb/runtime"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
@@ -9,7 +10,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	. "github.com/yourbase/yb/packages"
 	. "github.com/yourbase/yb/plumbing"
 )
 
@@ -93,12 +93,12 @@ func (w Workspace) SetupEnv() error {
 	os.Clearenv()
 	tmpDir := filepath.Join(w.BuildRoot(), "tmp")
 	MkdirAsNeeded(tmpDir)
-	os.Setenv("HOME", w.BuildRoot())
-	os.Setenv("TMPDIR", tmpDir)
+	runtime.SetEnv("HOME", w.BuildRoot())
+	runtime.SetEnv("TMPDIR", tmpDir)
 
 	for _, key := range criticalVariables {
 		fmt.Printf("%s=%s\n", key, oldEnv[key])
-		os.Setenv(key, oldEnv[key])
+		runtime.SetEnv(key, oldEnv[key])
 	}
 
 	return nil

@@ -2,12 +2,11 @@ package buildpacks
 
 import (
 	"fmt"
+	"github.com/yourbase/yb/runtime"
 	"os"
 	"path/filepath"
 	"strings"
         "strconv"
-
-	"github.com/johnewart/archiver"
 
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
@@ -121,9 +120,9 @@ func (bt JavaBuildTool) Setup() error {
 	currentPath := os.Getenv("PATH")
 	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
 	log.Infof("Setting PATH to %s", newPath)
-	os.Setenv("PATH", newPath)
+	runtime.SetEnv("PATH", newPath)
 	log.Infof("Setting JAVA_HOME to %s", javaDir)
-	os.Setenv("JAVA_HOME", javaDir)
+	runtime.SetEnv("JAVA_HOME", javaDir)
 
 	return nil
 }
@@ -198,12 +197,12 @@ func (bt JavaBuildTool) Install() error {
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading from URL %s ", downloadUrl)
-		localFile, err := DownloadFileWithCache(downloadUrl)
+		localFile, err := bt.spec.InstallTarget.DownloadFile(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
 			return err
 		}
-		err = archiver.Unarchive(localFile, javaInstallDir)
+		err = bt.spec.InstallTarget.Unarchive(localFile, javaInstallDir)
 		if err != nil {
 			log.Errorf("Unable to decompress: %v", err)
 			return err

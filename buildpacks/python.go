@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
+	"github.com/yourbase/yb/runtime"
 	. "github.com/yourbase/yb/types"
 )
 
@@ -44,6 +44,7 @@ func (bt PythonBuildTool) EnvironmentDir() string {
 func (bt PythonBuildTool) Install() error {
 	anacondaDir := bt.AnacondaInstallDir()
 	setupDir := bt.spec.PackageDir
+	t := bt.spec.InstallTarget
 
 	if _, err := os.Stat(anacondaDir); err == nil {
 		log.Infof("anaconda installed in %s", anacondaDir)
@@ -53,7 +54,7 @@ func (bt PythonBuildTool) Install() error {
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading Miniconda from URL %s...", downloadUrl)
-		localFile, err := DownloadFileWithCache(downloadUrl)
+		localFile, err := t.DownloadFile(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
 			return err
@@ -65,7 +66,13 @@ func (bt PythonBuildTool) Install() error {
 			fmt.Sprintf("bash %s -b -p %s", localFile, anacondaDir),
 		} {
 			log.Infof("Running: '%v' ", cmd)
-			ExecToStdout(cmd, setupDir)
+			p := runtime.Process{
+				Command: cmd,
+				Directory: setupDir,
+			}
+			if err := t.Run(p); err != nil {
+				return fmt.Errorf("Couldn't install python: %v", err)
+			}
 		}
 
 	}
@@ -122,6 +129,7 @@ func (bt PythonBuildTool) DownloadUrl() string {
 func (bt PythonBuildTool) Setup() error {
 	condaDir := bt.AnacondaInstallDir()
 	envDir := bt.EnvironmentDir()
+	t := bt.spec.InstallTarget
 
 	if _, err := os.Stat(envDir); err == nil {
 		log.Infof("environment installed in %s", envDir)
@@ -138,7 +146,14 @@ func (bt PythonBuildTool) Setup() error {
 			fmt.Sprintf("%s create --prefix %s python=%s", condaBin, envDir, bt.Version()),
 		} {
 			log.Infof("Running: '%v' ", cmd)
-			if err := ExecToStdoutWithEnv(cmd, setupDir, []string{newPath}); err != nil {
+			p := runtime.Process{
+				Command:     cmd,
+				Interactive: false,
+				Directory:   setupDir,
+				Environment: []string{newPath},
+			}
+
+			if err := t.Run(p); err != nil {
 				log.Errorf("Unable to run setup command: %s", cmd)
 				return fmt.Errorf("Unable to run '%s': %v", cmd, err)
 			}
@@ -146,7 +161,7 @@ func (bt PythonBuildTool) Setup() error {
 	}
 
 	// Add new env to path
-	PrependToPath(filepath.Join(envDir, "bin"))
+	t.PrependToPath(filepath.Join(envDir, "bin"))
 
 	return nil
 

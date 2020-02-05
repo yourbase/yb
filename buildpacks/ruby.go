@@ -8,11 +8,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/johnewart/archiver"
 	"github.com/matishsiao/goInfo"
 
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
+	"github.com/yourbase/yb/runtime"
 	. "github.com/yourbase/yb/types"
 	"gopkg.in/src-d/go-git.v4"
 )
@@ -126,12 +126,12 @@ func (bt RubyBuildTool) Install() error {
 			downloadUrl := bt.DownloadUrl()
 			log.Infof("Will download pre-built Ruby from %s", downloadUrl)
 
-			localFile, err := DownloadFileWithCache(downloadUrl)
+			localFile, err := bt.spec.InstallTarget.DownloadFile(downloadUrl)
 			if err != nil {
 				log.Errorf("Unable to download: %v", err)
 				return err
 			}
-			err = archiver.Unarchive(localFile, rubyVersionsDir)
+			err = bt.spec.InstallTarget.Unarchive(localFile, rubyVersionsDir)
 			if err != nil {
 				log.Errorf("Unable to decompress: %v", err)
 				return err
@@ -185,11 +185,11 @@ func (bt RubyBuildTool) Install() error {
 			}
 		}
 
-		os.Setenv("RBENV_ROOT", rbenvDir)
+		runtime.SetEnv("RBENV_ROOT", rbenvDir)
 		PrependToPath(filepath.Join(rbenvDir, "bin"))
 
 		installCmd := fmt.Sprintf("rbenv install %s", bt.Version())
-		ExecToStdout(installCmd, rbenvDir)
+		runtime.ExecToStdout(installCmd, rbenvDir)
 	}
 
 	return nil
@@ -200,7 +200,7 @@ func (bt RubyBuildTool) Setup() error {
 	MkdirAsNeeded(gemsDir)
 
 	log.Infof("Setting GEM_HOME to %s", gemsDir)
-	os.Setenv("GEM_HOME", gemsDir)
+	runtime.SetEnv("GEM_HOME", gemsDir)
 
 	gemBinDir := filepath.Join(gemsDir, "bin")
 
