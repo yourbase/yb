@@ -7,6 +7,7 @@ import (
 
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
+	"github.com/yourbase/yb/runtime"
 	. "github.com/yourbase/yb/types"
 )
 
@@ -45,10 +46,10 @@ func (bt RustBuildTool) Setup() error {
 	currentPath := os.Getenv("PATH")
 	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
 	log.Infof("Setting PATH to %s", newPath)
-	os.Setenv("PATH", newPath)
+	runtime.SetEnv("PATH", newPath)
 
-	os.Setenv("CARGO_HOME", rustDir)
-	os.Setenv("RUSTUP_HOME", rustDir)
+	runtime.SetEnv("CARGO_HOME", rustDir)
+	runtime.SetEnv("RUSTUP_HOME", rustDir)
 
 	return nil
 }
@@ -73,18 +74,18 @@ func (bt RustBuildTool) Install() error {
 		downloadDir := bt.spec.PackageCacheDir
 		localFile := filepath.Join(downloadDir, installerFile)
 		log.Infof("Downloading from URL %s to local file %s", downloadUrl, localFile)
-		err := DownloadFile(localFile, downloadUrl)
+		localFile, err := bt.spec.InstallTarget.DownloadFile(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
 			return err
 		}
 
 		os.Chmod(localFile, 0700)
-		os.Setenv("CARGO_HOME", rustDir)
-		os.Setenv("RUSTUP_HOME", rustDir)
+		runtime.SetEnv("CARGO_HOME", rustDir)
+		runtime.SetEnv("RUSTUP_HOME", rustDir)
 
 		installCmd := fmt.Sprintf("%s -y", localFile)
-		ExecToStdout(installCmd, downloadDir)
+		runtime.ExecToStdout(installCmd, downloadDir)
 	}
 
 	return nil

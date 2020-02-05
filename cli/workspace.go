@@ -14,7 +14,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	pkg "github.com/yourbase/yb/packages"
 	util "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	ybtypes "github.com/yourbase/yb/types"
@@ -59,7 +58,7 @@ func (w *workspaceLocationCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...
 	if util.PathExists(ybtypes.MANIFEST_FILE) {
 		currentPath, _ := filepath.Abs(".")
 		_, pkgName := filepath.Split(currentPath)
-		pkg, err := pkg.LoadPackage(pkgName, currentPath)
+		pkg, err := LoadPackage(pkgName, currentPath)
 		if err != nil {
 			log.Errorf("Error loading package '%s': %v", pkgName, err)
 			return subcommands.ExitFailure

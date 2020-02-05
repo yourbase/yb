@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/johnewart/archiver"
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
@@ -62,12 +61,12 @@ func (bt YarnBuildTool) Install() error {
 		log.Infof("Will install Yarn v%s into %s", bt.Version(), installDir)
 		downloadUrl := bt.DownloadUrl()
 		log.Infof("Downloading from URL %s...", downloadUrl)
-		localFile, err := DownloadFileWithCache(downloadUrl)
+		localFile, err := bt.spec.InstallTarget.DownloadFile(downloadUrl)
 		if err != nil {
 			return fmt.Errorf("Unable to download %s: %v", downloadUrl, err)
 		}
 
-		if err := archiver.Unarchive(localFile, installDir); err != nil {
+		if err := bt.spec.InstallTarget.Unarchive(localFile, installDir); err != nil {
 			return fmt.Errorf("Unable to decompress archive: %v", err)
 		}
 	}
