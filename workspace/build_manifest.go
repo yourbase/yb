@@ -5,13 +5,13 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"github.com/yourbase/narwhal"
+	"github.com/yourbase/yb/plumbing/log"
+	"github.com/yourbase/yb/runtime"
 	"strings"
+	"text/template"
 )
 
 const DependencyChecksumLength = 12
-
-
-
 
 type CIInfo struct {
 	CIBuilds []CIBuild `yaml:"builds"`
@@ -45,7 +45,7 @@ type ExecPhase struct {
 	BuildFirst   []string                    `yaml:"build_first"`
 }
 
-func (e *ExecPhase) EnvironmentVariables(envName string) []string {
+func (e *ExecPhase) EnvironmentVariables(envName string, data runtime.RuntimeEnvironmentData) []string {
 
 	result := make([]string, 0)
 
@@ -53,8 +53,17 @@ func (e *ExecPhase) EnvironmentVariables(envName string) []string {
 
 		s := strings.Split(property, "=")
 		if len(s) == 2 {
-			result = append(result, property)
+			interpolated, err := TemplateToString(property, data)
+			if err == nil {
+				result = append(result, interpolated)
+			} else {
+				result = append(result, property)
+			}
 		}
+	}
+
+	for k, v := range data.Containers.Environment() {
+		result = append(result, k, v)
 	}
 
 	if envName != "default" {
@@ -68,7 +77,6 @@ func (e *ExecPhase) EnvironmentVariables(envName string) []string {
 
 	return result
 }
-
 
 type ExecDependencies struct {
 	Containers map[string]narwhal.ContainerDefinition `yaml:"containers"`
@@ -85,9 +93,9 @@ func (b ExecDependencies) ContainerList() []narwhal.ContainerDefinition {
 
 type BuildManifest struct {
 	Dependencies DependencySet `yaml:"dependencies"`
-	Sandbox      bool                `yaml:"sandbox"`
-	BuildTargets []BuildTarget       `yaml:"build_targets"`
-	Build        BuildTarget         `yaml:"build"`
+	Sandbox      bool          `yaml:"sandbox"`
+	BuildTargets []BuildTarget `yaml:"build_targets"`
+	Build        BuildTarget   `yaml:"build"`
 	Exec         ExecPhase     `yaml:"exec"`
 	Package      PackagePhase  `yaml:"package"`
 	CI           CIInfo        `yaml:"ci"`
@@ -157,4 +165,19 @@ func (b BuildManifest) BuildTargetList() []string {
 	}
 
 	return targets
+}
+
+func TemplateToString(templateText string, data interface{}) (string, error) {
+	t, err := template.New("generic").Parse(templateText)
+	if err != nil {
+		return "", err
+	}
+	var tpl bytes.Buffer
+	if err := t.Execute(&tpl, data); err != nil {
+		log.Errorf("Can't render template:: %v", err)
+		return "", err
+	}
+
+	result := tpl.String()
+	return result, nil
 }

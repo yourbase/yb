@@ -33,7 +33,23 @@ func (t *ContainerTarget) ToolsDir() string {
 }
 
 func (t *ContainerTarget) PathExists(path string) bool {
-	return false
+	// Assume we can use stat for now
+	statCmd := fmt.Sprintf("stat %s", path)
+
+	err := t.Container.ExecToWriter(statCmd, "/", ioutil.Discard)
+	if err != nil {
+		if execerr, ok := err.(*narwhal.ExecError); ok {
+			if execerr.ExitCode != 0 {
+				return false
+			} else {
+				// Error but retcode zero... ?
+				return true
+			}
+		}
+		return false
+	}
+
+	return true
 }
 
 func (t *ContainerTarget) String() string {
@@ -59,7 +75,7 @@ func (t *ContainerTarget) PrependToPath(dir string) {
 	}
 
 	if !pathSet {
-		path := fmt.Sprintf("/usr/bin:/bin:/sbin:/usr/sbin:%s", dir)
+		path := fmt.Sprintf("%s:/usr/bin:/bin:/sbin:/usr/sbin", dir)
 		t.SetEnv("PATH", path)
 	}
 }
@@ -154,9 +170,17 @@ func (t *ContainerTarget) Run(p Process) error {
 	fmt.Printf("Process env: %v\n", p.Environment)
 
 	if p.Interactive {
-		return t.Container.ExecInteractively(p.Command, p.Directory)
+		return t.Container.ExecInteractivelyWithEnv(p.Command, p.Directory, p.Environment)
 	} else {
-		return t.Container.ExecToStdoutWithEnv(p.Command, p.Directory, p.Environment)
+		err := t.Container.ExecToStdoutWithEnv(p.Command, p.Directory, p.Environment)
+		if execerr, ok := err.(*narwhal.ExecError); ok {
+			return &TargetRunError{
+				ExitCode: execerr.ExitCode,
+				Message:  execerr.Message,
+			}
+		}
+
+		return err
 	}
 }
 
