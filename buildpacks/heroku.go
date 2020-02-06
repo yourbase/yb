@@ -81,7 +81,7 @@ func (bt HerokuBuildTool) Setup() error {
 func (bt HerokuBuildTool) Install() error {
 	herokuDir := bt.HerokuDir()
 
-	if _, err := os.Stat(herokuDir); err == nil {
+	if bt.spec.InstallTarget.PathExists(herokuDir) {
 		log.Infof("Heroku v%s located in %s!", bt.Version(), herokuDir)
 	} else {
 		log.Infof("Will install Heroku v%s into %s", bt.Version(), herokuDir)

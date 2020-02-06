@@ -46,7 +46,7 @@ func (bt PythonBuildTool) Install() error {
 	setupDir := bt.spec.PackageDir
 	t := bt.spec.InstallTarget
 
-	if _, err := os.Stat(anacondaDir); err == nil {
+	if bt.spec.InstallTarget.PathExists(anacondaDir) {
 		log.Infof("anaconda installed in %s", anacondaDir)
 	} else {
 		log.Infof("Installing anaconda")
@@ -130,7 +130,7 @@ func (bt PythonBuildTool) Setup() error {
 	envDir := bt.EnvironmentDir()
 	t := bt.spec.InstallTarget
 
-	if _, err := os.Stat(envDir); err == nil {
+	if t.PathExists(envDir) {
 		log.Infof("environment installed in %s", envDir)
 	} else {
 		currentPath := os.Getenv("PATH")

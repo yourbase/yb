@@ -125,19 +125,44 @@ func (p Package) SetupRuntimeDependencies() ([]CommandTimer, error) {
 	//return LoadBuildPacks(deps, p)
 }
 
+func (p Package) Execute(runtimeCtx *runtime.Runtime) error {
+	for _, cmdString := range p.Manifest.Exec.Commands {
+		p := runtime.Process{
+			Command:     cmdString,
+			Directory:   "/workspace",
+			Interactive: false,
+		}
 
-func (p Package) ExecutionRuntime(environment string) (*runtime.Runtime, error) {
+		if err := runtimeCtx.Run(p); err != nil {
+			return fmt.Errorf("Unable to run command '%s': %v", cmdString, err)
+		}
+	}
+
+	return nil
+}
+
+func (p Package) ExecutionRuntime(environment string) (*runtime.Runtime,  error) {
 	manifest := p.Manifest
 	containers := manifest.Exec.Dependencies.ContainerList()
 	contextId := fmt.Sprintf("%s-exec", p.Name)
+
+	runtimeCtx := runtime.NewRuntime(contextId, p.BuildRoot())
 
 	localContainerWorkDir := filepath.Join(p.BuildRoot(), "containers")
 	MkdirAsNeeded(localContainerWorkDir)
 
 	log.Infof("Will use %s as the dependency work dir", localContainerWorkDir)
 
+	for _, cd := range(containers) {
+		cd.LocalWorkDir = localContainerWorkDir
+		_, err := runtimeCtx.AddContainer(cd)
+		if err != nil {
+			return nil, fmt.Errorf("Couldn't start container dependency: %v", err)
+		}
+	}
+
 	execContainer := manifest.Exec.Container
-	execContainer.Environment = manifest.Exec.EnvironmentVariables(environment)
+	execContainer.Environment = manifest.Exec.EnvironmentVariables(environment, runtimeCtx.EnvironmentData())
 	execContainer.Command = "/usr/bin/tail -f /dev/null"
 	execContainer.Label = "exec"
 
@@ -149,24 +174,18 @@ func (p Package) ExecutionRuntime(environment string) (*runtime.Runtime, error) 
 	log.Infof("Will mount package %s at %s in container", p.Path(), sourceMapDir)
 	mount := fmt.Sprintf("%s:%s", p.Path(), sourceMapDir)
 	execContainer.Mounts = append(execContainer.Mounts, mount)
-	containers = append(containers, execContainer)
 
-	return runtime.NewRuntime(contextId, p.BuildRoot()), nil
-}
-
-func (p Package) Execute(execRuntime *runtime.Runtime) error {
-	for _, cmdString := range p.Manifest.Exec.Commands {
-		p := runtime.Process{
-			Command:     cmdString,
-			Directory:   "/workspace",
-			Interactive: false,
-		}
-
-		if err := execRuntime.DefaultTarget.Run(p); err != nil {
-			return fmt.Errorf("Unable to run command '%s': %v", cmdString, err)
-		}
+	execTarget, err := runtimeCtx.AddContainer(execContainer)
+	if err != nil {
+		return nil, fmt.Errorf("Couldn't start exec container: %v", err)
 	}
 
-	return nil
+	LoadBuildPacks(execTarget, p.Manifest.Dependencies.Build)
+	LoadBuildPacks(execTarget, p.Manifest.Dependencies.Runtime)
+
+	runtimeCtx.DefaultTarget = execTarget
+
+
+	return runtimeCtx, nil
 }
 

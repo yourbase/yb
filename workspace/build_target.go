@@ -67,8 +67,6 @@ func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, packagePath string, bui
 		//container.Environment = append(container.Environment, buildData.EnvironmentVariables()...)
 		buildContainer.Environment = []string{}
 
-
-
 		// Add package to mounts @ /workspace
 		sourceMapDir := "/workspace"
 		if buildContainer.WorkDir != "" {
@@ -124,11 +122,10 @@ func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, packagePath string, bui
 
 			//buildContainer.Environment = append(buildContainer.Environment, "SSH_AUTH_SOCK=/ssh_agent")
 			builder.SetEnv("SSH_AUTH_SOCK", "/ssh_agent")
-			forwardCmd := fmt.Sprintf("/sockforward /ssh_agent %s", hostAddr)
-			builder.UploadFile("/Users/jewart/Work/buildagent/sockforward", "/sockforward")
-			log.Infof("Running a thing...")
+			forwardPath, err := builder.DownloadFile("https://yourbase-artifacts.s3-us-west-2.amazonaws.com/sockforward")
+			forwardCmd := fmt.Sprintf("%s /ssh_agent %s", forwardPath, hostAddr)
+			log.Infof("Running SSH agent socket forwarder...")
 			go func() {
-				log.Info("Forwarding between agent...")
 				builder.Run(runtime.Process{Command: forwardCmd})
 			}()
 		}
