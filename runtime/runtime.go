@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/yourbase/narwhal"
 )
@@ -22,6 +23,14 @@ const (
 	i386
 )
 
+type TargetRunError struct {
+	ExitCode int
+	Message string
+}
+
+func (e *TargetRunError) Error() string {
+	return e.Message
+}
 
 
 type Target interface {
@@ -118,3 +127,46 @@ func (r *Runtime) Shutdown() error {
 
 	return nil
 }
+
+func (r *Runtime) EnvironmentData() RuntimeEnvironmentData {
+	return RuntimeEnvironmentData{
+		Containers: ContainerData{
+			serviceCtx: r.ContainerServiceContext,
+		},
+	}
+}
+
+type RuntimeEnvironmentData struct {
+	Containers ContainerData
+}
+
+type ContainerData struct {
+	serviceCtx *narwhal.ServiceContext
+}
+
+func (c ContainerData) IP(label string) string {
+	// Check service context
+	if c.serviceCtx != nil {
+		if buildContainer, ok := c.serviceCtx.Containers[label]; ok {
+			if ipv4, err := buildContainer.IPv4Address(); err == nil {
+				return ipv4
+			}
+		}
+	}
+
+	return ""
+}
+
+func (c ContainerData) Environment() map[string]string {
+	result := make(map[string]string)
+	if c.serviceCtx != nil {
+		for label, container := range c.serviceCtx.Containers {
+			if ipv4, err := container.IPv4Address(); err == nil {
+				key := fmt.Sprintf("YB_CONTAINER_%s_IP", strings.ToUpper(label))
+				result[key] = ipv4
+			}
+		}
+	}
+	return result
+}
+
