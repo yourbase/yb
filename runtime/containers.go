@@ -16,7 +16,7 @@ type ContainerTarget struct {
 	Target
 	Container   *narwhal.Container
 	Environment []string
-	workDir string
+	workDir     string
 }
 
 func (t *ContainerTarget) OS() Os {
@@ -56,20 +56,20 @@ func (t *ContainerTarget) String() string {
 	return fmt.Sprintf("Container ID: %s workDir: %s", t.Container.Id, t.workDir)
 }
 
-func (t* ContainerTarget) CacheDir() string {
+func (t *ContainerTarget) CacheDir() string {
 	t.Container.MakeDirectoryInContainer("/opt/yb/cache")
 	return "/opt/yb/cache"
 }
 
 func (t *ContainerTarget) PrependToPath(dir string) {
 	pathSet := false
-	for i, e := range(t.Environment) {
+	for i, e := range t.Environment {
 		parts := strings.Split(e, "=")
 		k := parts[0]
 		v := parts[1]
 		if k == "PATH" {
 			newpath := fmt.Sprintf("PATH=%s:%s", dir, v)
-			t.Environment[i] = 	newpath
+			t.Environment[i] = newpath
 			pathSet = true
 		}
 	}
@@ -93,7 +93,7 @@ func (t *ContainerTarget) UploadFile(src string, dest string) error {
 		return fmt.Errorf("Couldn't upload file to container: %v", err)
 	}
 	log.Infof("Done")
-	return  nil
+	return nil
 
 }
 
@@ -163,11 +163,12 @@ func (t *ContainerTarget) SetEnv(key string, value string) error {
 }
 
 func (t *ContainerTarget) Run(p Process) error {
-	fmt.Printf("Running container process: %s\n", p.Command)
+	log.Infof("Running container process: %s\n", p.Command)
 
 	p.Environment = append(p.Environment, t.Environment...)
 	p.Environment = append(p.Environment, t.Container.Definition.Environment...)
-	fmt.Printf("Process env: %v\n", p.Environment)
+
+	log.Debugf("Process env: %v\n", p.Environment)
 
 	var output io.Writer
 
@@ -190,7 +191,6 @@ func (t *ContainerTarget) Run(p Process) error {
 		return err
 	}
 }
-
 
 func (t *ContainerTarget) WriteFileContents(contents string, remotepath string) error {
 	if tmpfile, err := ioutil.TempFile("", "injection"); err != nil {
@@ -237,7 +237,7 @@ func getDockerInterfaceIp() (string, error) {
 	return ip.String(), nil
 }
 
-func getOutboundIP() (net.IP, error){
+func getOutboundIP() (net.IP, error) {
 	conn, err := net.Dial("udp", "8.8.8.8:80")
 	if err != nil {
 		return net.IP{}, err
@@ -295,4 +295,3 @@ func ForwardUnixSocketToTcp(unixSocket string) (string, error) {
 
 	return listenAddr, nil
 }
-
