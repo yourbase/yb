@@ -3,6 +3,10 @@ package cli
 import (
 	"context"
 	"flag"
+	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/johnewart/subcommands"
 
@@ -46,6 +50,15 @@ func (b *ExecCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 
 	execRuntime, err := targetPackage.ExecutionRuntime(b.environment)
+
+	c := make(chan os.Signal, 2)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		fmt.Println("\r- Ctrl+C pressed in Terminal")
+		execRuntime.Shutdown()
+		os.Exit(0)
+	}()
 
 	log.Infof("Executing package '%s'...\n", targetPackage.Name)
 
