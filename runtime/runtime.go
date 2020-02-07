@@ -2,7 +2,10 @@ package runtime
 
 import (
 	"fmt"
+	"io"
 	"strings"
+
+	goruntime "runtime"
 
 	"github.com/yourbase/narwhal"
 )
@@ -25,13 +28,12 @@ const (
 
 type TargetRunError struct {
 	ExitCode int
-	Message string
+	Message  string
 }
 
 func (e *TargetRunError) Error() string {
 	return e.Message
 }
-
 
 type Target interface {
 	Run(p Process) error
@@ -54,6 +56,7 @@ type Process struct {
 	Interactive bool
 	Directory   string
 	Environment []string
+	Output      *io.Writer
 }
 
 type Runtime struct {
@@ -170,3 +173,15 @@ func (c ContainerData) Environment() map[string]string {
 	return result
 }
 
+func HostOS() Os {
+	switch goruntime.GOOS {
+	case "darwin":
+		return Darwin
+	case "linux":
+		return Linux
+	case "windows":
+		return Windows
+	default:
+		return Unknown
+	}
+}
