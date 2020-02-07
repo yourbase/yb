@@ -169,10 +169,17 @@ func (t *ContainerTarget) Run(p Process) error {
 	p.Environment = append(p.Environment, t.Container.Definition.Environment...)
 	fmt.Printf("Process env: %v\n", p.Environment)
 
+	var output io.Writer
+
+	output = os.Stdout
+	if p.Output != nil {
+		output = *(p.Output)
+	}
+
 	if p.Interactive {
 		return t.Container.ExecInteractivelyWithEnv(p.Command, p.Directory, p.Environment)
 	} else {
-		err := t.Container.ExecToStdoutWithEnv(p.Command, p.Directory, p.Environment)
+		err := t.Container.ExecToWriterWithEnv(p.Command, p.Directory, output, p.Environment)
 		if execerr, ok := err.(*narwhal.ExecError); ok {
 			return &TargetRunError{
 				ExitCode: execerr.ExitCode,

@@ -26,10 +26,8 @@ func (p Package) Path() string {
 	return p.path
 }
 
-
 func (p Package) BuildTargetToWriter(buildTargetName string, output io.Writer) ([]CommandTimer, error) {
 	manifest := p.Manifest
-
 
 	// Named target, look for that and resolve it
 	_, err := manifest.ResolveBuildTargets(buildTargetName)
@@ -117,7 +115,6 @@ func (p Package) BuildRoot() string {
 
 }
 
-
 func (p Package) SetupRuntimeDependencies() ([]CommandTimer, error) {
 	deps := p.Manifest.Dependencies.Runtime
 	deps = append(deps, p.Manifest.Dependencies.Build...)
@@ -126,11 +123,17 @@ func (p Package) SetupRuntimeDependencies() ([]CommandTimer, error) {
 }
 
 func (p Package) Execute(runtimeCtx *runtime.Runtime) error {
+	return p.ExecuteToWriter(runtimeCtx, os.Stdout)
+}
+
+func (p Package) ExecuteToWriter(runtimeCtx *runtime.Runtime, output io.Writer) error {
+
 	for _, cmdString := range p.Manifest.Exec.Commands {
 		p := runtime.Process{
 			Command:     cmdString,
 			Directory:   "/workspace",
 			Interactive: false,
+			Output:      &output,
 		}
 
 		if err := runtimeCtx.Run(p); err != nil {
@@ -141,7 +144,7 @@ func (p Package) Execute(runtimeCtx *runtime.Runtime) error {
 	return nil
 }
 
-func (p Package) ExecutionRuntime(environment string) (*runtime.Runtime,  error) {
+func (p Package) ExecutionRuntime(environment string) (*runtime.Runtime, error) {
 	manifest := p.Manifest
 	containers := manifest.Exec.Dependencies.ContainerList()
 	contextId := fmt.Sprintf("%s-exec", p.Name)
@@ -153,7 +156,7 @@ func (p Package) ExecutionRuntime(environment string) (*runtime.Runtime,  error)
 
 	log.Infof("Will use %s as the dependency work dir", localContainerWorkDir)
 
-	for _, cd := range(containers) {
+	for _, cd := range containers {
 		cd.LocalWorkDir = localContainerWorkDir
 		_, err := runtimeCtx.AddContainer(cd)
 		if err != nil {
@@ -161,10 +164,47 @@ func (p Package) ExecutionRuntime(environment string) (*runtime.Runtime,  error)
 		}
 	}
 
+	// TODO: Support UDP
+	portMappings := make([]string, 0)
+
+	log.Infof("Running on macOS, will pick random ports for forwarding if you haven't chosen them")
+	for _, entry := range p.Manifest.Exec.Ports {
+		localPort := ""
+		remotePort := ""
+		parts := strings.Split(entry, ":")
+
+		if len(parts) == 2 {
+			localPort = parts[0]
+			remotePort = parts[1]
+		} else {
+			if runtime.HostOS() == runtime.Linux {
+				localPort = entry
+			} else {
+				log.Infof("No host port specified for port %s - will randomly determine one", entry)
+				p, err := runtime.GetFreePort()
+				if err != nil {
+					log.Warnf("Could not find local port for container port %s: %v", entry, err)
+				} else {
+					localPort = fmt.Sprintf("%d", p)
+				}
+			}
+
+			remotePort = entry
+		}
+
+		if localPort != "" && remotePort != "" {
+			mapString := fmt.Sprintf("%s:%s/tcp", localPort, remotePort)
+			portMappings = append(portMappings, mapString)
+		}
+
+		log.Infof("Mapping container port %s to %s on the local machine", remotePort, localPort)
+	}
+
 	execContainer := manifest.Exec.Container
 	execContainer.Environment = manifest.Exec.EnvironmentVariables(environment, runtimeCtx.EnvironmentData())
 	execContainer.Command = "/usr/bin/tail -f /dev/null"
 	execContainer.Label = "exec"
+	execContainer.Ports = portMappings
 
 	// Add package to mounts @ /workspace
 	sourceMapDir := "/workspace"
@@ -185,7 +225,5 @@ func (p Package) ExecutionRuntime(environment string) (*runtime.Runtime,  error)
 
 	runtimeCtx.DefaultTarget = execTarget
 
-
 	return runtimeCtx, nil
 }
-
