@@ -3,7 +3,6 @@ package cli
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -83,7 +82,7 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	stepTimers, buildError := targetPackage.BuildTarget(buildTargetName)
 
 	if err != nil {
-		fmt.Printf("Failed to build target package: %v\n", err)
+		log.Errorf("Failed to build target package: %v\n", err)
 		return subcommands.ExitFailure
 	}
 
@@ -207,19 +206,4 @@ func UploadBuildLogsToAPI(buf *bytes.Buffer) {
 		log.Infof("View your build log here: %s", buildLogUrl)
 	}
 
-}
-
-func sha256File(path string) (string, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-
-	h := sha256.New()
-	if _, err := io.Copy(h, f); err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }
