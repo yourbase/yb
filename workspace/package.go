@@ -167,7 +167,6 @@ func (p Package) ExecutionRuntime(environment string) (*runtime.Runtime, error) 
 	// TODO: Support UDP
 	portMappings := make([]string, 0)
 
-	log.Infof("Running on macOS, will pick random ports for forwarding if you haven't chosen them")
 	for _, entry := range p.Manifest.Exec.Ports {
 		localPort := ""
 		remotePort := ""
@@ -178,9 +177,10 @@ func (p Package) ExecutionRuntime(environment string) (*runtime.Runtime, error) 
 			remotePort = parts[1]
 		} else {
 			if runtime.HostOS() == runtime.Linux {
+				log.Infof("No host port specified for port %s - will use %s externaly", entry, entry)
 				localPort = entry
 			} else {
-				log.Infof("No host port specified for port %s - will randomly determine one", entry)
+				log.Infof("Docker is not running natively, will try to pick a random port for %s", entry)
 				p, err := runtime.GetFreePort()
 				if err != nil {
 					log.Warnf("Could not find local port for container port %s: %v", entry, err)
@@ -193,7 +193,7 @@ func (p Package) ExecutionRuntime(environment string) (*runtime.Runtime, error) 
 		}
 
 		if localPort != "" && remotePort != "" {
-			mapString := fmt.Sprintf("%s:%s/tcp", localPort, remotePort)
+			mapString := fmt.Sprintf("%s:%s", localPort, remotePort)
 			portMappings = append(portMappings, mapString)
 		}
 
