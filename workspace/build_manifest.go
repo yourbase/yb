@@ -51,7 +51,7 @@ func (e *ExecPhase) EnvironmentVariables(envName string, data runtime.RuntimeEnv
 
 	for _, property := range e.Environment["default"] {
 
-		s := strings.Split(property, "=")
+		s := strings.SplitN(property, "=", 2)
 		if len(s) == 2 {
 			interpolated, err := TemplateToString(property, data)
 			if err == nil {
@@ -68,7 +68,7 @@ func (e *ExecPhase) EnvironmentVariables(envName string, data runtime.RuntimeEnv
 
 	if envName != "default" {
 		for _, property := range e.Environment[envName] {
-			s := strings.Split(property, "=")
+			s := strings.SplitN(property, "=", 2)
 			if len(s) == 2 {
 				result = append(result, property)
 			}
