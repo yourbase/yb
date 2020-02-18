@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"fmt"
+	"strings"
+	"text/template"
+
+	"github.com/joho/godotenv"
 	"github.com/yourbase/narwhal"
 	"github.com/yourbase/yb/plumbing/log"
 	"github.com/yourbase/yb/runtime"
-	"strings"
-	"text/template"
 )
 
 const DependencyChecksumLength = 12
@@ -72,6 +74,15 @@ func (e *ExecPhase) EnvironmentVariables(envName string, data runtime.RuntimeEnv
 			if len(s) == 2 {
 				result = append(result, property)
 			}
+		}
+	}
+
+	// Check for local .env file
+	err := godotenv.Load()
+	if err == nil {
+		localEnv, _ := godotenv.Read()
+		for k, v := range localEnv {
+			result = append(result, strings.Join([]string{k, v}, "="))
 		}
 	}
 
