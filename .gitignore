@@ -4,3 +4,4 @@
 yb
 .DS_Store
 release
+.env
