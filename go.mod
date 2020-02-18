@@ -21,6 +21,7 @@ require (
 	github.com/gopherjs/gopherjs v0.0.0-20190915194858-d3ddacdb130f // indirect
 	github.com/johnewart/archiver v3.1.4+incompatible
 	github.com/johnewart/subcommands v0.0.0-20181012225330-46f0354f6315
+	github.com/joho/godotenv v1.3.0
 	github.com/juju/clock v0.0.0-20190205081909-9c5c9712527c // indirect
 	github.com/juju/errors v0.0.0-20190930114154-d42613fe1ab9 // indirect
 	github.com/juju/retry v0.0.0-20180821225755-9058e192b216 // indirect
