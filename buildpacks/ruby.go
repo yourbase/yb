@@ -21,23 +21,21 @@ const YBRubyDownloadTemplate = "https://yourbase-build-tools.s3-us-west-2.amazon
 
 func (bt RubyBuildTool) DownloadUrl() string {
 	extension := "tar.bz2"
-	osVersion := OSVersion()
+	operatingSystem := "unknown"
+	osVersion := bt.spec.InstallTarget.OSVersion()
 	arch := Arch()
 
 	if arch == "amd64" {
 		arch = "x86_64"
 	}
 
-	operatingSystem := OS()
-	if operatingSystem == "darwin" {
-		operatingSystem = "Darwin"
-	}
-
-	if operatingSystem == "linux" {
+	switch bt.spec.InstallTarget.OS() {
+	case runtime.Linux:
 		operatingSystem = "Linux"
-	}
-
-	if operatingSystem == "windows" {
+	case runtime.Darwin:
+		operatingSystem = "Darwin"
+	case runtime.Windows:
+		operatingSystem = "windows"
 		extension = "zip"
 	}
 
@@ -116,8 +114,9 @@ TODO: Install libssl-dev (or equivalent / warn) and zlib-dev based on platform
 func (bt RubyBuildTool) Install() error {
 
 	rubyVersionDir := bt.RubyDir()
+	t := bt.spec.InstallTarget
 
-	if _, err := os.Stat(rubyVersionDir); err == nil {
+	if t.PathExists(rubyVersionDir) {
 		log.Infof("Ruby %s installed in %s", bt.Version(), rubyVersionDir)
 	} else {
 
@@ -126,12 +125,12 @@ func (bt RubyBuildTool) Install() error {
 			downloadUrl := bt.DownloadUrl()
 			log.Infof("Will download pre-built Ruby from %s", downloadUrl)
 
-			localFile, err := bt.spec.InstallTarget.DownloadFile(downloadUrl)
+			localFile, err := t.DownloadFile(downloadUrl)
 			if err != nil {
 				log.Errorf("Unable to download: %v", err)
 				return err
 			}
-			err = bt.spec.InstallTarget.Unarchive(localFile, rubyVersionsDir)
+			err = t.Unarchive(localFile, rubyVersionsDir)
 			if err != nil {
 				log.Errorf("Unable to decompress: %v", err)
 				return err
@@ -186,7 +185,7 @@ func (bt RubyBuildTool) Install() error {
 		}
 
 		runtime.SetEnv("RBENV_ROOT", rbenvDir)
-		PrependToPath(filepath.Join(rbenvDir, "bin"))
+		t.PrependToPath(filepath.Join(rbenvDir, "bin"))
 
 		installCmd := fmt.Sprintf("rbenv install %s", bt.Version())
 		runtime.ExecToStdout(installCmd, rbenvDir)
@@ -197,16 +196,19 @@ func (bt RubyBuildTool) Install() error {
 
 func (bt RubyBuildTool) Setup() error {
 	gemsDir := filepath.Join(bt.spec.PackageCacheDir, "rubygems")
-	MkdirAsNeeded(gemsDir)
+
+	//MkdirAsNeeded(gemsDir)
+
+	t := bt.spec.InstallTarget
 
 	log.Infof("Setting GEM_HOME to %s", gemsDir)
-	runtime.SetEnv("GEM_HOME", gemsDir)
+	t.SetEnv("GEM_HOME", gemsDir)
 
 	gemBinDir := filepath.Join(gemsDir, "bin")
 
 	rubyDir := bt.RubyDir()
-	PrependToPath(filepath.Join(rubyDir, "bin"))
-	PrependToPath(gemBinDir)
+	t.PrependToPath(filepath.Join(rubyDir, "bin"))
+	t.PrependToPath(gemBinDir)
 
 	return nil
 }

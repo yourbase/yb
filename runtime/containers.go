@@ -1,6 +1,8 @@
 package runtime
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
 	"github.com/yourbase/yb/plumbing/log"
 	"io"
@@ -21,6 +23,33 @@ type ContainerTarget struct {
 
 func (t *ContainerTarget) OS() Os {
 	return Linux
+}
+
+func (t *ContainerTarget) OSVersion() string {
+	buf := bytes.Buffer{}
+	//err := t.Container.DownloadDirectoryToWriter("/etc/os-release", &buf)
+	err := t.Container.ExecToWriter("cat /etc/os-release", "/", &buf)
+
+	if err != nil {
+		return "unknown"
+	}
+
+	rd := bufio.NewReader(&buf)
+	for {
+		line, err := rd.ReadString('\n')
+		if err != nil {
+			return ""
+		}
+		if strings.HasPrefix(line, "VERSION_CODENAME") {
+			line = strings.TrimSuffix(line, "\n")
+			parts := strings.Split(line, "=")
+			if len(parts) == 2 {
+				return parts[1]
+			}
+		}
+	}
+	return ""
+
 }
 
 func (t *ContainerTarget) Architecture() Architecture {
@@ -135,6 +164,10 @@ func (t *ContainerTarget) Unarchive(src string, dst string) error {
 
 	if strings.HasSuffix(src, "tar.gz") {
 		command = fmt.Sprintf("tar zxf %s -C %s", src, dst)
+	}
+
+	if strings.HasSuffix(src, "tar.bz2") {
+		command = fmt.Sprintf("tar jxf %s -C %s", src, dst)
 	}
 
 	p := Process{
