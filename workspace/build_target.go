@@ -37,7 +37,6 @@ type BuildTarget struct {
 	Dependencies BuildDependencies           `yaml:"dependencies"`
 }
 
-
 type BuildDependencies struct {
 	Containers map[string]narwhal.ContainerDefinition `yaml:"containers"`
 }
@@ -51,14 +50,16 @@ func (b BuildDependencies) ContainerList() []narwhal.ContainerDefinition {
 	return containers
 }
 
-func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, packagePath string, buildpacks []string) ([]CommandTimer, error) {
+func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, flags BuildFlags, packagePath string, buildpacks []string) ([]CommandTimer, error) {
 	var stepTimes []CommandTimer
 
 	containers := bt.Dependencies.ContainerList()
 	workDir := packagePath
 	builder := runtimeCtx.DefaultTarget
 
-	if !bt.HostOnly {
+	hostOnly := bt.HostOnly || flags.HostOnly
+
+	if !hostOnly {
 		buildContainer := bt.Container
 		buildContainer.Command = "/usr/bin/tail -f /dev/null"
 		buildContainer.Label = "build"
@@ -89,13 +90,12 @@ func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, packagePath string, bui
 		runtimeCtx.DefaultTarget = builder
 		workDir = sourceMapDir
 
-
 		// Inject a .ssh/config to skip host key checking
 		sshConfig := "Host github.com\n\tStrictHostKeyChecking no\n"
-		builder.Run(runtime.Process{Command:"mkdir /root/.ssh"})
+		builder.Run(runtime.Process{Command: "mkdir /root/.ssh"})
 		builder.WriteFileContents(sshConfig, "/root/.ssh/config")
-		builder.Run(runtime.Process{Command:"chmod 0600 /root/.ssh/config"})
-		builder.Run(runtime.Process{Command:"chown root:root /root/.ssh/config"})
+		builder.Run(runtime.Process{Command: "chmod 0600 /root/.ssh/config"})
+		builder.Run(runtime.Process{Command: "chown root:root /root/.ssh/config"})
 
 		// Inject a useful gitconfig
 		configlines := []string{
@@ -113,7 +113,7 @@ func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, packagePath string, bui
 		if agentPath, exists := os.LookupEnv("SSH_AUTH_SOCK"); exists {
 			log.Info("Forwarding SSH agent")
 
-			hostAddr, err  := runtime.ForwardUnixSocketToTcp(agentPath)
+			hostAddr, err := runtime.ForwardUnixSocketToTcp(agentPath)
 			if err != nil {
 				log.Warnf("Could not forward SSH agent: %v", err)
 			} else {
@@ -123,6 +123,7 @@ func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, packagePath string, bui
 			//buildContainer.Environment = append(buildContainer.Environment, "SSH_AUTH_SOCK=/ssh_agent")
 			builder.SetEnv("SSH_AUTH_SOCK", "/ssh_agent")
 			forwardPath, err := builder.DownloadFile("https://yourbase-artifacts.s3-us-west-2.amazonaws.com/sockforward")
+			builder.Run(runtime.Process{Command: fmt.Sprintf("chmod a+x %s", forwardPath)})
 			forwardCmd := fmt.Sprintf("%s /ssh_agent %s", forwardPath, hostAddr)
 			log.Infof("Running SSH agent socket forwarder...")
 			go func() {
@@ -132,7 +133,7 @@ func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, packagePath string, bui
 
 	}
 
-	builder.Run(runtime.Process{Command:"env"})
+	builder.Run(runtime.Process{Command: "env"})
 
 	// Setup dependent containers
 	for _, cd := range bt.Dependencies.ContainerList() {
@@ -154,7 +155,7 @@ func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, packagePath string, bui
 		builder.SetEnv(key, value)
 	}
 
-	LoadBuildPacks(builder, buildpacks, )
+	LoadBuildPacks(builder, buildpacks)
 
 	/*if len(bt.Dependencies.Containers) > 0 {
 		log.Infof("Available side containers:")
@@ -169,8 +170,8 @@ func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, packagePath string, bui
 
 		stepStartTime := time.Now()
 		p := runtime.Process{
-			Directory:   workDir,
-			Command:     cmdString,
+			Directory: workDir,
+			Command:   cmdString,
 			//Environment: buildData.EnvironmentVariables(),
 			Interactive: false,
 		}
@@ -201,5 +202,3 @@ func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, packagePath string, bui
 
 	return stepTimes, nil
 }
-
-

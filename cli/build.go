@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/yourbase/yb/workspace"
 	"io"
 	"io/ioutil"
 	"os"
@@ -18,6 +17,7 @@ import (
 	ybconfig "github.com/yourbase/yb/config"
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
+	"github.com/yourbase/yb/workspace"
 )
 
 const TIME_FORMAT = "15:04:05 MST"
@@ -27,9 +27,8 @@ type BuildCmd struct {
 	Version          string
 	ExecPrefix       string
 	NoContainer      bool
-	NoSideContainer  bool
 	DependenciesOnly bool
-	ReuseContainers  bool
+	CleanBuild       bool
 }
 
 type BuildLog struct {
@@ -47,7 +46,7 @@ func (b *BuildCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&b.NoContainer, "no-container", false, "Bypass container even if specified")
 	f.BoolVar(&b.DependenciesOnly, "deps-only", false, "Install only dependencies, don't do anything else")
 	f.StringVar(&b.ExecPrefix, "exec-prefix", "", "Add a prefix to all executed commands (useful for timing or wrapping things)")
-	f.BoolVar(&b.ReuseContainers, "reuse-containers", true, "Reuse the container for building")
+	f.BoolVar(&b.CleanBuild, "clean", false, "Perform a completely clean build -- don't reuse anything when building")
 }
 
 func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
@@ -79,7 +78,11 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 
 	var targetTimers []workspace.TargetTimer
 
-	stepTimers, buildError := targetPackage.BuildTarget(buildTargetName)
+	buildFlags := workspace.BuildFlags{
+		HostOnly:   b.NoContainer,
+		CleanBuild: b.CleanBuild,
+	}
+	stepTimers, buildError := targetPackage.BuildTarget(buildTargetName, buildFlags)
 
 	if err != nil {
 		log.Errorf("Failed to build target package: %v\n", err)
