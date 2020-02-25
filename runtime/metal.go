@@ -10,9 +10,9 @@ import (
 	"os/user"
 	"path/filepath"
 	"regexp"
+	goruntime "runtime"
 	"strings"
 	"time"
-	goruntime "runtime"
 
 	"github.com/google/shlex"
 	"github.com/johnewart/archiver"
@@ -39,10 +39,14 @@ func (t *MetalTarget) OS() Os {
 	return Unknown
 }
 
+// TODO: Add support for the OS's here
+func (t *MetalTarget) OSVersion() string {
+	return "unknown"
+}
+
 func (t *MetalTarget) Architecture() Architecture {
 	return Amd64
 }
-
 
 func (t *MetalTarget) WriteContentsToFile(contents string, filename string) error {
 	f, err := os.Open(filename)
@@ -75,7 +79,7 @@ func (t *MetalTarget) ToolsDir() string {
 	return toolsDir
 }
 
-func (t *MetalTarget) 	PathExists(path string) bool {
+func (t *MetalTarget) PathExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
 }
@@ -111,7 +115,6 @@ func (t *MetalTarget) CacheDir() string {
 	return cacheDir
 }
 
-
 func (t *MetalTarget) UploadFile(src string, dst string) error {
 	source, err := os.Open(src)
 	if err != nil {
@@ -123,7 +126,7 @@ func (t *MetalTarget) UploadFile(src string, dst string) error {
 		return err
 	}
 
-	buf := make([]byte, 128 * 1024)
+	buf := make([]byte, 128*1024)
 	for {
 		n, err := source.Read(buf)
 		if err != nil && err != io.EOF {
@@ -143,7 +146,6 @@ func (t *MetalTarget) UploadFile(src string, dst string) error {
 
 	return nil
 }
-
 
 func (t *MetalTarget) DownloadFile(url string) (string, error) {
 

@@ -48,6 +48,7 @@ type Target interface {
 	PathExists(path string) bool
 	ToolsDir() string
 	OS() Os
+	OSVersion() string
 	Architecture() Architecture
 }
 
