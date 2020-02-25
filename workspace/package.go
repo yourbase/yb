@@ -3,7 +3,6 @@ package workspace
 import (
 	"crypto/sha256"
 	"fmt"
-	"github.com/yourbase/yb/daemon"
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	"github.com/yourbase/yb/runtime"
@@ -14,7 +13,6 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
-	"strconv"
 	"strings"
 )
 
@@ -204,10 +202,6 @@ func (p Package) ExecutionRuntime(environment string) (*runtime.Runtime, error) 
 			mapString := fmt.Sprintf("%s:%s", localPort, remotePort)
 			portMappings = append(portMappings, mapString)
 		}
-
-		lp, _ := strconv.Atoi(localPort)
-		rp, _ := strconv.Atoi(remotePort)
-		daemon.RegisterService(p.Name, lp, rp)
 
 		log.Infof("Mapping container port %s to %s on the local machine", remotePort, localPort)
 	}
