@@ -3,6 +3,7 @@ package workspace
 import (
 	"crypto/sha256"
 	"fmt"
+	"github.com/yourbase/yb/daemon"
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	"github.com/yourbase/yb/runtime"
@@ -13,8 +14,15 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
+
+// Any flags we want to pass to the build process
+type BuildFlags struct {
+	HostOnly   bool
+	CleanBuild bool
+}
 
 type Package struct {
 	Name     string
@@ -26,7 +34,7 @@ func (p Package) Path() string {
 	return p.path
 }
 
-func (p Package) BuildTargetToWriter(buildTargetName string, output io.Writer) ([]CommandTimer, error) {
+func (p Package) BuildTargetToWriter(buildTargetName string, flags BuildFlags, output io.Writer) ([]CommandTimer, error) {
 	manifest := p.Manifest
 
 	// Named target, look for that and resolve it
@@ -48,11 +56,11 @@ func (p Package) BuildTargetToWriter(buildTargetName string, output io.Writer) (
 
 	runtimeCtx := runtime.NewRuntime(contextId, p.BuildRoot())
 
-	return primaryTarget.Build(runtimeCtx, p.Path(), p.Manifest.Dependencies.Build)
+	return primaryTarget.Build(runtimeCtx, flags, p.Path(), p.Manifest.Dependencies.Build)
 }
 
-func (p Package) BuildTarget(name string) ([]CommandTimer, error) {
-	return p.BuildTargetToWriter(name, os.Stdout)
+func (p Package) BuildTarget(name string, flags BuildFlags) ([]CommandTimer, error) {
+	return p.BuildTargetToWriter(name, flags, os.Stdout)
 }
 
 func LoadPackage(name string, path string) (Package, error) {
@@ -196,6 +204,10 @@ func (p Package) ExecutionRuntime(environment string) (*runtime.Runtime, error) 
 			mapString := fmt.Sprintf("%s:%s", localPort, remotePort)
 			portMappings = append(portMappings, mapString)
 		}
+
+		lp, _ := strconv.Atoi(localPort)
+		rp, _ := strconv.Atoi(remotePort)
+		daemon.RegisterService(p.Name, lp, rp)
 
 		log.Infof("Mapping container port %s to %s on the local machine", remotePort, localPort)
 	}

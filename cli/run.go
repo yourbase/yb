@@ -53,23 +53,33 @@ func (b *RunCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 		return subcommands.ExitFailure
 	}
 
-	runtimeTarget := "exec"
 	argList := f.Args()
+
+	runInTarget := false
+	runtimeTarget := "default"
 
 	if strings.HasPrefix(argList[0], "@") {
 		runtimeTarget = argList[0][1:]
 		argList = argList[1:]
+		runInTarget = true
 	}
 
 	cmdString := strings.Join(argList, " ")
 
 	log.Infof("Running %s in %s", cmdString, runtimeTarget)
 
-	p := runtime.Process{Command: cmdString, Interactive: true, Directory: "/"}
+	p := runtime.Process{Command: cmdString, Interactive: true, Directory: "/workspace"}
 
-	if err := runtimeEnv.Run(p); err != nil {
-		log.Errorf("%v", err)
-		return subcommands.ExitFailure
+	if runInTarget {
+		if err := runtimeEnv.RunInTarget(p, runtimeTarget); err != nil {
+			log.Errorf("%v", err)
+			return subcommands.ExitFailure
+		}
+	} else {
+		if err := runtimeEnv.Run(p); err != nil {
+			log.Errorf("%v", err)
+			return subcommands.ExitFailure
+		}
 	}
 
 	return subcommands.ExitSuccess
