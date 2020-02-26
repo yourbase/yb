@@ -18,9 +18,7 @@ import (
 )
 
 type PackageCmd struct {
-	target           string
-	dockerRepository string
-	dockerTag        string
+	target string
 }
 
 func (*PackageCmd) Name() string     { return "package" }
@@ -31,8 +29,6 @@ func (*PackageCmd) Usage() string {
 
 func (p *PackageCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&p.target, "target", "", "Target package, if not the default")
-	f.StringVar(&p.dockerRepository, "repository", "docker-registry.yourbase.io", "Repository base name")
-	f.StringVar(&p.dockerTag, "tag", "latest", "Container tag")
 }
 
 /*
@@ -41,7 +37,9 @@ Executing the target involves:
 2. Run any dependent components
 3. Start target
 */
-func (b *PackageCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (b *PackageCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+
+	cmdr := subcommands.NewCommander(f, "packages")
 
 	targetPackage := Package{}
 	workspace, err := LoadWorkspace()
@@ -64,55 +62,68 @@ func (b *PackageCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 		}
 	}
 
-	instructions := targetPackage.Manifest.Package
+	cmdr.Register(&DockerArchiveCmd{targetPackage: targetPackage}, "")
+	cmdr.Register(&TarArchiveCmd{targetPackage: targetPackage}, "")
 
-	if len(instructions.Artifacts) > 0 {
-		if workspace.Path != "" {
-			b.ArchiveWorkspace(targetPackage, instructions.Artifacts)
-		}
-	}
-	if instructions.DockerArtifact.BaseImage != "" {
-		b.PackageDockerImage(targetPackage, instructions.DockerArtifact)
-	}
-
-	return subcommands.ExitSuccess
+	return (cmdr.Execute(ctx))
 }
 
-//PackageDockerImage will create a push a container image matching the file format below
+type DockerArchiveCmd struct {
+	targetPackage    Package
+	dockerRepository string
+	dockerTag        string
+}
+
+func (*DockerArchiveCmd) Name() string     { return "docker" }
+func (*DockerArchiveCmd) Synopsis() string { return "Create a docker image" }
+func (*DockerArchiveCmd) Usage() string {
+	return ``
+}
+
+func (d *DockerArchiveCmd) SetFlags(f *flag.FlagSet) {
+	f.StringVar(&d.dockerRepository, "repository", "docker-registry.yourbase.io", "Repository base name")
+	f.StringVar(&d.dockerTag, "tag", "latest", "Container tag")
+}
+
+//Execute will create a container image matching the file format below
 //
-//artifacts:
-// docker:
-// 	 base_image: ubuntu
-//   image: dispatcher
-//   files:
-//     - dispatcher:dispatcher
-//   working_dir: /
-//   exec: /dispatcher
-func (b *PackageCmd) PackageDockerImage(targetPackage Package, artifact DockerArtifact) subcommands.ExitStatus {
+// package:
+//   docker:
+//     base_image: ubuntu
+//     image: dispatcher
+//     working_dir: /
+//     exec: /dispatcher
+//   artifacts:
+//     - dispatcher
+func (d *DockerArchiveCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+
+	instructions := d.targetPackage.Manifest.Package
+	if instructions.Docker.BaseImage == "" {
+		log.Errorf("BaseImage is a required field in the configuration")
+		return subcommands.ExitFailure
+	}
 	cd := narwhal.ContainerDefinition{
-		Image:   artifact.BaseImage,
-		Label:   artifact.Image,
-		WorkDir: artifact.WorkingDir,
-		Command: artifact.Exec,
+		Image:   instructions.Docker.BaseImage,
+		WorkDir: instructions.Docker.WorkingDir,
+		Command: instructions.Docker.Exec,
 	}
 
-	file := ""
-	localFile := ""
-	// TODO: expand after talking John
-	// UploadArchive for something like the API - How do we know which files?
-	if len(artifact.Files) > 0 {
-		files := strings.SplitN(artifact.Files[0], ":", 2)
-		localFile = filepath.Join(targetPackage.Path(), files[0])
-		file = files[0]
+	tmpArchiveFile := filepath.Join(d.targetPackage.Path(), fmt.Sprintf("%s-package.tar", d.targetPackage.Name))
+	tar := archiver.Tar{MkdirAll: true}
+	err := tar.Archive(instructions.Artifacts, tmpArchiveFile)
+	if err != nil {
+		log.Errorf("Could not create archive: %v\n", err)
+		return subcommands.ExitFailure
 	}
+	defer os.Remove(tmpArchiveFile)
 
 	// Default to yourbase container registry.  User can pass in an empty string for local registry
-	repository := targetPackage.Name
-	if b.dockerRepository != "" {
-		repository = fmt.Sprintf("%s/%s", strings.TrimRight(b.dockerRepository, "/"), targetPackage.Name)
+	repository := d.targetPackage.Name
+	if d.dockerRepository != "" {
+		repository = fmt.Sprintf("%s/%s", strings.TrimRight(d.dockerRepository, "/"), d.targetPackage.Name)
 	}
 
-	err := narwhal.BuildImageWithFile(cd, repository, b.dockerTag, localFile, file, artifact.WorkingDir)
+	err = narwhal.BuildImageWithFile(cd, repository, d.dockerTag, tmpArchiveFile, "tmp.tar", instructions.Docker.WorkingDir)
 	if err != nil {
 		log.Error(err)
 		return subcommands.ExitFailure
@@ -121,28 +132,45 @@ func (b *PackageCmd) PackageDockerImage(targetPackage Package, artifact DockerAr
 	return subcommands.ExitSuccess
 }
 
-func (b *PackageCmd) ArchiveWorkspace(targetPackage Package, instructions []string) subcommands.ExitStatus {
+type TarArchiveCmd struct {
+	targetPackage Package
+	tar_file      string
+}
 
-	outputDir := filepath.Join(targetPackage.BuildRoot(), "output")
-	MkdirAsNeeded(outputDir)
-	archiveFile := fmt.Sprintf("%s-package.tar", targetPackage.Name)
-	pkgFile := filepath.Join(outputDir, archiveFile)
+func (*TarArchiveCmd) Name() string     { return "tar" }
+func (*TarArchiveCmd) Synopsis() string { return "Create a tar file" }
+func (*TarArchiveCmd) Usage() string {
+	return ``
+}
 
-	if PathExists(pkgFile) {
-		os.Remove(pkgFile)
+func (t *TarArchiveCmd) SetFlags(f *flag.FlagSet) {
+	f.StringVar(&t.tar_file, "tar_file", "", "tar file path and name")
+}
+
+func (t *TarArchiveCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+
+	if t.tar_file == "" {
+		outputDir := filepath.Join(t.targetPackage.BuildRoot(), "output")
+		MkdirAsNeeded(outputDir)
+		archiveFile := fmt.Sprintf("%s-package.tar", t.targetPackage.Name)
+		t.tar_file = filepath.Join(outputDir, archiveFile)
 	}
 
-	log.Infof("Generating package file %s...\n", pkgFile)
+	if PathExists(t.tar_file) {
+		os.Remove(t.tar_file)
+	}
+
+	log.Infof("Generating package file %s...\n", t.tar_file)
 
 	tar := archiver.Tar{
 		MkdirAll: true,
 	}
 
-	packageDir := targetPackage.Path()
+	packageDir := t.targetPackage.Path()
 
 	oldCwd, _ := os.Getwd()
 	_ = os.Chdir(packageDir)
-	err := tar.Archive(instructions, pkgFile)
+	err := tar.Archive(t.targetPackage.Manifest.Package.Artifacts, t.tar_file)
 	_ = os.Chdir(oldCwd)
 
 	if err != nil {

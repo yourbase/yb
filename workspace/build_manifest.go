@@ -26,16 +26,15 @@ type CIBuild struct {
 }
 
 type PackagePhase struct {
-	DockerArtifact DockerArtifact `yaml:"docker"`
-	Artifacts      []string       `yaml:"archive"`
+	Artifacts []string          `yaml:"artifacts"`
+	Docker    DockerArchive     `yaml:"docker"`
+	Tar       map[string]string `yaml:"tar"`
 }
 
-type DockerArtifact struct {
-	BaseImage  string   `yaml:"base_image"`
-	Image      string   `yaml:"image"`
-	Files      []string `yaml:"files"`
-	WorkingDir string   `yaml:"working_dir"`
-	Exec       string   `yaml:"exec"`
+type DockerArchive struct {
+	BaseImage  string `yaml:"base_image"`
+	WorkingDir string `yaml:"working_dir"`
+	Exec       string `yaml:"exec"`
 }
 
 type DependencySet struct {
@@ -117,7 +116,7 @@ type BuildManifest struct {
 	BuildTargets []BuildTarget `yaml:"build_targets"`
 	Build        BuildTarget   `yaml:"build"`
 	Exec         ExecPhase     `yaml:"exec"`
-	Package      PackagePhase  `yaml:"artifacts"`
+	Package      PackagePhase  `yaml:"package"`
 	CI           CIInfo        `yaml:"ci"`
 }
 
