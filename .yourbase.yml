@@ -1,6 +1,6 @@
 dependencies:
   build:
-    - go:1.13.7
+    - go:1.13.8
     - python:3.6
 
 build_targets:
