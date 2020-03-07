@@ -185,13 +185,11 @@ func (t *ContainerTarget) WorkDir() string {
 }
 
 func (t *ContainerTarget) SetEnv(key string, value string) error {
-	log.Infof("SETTING ENV: %s = %s", key, value)
 	envString := fmt.Sprintf("%s=%s", key, value)
 	if t.Environment == nil {
 		t.Environment = make([]string, 0)
 	}
 	t.Environment = append(t.Environment, envString)
-	log.Infof("Container environment: %v", t.Environment)
 	return nil
 }
 
@@ -201,7 +199,7 @@ func (t *ContainerTarget) Run(p Process) error {
 	p.Environment = append(p.Environment, t.Environment...)
 	p.Environment = append(p.Environment, t.Container.Definition.Environment...)
 
-	log.Debugf("Process env: %v\n", p.Environment)
+	log.Debugf("Process env: %v", p.Environment)
 
 	var output io.Writer
 
