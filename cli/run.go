@@ -65,10 +65,15 @@ func (b *RunCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	}
 
 	cmdString := strings.Join(argList, " ")
+	workDir := "/workspace"
 
-	log.Infof("Running %s in %s", cmdString, runtimeTarget)
+	if runInTarget { 
+		workDir = "/"
+	}
 
-	p := runtime.Process{Command: cmdString, Interactive: true, Directory: "/workspace"}
+	log.Infof("Running %s in %s from %s", cmdString, runtimeTarget, workDir)
+
+	p := runtime.Process{Command: cmdString, Interactive: true, Directory: workDir}
 
 	if runInTarget {
 		if err := runtimeEnv.RunInTarget(p, runtimeTarget); err != nil {
