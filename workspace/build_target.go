@@ -50,6 +50,23 @@ func (b BuildDependencies) ContainerList() []narwhal.ContainerDefinition {
 	return containers
 }
 
+func (bt BuildTarget) EnvironmentVariables(data runtime.RuntimeEnvironmentData) []string {
+	result := make([]string, 0)
+	for _, property := range(bt.Environment) {
+		s := strings.SplitN(property, "=", 2)
+		if len(s) == 2 {
+			interpolated, err := TemplateToString(property, data)
+			if err == nil {
+				result = append(result, interpolated)
+			} else {
+				result = append(result, property)
+			}
+		}
+	}
+
+	return result
+}
+
 func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, flags BuildFlags, packagePath string, buildpacks []string) ([]CommandTimer, error) {
 	var stepTimes []CommandTimer
 
@@ -65,7 +82,6 @@ func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, flags BuildFlags, packa
 		buildContainer.Label = "build"
 
 		// Append build environment variables
-		//container.Environment = append(container.Environment, buildData.EnvironmentVariables()...)
 		buildContainer.Environment = []string{}
 
 		// Add package to mounts @ /workspace
@@ -77,7 +93,7 @@ func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, flags BuildFlags, packa
 		log.Infof("Will mount  %s at %s in container", packagePath, sourceMapDir)
 		mount := fmt.Sprintf("%s:%s", packagePath, sourceMapDir)
 		buildContainer.Mounts = append(buildContainer.Mounts, mount)
-
+	
 		containers = append(containers, buildContainer)
 
 		var err error
@@ -92,7 +108,7 @@ func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, flags BuildFlags, packa
 
 		// Inject a .ssh/config to skip host key checking
 		sshConfig := "Host github.com\n\tStrictHostKeyChecking no\n"
-		builder.Run(runtime.Process{Command: "mkdir /root/.ssh"})
+		builder.Run(runtime.Process{Command: "mkdir -p /root/.ssh"})
 		builder.WriteFileContents(sshConfig, "/root/.ssh/config")
 		builder.Run(runtime.Process{Command: "chmod 0600 /root/.ssh/config"})
 		builder.Run(runtime.Process{Command: "chown root:root /root/.ssh/config"})
@@ -109,10 +125,10 @@ func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, flags BuildFlags, packa
 		gitConfig := strings.Join(configlines, "\n")
 		builder.WriteFileContents(gitConfig, "/root/.gitconfig")
 
+		// TODO: Don't run this multiple times
 		// Map SSH agent into the container
 		if agentPath, exists := os.LookupEnv("SSH_AUTH_SOCK"); exists {
-			log.Info("Forwarding SSH agent")
-
+			log.Infof("Running SSH agent socket forwarder...")
 			hostAddr, err := runtime.ForwardUnixSocketToTcp(agentPath)
 			if err != nil {
 				log.Warnf("Could not forward SSH agent: %v", err)
@@ -125,16 +141,12 @@ func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, flags BuildFlags, packa
 			forwardPath, err := builder.DownloadFile("https://yourbase-artifacts.s3-us-west-2.amazonaws.com/sockforward")
 			builder.Run(runtime.Process{Command: fmt.Sprintf("chmod a+x %s", forwardPath)})
 			forwardCmd := fmt.Sprintf("%s /ssh_agent %s", forwardPath, hostAddr)
-			log.Infof("Running SSH agent socket forwarder...")
 			go func() {
 				builder.Run(runtime.Process{Command: forwardCmd})
 			}()
 		}
-
 	}
-
-	builder.Run(runtime.Process{Command: "env"})
-
+	
 	// Setup dependent containers
 	for _, cd := range bt.Dependencies.ContainerList() {
 		if _, err := runtimeCtx.AddContainer(cd); err != nil {
@@ -143,7 +155,7 @@ func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, flags BuildFlags, packa
 	}
 
 	// Do this after the containers are up
-	for _, envString := range bt.Environment {
+	for _, envString := range bt.EnvironmentVariables(runtimeCtx.EnvironmentData()) {
 		parts := strings.Split(envString, "=")
 		key := parts[0]
 		value := ""
