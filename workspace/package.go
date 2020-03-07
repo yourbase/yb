@@ -212,6 +212,7 @@ func (p Package) ExecutionRuntime(environment string) (*runtime.Runtime, error) 
 	execContainer.Label = "exec"
 	execContainer.Ports = portMappings
 
+
 	// Add package to mounts @ /workspace
 	sourceMapDir := "/workspace"
 	if execContainer.WorkDir != "" {
