@@ -2,11 +2,8 @@ package buildpacks
 
 import (
 	"fmt"
-	"github.com/yourbase/yb/runtime"
-	"os"
 	"path/filepath"
 
-	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 )
@@ -57,8 +54,9 @@ func (bt NodeBuildTool) Install() error {
 	nodeDir := bt.NodeDir()
 	installDir := bt.InstallDir()
 	nodePkgString := bt.PackageString()
+	t := bt.spec.InstallTarget
 
-	if _, err := os.Stat(nodeDir); err == nil {
+	if t.PathExists(nodeDir) {
 		log.Infof("Node v%s located in %s!", bt.Version(), nodeDir)
 	} else {
 		log.Infof("Would install Node v%s into %s", bt.Version(), installDir)
@@ -82,16 +80,17 @@ func (bt NodeBuildTool) Install() error {
 }
 
 func (bt NodeBuildTool) Setup() error {
+	t := bt.spec.InstallTarget
 	nodeDir := bt.NodeDir()
 	cmdPath := filepath.Join(nodeDir, "bin")
-	PrependToPath(cmdPath)
+	t.PrependToPath(cmdPath)
 	// TODO: Fix this to be the package cache?
 	nodePath := bt.spec.PackageDir
 	log.Infof("Setting NODE_PATH to %s", nodePath)
-	runtime.SetEnv("NODE_PATH", nodePath)
+	t.SetEnv("NODE_PATH", nodePath)
 
 	npmBinPath := filepath.Join(nodePath, "node_modules", ".bin")
-	PrependToPath(npmBinPath)
+	t.PrependToPath(npmBinPath)
 
 	return nil
 }
