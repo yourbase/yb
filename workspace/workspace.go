@@ -2,12 +2,13 @@ package workspace
 
 import (
 	"fmt"
-	"github.com/yourbase/yb/runtime"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/yourbase/yb/runtime"
+	"gopkg.in/yaml.v2"
 
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
@@ -67,9 +68,15 @@ func (w Workspace) PackageList() ([]Package, error) {
 			if !strings.HasPrefix(pkgName, ".") {
 				pkg, err := LoadPackage(pkgName, pkgPath)
 				if err != nil {
-					return packages, err
+					if err == ErrNoManifestFile {
+						log.Debugf("No manifest file found for %s", pkgName)
+					} else {
+						log.Errorf("Error loading package '%s': %v", pkgName, err)
+						return packages, err
+					}
+				} else {
+					packages = append(packages, pkg)
 				}
-				packages = append(packages, pkg)
 			}
 		}
 	}

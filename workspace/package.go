@@ -2,18 +2,21 @@ package workspace
 
 import (
 	"crypto/sha256"
+	"errors"
 	"fmt"
-	. "github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/plumbing/log"
-	"github.com/yourbase/yb/runtime"
-	. "github.com/yourbase/yb/types"
-	"gopkg.in/yaml.v2"
 	"io"
 	"io/ioutil"
 	"os"
 	"os/user"
 	"path/filepath"
 	"strings"
+
+	"gopkg.in/yaml.v2"
+
+	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing/log"
+	"github.com/yourbase/yb/runtime"
+	. "github.com/yourbase/yb/types"
 )
 
 // Any flags we want to pass to the build process
@@ -27,6 +30,12 @@ type Package struct {
 	path     string
 	Manifest BuildManifest
 }
+
+func (p Package) PackageDependencies() ([]Package, error) {
+	return []Package{}, nil
+}
+
+var ErrNoManifestFile = errors.New("manifest file not found")
 
 func (p Package) Path() string {
 	return p.path
@@ -65,7 +74,7 @@ func LoadPackage(name string, path string) (Package, error) {
 	manifest := BuildManifest{}
 	buildYaml := filepath.Join(path, MANIFEST_FILE)
 	if _, err := os.Stat(buildYaml); os.IsNotExist(err) {
-		return Package{}, fmt.Errorf("Can't load %s: %v", MANIFEST_FILE, err)
+		return Package{}, ErrNoManifestFile
 	}
 
 	buildyaml, _ := ioutil.ReadFile(buildYaml)
@@ -211,7 +220,6 @@ func (p Package) ExecutionRuntime(environment string) (*runtime.Runtime, error) 
 	execContainer.Command = "/usr/bin/tail -f /dev/null"
 	execContainer.Label = "exec"
 	execContainer.Ports = portMappings
-
 
 	// Add package to mounts @ /workspace
 	sourceMapDir := "/workspace"

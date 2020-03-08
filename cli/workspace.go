@@ -5,14 +5,15 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/johnewart/subcommands"
-	"gopkg.in/src-d/go-git.v4"
-	"gopkg.in/src-d/go-git.v4/plumbing"
-	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/johnewart/subcommands"
+	"gopkg.in/src-d/go-git.v4"
+	"gopkg.in/src-d/go-git.v4/plumbing"
+	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 
 	util "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
@@ -37,8 +38,44 @@ func (w *WorkspaceCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interf
 	cmdr.Register(&workspaceAddCmd{}, "")
 	cmdr.Register(&workspaceTargetCmd{}, "")
 	cmdr.Register(&workspaceLocationCmd{}, "")
+	cmdr.Register(&workspaceListCmd{}, "")
 	return (cmdr.Execute(ctx))
 	//return subcommands.ExitFailure
+}
+
+// LOCATION
+type workspaceListCmd struct{}
+
+func (*workspaceListCmd) Name() string     { return "ls" }
+func (*workspaceListCmd) Synopsis() string { return "List packages in workspace" }
+func (*workspaceListCmd) Usage() string {
+	return `ls`
+}
+
+func (w *workspaceListCmd) SetFlags(f *flag.FlagSet) {
+}
+
+func (w *workspaceListCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+	ws, err := LoadWorkspace()
+
+	if err != nil {
+		log.Errorf("No package here, and no workspace, nothing to do!")
+		return subcommands.ExitFailure
+	}
+
+	pkgs, err := ws.PackageList()
+	if err != nil {
+		log.Errorf("Unable to get package listing: %v", err)
+		return subcommands.ExitFailure
+	}
+
+	fmt.Printf("Packages in workspace:\n")
+	for _, pkg := range pkgs {
+		fmt.Printf(" * %s\n", pkg.Name)
+	}
+	fmt.Println()
+
+	return subcommands.ExitSuccess
 }
 
 // LOCATION
