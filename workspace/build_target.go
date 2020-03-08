@@ -136,7 +136,6 @@ func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, flags BuildFlags, packa
 				log.Infof("Forwarding SSH agent via %s", hostAddr)
 			}
 
-			//buildContainer.Environment = append(buildContainer.Environment, "SSH_AUTH_SOCK=/ssh_agent")
 			builder.SetEnv("SSH_AUTH_SOCK", "/ssh_agent")
 			forwardPath, err := builder.DownloadFile("https://yourbase-artifacts.s3-us-west-2.amazonaws.com/sockforward")
 			builder.Run(runtime.Process{Command: fmt.Sprintf("chmod a+x %s", forwardPath)})
