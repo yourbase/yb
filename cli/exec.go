@@ -82,7 +82,7 @@ func (b *ExecCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	log.ActiveSection("Environment")
 	log.Infof("Setting environment variables...")
 	for _, property := range instructions.Exec.Environment["default"] {
-		s := strings.Split(property, "=")
+		s := strings.SplitN(property, "=", 2)
 		if len(s) == 2 {
 			buildData.SetEnv(s[0], s[1])
 		}
