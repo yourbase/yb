@@ -102,21 +102,23 @@ func (p Package) Execute(runtimeCtx *runtime.Runtime) error {
 func (p Package) serviceDependencies() ([]Package, error) {
 
 	pkgs := make([]Package, 0)
-	svcDef := p.Workspace.BuildSpec.Service(p.Name)
-	if svcDef != nil {
-		if svcDef.DependsOn != nil {
-			for _, dep := range *svcDef.DependsOn {
-				parts := strings.Split(dep, ".")
-				if len(parts) == 2 {
-					dType := parts[0]
-					dName := parts[1]
+	if p.Workspace.BuildSpec != nil {
+		svcDef := p.Workspace.BuildSpec.Service(p.Name)
+		if svcDef != nil {
+			if svcDef.DependsOn != nil {
+				for _, dep := range *svcDef.DependsOn {
+					parts := strings.Split(dep, ".")
+					if len(parts) == 2 {
+						dType := parts[0]
+						dName := parts[1]
 
-					if dType == "service" {
-						pkg, err := p.Workspace.PackageByName(dName)
-						if err != nil {
-							return []Package{}, fmt.Errorf("could not find dependency '%s' in workspace: %v", dName, err)
+						if dType == "service" {
+							pkg, err := p.Workspace.PackageByName(dName)
+							if err != nil {
+								return []Package{}, fmt.Errorf("could not find dependency '%s' in workspace: %v", dName, err)
+							}
+							pkgs = append(pkgs, pkg)
 						}
-						pkgs = append(pkgs, pkg)
 					}
 				}
 			}

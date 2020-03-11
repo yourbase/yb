@@ -2,7 +2,6 @@ package buildpacks
 
 import (
 	"fmt"
-	"github.com/yourbase/yb/runtime"
 	"os"
 	"path/filepath"
 	"strings"
@@ -65,12 +64,9 @@ func (bt AntBuildTool) InstallDir() string {
 
 func (bt AntBuildTool) Setup() error {
 	antDir := bt.AntDir()
+	t := bt.spec.InstallTarget
 
-	cmdPath := filepath.Join(antDir, "bin")
-	currentPath := os.Getenv("PATH")
-	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
-	log.Infof("Setting PATH to %s", newPath)
-	runtime.SetEnv("PATH", newPath)
+	t.PrependToPath(filepath.Join(antDir, "bin"))
 
 	return nil
 }

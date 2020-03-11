@@ -2,7 +2,6 @@ package buildpacks
 
 import (
 	"fmt"
-	"github.com/yourbase/yb/runtime"
 	"os"
 	"path/filepath"
 	"strings"
@@ -94,12 +93,9 @@ func (bt FlutterBuildTool) FlutterDir() string {
 
 func (bt FlutterBuildTool) Setup() error {
 	flutterDir := bt.FlutterDir()
+	t := bt.spec.InstallTarget
 
-	cmdPath := filepath.Join(flutterDir, "bin")
-	currentPath := os.Getenv("PATH")
-	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
-	log.Infof("Setting PATH to %s", newPath)
-	runtime.SetEnv("PATH", newPath)
+	t.PrependToPath(filepath.Join(flutterDir, "bin"))
 
 	return nil
 }
