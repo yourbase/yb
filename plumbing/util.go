@@ -4,14 +4,15 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
 	"io"
 	"io/ioutil"
 	"os"
 	"os/user"
 	"path/filepath"
 	"strings"
+
+	"github.com/yourbase/yb/plumbing/log"
+	. "github.com/yourbase/yb/types"
 
 	"github.com/ulikunitz/xz"
 
@@ -204,6 +205,8 @@ func FindWorkspaceRoot() (string, error) {
 		parent := filepath.Dir(packageDir)
 		if _, err := os.Stat(filepath.Join(parent, "config.yml")); err == nil {
 			return parent, nil
+		} else {
+			return packageDir, nil
 		}
 	} else {
 		return "", err

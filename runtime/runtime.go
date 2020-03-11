@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"fmt"
+	"github.com/yourbase/yb/plumbing/log"
 	"io"
 	"strings"
 
@@ -137,11 +138,19 @@ func (r *Runtime) EnvironmentData() RuntimeEnvironmentData {
 		Containers: ContainerData{
 			serviceCtx: r.ContainerServiceContext,
 		},
+		Services: ServiceData{
+			serviceCtx: r.ContainerServiceContext,
+		},
 	}
 }
 
 type RuntimeEnvironmentData struct {
 	Containers ContainerData
+	Services   ServiceData
+}
+
+type ServiceData struct {
+	serviceCtx *narwhal.ServiceContext
 }
 
 type ContainerData struct {
@@ -153,6 +162,22 @@ func (c ContainerData) IP(label string) string {
 	if c.serviceCtx != nil {
 		if buildContainer, ok := c.serviceCtx.Containers[label]; ok {
 			if ipv4, err := buildContainer.IPv4Address(); err == nil {
+				return ipv4
+			}
+		}
+	}
+
+	return ""
+}
+
+func (c ServiceData) IP(label string) string {
+	// Check service context
+	log.Debugf("Looking up IP for service %s", label)
+	if c.serviceCtx != nil {
+		if buildContainer, ok := c.serviceCtx.Containers[label]; ok {
+			log.Debugf("Found service %s with container %s", label, buildContainer.Id)
+			if ipv4, err := buildContainer.IPv4Address(); err == nil {
+				log.Debugf("Service %s has IP %s", label, ipv4)
 				return ipv4
 			}
 		}
