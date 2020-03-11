@@ -1,15 +1,16 @@
 package workspace
 
 import (
-	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
-	"os/user"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
+	"time"
 
 	"gopkg.in/yaml.v2"
 
@@ -26,9 +27,10 @@ type BuildFlags struct {
 }
 
 type Package struct {
-	Name     string
-	path     string
-	Manifest BuildManifest
+	Name      string
+	path      string
+	Manifest  BuildManifest
+	Workspace *Workspace
 }
 
 func (p Package) PackageDependencies() ([]Package, error) {
@@ -39,6 +41,23 @@ var ErrNoManifestFile = errors.New("manifest file not found")
 
 func (p Package) Path() string {
 	return p.path
+}
+
+func (p Package) Build(flags BuildFlags) ([]CommandTimer, error) {
+	times := make([]CommandTimer, 0)
+
+	manifest := p.Manifest
+
+	tgt, err := manifest.BuildTarget("default")
+	if err != nil {
+		return times, err
+	}
+
+	contextId := fmt.Sprintf("%s-build-%s", p.Name, tgt.Name)
+
+	runtimeCtx := runtime.NewRuntime(contextId, p.BuildRoot())
+
+	return tgt.Build(runtimeCtx, flags, p.Path(), p.Manifest.Dependencies.Build)
 }
 
 func (p Package) BuildTargetToWriter(buildTargetName string, flags BuildFlags, output io.Writer) ([]CommandTimer, error) {
@@ -70,6 +89,15 @@ func (p Package) BuildTarget(name string, flags BuildFlags) ([]CommandTimer, err
 	return p.BuildTargetToWriter(name, flags, os.Stdout)
 }
 
+func LoadPackageAtPath(path string) (Package, error) {
+	_, pkgName := filepath.Split(path)
+	return LoadPackage(pkgName, path)
+}
+
+func (p Package) BuildRoot() string {
+	return p.Workspace.BuildRoot()
+}
+
 func LoadPackage(name string, path string) (Package, error) {
 	manifest := BuildManifest{}
 	buildYaml := filepath.Join(path, MANIFEST_FILE)
@@ -92,66 +120,84 @@ func LoadPackage(name string, path string) (Package, error) {
 	return p, nil
 }
 
-func (p Package) BuildRoot() string {
-	// Are we a part of a workspace?
-	workspaceDir, err := FindWorkspaceRoot()
-
+func (p Package) DoExecute(environment string) error {
+	execRuntime, err := p.ExecutionRuntime(environment)
 	if err != nil {
-		// Nope, just ourselves...
-		workspacesRoot, exists := os.LookupEnv("YB_WORKSPACES_ROOT")
-		if !exists {
-			u, err := user.Current()
-			if err != nil {
-				workspacesRoot = "/tmp/yourbase/workspaces"
-			} else {
-				workspacesRoot = fmt.Sprintf("%s/.yourbase/workspaces", u.HomeDir)
-			}
-		}
-
-		h := sha256.New()
-
-		h.Write([]byte(p.path))
-		workspaceHash := fmt.Sprintf("%x", h.Sum(nil))
-		workspaceDir = filepath.Join(workspacesRoot, workspaceHash[0:12])
+		return err
 	}
 
-	MkdirAsNeeded(workspaceDir)
+	c := make(chan os.Signal, 2)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		fmt.Println("\r- Ctrl+C pressed in Terminal")
+		execRuntime.Shutdown()
+		os.Exit(0)
+	}()
 
-	buildDir := "build"
-	buildRoot := filepath.Join(workspaceDir, buildDir)
+	log.Infof("Executing package '%s'...\n", p.Name)
 
-	if _, err := os.Stat(buildRoot); os.IsNotExist(err) {
-		if err := os.Mkdir(buildRoot, 0700); err != nil {
-			log.Warnf("Unable to create build dir in workspace: %v\n", err)
-		}
-	}
-
-	return buildRoot
-
-}
-
-func (p Package) SetupRuntimeDependencies() ([]CommandTimer, error) {
-	deps := p.Manifest.Dependencies.Runtime
-	deps = append(deps, p.Manifest.Dependencies.Build...)
-	return []CommandTimer{}, nil
-	//return LoadBuildPacks(deps, p)
+	return p.Execute(execRuntime)
 }
 
 func (p Package) Execute(runtimeCtx *runtime.Runtime) error {
 	return p.ExecuteToWriter(runtimeCtx, os.Stdout)
 }
 
+func (p Package) EnvironmentVariables(data runtime.RuntimeEnvironmentData, env string) []string {
+	return p.Manifest.Exec.EnvironmentVariables(env, data)
+}
+
 func (p Package) ExecuteToWriter(runtimeCtx *runtime.Runtime, output io.Writer) error {
 
+	svcDef := p.Workspace.BuildSpec.Service(p.Name)
+	if svcDef != nil {
+		if svcDef.DependsOn != nil {
+			log.Infof("Starting dependencies for %s...", p.Name)
+			for _, dep := range (*svcDef.DependsOn) {
+				parts := strings.Split(dep, ".")
+				if len(parts) == 2 {
+					dType := parts[0]
+					dName := parts[1]
+
+					if dType == "service" {
+						dPkg, err := p.Workspace.PackageByName(dName)
+						if err != nil {
+							return fmt.Errorf("could not start dependency '%s': %v", dName, err)
+						}
+						// XXX -- OMG SO BAD
+						go func() {
+							log.Infof("* '%s'...", dName)
+							_, err := dPkg.ExecutionTarget(runtimeCtx, dName)
+							if err != nil {
+								log.Errorf("Unable to start dependency: %v", err)
+							}
+							dPkg.Execute(runtimeCtx)
+						}()
+					} else {
+						log.Warnf("Unknown dependency type: %s", dType)
+					}
+				} else {
+					log.Warnf("Unknown dependency format: %s", dep)
+				}
+			}
+		}
+	}
+
+	// XXX -- OMG WTF SLEEP
+	log.Infof("Waiting for dependencies to start so we can get their IPs...")
+	time.Sleep(20 * time.Second)
+
 	for _, cmdString := range p.Manifest.Exec.Commands {
-		p := runtime.Process{
+		proc := runtime.Process{
 			Command:     cmdString,
 			Directory:   "/workspace",
 			Interactive: false,
 			Output:      &output,
+			Environment: p.EnvironmentVariables(runtimeCtx.EnvironmentData(), "default"),
 		}
 
-		if err := runtimeCtx.Run(p); err != nil {
+		if err := runtimeCtx.RunInTarget(proc, p.Name); err != nil {
 			return fmt.Errorf("Unable to run command '%s': %v", cmdString, err)
 		}
 	}
@@ -159,18 +205,14 @@ func (p Package) ExecuteToWriter(runtimeCtx *runtime.Runtime, output io.Writer) 
 	return nil
 }
 
-func (p Package) ExecutionRuntime(environment string) (*runtime.Runtime, error) {
-	manifest := p.Manifest
-	containers := manifest.Exec.Dependencies.ContainerList()
-	contextId := fmt.Sprintf("%s-exec", p.Name)
-
-	runtimeCtx := runtime.NewRuntime(contextId, p.BuildRoot())
-
+func (p Package) ExecutionTarget(runtimeCtx *runtime.Runtime, targetName string) (*runtime.ContainerTarget, error) {
 	localContainerWorkDir := filepath.Join(p.BuildRoot(), "containers")
 	MkdirAsNeeded(localContainerWorkDir)
 
 	log.Infof("Will use %s as the dependency work dir", localContainerWorkDir)
 
+	manifest := p.Manifest
+	containers := manifest.Exec.Dependencies.ContainerList()
 	for _, cd := range containers {
 		cd.LocalWorkDir = localContainerWorkDir
 		_, err := runtimeCtx.AddContainer(cd)
@@ -216,9 +258,9 @@ func (p Package) ExecutionRuntime(environment string) (*runtime.Runtime, error) 
 	}
 
 	execContainer := manifest.Exec.Container
-	execContainer.Environment = manifest.Exec.EnvironmentVariables(environment, runtimeCtx.EnvironmentData())
+	//execContainer.Environment = manifest.Exec.EnvironmentVariables("default", runtimeCtx.EnvironmentData())
 	execContainer.Command = "/usr/bin/tail -f /dev/null"
-	execContainer.Label = "exec"
+	execContainer.Label = targetName
 	execContainer.Ports = portMappings
 
 	// Add package to mounts @ /workspace
@@ -237,6 +279,19 @@ func (p Package) ExecutionRuntime(environment string) (*runtime.Runtime, error) 
 
 	LoadBuildPacks(execTarget, p.Manifest.Dependencies.Build)
 	LoadBuildPacks(execTarget, p.Manifest.Dependencies.Runtime)
+
+	return execTarget, nil
+}
+
+func (p Package) ExecutionRuntime(environment string) (*runtime.Runtime, error) {
+	contextId := fmt.Sprintf("%s-exec", p.Name)
+
+	runtimeCtx := runtime.NewRuntime(contextId, p.BuildRoot())
+
+	execTarget, err:= p.ExecutionTarget(runtimeCtx, p.Name)
+	if err != nil {
+		return nil, err
+	}
 
 	runtimeCtx.DefaultTarget = execTarget
 
