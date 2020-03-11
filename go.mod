@@ -14,10 +14,11 @@ require (
 	github.com/frankban/quicktest v1.5.0 // indirect
 	github.com/gobwas/httphead v0.0.0-20180130184737-2c6c146eadee // indirect
 	github.com/gobwas/pool v0.2.0 // indirect
-	github.com/gobwas/ws v1.0.2
+	github.com/gobwas/ws v1.0.3
 	github.com/gogo/protobuf v1.3.1 // indirect
+	github.com/golang/protobuf v1.3.4 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
-	github.com/google/shlex v0.0.0-20181106134648-c34317bd91bf
+	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/gopherjs/gopherjs v0.0.0-20190915194858-d3ddacdb130f // indirect
 	github.com/johnewart/archiver v3.1.4+incompatible
 	github.com/johnewart/subcommands v0.0.0-20181012225330-46f0354f6315
@@ -31,28 +32,28 @@ require (
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/matishsiao/goInfo v0.0.0-20170803142006-617e6440957e
 	github.com/morikuni/aec v1.0.0 // indirect
-	github.com/nwaples/rardecode v1.0.0 // indirect
-	github.com/pierrec/lz4 v2.3.0+incompatible // indirect
+	github.com/nwaples/rardecode v1.1.0 // indirect
+	github.com/pierrec/lz4 v2.4.1+incompatible // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/sirupsen/logrus v1.4.2
 	github.com/smartystreets/assertions v1.0.1 // indirect
 	github.com/smartystreets/goconvey v0.0.0-20190731233626-505e41936337 // indirect
-	github.com/ulikunitz/xz v0.5.6
+	github.com/ulikunitz/xz v0.5.7
 	github.com/waigani/diffparser v0.0.0-20190828052634-7391f219313d // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
-	github.com/yourbase/narwhal v0.0.0-20200207175229-fecb0f220671
-	golang.org/x/crypto v0.0.0-20191112222119-e1110fd1c708
-	golang.org/x/net v0.0.0-20191112182307-2180aed22343 // indirect
+	github.com/yourbase/narwhal v0.0.0-20200226183157-748bc33c70c8
+	golang.org/x/crypto v0.0.0-20200302210943-78000ba7a073
+	golang.org/x/net v0.0.0-20200301022130-244492dfa37a // indirect
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
-	golang.org/x/sys v0.0.0-20200202164722-d101bd2416d5 // indirect
-	google.golang.org/genproto v0.0.0-20200205142000-a86caf926a67 // indirect
-	google.golang.org/grpc v1.27.1 // indirect
-	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
-	gopkg.in/ini.v1 v1.51.0
+	golang.org/x/sys v0.0.0-20200302150141-5c8b2ff67527 // indirect
+	google.golang.org/genproto v0.0.0-20200311144346-b662892dd51b // indirect
+	google.golang.org/grpc v1.28.0 // indirect
+	gopkg.in/ini.v1 v1.54.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	gopkg.in/src-d/go-billy.v4 v4.3.2
 	gopkg.in/src-d/go-git.v4 v4.13.1
-	gopkg.in/yaml.v2 v2.2.5
+	gopkg.in/yaml.v2 v2.2.8
 )
 
 go 1.13
