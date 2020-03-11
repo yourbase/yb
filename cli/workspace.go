@@ -15,9 +15,7 @@ import (
 	"gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 
-	util "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	ybtypes "github.com/yourbase/yb/types"
 	. "github.com/yourbase/yb/workspace"
 )
 
@@ -63,11 +61,7 @@ func (w *workspaceListCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...inte
 		return subcommands.ExitFailure
 	}
 
-	pkgs, err := ws.PackageList()
-	if err != nil {
-		log.Errorf("Unable to get package listing: %v", err)
-		return subcommands.ExitFailure
-	}
+	pkgs := ws.PackageList()
 
 	fmt.Printf("Packages in workspace:\n")
 	for _, pkg := range pkgs {
@@ -91,28 +85,14 @@ func (w *workspaceLocationCmd) SetFlags(f *flag.FlagSet) {
 }
 
 func (w *workspaceLocationCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	// check if we're just a package
-	if util.PathExists(ybtypes.MANIFEST_FILE) {
-		currentPath, _ := filepath.Abs(".")
-		_, pkgName := filepath.Split(currentPath)
-		pkg, err := LoadPackage(pkgName, currentPath)
-		if err != nil {
-			log.Errorf("Error loading package '%s': %v", pkgName, err)
-			return subcommands.ExitFailure
-		}
+	ws, err := LoadWorkspace()
 
-		log.Infoln(pkg.BuildRoot())
-		return subcommands.ExitSuccess
-	} else {
-		ws, err := LoadWorkspace()
-
-		if err != nil {
-			log.Errorf("No package here, and no workspace, nothing to do!")
-			return subcommands.ExitFailure
-		}
-		fmt.Println(ws.Root()) // No logging used, because this can be used by scripts
-		return subcommands.ExitSuccess
+	if err != nil {
+		log.Errorf("No package here, and no workspace, nothing to do!")
+		return subcommands.ExitFailure
 	}
+	fmt.Println(ws.Root()) // No logging used, because this can be used by scripts
+	return subcommands.ExitSuccess
 }
 
 // CREATION
