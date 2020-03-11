@@ -26,7 +26,15 @@ type CIBuild struct {
 }
 
 type PackagePhase struct {
-	Artifacts []string `yaml:"artifacts"`
+	Artifacts []string          `yaml:"artifacts"`
+	Docker    DockerArchive     `yaml:"docker"`
+	Tar       map[string]string `yaml:"tar"`
+}
+
+type DockerArchive struct {
+	BaseImage  string `yaml:"base_image"`
+	WorkingDir string `yaml:"working_dir"`
+	Exec       string `yaml:"exec"`
 }
 
 type DependencySet struct {
