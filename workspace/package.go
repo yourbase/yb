@@ -60,7 +60,6 @@ func (p Package) Build(flags BuildFlags) ([]CommandTimer, error) {
 	return tgt.Build(runtimeCtx, os.Stdout, flags, p.Path(), p.Manifest.Dependencies.Build)
 }
 
-
 func LoadPackageAtPath(path string) (Package, error) {
 	_, pkgName := filepath.Split(path)
 	return LoadPackage(pkgName, path)
@@ -100,7 +99,6 @@ func (p Package) Execute(runtimeCtx *runtime.Runtime) error {
 	return p.ExecuteToWriter(runtimeCtx, os.Stdout)
 }
 
-
 func (p Package) serviceDependencies() ([]Package, error) {
 
 	pkgs := make([]Package, 0)
@@ -129,6 +127,11 @@ func (p Package) serviceDependencies() ([]Package, error) {
 }
 
 func (p Package) ExecuteToWriter(runtimeCtx *runtime.Runtime, output io.Writer) error {
+
+	target, err := p.createExecutionTarget(runtimeCtx)
+	if err != nil {
+		return err
+	}
 
 	serviceDeps, err := p.serviceDependencies()
 	if err != nil {
@@ -169,7 +172,7 @@ func (p Package) ExecuteToWriter(runtimeCtx *runtime.Runtime, output io.Writer) 
 			Environment: p.environmentVariables(runtimeCtx.EnvironmentData(), "default"),
 		}
 
-		if err := runtimeCtx.RunInTarget(proc, p.Name); err != nil {
+		if err := target.Run(proc); err != nil {
 			return fmt.Errorf("unable to run command '%s': %v", cmdString, err)
 		}
 	}
@@ -177,7 +180,7 @@ func (p Package) ExecuteToWriter(runtimeCtx *runtime.Runtime, output io.Writer) 
 	return nil
 }
 
-func (p Package) createExecutionTarget(runtimeCtx *runtime.Runtime, targetName string) (*runtime.ContainerTarget, error) {
+func (p Package) createExecutionTarget(runtimeCtx *runtime.Runtime) (*runtime.ContainerTarget, error) {
 	localContainerWorkDir := filepath.Join(p.BuildRoot(), "containers")
 	MkdirAsNeeded(localContainerWorkDir)
 
@@ -201,13 +204,12 @@ func (p Package) createExecutionTarget(runtimeCtx *runtime.Runtime, targetName s
 
 			for _, pkg := range dependentServices {
 				log.Infof("* '%s'...", pkg.Name)
-				if _, err = pkg.createExecutionTarget(runtimeCtx, pkg.Name); err != nil {
+				if _, err = pkg.createExecutionTarget(runtimeCtx); err != nil {
 					log.Errorf("unable to create dependency %s: %v", pkg.Name, err)
 				}
 			}
 		}
 	}
-
 
 	// TODO: Support UDP
 	portMappings := make([]string, 0)
@@ -248,7 +250,7 @@ func (p Package) createExecutionTarget(runtimeCtx *runtime.Runtime, targetName s
 	execContainer := manifest.Exec.Container
 	//execContainer.Environment = manifest.Exec.environmentVariables("default", runtimeCtx.EnvironmentData())
 	execContainer.Command = "/usr/bin/tail -f /dev/null"
-	execContainer.Label = targetName
+	execContainer.Label = p.Name
 	execContainer.Ports = portMappings
 
 	// Add package to mounts @ /workspace
@@ -280,4 +282,3 @@ func (p Package) RuntimeContainers() []narwhal.ContainerDefinition {
 	}
 	return result
 }
-
