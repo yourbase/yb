@@ -3,6 +3,8 @@ package workspace
 import (
 	"errors"
 	"fmt"
+	"github.com/yourbase/narwhal"
+	"gopkg.in/yaml.v2"
 	"io"
 	"io/ioutil"
 	"os"
@@ -11,8 +13,6 @@ import (
 	"strings"
 	"syscall"
 	"time"
-
-	"gopkg.in/yaml.v2"
 
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
@@ -57,37 +57,9 @@ func (p Package) Build(flags BuildFlags) ([]CommandTimer, error) {
 
 	runtimeCtx := runtime.NewRuntime(contextId, p.BuildRoot())
 
-	return tgt.Build(runtimeCtx, flags, p.Path(), p.Manifest.Dependencies.Build)
+	return tgt.Build(runtimeCtx, os.Stdout, flags, p.Path(), p.Manifest.Dependencies.Build)
 }
 
-func (p Package) BuildTargetToWriter(buildTargetName string, flags BuildFlags, output io.Writer) ([]CommandTimer, error) {
-	manifest := p.Manifest
-
-	// Named target, look for that and resolve it
-	_, err := manifest.ResolveBuildTargets(buildTargetName)
-
-	if err != nil {
-		log.Errorf("Could not compute build target '%s': %v", buildTargetName, err)
-		log.Errorf("Valid build targets: %s", strings.Join(manifest.BuildTargetList(), ", "))
-		return []CommandTimer{}, err
-	}
-
-	primaryTarget, err := manifest.BuildTarget(buildTargetName)
-	if err != nil {
-		log.Errorf("Couldn't get primary build target '%s' specs: %v", buildTargetName, err)
-		return []CommandTimer{}, err
-	}
-
-	contextId := fmt.Sprintf("%s-build-%s", p.Name, primaryTarget.Name)
-
-	runtimeCtx := runtime.NewRuntime(contextId, p.BuildRoot())
-
-	return primaryTarget.Build(runtimeCtx, flags, p.Path(), p.Manifest.Dependencies.Build)
-}
-
-func (p Package) BuildTarget(name string, flags BuildFlags) ([]CommandTimer, error) {
-	return p.BuildTargetToWriter(name, flags, os.Stdout)
-}
 
 func LoadPackageAtPath(path string) (Package, error) {
 	_, pkgName := filepath.Split(path)
@@ -120,10 +92,57 @@ func LoadPackage(name string, path string) (Package, error) {
 	return p, nil
 }
 
-func (p Package) DoExecute(environment string) error {
-	execRuntime, err := p.ExecutionRuntime(environment)
+func (p Package) environmentVariables(data runtime.RuntimeEnvironmentData, env string) []string {
+	return p.Manifest.Exec.EnvironmentVariables(env, data)
+}
+
+func (p Package) Execute(runtimeCtx *runtime.Runtime) error {
+	return p.ExecuteToWriter(runtimeCtx, os.Stdout)
+}
+
+
+func (p Package) serviceDependencies() ([]Package, error) {
+
+	pkgs := make([]Package, 0)
+	svcDef := p.Workspace.BuildSpec.Service(p.Name)
+	if svcDef != nil {
+		if svcDef.DependsOn != nil {
+			for _, dep := range *svcDef.DependsOn {
+				parts := strings.Split(dep, ".")
+				if len(parts) == 2 {
+					dType := parts[0]
+					dName := parts[1]
+
+					if dType == "service" {
+						pkg, err := p.Workspace.PackageByName(dName)
+						if err != nil {
+							return []Package{}, fmt.Errorf("could not find dependency '%s' in workspace: %v", dName, err)
+						}
+						pkgs = append(pkgs, pkg)
+					}
+				}
+			}
+		}
+	}
+
+	return pkgs, nil
+}
+
+func (p Package) ExecuteToWriter(runtimeCtx *runtime.Runtime, output io.Writer) error {
+
+	serviceDeps, err := p.serviceDependencies()
 	if err != nil {
 		return err
+	}
+
+	for _, svc := range serviceDeps {
+		// TODO: We should probably have a better way to wait for them to start before we move on...
+		go func() {
+			log.Infof("Running dependent service %s...", svc.Name)
+			svc.ExecuteToWriter(runtimeCtx, output)
+		}()
+		// Forgive me?
+		time.Sleep(2 * time.Second)
 	}
 
 	c := make(chan os.Signal, 2)
@@ -131,62 +150,15 @@ func (p Package) DoExecute(environment string) error {
 	go func() {
 		<-c
 		fmt.Println("\r- Ctrl+C pressed in Terminal")
-		execRuntime.Shutdown()
+		if err := runtimeCtx.Shutdown(); err != nil {
+			// Oops.
+			os.Exit(1)
+		}
+		// Ok!
 		os.Exit(0)
 	}()
 
 	log.Infof("Executing package '%s'...\n", p.Name)
-
-	return p.Execute(execRuntime)
-}
-
-func (p Package) Execute(runtimeCtx *runtime.Runtime) error {
-	return p.ExecuteToWriter(runtimeCtx, os.Stdout)
-}
-
-func (p Package) EnvironmentVariables(data runtime.RuntimeEnvironmentData, env string) []string {
-	return p.Manifest.Exec.EnvironmentVariables(env, data)
-}
-
-func (p Package) ExecuteToWriter(runtimeCtx *runtime.Runtime, output io.Writer) error {
-
-	svcDef := p.Workspace.BuildSpec.Service(p.Name)
-	if svcDef != nil {
-		if svcDef.DependsOn != nil {
-			log.Infof("Starting dependencies for %s...", p.Name)
-			for _, dep := range (*svcDef.DependsOn) {
-				parts := strings.Split(dep, ".")
-				if len(parts) == 2 {
-					dType := parts[0]
-					dName := parts[1]
-
-					if dType == "service" {
-						dPkg, err := p.Workspace.PackageByName(dName)
-						if err != nil {
-							return fmt.Errorf("could not start dependency '%s': %v", dName, err)
-						}
-						// XXX -- OMG SO BAD
-						go func() {
-							log.Infof("* '%s'...", dName)
-							_, err := dPkg.ExecutionTarget(runtimeCtx, dName)
-							if err != nil {
-								log.Errorf("Unable to start dependency: %v", err)
-							}
-							dPkg.Execute(runtimeCtx)
-						}()
-					} else {
-						log.Warnf("Unknown dependency type: %s", dType)
-					}
-				} else {
-					log.Warnf("Unknown dependency format: %s", dep)
-				}
-			}
-		}
-	}
-
-	// XXX -- OMG WTF SLEEP
-	log.Infof("Waiting for dependencies to start so we can get their IPs...")
-	time.Sleep(20 * time.Second)
 
 	for _, cmdString := range p.Manifest.Exec.Commands {
 		proc := runtime.Process{
@@ -194,18 +166,18 @@ func (p Package) ExecuteToWriter(runtimeCtx *runtime.Runtime, output io.Writer) 
 			Directory:   "/workspace",
 			Interactive: false,
 			Output:      &output,
-			Environment: p.EnvironmentVariables(runtimeCtx.EnvironmentData(), "default"),
+			Environment: p.environmentVariables(runtimeCtx.EnvironmentData(), "default"),
 		}
 
 		if err := runtimeCtx.RunInTarget(proc, p.Name); err != nil {
-			return fmt.Errorf("Unable to run command '%s': %v", cmdString, err)
+			return fmt.Errorf("unable to run command '%s': %v", cmdString, err)
 		}
 	}
 
 	return nil
 }
 
-func (p Package) ExecutionTarget(runtimeCtx *runtime.Runtime, targetName string) (*runtime.ContainerTarget, error) {
+func (p Package) createExecutionTarget(runtimeCtx *runtime.Runtime, targetName string) (*runtime.ContainerTarget, error) {
 	localContainerWorkDir := filepath.Join(p.BuildRoot(), "containers")
 	MkdirAsNeeded(localContainerWorkDir)
 
@@ -220,6 +192,22 @@ func (p Package) ExecutionTarget(runtimeCtx *runtime.Runtime, targetName string)
 			return nil, fmt.Errorf("Couldn't start container dependency: %v", err)
 		}
 	}
+
+	if dependentServices, err := p.serviceDependencies(); err != nil {
+		return nil, fmt.Errorf("unable to determine service dependencies: %v", err)
+	} else {
+		if len(dependentServices) > 0 {
+			log.Infof("Creating %d dependencies for %s...", len(dependentServices), p.Name)
+
+			for _, pkg := range dependentServices {
+				log.Infof("* '%s'...", pkg.Name)
+				if _, err = pkg.createExecutionTarget(runtimeCtx, pkg.Name); err != nil {
+					log.Errorf("unable to create dependency %s: %v", pkg.Name, err)
+				}
+			}
+		}
+	}
+
 
 	// TODO: Support UDP
 	portMappings := make([]string, 0)
@@ -258,7 +246,7 @@ func (p Package) ExecutionTarget(runtimeCtx *runtime.Runtime, targetName string)
 	}
 
 	execContainer := manifest.Exec.Container
-	//execContainer.Environment = manifest.Exec.EnvironmentVariables("default", runtimeCtx.EnvironmentData())
+	//execContainer.Environment = manifest.Exec.environmentVariables("default", runtimeCtx.EnvironmentData())
 	execContainer.Command = "/usr/bin/tail -f /dev/null"
 	execContainer.Label = targetName
 	execContainer.Ports = portMappings
@@ -283,17 +271,13 @@ func (p Package) ExecutionTarget(runtimeCtx *runtime.Runtime, targetName string)
 	return execTarget, nil
 }
 
-func (p Package) ExecutionRuntime(environment string) (*runtime.Runtime, error) {
-	contextId := fmt.Sprintf("%s-exec", p.Name)
+func (p Package) RuntimeContainers() []narwhal.ContainerDefinition {
+	m := p.Manifest
 
-	runtimeCtx := runtime.NewRuntime(contextId, p.BuildRoot())
-
-	execTarget, err:= p.ExecutionTarget(runtimeCtx, p.Name)
-	if err != nil {
-		return nil, err
+	result := make([]narwhal.ContainerDefinition, 0)
+	for _, c := range m.Exec.Dependencies.ContainerList() {
+		result = append(result, c)
 	}
-
-	runtimeCtx.DefaultTarget = execTarget
-
-	return runtimeCtx, nil
+	return result
 }
+

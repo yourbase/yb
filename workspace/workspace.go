@@ -3,13 +3,13 @@ package workspace
 import (
 	"crypto/sha256"
 	"fmt"
+	"github.com/yourbase/yb/runtime"
 	"io/ioutil"
 	"os"
 	"os/user"
 	"path/filepath"
 	"strings"
 
-	"github.com/yourbase/yb/runtime"
 	"gopkg.in/yaml.v2"
 
 	. "github.com/yourbase/yb/plumbing"
@@ -21,6 +21,63 @@ type Workspace struct {
 	Path      string
 	BuildSpec *BuildSpec
 	packages  []Package
+}
+
+func (w Workspace) BuildPackage(p Package) error {
+	return nil
+}
+
+func (w Workspace) RunInTarget(cmdString string, workDir string, targetName string) error {
+
+	log.Infof("Running %s in %s from %s", cmdString, targetName, workDir)
+
+	p := runtime.Process{Command: cmdString, Interactive: true, Directory: workDir}
+
+	ctx, err := w.execRuntimeContext()
+	if err != nil {
+		return err
+	}
+
+	return ctx.RunInTarget(p, targetName)
+}
+
+func (w Workspace) RunningContainers() ([]*runtime.ContainerTarget, error) {
+	runtimeCtx, err := w.execRuntimeContext()
+
+	if err != nil {
+		return []*runtime.ContainerTarget{}, fmt.Errorf("unable to determine running containers: %v", err)
+	}
+
+	result := make([]*runtime.ContainerTarget, 0)
+	for _, p := range w.PackageList() {
+		for _, c := range runtimeCtx.FindContainers(p.RuntimeContainers()) {
+			result = append(result, c)
+		}
+	}
+
+	return result, nil
+}
+
+func (w Workspace) ExecutePackage(p Package) error {
+	if runtimeCtx, err := w.execRuntimeContext(); err != nil {
+		return err
+	} else {
+		return p.Execute(runtimeCtx)
+	}
+}
+
+func (w Workspace) execRuntimeContext() (*runtime.Runtime, error) {
+	log.Debugf("Creating runtime context for workspace %s", w.Name())
+	contextId := fmt.Sprintf("%s-exec", w.Name())
+
+	runtimeCtx := runtime.NewRuntime(contextId, w.BuildRoot())
+
+	return runtimeCtx, nil
+}
+
+func (w Workspace) Name() string {
+	_, name := filepath.Split(w.Path)
+	return name
 }
 
 // Change this
@@ -61,28 +118,6 @@ func (w Workspace) BuildRoot() string {
 	}
 
 	return buildRoot
-}
-
-func (w Workspace) SetupEnv() error {
-	log.Infof("Resetting environment variables!")
-	criticalVariables := []string{"USER", "USERNAME", "UID", "GID", "TTY", "PWD"}
-	oldEnv := make(map[string]string)
-	for _, key := range criticalVariables {
-		oldEnv[key] = os.Getenv(key)
-	}
-
-	os.Clearenv()
-	tmpDir := filepath.Join(w.BuildRoot(), "tmp")
-	MkdirAsNeeded(tmpDir)
-	runtime.SetEnv("HOME", w.BuildRoot())
-	runtime.SetEnv("TMPDIR", tmpDir)
-
-	for _, key := range criticalVariables {
-		log.Infof("%s=%s\n", key, oldEnv[key])
-		runtime.SetEnv(key, oldEnv[key])
-	}
-
-	return nil
 }
 
 func (w Workspace) Save() error {

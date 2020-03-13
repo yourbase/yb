@@ -19,7 +19,7 @@ require (
 	github.com/gobwas/pool v0.2.0 // indirect
 	github.com/gobwas/ws v1.0.2
 	github.com/gogo/protobuf v1.3.1 // indirect
-	github.com/golang/protobuf v1.3.4 // indirect
+	github.com/golang/protobuf v1.3.5 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/google/shlex v0.0.0-20181106134648-c34317bd91bf
 	github.com/gopherjs/gopherjs v0.0.0-20190915194858-d3ddacdb130f // indirect
@@ -54,7 +54,7 @@ require (
 	golang.org/x/crypto v0.0.0-20191112222119-e1110fd1c708
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
 	golang.org/x/sys v0.0.0-20200302150141-5c8b2ff67527 // indirect
-	google.golang.org/genproto v0.0.0-20200310143817-43be25429f5a // indirect
+	google.golang.org/genproto v0.0.0-20200312145019-da6875a35672 // indirect
 	google.golang.org/grpc v1.28.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/ini.v1 v1.51.0
