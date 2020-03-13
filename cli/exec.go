@@ -54,9 +54,9 @@ func (b *ExecCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		}
 	}
 
-	err = pkg.DoExecute(b.environment)
+	err = ws.ExecutePackage(pkg)
 	if err != nil {
-		log.Errorf("Unable to run command: %v", err)
+		log.Errorf("Unable to run '%s': %v", pkg.Name, err)
 		return subcommands.ExitFailure
 	}
 

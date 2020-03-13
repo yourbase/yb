@@ -69,6 +69,32 @@ func (w *workspaceListCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...inte
 	}
 	fmt.Println()
 
+	fmt.Println("Containers in workspace:")
+	if containers, err := ws.RunningContainers(); err != nil {
+		log.Warnf("Unable to get running containers: %v", err)
+	} else {
+
+		for _, c := range containers {
+
+			running, err := c.Container.IsRunning()
+			if err != nil {
+				log.Warnf("Unable to determine if %s is running: %v", c.Container.Name, err)
+			}
+
+			status := "idle"
+			if running {
+				if address, err := c.Container.IPv4Address(); err == nil {
+					status = fmt.Sprintf("up @ %s", address)
+				} else {
+					status = "up @ unknown ip"
+				}
+			}
+
+
+			fmt.Printf(" * %s (%s)", c.Container.Name, status)
+		}
+	}
+
 	return subcommands.ExitSuccess
 }
 

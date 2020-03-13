@@ -4,11 +4,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/yourbase/yb/workspace"
 	"strings"
 
 	"github.com/johnewart/subcommands"
 	"github.com/yourbase/yb/plumbing/log"
-	"github.com/yourbase/yb/runtime"
 	//"path/filepath"
 )
 
@@ -40,52 +40,32 @@ func (b *RunCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 		return subcommands.ExitFailure
 	}
 
-	targetPackage, err := GetTargetPackage()
+	ws, err := workspace.LoadWorkspace()
 	if err != nil {
-		log.Errorf("%v", err)
+		log.Errorf("Error loading workspace: %v", err)
 		return subcommands.ExitFailure
 	}
 
-	runtimeEnv, err := targetPackage.ExecutionRuntime("default")
-
-	if err != nil {
-		log.Errorf("%v", err)
-		return subcommands.ExitFailure
-	}
-
-	argList := f.Args()
-
-	runInTarget := false
 	runtimeTarget := "default"
+	argList := f.Args()
+	workDir := "/workspace"
 
 	if strings.HasPrefix(argList[0], "@") {
 		runtimeTarget = argList[0][1:]
+		parts := strings.Split(runtimeTarget, ":")
+		if len(parts) == 2 {
+			workDir = parts[1]
+			runtimeTarget = parts[0]
+		}
 		argList = argList[1:]
-		runInTarget = true
 	}
 
 	cmdString := strings.Join(argList, " ")
-	workDir := "/workspace"
-
-	if runInTarget { 
-		workDir = "/"
+	if runErr := ws.RunInTarget(cmdString, workDir, runtimeTarget); runErr != nil {
+		log.Errorf("Unable to run command: %v", runErr)
+		return subcommands.ExitFailure
 	}
 
-	log.Infof("Running %s in %s from %s", cmdString, runtimeTarget, workDir)
-
-	p := runtime.Process{Command: cmdString, Interactive: true, Directory: workDir}
-
-	if runInTarget {
-		if err := runtimeEnv.RunInTarget(p, runtimeTarget); err != nil {
-			log.Errorf("%v", err)
-			return subcommands.ExitFailure
-		}
-	} else {
-		if err := runtimeEnv.Run(p); err != nil {
-			log.Errorf("%v", err)
-			return subcommands.ExitFailure
-		}
-	}
 
 	return subcommands.ExitSuccess
 }
