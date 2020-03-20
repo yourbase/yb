@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+        "strconv"
 
 	"github.com/johnewart/archiver"
 
@@ -13,21 +14,61 @@ import (
 	. "github.com/yourbase/yb/types"
 )
 
-//https://download.java.net/java/GA/jdk11/9/GPL/openjdk-11.0.2_linux-x64_bin.tar.gz
-//var OPENJDK_DIST_MIRROR = "https://download.java.net/java/GA"
-
-//https://github.com/AdoptOpenJDK/openjdk8-binaries/releases/download/jdk8u202-b08/OpenJDK8U-jdk_x64_mac_hotspot_8u202b08.tar.gz
-var OPENJDK_DIST_MIRROR = "https://github.com/AdoptOpenJDK/openjdk{{.MajorVersion}}-binaries/releases/download/jdk{{.MajorVersion}}u{{.MinorVersion}}-b{{.PatchVersion}}/OpenJDK{{.MajorVersion}}U-jdk_{{.Arch}}_{{.OS}}_hotspot_{{.MajorVersion}}u{{.MinorVersion}}b{{.PatchVersion}}.{{.Extension}}"
 
 type JavaBuildTool struct {
 	BuildTool
 	version string
 	spec    BuildToolSpec
+	majorVersion int64
+	minorVersion int64
+	patchVersion int64
+	subVersion string
 }
 
 func NewJavaBuildTool(toolSpec BuildToolSpec) JavaBuildTool {
+
+	parts := strings.Split(toolSpec.Version, ".")
+    c := len(parts)
+
+	var majorVersion int64
+	var minorVersion int64
+	var patchVersion int64
+
+	if c >= 1 {
+		majorVersion, _ = strconv.ParseInt(parts[0], 0, 64)
+		if c >= 2 {
+			minorVersion, _ = strconv.ParseInt(parts[1], 0, 64)
+			if c >= 3 {
+				patchVersion, _ = strconv.ParseInt(parts[2], 0, 64)
+			}
+		}
+	}
+
+	subVersion := ""
+	switch majorVersion {
+	case 8:
+		subVersion = "08"
+	case 9:
+		subVersion = "11"
+	case 10:
+		subVersion = "13.1"
+	case 11:
+		subVersion = "10"
+	case 12:
+		subVersion = "10"
+	case 13:
+		subVersion = "8"
+	default:
+		subVersion = ""
+	}
+
+
 	tool := JavaBuildTool{
 		version: toolSpec.Version,
+		majorVersion: majorVersion,
+		minorVersion: minorVersion,
+		patchVersion: patchVersion,
+		subVersion: subVersion,
 		spec:    toolSpec,
 	}
 
@@ -38,28 +79,21 @@ func (bt JavaBuildTool) Version() string {
 	return bt.version
 }
 
-func (bt JavaBuildTool) MajorVersion() string {
-	parts := strings.Split(bt.version, ".")
-	return parts[0]
-}
-
-func (bt JavaBuildTool) MinorVersion() string {
-	parts := strings.Split(bt.version, ".")
-	return parts[1]
-}
-
-func (bt JavaBuildTool) PatchVersion() string {
-	parts := strings.Split(bt.version, ".")
-	return parts[2]
-}
-
 func (bt JavaBuildTool) InstallDir() string {
 	return filepath.Join(bt.spec.SharedCacheDir, "java")
 }
 
 func (bt JavaBuildTool) JavaDir() string {
 	opsys := OS()
-	basePath := filepath.Join(bt.InstallDir(), fmt.Sprintf("jdk%su%s-b%s", bt.MajorVersion(), bt.MinorVersion(), bt.PatchVersion()))
+	// Versions..
+	archiveDir := ""
+	if bt.majorVersion == 8 {
+		archiveDir = fmt.Sprintf("jdk%du%d-b%s", bt.majorVersion, bt.minorVersion, bt.subVersion)
+	} else {
+		archiveDir = fmt.Sprintf("jdk-%d.%d.%d+%s", bt.majorVersion, bt.minorVersion, bt.patchVersion, bt.subVersion)
+	}
+
+	basePath := filepath.Join(bt.InstallDir(), archiveDir)
 
 	if opsys == "darwin" {
 		basePath = filepath.Join(basePath, "Contents", "Home")
@@ -82,6 +116,21 @@ func (bt JavaBuildTool) Setup() error {
 }
 
 func (bt JavaBuildTool) DownloadUrl() string {
+
+	// This changes pretty dramatically depending on major version :~(
+    // Using HotSpot version, we should consider an OpenJ9 option 
+	urlPattern := ""
+	if bt.majorVersion < 9 {
+		urlPattern = "https://github.com/AdoptOpenJDK/openjdk{{.MajorVersion}}-binaries/releases/download/jdk{{.MajorVersion}}u{{.MinorVersion}}-b{{.SubVersion}}/OpenJDK{{.MajorVersion}}U-jdk_{{.Arch}}_{{.OS}}_hotspot_{{.MajorVersion}}u{{.MinorVersion}}b{{.SubVersion}}.{{.Extension}}"
+	} else {
+		if bt.majorVersion < 14 {
+			urlPattern = "https://github.com/AdoptOpenJDK/openjdk{{ .MajorVersion }}-binaries/releases/download/jdk-{{ .MajorVersion }}.{{ .MinorVersion }}.{{ .PatchVersion }}%2B{{ .SubVersion }}/OpenJDK{{ .MajorVersion }}U-jdk_x64_linux_hotspot_{{ .MajorVersion }}.{{ .MinorVersion }}.{{ .PatchVersion }}_{{ .SubVersion }}.{{ .Extension }}"
+		} else {
+			// 14: https://github.com/AdoptOpenJDK/openjdk14-binaries/releases/download/jdk-14%2B36/OpenJDK14U-jdk_aarch64_linux_hotspot_14_36.tar.gz
+			urlPattern = "https://github.com/AdoptOpenJDK/openjdk{{ .MajorVersion }}-binaries/releases/download/jdk-{{ .MajorVersion }}%2B{{ .SubVersion }}/OpenJDK{{ .MajorVersion }}U-jdk_x64_linux_hotspot_{{ .MajorVersion }}_{{ .SubVersion }}.{{ .Extension }}"
+		}
+	}
+	
 	arch := "x64"
 	extension := "tar.gz"
 
@@ -97,22 +146,24 @@ func (bt JavaBuildTool) DownloadUrl() string {
 	data := struct {
 		OS           string
 		Arch         string
-		MajorVersion string
-		MinorVersion string
-		PatchVersion string
+		MajorVersion int64
+		MinorVersion int64
+		PatchVersion int64
+		SubVersion   string // not always an int, sometimes a float 
 		Extension    string
 	}{
 		operatingSystem,
 		arch,
-		bt.MajorVersion(),
-		bt.MinorVersion(),
-		bt.PatchVersion(),
+		bt.majorVersion,
+		bt.minorVersion,
+		bt.patchVersion,
+		bt.subVersion,
 		extension,
 	}
 
-	log.Infof("URL params: %s", data)
+	log.Debugf("URL params: %#v", data)
 
-	url, err := TemplateToString(OPENJDK_DIST_MIRROR, data)
+	url, err := TemplateToString(urlPattern, data)
 
 	if err != nil {
 		log.Errorf("Error generating download URL: %v", err)
