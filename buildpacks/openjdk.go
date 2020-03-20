@@ -58,6 +58,8 @@ func NewJavaBuildTool(toolSpec BuildToolSpec) JavaBuildTool {
 		subVersion = "10"
 	case 13:
 		subVersion = "8"
+	case 14:
+		subVersion = "36"
 	default:
 		subVersion = ""
 	}
