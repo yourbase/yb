@@ -930,7 +930,7 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 					case <-finish:
 						return
 					case <-time.After(5 * time.Second):
-						if err := wsutil.WriteClientMessage(conn, ws.OpPing, []byte("hi Dispatcher")); err != nil {
+						if err := wsutil.WriteClientMessage(conn, ws.OpPing, []byte("remotebuild ping")); err != nil {
 							log.Errorf("Cannot send ping: %v", err)
 						}
 					}
