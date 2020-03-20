@@ -12,11 +12,13 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/signal"
 	"path"
 	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/gobwas/ws"
@@ -778,12 +780,27 @@ func (cmd *RemoteCmd) savePatch() error {
 func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) error {
 
 	startTime := time.Now()
-	var submitProgress *Progress
+	var submitProgress, remoteProgress *Progress
 	submitErrored := func() {
 		if submitProgress != nil {
 			submitProgress.Fail()
 		}
 	}
+	remoteErrored := func() {
+		if remoteProgress != nil {
+			remoteProgress.Fail()
+		}
+	}
+
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		submitErrored()
+		remoteErrored()
+		os.Exit(1)
+	}()
+
 	if log.CheckIfTerminal() {
 		submitProgress = NewProgressSpinner("Submitting remote build")
 		submitProgress.Start()
@@ -886,23 +903,37 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 	log.Infof("Submission finished at %s, taking %s", endTime.Format(TIME_FORMAT), submitTime.Truncate(time.Millisecond))
 
 	startTime = time.Now()
-	var remoteProgress *Progress
-	remoteErrored := func() {
-		if remoteProgress != nil {
-			remoteProgress.Fail()
-		}
-	}
 	if log.CheckIfTerminal() {
 		remoteProgress = NewProgressSpinner("Setting up remote build")
 		remoteProgress.Start()
 	}
 
 	if strings.HasPrefix(url, "ws:") || strings.HasPrefix(url, "wss:") {
+		recentReconnect := false
+		reconnectCount := 0
+	CONN:
 		conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), url)
+
+		finnish := make(chan struct{})
+
 		if err != nil {
 			remoteErrored()
 			return fmt.Errorf("Cannot connect: %v", err)
 		} else {
+
+			// TODO maybe make Dispatcher give better diagnostics somehow
+			go func() {
+				for {
+					select {
+					case <-finnish:
+						return
+					case <-time.After(5 * time.Second):
+						if err := wsutil.WriteClientMessage(conn, ws.OpPing, []byte("hi Dispatcher")); err != nil {
+							log.Errorf("Cannot send ping: %v", err)
+						}
+					}
+				}
+			}()
 
 			defer func() {
 				if err = conn.Close(); err != nil {
@@ -911,20 +942,50 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 			}()
 
 			buildSuccess := false
+			buildFailed := false
 			buildSetupFinished := false
 			for {
 				msg, control, err := wsutil.ReadServerData(conn)
 				if err != nil {
-					if err != io.EOF {
-						log.Tracef("Unstable connection: %v", err)
-					} else {
+					if err == io.EOF {
 						if buildSuccess {
 							log.Infoln("Build Completed!")
+							close(finnish)
+							return nil
+						} else if buildFailed {
+							log.Errorf("Build failed!")
+							log.Infof("Build Log: %v", managementLogUrl(url, project.OrgSlug, project.Label))
+
+							close(finnish)
+							return nil
 						} else {
-							log.Errorln("Build failed or the connection was interrupted!")
+							if !recentReconnect && reconnectCount < 15 {
+								if remoteProgress != nil {
+									fmt.Println()
+								}
+								log.Tracef("Build not completed, trying to reconnect")
+								conn.Close()
+								close(finnish)
+								recentReconnect = true
+								reconnectCount += 1
+								goto CONN
+							} else {
+								if !buildSetupFinished {
+									remoteErrored()
+									log.Errorf("Patch failed, did you 'git rebase' recently?")
+								} else {
+									remoteErrored()
+									log.Errorf("Unable to determine build status please check:")
+								}
+								log.Infof("Build Log: %v", managementLogUrl(url, project.OrgSlug, project.Label))
+
+								close(finnish)
+								return nil
+							}
 						}
-						log.Infof("Build Log: %v", managementLogUrl(url, project.OrgSlug, project.Label))
-						return nil
+					}
+					if err != io.EOF {
+						log.Tracef("Unstable connection: %v", err)
 					}
 				} else {
 					// TODO This depends on build agent output, try to structure this better
@@ -946,7 +1007,15 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 					if !buildSuccess {
 						buildSuccess = strings.Count(string(msg), "-- BUILD SUCCEEDED --") > 0
 					}
+					if !buildFailed {
+						buildFailed = strings.Count(string(msg), "-- BUILD FAILED --") > 0
+						if !buildFailed {
+							buildFailed = strings.Count(string(msg), "Patch '' didn't apply cleanly") > 0
+						}
+					}
+
 					fmt.Printf("%s", msg)
+					recentReconnect = false
 				}
 			}
 		}
