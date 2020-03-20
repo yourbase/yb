@@ -916,7 +916,7 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 	CONN:
 		conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), url)
 
-		finnish := make(chan struct{})
+		finish := make(chan struct{})
 
 		if err != nil {
 			remoteErrored()
@@ -927,7 +927,7 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 			go func() {
 				for {
 					select {
-					case <-finnish:
+					case <-finish:
 						return
 					case <-time.After(5 * time.Second):
 						if err := wsutil.WriteClientMessage(conn, ws.OpPing, []byte("hi Dispatcher")); err != nil {
@@ -952,13 +952,13 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 					if err == io.EOF {
 						if buildSuccess {
 							log.Infoln("Build Completed!")
-							close(finnish)
+							close(finish)
 							return nil
 						} else if buildFailed {
 							log.Errorf("Build failed!")
 							log.Infof("Build Log: %v", managementLogUrl(url, project.OrgSlug, project.Label))
 
-							close(finnish)
+							close(finish)
 							return nil
 						} else {
 							if !recentReconnect && reconnectCount < 15 {
@@ -967,7 +967,7 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 								}
 								log.Tracef("Build not completed, trying to reconnect")
 								conn.Close()
-								close(finnish)
+								close(finish)
 								recentReconnect = true
 								reconnectCount += 1
 								goto CONN
@@ -981,7 +981,7 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 								}
 								log.Infof("Build Log: %v", managementLogUrl(url, project.OrgSlug, project.Label))
 
-								close(finnish)
+								close(finish)
 								return nil
 							}
 						}
