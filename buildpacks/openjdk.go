@@ -27,8 +27,16 @@ type JavaBuildTool struct {
 
 func NewJavaBuildTool(toolSpec BuildToolSpec) JavaBuildTool {
 
-	parts := strings.Split(toolSpec.Version, ".")
-    c := len(parts)
+	vparts := strings.SplitN(toolSpec.Version, "+", 2)
+	subVersion := ""
+	version := toolSpec.Version
+	if len(vparts) > 1 { 
+		subVersion = vparts[1]
+		version = vparts[0]
+	}
+
+	parts := strings.Split(version, ".")
+  c := len(parts)
 
 	var majorVersion int64
 	var minorVersion int64
@@ -44,24 +52,27 @@ func NewJavaBuildTool(toolSpec BuildToolSpec) JavaBuildTool {
 		}
 	}
 
-	subVersion := ""
-	switch majorVersion {
-	case 8:
-		subVersion = "08"
-	case 9:
-		subVersion = "11"
-	case 10:
-		subVersion = "13.1"
-	case 11:
-		subVersion = "10"
-	case 12:
-		subVersion = "10"
-	case 13:
-		subVersion = "8"
-	case 14:
-		subVersion = "36"
-	default:
-		subVersion = ""
+	// Maybe we just require people format it with the build number? 
+	// Alternatively we can have a table of defaults somewhere
+	if subVersion == "" {
+		switch majorVersion {
+		case 8:
+			subVersion = "08"
+		case 9:
+			subVersion = "11"
+		case 10:
+			subVersion = "13.1"
+		case 11:
+			subVersion = "10"
+		case 12:
+			subVersion = "10"
+		case 13:
+			subVersion = "8"
+		case 14:
+			subVersion = "36"
+		default:
+			subVersion = ""
+		}
 	}
 
 
