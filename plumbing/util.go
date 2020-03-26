@@ -197,6 +197,11 @@ func FindWorkspaceRoot() (string, error) {
 		return wd, nil
 	}
 
+	if _, err := os.Stat(filepath.Join(wd, "yourbase.hcl")); err == nil {
+		// If we're currently in the directory with a yourbase.hcl file
+		return wd, nil
+	}
+
 	// Look upwards to find a manifest file
 	packageDir, err := FindNearestManifestFile()
 

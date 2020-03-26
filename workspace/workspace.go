@@ -144,7 +144,7 @@ func loadWorkspaceWithSpecFile(specFile string, path string) (Workspace, error) 
 		workspace.BuildSpec = &spec
 		for _, s := range spec.Targets() {
 			path := filepath.Join(path, s.Name)
-			if mf, err := spec.GenerateManifest(s.Name); err != nil {
+			if mf, err := ManifestFromBuildSpec(spec, s.Name); err != nil {
 				log.Warnf("Unable to load package %s: %v", s.Name, err)
 			} else {
 				pkg := Package{

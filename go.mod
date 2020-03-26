@@ -3,7 +3,6 @@ module github.com/yourbase/yb
 replace github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.2
 
 //replace github.com/yourbase/narwhal => /Users/jewart/Work/narwhal
-replace github.com/johnewart/open-golang => /home/jewart/Work/open-golang
 
 require (
 	github.com/Microsoft/hcsshim v0.8.7 // indirect
@@ -28,7 +27,6 @@ require (
 	github.com/hashicorp/hcl/v2 v2.3.0
 	github.com/hashicorp/mdns v1.0.2
 	github.com/johnewart/archiver v3.1.4+incompatible
-	github.com/johnewart/open-golang v0.0.0-00010101000000-000000000000
 	github.com/johnewart/subcommands v0.0.0-20181012225330-46f0354f6315
 	github.com/joho/godotenv v1.3.0
 	github.com/juju/clock v0.0.0-20190205081909-9c5c9712527c // indirect
@@ -43,7 +41,7 @@ require (
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/nwaples/rardecode v1.0.0 // indirect
 	github.com/pierrec/lz4 v2.3.0+incompatible // indirect
-	github.com/sirupsen/logrus v1.4.2
+	github.com/sirupsen/logrus v1.5.0
 	github.com/smartystreets/assertions v1.0.1 // indirect
 	github.com/smartystreets/goconvey v0.0.0-20190731233626-505e41936337 // indirect
 	github.com/ulikunitz/xz v0.5.6
@@ -53,8 +51,8 @@ require (
 	github.com/zclconf/go-cty v1.2.0
 	golang.org/x/crypto v0.0.0-20191112222119-e1110fd1c708
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
-	golang.org/x/sys v0.0.0-20200302150141-5c8b2ff67527 // indirect
-	google.golang.org/genproto v0.0.0-20200312145019-da6875a35672 // indirect
+	golang.org/x/sys v0.0.0-20200323222414-85ca7c5b95cd // indirect
+	google.golang.org/genproto v0.0.0-20200326112834-f447254575fd // indirect
 	google.golang.org/grpc v1.28.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/ini.v1 v1.51.0

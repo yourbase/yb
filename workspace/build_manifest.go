@@ -192,3 +192,33 @@ func TemplateToString(templateText string, data interface{}) (string, error) {
 	result := tpl.String()
 	return result, nil
 }
+
+func ManifestFromBuildSpec(b BuildSpec, target string) (BuildManifest, error) {
+	for _, s := range b.Services {
+		if s.Name == target {
+			return BuildManifest{
+				Dependencies: DependencySet{
+					Build: s.BuildPacks(),
+				},
+				BuildTargets: []BuildTarget{
+					BuildTarget{
+						Name:     "default",
+						Commands: s.Build.CommandList(),
+					},
+				},
+				Exec: ExecPhase{
+					Dependencies: ExecDependencies{
+						Containers: s.ContainerMap(),
+					},
+					Environment: map[string][]string {
+						"default": s.Run.Environment.Exports(),
+					},
+					Commands: s.Run.CommandList(),
+				},
+			}, nil
+
+		}
+	}
+
+	return BuildManifest{}, ErrNoManifestFile
+}
