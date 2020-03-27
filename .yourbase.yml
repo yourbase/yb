@@ -1,13 +1,12 @@
 dependencies:
   build:
-    - go:1.14
+    - go:1.14.1
     - python:3.6
 
 build_targets:
   - name: default
     host_only: true
     commands:
-      - go get -u github.com/yourbase/narwhal
       - go test ./...
       - go build
 
