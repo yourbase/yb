@@ -1,79 +1,107 @@
-service "dispatcher" { 
+package "fingo_app" { 
   buildpack "go" { version = "1.13.1" }
-  depends_on = [ "service.api" ]
+  buildpack "flutter" { version = "1.0" }
 
   setup { 
   }
 
   build {
-    commands = [
-      "go get",
-      "go build"
-    ]
   }
 
   test {
-    command = "go test ./.."
-  }
-
-  run { 
-    environment {
-      variable "YB_API_URL" { 
-        value = "http://${services.api.ip}:${services.api.ports.http}"
-      }
-    }
-    command =  "./dispatcher"
+    commands = [
+      "./tools/dartfmt-check",
+      "./tools/flutter-analyze",
+      "./tools/run-dart-tests",
+      "./tools/install-golangci-lint.sh",
+      "./tools/run-go-tests",
+      "./tools/eslint"
+    ]
   }
 }
 
-service "api" {
-  buildpack "python" { version = "3.7.3" }
-
-  variable "db_user" { value = "yourbase" }
-  variable "db_pass" { value = "yourbase" }
-  variable "db_name" { value = "yourbase" }
-
-  port "http" { 
-    type = "tcp"
-    port = "5001"
-  }
-  port "https" { 
-    type = "tcp" 
-    port = "5000"
-  }
-
-  container "db" { 
-    image = "postgres:9.3"
-    mounts = [ "pg_data:/var/lib/postgresql/data" ]
-    environment {
-        variable "POSTGRES_PASSWORD" { value = "${services.api.vars.db_pass}" }
-        variable "POSTGRES_USER" { value = "${services.api.vars.db_user}" }
-        variable "POSTGRES_DB"  { value = "${services.api.vars.db_name}" }
-    }
-  }
+package "fingo_android" {
+    buildpack "android" { version = "latest" }
+    buildpack "java" { version = "8.202.08" }
     
-  setup {
-    command = "pip install requirements.txt"
-  }
- 
-  build { }
-
-  test {
-     command = "env"
-  }
-
-  run { 
-    environment {
-      variable "DATABASE_URL" { 
-        value = "psql://${services.api.vars.db_user}:${services.api.vars.db_pass}@${services.api.containers.db.ip}/${services.api.vars.db_name}"
-      }
+    build {
+      commands = [
+        "sdkmanager --install tools",
+        "sdkmanager --install platform-tools",
+        "sdkmanager --install build-tools;28.0.3",
+        "sdkmanager --install platforms;android-28",
+        "sdkmanager --install system-images;android-28;default;x86_64",
+        "apt-get update",
+        "apt-get install -y software-properties-common",
+        "add-apt-repository -y ppa:ubuntu-toolchain-r/test",
+        "apt-get update",
+        "apt-get install -y lib32stdc++6"
+      ]
     }
-    commands = [
-      "ls",
-      "pwd",
-      "pip install -r requirements.txt",
-      "flask db upgrade",
-      "honcho start -f Procfile.dev"
-    ]
-  }
+
+    test {
+    }
+}
+
+package "fingo_android_production" {
+    depends_on = ["package.fingo_android"]
+
+    build {
+        command = "./android/publish.sh master"
+    }
+    
+    ci { 
+        when {
+            branch = "master"
+            tagged = true
+        }
+    }
+}
+
+package "fingo_android_alpha" {
+    depends_on = ["package.fingo_android"]
+
+    build {
+        command = "./android/publish.sh alpha"
+    }
+
+    ci { 
+        when {
+            not { branch = "master" }
+            tagged = false
+        }
+    }
+} 
+
+package "fingo_ios_production" {
+    build {
+        commands = [
+            "cd lumina/flutter/fingo_app/",
+            "./ios/install_deps.sh",
+            "./ios/publish.sh master"
+        ]
+    }
+
+    ci {
+        when {
+            tagged = true
+        }
+    }
+}
+
+package "fingo_ios_alpha" { 
+    build {
+        commands = [
+            "cd lumina/flutter/fingo_app/",
+            "./ios/install_deps.sh",
+            "./ios/publish.sh master"
+        ]
+    }
+
+    ci {
+        when {
+            branch = "master"
+            tagged = false
+        }
+    }
 }
