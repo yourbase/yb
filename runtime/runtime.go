@@ -47,6 +47,7 @@ type Target interface {
 	Unarchive(src string, dst string) error
 	PrependToPath(dir string)
 	PathExists(path string) bool
+	GetDefaultPath() string
 	ToolsDir() string
 	OS() Os
 	OSVersion() string
@@ -144,10 +145,10 @@ func NewRuntime(identifier string, localWorkDir string) *Runtime {
 	}
 
 	return &Runtime{
-		Identifier:    identifier,
-		LocalWorkDir:  localWorkDir,
-		Targets:       make(map[string]Target),
-		DefaultTarget: &MetalTarget{},
+		Identifier:              identifier,
+		LocalWorkDir:            localWorkDir,
+		Targets:                 make(map[string]Target),
+		DefaultTarget:           &MetalTarget{},
 		ContainerServiceContext: sc,
 	}
 }

@@ -2,7 +2,6 @@ package buildpacks
 
 import (
 	"fmt"
-	"github.com/yourbase/yb/runtime"
 	"os"
 	"path/filepath"
 
@@ -44,11 +43,11 @@ func (bt GlideBuildTool) GlideDir() string {
 
 func (bt GlideBuildTool) Setup() error {
 	glideDir := bt.GlideDir()
-	cmdPath := fmt.Sprintf("%s/%s-%s", glideDir, OS(), Arch())
-	currentPath := os.Getenv("PATH")
-	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
-	log.Infof("Setting PATH to %s", newPath)
-	runtime.SetEnv("PATH", newPath)
+
+	t := bt.spec.InstallTarget
+	cmdPath := filepath.Join(glideDir, fmt.Sprintf("%s-%s", OS(), Arch()))
+
+	t.PrependToPath(cmdPath)
 
 	return nil
 }

@@ -2,7 +2,6 @@ package buildpacks
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/yourbase/yb/plumbing/log"
@@ -67,7 +66,7 @@ func (bt PythonBuildTool) Install() error {
 		} {
 			log.Infof("Running: '%v' ", cmd)
 			p := runtime.Process{
-				Command: cmd,
+				Command:   cmd,
 				Directory: setupDir,
 			}
 			if err := t.Run(p); err != nil {
@@ -105,7 +104,6 @@ func (bt PythonBuildTool) DownloadUrl() string {
 		extension = "exe"
 	}
 
-
 	data := struct {
 		PyNum     int
 		OS        string
@@ -133,8 +131,7 @@ func (bt PythonBuildTool) Setup() error {
 	if t.PathExists(envDir) {
 		log.Infof("environment installed in %s", envDir)
 	} else {
-		currentPath := os.Getenv("PATH")
-		newPath := fmt.Sprintf("PATH=%s:%s", filepath.Join(condaDir, "bin"), currentPath)
+		newPath := fmt.Sprintf("PATH=%s:%s", filepath.Join(condaDir, "bin"), t.GetDefaultPath())
 		setupDir := bt.spec.PackageDir
 		condaBin := filepath.Join(condaDir, "bin", "conda")
 

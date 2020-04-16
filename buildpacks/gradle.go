@@ -2,12 +2,12 @@ package buildpacks
 
 import (
 	"fmt"
-	"github.com/yourbase/yb/runtime"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/yourbase/yb/plumbing/log"
+	"github.com/yourbase/yb/runtime"
 	. "github.com/yourbase/yb/types"
 )
 
@@ -71,15 +71,12 @@ func (bt GradleBuildTool) InstallDir() string {
 func (bt GradleBuildTool) Setup() error {
 	gradleDir := bt.GradleDir()
 	gradleHome := filepath.Join(bt.spec.PackageCacheDir, "gradle-home", bt.Version())
-
-	cmdPath := filepath.Join(gradleDir, "bin")
-	currentPath := os.Getenv("PATH")
-	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
-	log.Infof("Setting PATH to %s", newPath)
-	runtime.SetEnv("PATH", newPath)
+	t := bt.spec.InstallTarget
 
 	log.Infof("Setting GRADLE_USER_HOME to %s", gradleHome)
 	runtime.SetEnv("GRADLE_USER_HOME", gradleHome)
+
+	t.PrependToPath(filepath.Join(gradleDir, "bin"))
 
 	return nil
 }

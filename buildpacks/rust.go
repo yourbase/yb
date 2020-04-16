@@ -42,11 +42,9 @@ func (bt RustBuildTool) InstallDir() string {
 
 func (bt RustBuildTool) Setup() error {
 	rustDir := bt.RustDir()
-	cmdPath := fmt.Sprintf("%s/bin", rustDir)
-	currentPath := os.Getenv("PATH")
-	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
-	log.Infof("Setting PATH to %s", newPath)
-	runtime.SetEnv("PATH", newPath)
+	t := bt.spec.InstallTarget
+
+	t.PrependToPath(filepath.Join(rustDir, "bin"))
 
 	runtime.SetEnv("CARGO_HOME", rustDir)
 	runtime.SetEnv("RUSTUP_HOME", rustDir)

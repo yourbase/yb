@@ -69,13 +69,12 @@ func (bt JavaBuildTool) JavaDir() string {
 
 func (bt JavaBuildTool) Setup() error {
 	javaDir := bt.JavaDir()
-	cmdPath := fmt.Sprintf("%s/bin", javaDir)
-	currentPath := os.Getenv("PATH")
-	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
-	log.Infof("Setting PATH to %s", newPath)
-	runtime.SetEnv("PATH", newPath)
+	t := bt.spec.InstallTarget
+
 	log.Infof("Setting JAVA_HOME to %s", javaDir)
 	runtime.SetEnv("JAVA_HOME", javaDir)
+
+	t.PrependToPath(filepath.Join(javaDir, "bin"))
 
 	return nil
 }

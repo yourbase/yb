@@ -89,7 +89,7 @@ func (t *MetalTarget) String() string {
 }
 
 func (t *MetalTarget) PrependToPath(dir string) {
-	currentPath := os.Getenv("PATH")
+	currentPath := t.GetDefaultPath()
 	// Only prepend if it's not already the head; presume that
 	// whomever asked for this wants to be at the front so it's okay if it's
 	// duplicated later
@@ -97,6 +97,11 @@ func (t *MetalTarget) PrependToPath(dir string) {
 		newPath := fmt.Sprintf("%s:%s", dir, currentPath)
 		t.SetEnv("PATH", newPath)
 	}
+}
+
+func (t *MetalTarget) GetDefaultPath() string {
+	// TODO check other OS defaults, this works for Linux containers, maybe for a Mac host we should use "path"
+	return os.Getenv("PATH")
 }
 
 func (t *MetalTarget) CacheDir() string {

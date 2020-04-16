@@ -8,9 +8,8 @@ import (
 
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
-
 	"github.com/yourbase/yb/runtime"
+	. "github.com/yourbase/yb/types"
 )
 
 var RLANG_DIST_MIRROR = "https://cloud.r-project.org/src/base"
@@ -62,12 +61,9 @@ func (bt RLangBuildTool) RLangDir() string {
 
 func (bt RLangBuildTool) Setup() error {
 	rlangDir := bt.RLangDir()
+	t := bt.spec.InstallTarget
 
-	cmdPath := fmt.Sprintf("%s/bin", rlangDir)
-	currentPath := os.Getenv("PATH")
-	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
-	log.Infof("Setting PATH to %s", newPath)
-	runtime.SetEnv("PATH", newPath)
+	t.PrependToPath(filepath.Join(rlangDir, "bin"))
 
 	return nil
 }

@@ -52,27 +52,22 @@ func (e *ExecPhase) EnvironmentVariables(envName string, data runtime.RuntimeEnv
 	result := make([]string, 0)
 
 	for _, property := range e.Environment["default"] {
-
-		s := strings.SplitN(property, "=", 2)
-		if len(s) == 2 {
-			interpolated, err := TemplateToString(property, data)
-			if err == nil {
-				result = append(result, interpolated)
-			} else {
-				result = append(result, property)
-			}
+		if p := SplitAndSetEnv(property, data); p != "" {
+			result = append(result, p)
+			log.Tracef("Env append: %s", p)
 		}
 	}
 
 	for k, v := range data.Containers.Environment() {
 		result = append(result, k, v)
+		log.Tracef("Env append: %s=%s", k, v)
 	}
 
 	if envName != "default" {
 		for _, property := range e.Environment[envName] {
-			s := strings.SplitN(property, "=", 2)
-			if len(s) == 2 {
-				result = append(result, property)
+			if p := SplitAndSetEnv(property, data); p != "" {
+				result = append(result, p)
+				log.Tracef("Env append: %s", p)
 			}
 		}
 	}
@@ -82,7 +77,9 @@ func (e *ExecPhase) EnvironmentVariables(envName string, data runtime.RuntimeEnv
 	if err == nil {
 		localEnv, _ := godotenv.Read()
 		for k, v := range localEnv {
-			result = append(result, strings.Join([]string{k, v}, "="))
+			l := strings.Join([]string{k, v}, "=")
+			result = append(result, l)
+			log.Tracef("Env append (.env): %s", l)
 		}
 	}
 
@@ -176,6 +173,19 @@ func (b BuildManifest) BuildTargetList() []string {
 	}
 
 	return targets
+}
+
+func SplitAndSetEnv(property string, data interface{}) (processed string) {
+	s := strings.SplitN(property, "=", 2)
+	if len(s) == 2 {
+		interpolated, err := TemplateToString(property, data)
+		if err == nil {
+			processed = interpolated
+		} else {
+			processed = property
+		}
+	}
+	return
 }
 
 func TemplateToString(templateText string, data interface{}) (string, error) {
