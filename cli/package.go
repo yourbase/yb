@@ -69,9 +69,9 @@ func (b *PackageCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interfac
 }
 
 type DockerArchiveCmd struct {
-	targetPackage    Package
-	dockerRepository string
-	dockerTag        string
+	targetPackage  Package
+	dockerRegistry string
+	dockerTag      string
 }
 
 func (*DockerArchiveCmd) Name() string     { return "docker" }
@@ -81,7 +81,7 @@ func (*DockerArchiveCmd) Usage() string {
 }
 
 func (d *DockerArchiveCmd) SetFlags(f *flag.FlagSet) {
-	f.StringVar(&d.dockerRepository, "repository", "docker-registry.yourbase.io", "Repository base name")
+	f.StringVar(&d.dockerRegistry, "registry", "docker-registry.yourbase.io", "Registry to upload image")
 	f.StringVar(&d.dockerTag, "tag", "latest", "Container tag")
 }
 
@@ -118,12 +118,12 @@ func (d *DockerArchiveCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...inte
 	defer os.Remove(tmpArchiveFile)
 
 	// Default to yourbase container registry.  User can pass in an empty string for local registry
-	repository := d.targetPackage.Name
-	if d.dockerRepository != "" {
-		repository = fmt.Sprintf("%s/%s", strings.TrimRight(d.dockerRepository, "/"), d.targetPackage.Name)
+	registry := d.targetPackage.Name
+	if d.dockerRegistry != "" {
+		registry = fmt.Sprintf("%s/%s", strings.TrimRight(d.dockerRegistry, "/"), d.targetPackage.Name)
 	}
 
-	err = narwhal.BuildImageWithFile(cd, repository, d.dockerTag, tmpArchiveFile, "tmp.tar", instructions.Docker.WorkingDir)
+	err = narwhal.BuildImageWithArchive(cd, registry, d.dockerTag, tmpArchiveFile, "tmp.tar", instructions.Docker.WorkingDir)
 	if err != nil {
 		log.Error(err)
 		return subcommands.ExitFailure
