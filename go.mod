@@ -42,7 +42,7 @@ require (
 	github.com/ulikunitz/xz v0.5.7
 	github.com/waigani/diffparser v0.0.0-20190828052634-7391f219313d // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
-	github.com/yourbase/narwhal v0.0.0-20200226183157-748bc33c70c8
+	github.com/yourbase/narwhal v0.0.0-20200422134112-64f95f33ebe4
 	golang.org/x/crypto v0.0.0-20200302210943-78000ba7a073
 	golang.org/x/net v0.0.0-20200301022130-244492dfa37a // indirect
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
