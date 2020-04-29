@@ -5,9 +5,9 @@ replace github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.2
 //replace github.com/yourbase/narwhal => /Users/jewart/Work/narwhal
 
 require (
-	github.com/Microsoft/hcsshim v0.8.7 // indirect
+	github.com/Microsoft/hcsshim v0.8.9 // indirect
 	github.com/beholders-eye/diffparser v0.0.0-20190814025112-fcedf0a097ba
-	github.com/containerd/containerd v1.3.3 // indirect
+	github.com/containerd/containerd v1.3.4 // indirect
 	github.com/containerd/continuity v0.0.0-20190827140505-75bee3e2ccb6 // indirect
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/equinox-io/equinox v1.2.0
@@ -15,8 +15,7 @@ require (
 	github.com/gobwas/httphead v0.0.0-20180130184737-2c6c146eadee // indirect
 	github.com/gobwas/pool v0.2.0 // indirect
 	github.com/gobwas/ws v1.0.3
-	github.com/gogo/protobuf v1.3.1 // indirect
-	github.com/golang/protobuf v1.3.4 // indirect
+	github.com/golang/protobuf v1.4.0 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/gopherjs/gopherjs v0.0.0-20190915194858-d3ddacdb130f // indirect
@@ -29,27 +28,27 @@ require (
 	github.com/juju/testing v0.0.0-20191001232224-ce9dec17d28b // indirect
 	github.com/juju/utils v0.0.0-20180820210520-bf9cc5bdd62d // indirect
 	github.com/juju/version v0.0.0-20180108022336-b64dbd566305 // indirect
-	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
-	github.com/matishsiao/goInfo v0.0.0-20170803142006-617e6440957e
+	github.com/konsorten/go-windows-terminal-sequences v1.0.3 // indirect
+	github.com/matishsiao/goInfo v0.0.0-20200404012835-b5f882ee2288
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/nwaples/rardecode v1.1.0 // indirect
-	github.com/pierrec/lz4 v2.4.1+incompatible // indirect
+	github.com/pierrec/lz4 v2.5.2+incompatible // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect
-	github.com/sirupsen/logrus v1.4.2
+	github.com/sirupsen/logrus v1.5.0
 	github.com/smartystreets/assertions v1.0.1 // indirect
 	github.com/smartystreets/goconvey v0.0.0-20190731233626-505e41936337 // indirect
 	github.com/ulikunitz/xz v0.5.7
 	github.com/waigani/diffparser v0.0.0-20190828052634-7391f219313d // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	github.com/yourbase/narwhal v0.0.0-20200422134112-64f95f33ebe4
-	golang.org/x/crypto v0.0.0-20200302210943-78000ba7a073
-	golang.org/x/net v0.0.0-20200301022130-244492dfa37a // indirect
+	golang.org/x/crypto v0.0.0-20200427165652-729f1e841bcc
+	golang.org/x/net v0.0.0-20200425230154-ff2c4b7c35a0 // indirect
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
-	golang.org/x/sys v0.0.0-20200302150141-5c8b2ff67527 // indirect
-	google.golang.org/genproto v0.0.0-20200311144346-b662892dd51b // indirect
-	google.golang.org/grpc v1.28.0 // indirect
-	gopkg.in/ini.v1 v1.54.0
+	golang.org/x/sys v0.0.0-20200428200454-593003d681fa // indirect
+	google.golang.org/genproto v0.0.0-20200429120912-1f37eeb960b2 // indirect
+	google.golang.org/grpc v1.29.1 // indirect
+	gopkg.in/ini.v1 v1.55.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	gopkg.in/src-d/go-billy.v4 v4.3.2
 	gopkg.in/src-d/go-git.v4 v4.13.1

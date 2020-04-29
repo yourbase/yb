@@ -52,7 +52,7 @@ func (b BuildDependencies) ContainerList() []narwhal.ContainerDefinition {
 
 func (bt BuildTarget) EnvironmentVariables(data runtime.RuntimeEnvironmentData) []string {
 	result := make([]string, 0)
-	for _, property := range(bt.Environment) {
+	for _, property := range bt.Environment {
 		s := strings.SplitN(property, "=", 2)
 		if len(s) == 2 {
 			interpolated, err := TemplateToString(property, data)
@@ -93,7 +93,7 @@ func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, flags BuildFlags, packa
 		log.Infof("Will mount  %s at %s in container", packagePath, sourceMapDir)
 		mount := fmt.Sprintf("%s:%s", packagePath, sourceMapDir)
 		buildContainer.Mounts = append(buildContainer.Mounts, mount)
-	
+
 		containers = append(containers, buildContainer)
 
 		var err error
@@ -146,7 +146,7 @@ func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, flags BuildFlags, packa
 			}()
 		}
 	}
-	
+
 	// Setup dependent containers
 	for _, cd := range bt.Dependencies.ContainerList() {
 		if _, err := runtimeCtx.AddContainer(cd); err != nil {
