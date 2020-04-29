@@ -34,7 +34,7 @@ The primary features of the YB tooling are:
 
 # How to use it
 
-1. Install Docker if you don't have it: https://hub.docker.com/search/?type=edition&offering=community (we know this can be annoying,  sorry about that)
+1. Install Docker if you don't have it: https://hub.docker.com/search/?type=edition&offering=community (We know this can be annoying; sorry about that.) If you're using WSL on Windows, you will need to use [Docker in WSL2](https://code.visualstudio.com/blogs/2020/03/02/docker-in-wsl2).
 1. Download and install `yb`. You can do this using Homebrew:
     ```sh
     brew install yourbase/core/yb
