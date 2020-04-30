@@ -121,17 +121,7 @@ func (bt AndroidBuildTool) WriteAgreements() bool {
 
 func (bt AndroidBuildTool) Setup() error {
 	androidDir := bt.AndroidDir()
-
-	binPath := fmt.Sprintf("%s/tools/bin", androidDir)
-	toolsPath := fmt.Sprintf("%s/tools", androidDir)
-	currentPath := os.Getenv("PATH")
-	newPath := fmt.Sprintf("%s:%s", binPath, currentPath)
-	newPath = fmt.Sprintf("%s:%s", toolsPath, newPath)
-	log.Infof("Setting PATH to %s", newPath)
-	runtime.SetEnv("PATH", newPath)
-
-	//fmt.Printf("Setting ANDROID_HOME to %s\n", androidHomeDir)
-	//runtime.SetEnv("ANDROID_HOME", androidHomeDir)
+	t := bt.spec.InstallTarget
 
 	log.Infof("Setting ANDROID_SDK_ROOT to %s", androidDir)
 	runtime.SetEnv("ANDROID_SDK_ROOT", androidDir)
@@ -139,6 +129,9 @@ func (bt AndroidBuildTool) Setup() error {
 
 	log.Infof("Writing agreement hashes...")
 	bt.WriteAgreements()
+
+	t.PrependToPath(filepath.Join(androidDir, "tools"))
+	t.PrependToPath(filepath.Join(androidDir, "tools", "bin"))
 
 	return nil
 }

@@ -46,6 +46,7 @@ type Target interface {
 	Unarchive(src string, dst string) error
 	PrependToPath(dir string)
 	PathExists(path string) bool
+	GetDefaultPath() string
 	ToolsDir() string
 	OS() Os
 	OSVersion() string

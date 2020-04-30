@@ -104,9 +104,14 @@ func (t *ContainerTarget) PrependToPath(dir string) {
 	}
 
 	if !pathSet {
-		path := fmt.Sprintf("%s:/usr/bin:/bin:/sbin:/usr/sbin", dir)
+		path := fmt.Sprintf("%s:%s", dir, t.GetDefaultPath())
 		t.SetEnv("PATH", path)
 	}
+}
+
+func (t *ContainerTarget) GetDefaultPath() string {
+	// TODO check other OS defaults, this works for Linux containers
+	return "/usr/bin:/bin:/sbin:/usr/sbin"
 }
 
 func (t *ContainerTarget) UploadFile(src string, dest string) error {

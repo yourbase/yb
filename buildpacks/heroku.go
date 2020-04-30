@@ -2,8 +2,7 @@ package buildpacks
 
 import (
 	"fmt"
-	"github.com/yourbase/yb/runtime"
-	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/yourbase/yb/plumbing/log"
@@ -68,11 +67,9 @@ func (bt HerokuBuildTool) HerokuDir() string {
 
 func (bt HerokuBuildTool) Setup() error {
 	herokuDir := bt.HerokuDir()
-	cmdPath := fmt.Sprintf("%s/heroku/bin", herokuDir)
-	currentPath := os.Getenv("PATH")
-	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
-	log.Infof("Setting PATH to %s", newPath)
-	runtime.SetEnv("PATH", newPath)
+
+	t := bt.spec.InstallTarget
+	t.PrependToPath(filepath.Join(herokuDir, "heroku", "bin"))
 
 	return nil
 }
