@@ -124,6 +124,10 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		// Setup dependencies
 		containers := target.Dependencies.Containers
 
+		if err := narwhal.DockerClient().Ping(); err != nil {
+			log.Error("Couldn't connect to Docker daemon. Try installing Docker Desktop: https://hub.docker.com/search/?type=edition&offering=community")
+			return subcommands.ExitFailure
+		}
 		contextId := fmt.Sprintf("%s-%s", targetPackage.Name, target.Name)
 		sc, err := narwhal.NewServiceContextWithId(contextId, workDir)
 		if err != nil {
