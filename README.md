@@ -87,6 +87,8 @@ see https://docs.yourbase.io/configuration/yourbase_yaml.html
 
 ## Test the .yourbase.yml
 
+.
+
 You can test the configuration locally before committing it by calling `yb checkconfig` in the the root directory of your repository:
 
 `yb checkconfig`
