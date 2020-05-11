@@ -70,9 +70,7 @@ func (bt FlutterBuildTool) DownloadUrl() string {
 		downloadUrlVersion(version),
 		extension,
 	}
-	mirror := FLUTTER_DIST_MIRROR
-
-	url, _ := TemplateToString(mirror, data)
+	url, _ := TemplateToString(FLUTTER_DIST_MIRROR, data)
 
 	return url
 }
