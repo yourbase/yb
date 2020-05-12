@@ -143,8 +143,11 @@ func (bt FlutterBuildTool) Install() error {
 //   https://storage.googleapis.com/.../flutter_windows_1.17.0-stable.zip)
 //
 // Also, yb tacks on a v for customers when we build the URL.
-// This function will be backaward compatible (tack on "v"), it will support pre 1.17
+// This function will be backward compatible (tack on "v"), it will support pre 1.17
 // version with a "v", and support 1.17 and greater
+//
+// Note: We are predicting the future since they could require a "v" again if 1.17.0
+// was a mistake
 //
 func downloadUrlVersion(version string) string {
 	version_1_17_0 := "v1.17.0"
@@ -155,8 +158,11 @@ func downloadUrlVersion(version string) string {
 		compVersion = fmt.Sprintf("v%s", version)
 	}
 
+	// Below 1.17.0 need the "v", >= to 1.17.0, remove the "v"
 	if semver.Compare(compVersion, version_1_17_0) < 0 {
-		version = compVersion
+		version = compVersion // Need the "v"
+	} else {
+		version = strings.TrimLeft(compVersion, "v")
 	}
 
 	return version

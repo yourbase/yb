@@ -24,6 +24,10 @@ func Test_downloadUrlVersion(t *testing.T) {
 			want: "2.0.0",
 		},
 		{
+			in:   "v2.0.0",
+			want: "2.0.0",
+		},
+		{
 			in:   "v1.12.13+hotfix.8",
 			want: "v1.12.13+hotfix.8",
 		},
