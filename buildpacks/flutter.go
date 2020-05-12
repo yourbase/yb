@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/johnewart/archiver"
+	"golang.org/x/mod/semver"
 
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
@@ -14,7 +15,7 @@ import (
 )
 
 // https://archive.apache.org/dist/flutter/flutter-3/3.3.3/binaries/apache-flutter-3.3.3-bin.tar.gz
-var FLUTTER_DIST_MIRROR = "https://storage.googleapis.com/flutter_infra/releases/{{.Channel}}/{{.OS}}/flutter_{{.OS}}_v{{.Version}}-{{.Channel}}.{{.Extension}}"
+var FLUTTER_DIST_MIRROR = "https://storage.googleapis.com/flutter_infra/releases/{{.Channel}}/{{.OS}}/flutter_{{.OS}}_{{.Version}}-{{.Channel}}.{{.Extension}}"
 
 type FlutterBuildTool struct {
 	BuildTool
@@ -66,10 +67,9 @@ func (bt FlutterBuildTool) DownloadUrl() string {
 		channel,
 		opsys,
 		arch,
-		version,
+		downloadUrlVersion(version),
 		extension,
 	}
-
 	url, _ := TemplateToString(FLUTTER_DIST_MIRROR, data)
 
 	return url
@@ -112,9 +112,9 @@ func (bt FlutterBuildTool) Install() error {
 	installDir := bt.InstallDir()
 
 	if _, err := os.Stat(flutterDir); err == nil {
-		log.Infof("Flutter v%s located in %s!", bt.Version(), flutterDir)
+		log.Infof("Flutter %s located in %s!", downloadUrlVersion(bt.Version()), flutterDir)
 	} else {
-		log.Infof("Will install Flutter v%s into %s", bt.Version(), flutterDir)
+		log.Infof("Will install Flutter %s into %s", downloadUrlVersion(bt.Version()), flutterDir)
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading Flutter from URL %s...", downloadUrl)
@@ -133,4 +133,37 @@ func (bt FlutterBuildTool) Install() error {
 	}
 
 	return nil
+}
+
+// Starting with flutter 1.17 the version format changed.
+// Adding support for pre version 1.17 with "v" and keep support for no "v"
+// - Pre 1.17 version =>  vx.xx.x or vx.xx.x+hotfix.y
+//   https://storage.googleapis.com/.../flutter_windows_v1.12.13+hotfix.9-stable.zip
+// - 1.17 (and greater?) => 1.17.0 (no "v" in download URL)
+//   https://storage.googleapis.com/.../flutter_windows_1.17.0-stable.zip)
+//
+// Also, yb tacks on a v for customers when we build the URL.
+// This function will be backward compatible (tack on "v"), it will support pre 1.17
+// version with a "v", and support 1.17 and greater
+//
+// Note: We are predicting the future since they could require a "v" again if 1.17.0
+// was a mistake
+//
+func downloadUrlVersion(version string) string {
+	version_1_17_0 := "v1.17.0"
+	compVersion := version
+
+	// Semver package requires the version to start with "v"
+	if !strings.HasPrefix(compVersion, "v") {
+		compVersion = fmt.Sprintf("v%s", version)
+	}
+
+	// Below 1.17.0 need the "v", >= to 1.17.0, remove the "v"
+	if semver.Compare(compVersion, version_1_17_0) < 0 {
+		version = compVersion // Need the "v"
+	} else {
+		version = strings.TrimLeft(compVersion, "v")
+	}
+
+	return version
 }
