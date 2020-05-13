@@ -161,15 +161,12 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 
 	// Do this after the containers are up
 	for _, envString := range primaryTarget.Environment {
-		parts := strings.Split(envString, "=")
-		key := parts[0]
-		value := ""
-		if len(parts) > 1 {
-			value = parts[1]
-		} else {
+		parts := strings.SplitN(envString, "=", 2)
+		if len(parts) != 2 {
 			log.Warnf("'%s' doesn't look like an environment variable", envString)
+			continue
 		}
-		buildData.SetEnv(key, value)
+		buildData.SetEnv(parts[0], parts[1])
 	}
 
 	_, exists := os.LookupEnv("YB_NO_CONTAINER_BUILDS")
