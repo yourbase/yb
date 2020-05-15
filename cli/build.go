@@ -81,6 +81,7 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	buildFlags := workspace.BuildFlags{
 		HostOnly:   b.NoContainer,
 		CleanBuild: b.CleanBuild,
+		ExecPrefix: b.ExecPrefix,
 	}
 	stepTimers, buildError := targetPackage.BuildTarget(buildTargetName, buildFlags)
 

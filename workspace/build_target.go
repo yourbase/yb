@@ -156,10 +156,10 @@ func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, flags BuildFlags, packa
 
 	// Do this after the containers are up
 	for _, envString := range bt.EnvironmentVariables(runtimeCtx.EnvironmentData()) {
-		parts := strings.Split(envString, "=")
+		parts := strings.SplitN(envString, "=", 2)
 		key := parts[0]
 		value := ""
-		if len(parts) > 1 {
+		if len(parts) == 2 {
 			value = parts[1]
 		} else {
 			log.Warnf("'%s' doesn't look like an environment variable", envString)
@@ -179,6 +179,10 @@ func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, flags BuildFlags, packa
 
 	for _, cmdString := range bt.Commands {
 		var stepError error
+
+		if len(flags.ExecPrefix) > 0 {
+			cmdString = fmt.Sprintf("%s %s", flags.ExecPrefix, cmdString)
+		}
 
 		stepStartTime := time.Now()
 		p := runtime.Process{
