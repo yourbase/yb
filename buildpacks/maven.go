@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/johnewart/archiver"
-	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 )
@@ -54,7 +52,7 @@ func (bt MavenBuildTool) Version() string {
 }
 
 func (bt MavenBuildTool) InstallDir() string {
-	return filepath.Join(ToolsDir(), "maven")
+	return filepath.Join(bt.spec.InstallTarget.ToolsDir(), "maven")
 }
 
 func (bt MavenBuildTool) MavenDir() string {
@@ -63,11 +61,9 @@ func (bt MavenBuildTool) MavenDir() string {
 
 func (bt MavenBuildTool) Setup() error {
 	mavenDir := bt.MavenDir()
-	cmdPath := fmt.Sprintf("%s/bin", mavenDir)
-	currentPath := os.Getenv("PATH")
-	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
-	log.Infof("Setting PATH to %s", newPath)
-	os.Setenv("PATH", newPath)
+	t := bt.spec.InstallTarget
+
+	t.PrependToPath(filepath.Join(mavenDir, "bin"))
 
 	return nil
 }
@@ -83,12 +79,12 @@ func (bt MavenBuildTool) Install() error {
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading Maven from URL %s...", downloadUrl)
-		localFile, err := DownloadFileWithCache(downloadUrl)
+		localFile, err := bt.spec.InstallTarget.DownloadFile(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
 			return err
 		}
-		err = archiver.Unarchive(localFile, bt.InstallDir())
+		err = bt.spec.InstallTarget.Unarchive(localFile, bt.InstallDir())
 		if err != nil {
 			log.Errorf("Unable to decompress: %v", err)
 			return err

@@ -10,6 +10,7 @@ import (
 	"github.com/matishsiao/goInfo"
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
+	"github.com/yourbase/yb/runtime"
 	. "github.com/yourbase/yb/types"
 	"gopkg.in/src-d/go-git.v4"
 )
@@ -143,7 +144,7 @@ func (bt HomebrewBuildTool) InstallPackage() error {
 	brewDir := bt.HomebrewDir()
 
 	updateCmd := "brew update"
-	err := ExecToStdout(updateCmd, brewDir)
+	err := runtime.ExecToStdout(updateCmd, brewDir)
 	if err != nil {
 		return fmt.Errorf("Couldn't update brew: %v", err)
 	}
@@ -155,7 +156,7 @@ func (bt HomebrewBuildTool) InstallPackage() error {
 
 	log.Infof("Going to install %s%s from Homebrew...", bt.pkgName, pkgVersion)
 	installCmd := fmt.Sprintf("brew install %s%s", bt.pkgName, pkgVersion)
-	err = ExecToStdout(installCmd, brewDir)
+	err = runtime.ExecToStdout(installCmd, brewDir)
 
 	if err != nil {
 		return fmt.Errorf("Couldn't intall %s@%s from  Homebrew: %v", bt.pkgName, bt.version, err)
@@ -189,7 +190,7 @@ func (bt HomebrewBuildTool) InstallDarwin() error {
 	}
 	log.Infof("Updating brew")
 	updateCmd := "brew update"
-	ExecToStdout(updateCmd, brewDir)
+	runtime.ExecToStdout(updateCmd, brewDir)
 
 	return nil
 }
@@ -221,7 +222,7 @@ func (bt HomebrewBuildTool) InstallLinux() error {
 
 		log.Infof("Updating brew")
 		updateCmd := "brew update"
-		ExecToStdout(updateCmd, brewDir)
+		runtime.ExecToStdout(updateCmd, brewDir)
 	}
 	return nil
 }
@@ -242,7 +243,7 @@ func (bt HomebrewBuildTool) Setup() error {
 		brewBinDir := filepath.Join(brewDir, "bin")
 		PrependToPath(brewBinDir)
 		brewLibDir := filepath.Join(brewDir, "lib")
-		os.Setenv("LD_LIBRARY_PATH", brewLibDir)
+		runtime.SetEnv("LD_LIBRARY_PATH", brewLibDir)
 	}
 	return nil
 }

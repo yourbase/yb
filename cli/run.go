@@ -4,12 +4,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"os"
-	"os/exec"
 	"strings"
 
 	"github.com/johnewart/subcommands"
 	"github.com/yourbase/yb/plumbing/log"
+	"github.com/yourbase/yb/runtime"
 	//"path/filepath"
 )
 
@@ -35,6 +34,7 @@ Executing the target involves:
 3. Start target
 */
 func (b *RunCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+
 	if len(f.Args()) == 0 {
 		fmt.Println(b.Usage())
 		return subcommands.ExitFailure
@@ -46,43 +46,46 @@ func (b *RunCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 		return subcommands.ExitFailure
 	}
 
-	instructions := targetPackage.Manifest
+	runtimeEnv, err := targetPackage.ExecutionRuntime("default")
 
-	log.Infof("Setting up dependencies...")
-	targetPackage.SetupRuntimeDependencies()
-
-	log.Infof("Setting environment variables...")
-	for _, property := range instructions.Exec.Environment["default"] {
-		s := strings.Split(property, "=")
-		if len(s) == 2 {
-			log.Infof("  %s", s[0])
-			os.Setenv(s[0], s[1])
-		}
+	if err != nil {
+		log.Errorf("%v", err)
+		return subcommands.ExitFailure
 	}
 
-	if b.environment != "default" {
-		for _, property := range instructions.Exec.Environment[b.environment] {
-			s := strings.Split(property, "=")
-			if len(s) == 2 {
-				log.Infof("  %s", s[0])
-				os.Setenv(s[0], s[1])
-			}
-		}
+	argList := f.Args()
+
+	runInTarget := false
+	runtimeTarget := "default"
+
+	if strings.HasPrefix(argList[0], "@") {
+		runtimeTarget = argList[0][1:]
+		argList = argList[1:]
+		runInTarget = true
 	}
 
-	execDir, _ := os.Getwd()
-	//execDir := filepath.Join(workspace.Path, targetPackage)
+	cmdString := strings.Join(argList, " ")
+	workDir := "/workspace"
 
-	log.Infof("Running %s from %s", strings.Join(f.Args(), " "), execDir)
-	cmdName := f.Args()[0]
-	cmdArgs := f.Args()[1:]
-	cmd := exec.Command(cmdName, cmdArgs...)
-	cmd.Dir = execDir
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	if runInTarget { 
+		workDir = "/"
+	}
 
-	cmd.Run()
+	log.Infof("Running %s in %s from %s", cmdString, runtimeTarget, workDir)
+
+	p := runtime.Process{Command: cmdString, Interactive: true, Directory: workDir}
+
+	if runInTarget {
+		if err := runtimeEnv.RunInTarget(p, runtimeTarget); err != nil {
+			log.Errorf("%v", err)
+			return subcommands.ExitFailure
+		}
+	} else {
+		if err := runtimeEnv.Run(p); err != nil {
+			log.Errorf("%v", err)
+			return subcommands.ExitFailure
+		}
+	}
 
 	return subcommands.ExitSuccess
 }

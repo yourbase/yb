@@ -2,15 +2,15 @@ package workspace
 
 import (
 	"fmt"
+	"github.com/yourbase/yb/runtime"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
-	. "github.com/yourbase/yb/packages"
 	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing/log"
 )
 
 type Workspace struct {
@@ -83,7 +83,7 @@ func (w Workspace) BuildRoot() string {
 }
 
 func (w Workspace) SetupEnv() error {
-	fmt.Println("Clearing environment variables!")
+	log.Infof("Resetting environment variables!")
 	criticalVariables := []string{"USER", "USERNAME", "UID", "GID", "TTY", "PWD"}
 	oldEnv := make(map[string]string)
 	for _, key := range criticalVariables {
@@ -93,12 +93,12 @@ func (w Workspace) SetupEnv() error {
 	os.Clearenv()
 	tmpDir := filepath.Join(w.BuildRoot(), "tmp")
 	MkdirAsNeeded(tmpDir)
-	os.Setenv("HOME", w.BuildRoot())
-	os.Setenv("TMPDIR", tmpDir)
+	runtime.SetEnv("HOME", w.BuildRoot())
+	runtime.SetEnv("TMPDIR", tmpDir)
 
 	for _, key := range criticalVariables {
-		fmt.Printf("%s=%s\n", key, oldEnv[key])
-		os.Setenv(key, oldEnv[key])
+		log.Infof("%s=%s\n", key, oldEnv[key])
+		runtime.SetEnv(key, oldEnv[key])
 	}
 
 	return nil
@@ -135,7 +135,7 @@ func LoadWorkspace() (Workspace, error) {
 		return Workspace{}, fmt.Errorf("Error loading workspace config!")
 	}
 
-	fmt.Printf("Workspace path: %s\n", workspacePath)
+	log.Infof("Workspace path: %s\n", workspacePath)
 	workspace.Path = workspacePath
 	return workspace, nil
 }
