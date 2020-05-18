@@ -289,6 +289,17 @@ func DecompressBuffer(b *bytes.Buffer) error {
 	return nil
 }
 
+// Returns two empty strings and false if env isn't formed as "something=.*"
+// Or else return env name, value and true
+func SaneEnvironmentVar(env string) (name, value string, sane bool) {
+	s := strings.SplitN(env, "=", 2)
+	if sane = (len(s) == 2); sane {
+		name = s[0]
+		value = s[1]
+	}
+	return
+}
+
 func CloneRepository(remote GitRemote, inMem bool, basePath string) (rep *git.Repository, err error) {
 	if remote.Branch == "" {
 		return nil, fmt.Errorf("No branch defined to clone repo %v", remote.Url)

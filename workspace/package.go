@@ -20,6 +20,7 @@ import (
 type BuildFlags struct {
 	HostOnly   bool
 	CleanBuild bool
+	ExecPrefix string
 }
 
 type Package struct {
@@ -211,7 +212,6 @@ func (p Package) ExecutionRuntime(environment string) (*runtime.Runtime, error) 
 	execContainer.Command = "/usr/bin/tail -f /dev/null"
 	execContainer.Label = "exec"
 	execContainer.Ports = portMappings
-
 
 	// Add package to mounts @ /workspace
 	sourceMapDir := "/workspace"

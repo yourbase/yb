@@ -9,6 +9,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/yourbase/narwhal"
+	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	"github.com/yourbase/yb/runtime"
 )
@@ -61,8 +62,7 @@ func (e *ExecPhase) EnvironmentVariables(envName string, data runtime.RuntimeEnv
 
 	for _, property := range e.Environment["default"] {
 
-		s := strings.SplitN(property, "=", 2)
-		if len(s) == 2 {
+		if _, _, ok := plumbing.SaneEnvironmentVar(property); ok {
 			interpolated, err := TemplateToString(property, data)
 			if err == nil {
 				result = append(result, interpolated)
@@ -78,8 +78,7 @@ func (e *ExecPhase) EnvironmentVariables(envName string, data runtime.RuntimeEnv
 
 	if envName != "default" {
 		for _, property := range e.Environment[envName] {
-			s := strings.SplitN(property, "=", 2)
-			if len(s) == 2 {
+			if _, _, ok := plumbing.SaneEnvironmentVar(property); ok {
 				result = append(result, property)
 			}
 		}
