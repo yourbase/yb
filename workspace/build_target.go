@@ -180,8 +180,8 @@ func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, flags BuildFlags, packa
 	for _, cmdString := range bt.Commands {
 		var stepError error
 
-		if len(flags.ExecPrefix) > 0 {
-			cmdString = fmt.Sprintf("%s %s", flags.ExecPrefix, cmdString)
+		if flags.ExecPrefix != "" {
+			cmdString = flags.ExecPrefix + " " + cmdString
 		}
 
 		stepStartTime := time.Now()
