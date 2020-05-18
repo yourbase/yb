@@ -3,6 +3,7 @@ package workspace
 import (
 	"fmt"
 	"github.com/yourbase/narwhal"
+	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	"github.com/yourbase/yb/runtime"
 	"os"
@@ -53,8 +54,7 @@ func (b BuildDependencies) ContainerList() []narwhal.ContainerDefinition {
 func (bt BuildTarget) EnvironmentVariables(data runtime.RuntimeEnvironmentData) []string {
 	result := make([]string, 0)
 	for _, property := range bt.Environment {
-		s := strings.SplitN(property, "=", 2)
-		if len(s) == 2 {
+		if _, _, ok := plumbing.SaneEnvironmentVar(property); ok {
 			interpolated, err := TemplateToString(property, data)
 			if err == nil {
 				result = append(result, interpolated)
@@ -156,15 +156,11 @@ func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, flags BuildFlags, packa
 
 	// Do this after the containers are up
 	for _, envString := range bt.EnvironmentVariables(runtimeCtx.EnvironmentData()) {
-		parts := strings.SplitN(envString, "=", 2)
-		key := parts[0]
-		value := ""
-		if len(parts) == 2 {
-			value = parts[1]
+		if n, v, ok := plumbing.SaneEnvironmentVar(envString); ok {
+			builder.SetEnv(n, v)
 		} else {
 			log.Warnf("'%s' doesn't look like an environment variable", envString)
 		}
-		builder.SetEnv(key, value)
 	}
 
 	LoadBuildPacks(builder, buildpacks)
