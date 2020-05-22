@@ -3,6 +3,7 @@ package workspace
 import (
 	"crypto/sha256"
 	"fmt"
+	"github.com/yourbase/narwhal"
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	"github.com/yourbase/yb/runtime"
@@ -151,6 +152,16 @@ func (p Package) ExecuteToWriter(runtimeCtx *runtime.Runtime, output io.Writer) 
 	return nil
 }
 
+func (p Package) checkMounts(cd narwhal.ContainerDefinition, srcDir string) {
+	for _, mount := range cd.Mounts {
+		parts := strings.Split(mount, ":")
+		if len(parts) == 2 {
+			src := filepath.Join(srcDir, parts[0])
+			MkdirAsNeeded(src)
+		}
+	}
+}
+
 func (p Package) ExecutionRuntime(environment string) (*runtime.Runtime, error) {
 	manifest := p.Manifest
 	containers := manifest.Exec.Dependencies.ContainerList()
@@ -165,6 +176,8 @@ func (p Package) ExecutionRuntime(environment string) (*runtime.Runtime, error) 
 
 	for _, cd := range containers {
 		cd.LocalWorkDir = localContainerWorkDir
+		p.checkMounts(cd, localContainerWorkDir)
+
 		_, err := runtimeCtx.AddContainer(cd)
 		if err != nil {
 			return nil, fmt.Errorf("Couldn't start container dependency: %v", err)
