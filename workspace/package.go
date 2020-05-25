@@ -152,14 +152,16 @@ func (p Package) ExecuteToWriter(runtimeCtx *runtime.Runtime, output io.Writer) 
 	return nil
 }
 
-func (p Package) checkMounts(cd narwhal.ContainerDefinition, srcDir string) {
+func (p Package) checkMounts(cd *narwhal.ContainerDefinition, srcDir string) error {
 	for _, mount := range cd.Mounts {
 		parts := strings.Split(mount, ":")
 		if len(parts) == 2 {
 			src := filepath.Join(srcDir, parts[0])
-			MkdirAsNeeded(src)
+			err := MkdirAsNeeded(src)
+			return err
 		}
 	}
+	return nil
 }
 
 func (p Package) ExecutionRuntime(environment string) (*runtime.Runtime, error) {
@@ -170,13 +172,17 @@ func (p Package) ExecutionRuntime(environment string) (*runtime.Runtime, error) 
 	runtimeCtx := runtime.NewRuntime(contextId, p.BuildRoot())
 
 	localContainerWorkDir := filepath.Join(p.BuildRoot(), "containers")
-	MkdirAsNeeded(localContainerWorkDir)
+	if err := MkdirAsNeeded(localContainerWorkDir); err != nil {
+		return nil, fmt.Errorf("Unable to set host container work dir: %v", err)
+	}
 
 	log.Infof("Will use %s as the dependency work dir", localContainerWorkDir)
 
 	for _, cd := range containers {
 		cd.LocalWorkDir = localContainerWorkDir
-		p.checkMounts(cd, localContainerWorkDir)
+		if err := p.checkMounts(&cd, localContainerWorkDir); err != nil {
+			return nil, fmt.Errorf("Unable to set host container mount dir: %v", err)
+		}
 
 		_, err := runtimeCtx.AddContainer(cd)
 		if err != nil {
