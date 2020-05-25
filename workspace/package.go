@@ -3,6 +3,7 @@ package workspace
 import (
 	"crypto/sha256"
 	"fmt"
+	"github.com/yourbase/narwhal"
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	"github.com/yourbase/yb/runtime"
@@ -151,6 +152,18 @@ func (p Package) ExecuteToWriter(runtimeCtx *runtime.Runtime, output io.Writer) 
 	return nil
 }
 
+func (p Package) checkMounts(cd *narwhal.ContainerDefinition, srcDir string) error {
+	for _, mount := range cd.Mounts {
+		parts := strings.Split(mount, ":")
+		if len(parts) == 2 {
+			src := filepath.Join(srcDir, parts[0])
+			err := MkdirAsNeeded(src)
+			return err
+		}
+	}
+	return nil
+}
+
 func (p Package) ExecutionRuntime(environment string) (*runtime.Runtime, error) {
 	manifest := p.Manifest
 	containers := manifest.Exec.Dependencies.ContainerList()
@@ -159,12 +172,18 @@ func (p Package) ExecutionRuntime(environment string) (*runtime.Runtime, error) 
 	runtimeCtx := runtime.NewRuntime(contextId, p.BuildRoot())
 
 	localContainerWorkDir := filepath.Join(p.BuildRoot(), "containers")
-	MkdirAsNeeded(localContainerWorkDir)
+	if err := MkdirAsNeeded(localContainerWorkDir); err != nil {
+		return nil, fmt.Errorf("Unable to set host container work dir: %v", err)
+	}
 
 	log.Infof("Will use %s as the dependency work dir", localContainerWorkDir)
 
 	for _, cd := range containers {
 		cd.LocalWorkDir = localContainerWorkDir
+		if err := p.checkMounts(&cd, localContainerWorkDir); err != nil {
+			return nil, fmt.Errorf("Unable to set host container mount dir: %v", err)
+		}
+
 		_, err := runtimeCtx.AddContainer(cd)
 		if err != nil {
 			return nil, fmt.Errorf("Couldn't start container dependency: %v", err)
