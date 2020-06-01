@@ -11,11 +11,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/matishsiao/goInfo"
-
 	"github.com/johnewart/subcommands"
 	ybconfig "github.com/yourbase/yb/config"
-	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	"github.com/yourbase/yb/workspace"
 )
@@ -52,28 +49,28 @@ func (b *BuildCmd) SetFlags(f *flag.FlagSet) {
 func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	startTime := time.Now()
 
-	if InsideTheMatrix() {
-		log.StartSection("BUILD CONTAINER", "CONTAINER")
-	} else {
-		log.StartSection("BUILD HOST", "HOST")
-	}
-	gi := goInfo.GetInfo()
-	gi.VarDump()
-	log.EndSection()
-
-	log.StartSection("BUILD PACKAGE SETUP", "SETUP")
 	log.Infof("Build started at %s", startTime.Format(TIME_FORMAT))
 
-	targetPackage, err := GetTargetPackage()
+	ws, err := workspace.LoadWorkspace()
 	if err != nil {
-		log.Errorf("%v", err)
+		log.Errorf("Error loading workspace: %v", err)
 		return subcommands.ExitFailure
 	}
-	// Determine build target
-	buildTargetName := "default"
 
+	var pkg workspace.Package
 	if len(f.Args()) > 0 {
-		buildTargetName = f.Args()[0]
+		pkgName := f.Arg(0)
+		pkg, err = ws.PackageByName(pkgName)
+		if err != nil {
+			log.Errorf("Unable to find package named %s: %v", pkgName, err)
+			return subcommands.ExitFailure
+		}
+	} else {
+		pkg, err = ws.TargetPackage()
+		if err != nil {
+			log.Errorf("Unable to find default package: %v", err)
+			return subcommands.ExitFailure
+		}
 	}
 
 	var targetTimers []workspace.TargetTimer
@@ -83,14 +80,14 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		CleanBuild: b.CleanBuild,
 		ExecPrefix: b.ExecPrefix,
 	}
-	stepTimers, buildError := targetPackage.BuildTarget(buildTargetName, buildFlags)
+	stepTimers, buildError := pkg.Build(buildFlags)
 
 	if err != nil {
 		log.Errorf("Failed to build target package: %v\n", err)
 		return subcommands.ExitFailure
 	}
 
-	targetTimers = append(targetTimers, workspace.TargetTimer{Name: buildTargetName, Timers: stepTimers})
+	targetTimers = append(targetTimers, workspace.TargetTimer{Name: pkg.Name, Timers: stepTimers})
 
 	endTime := time.Now()
 	buildTime := endTime.Sub(startTime)

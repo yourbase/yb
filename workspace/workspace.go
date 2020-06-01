@@ -1,21 +1,82 @@
 package workspace
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"github.com/yourbase/yb/runtime"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
+	"os/user"
 	"path/filepath"
 	"strings"
+
+	"gopkg.in/yaml.v2"
 
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 )
 
 type Workspace struct {
-	Target string `yaml:"target"`
-	Path   string
+	Target   string `yaml:"target"`
+	Path     string
+	packages []Package
+}
+
+func (w Workspace) BuildPackage(p Package) error {
+	return nil
+}
+
+func (w Workspace) RunInTarget(cmdString string, workDir string, targetName string) error {
+
+	log.Infof("Running %s in %s from %s", cmdString, targetName, workDir)
+
+	p := runtime.Process{Command: cmdString, Interactive: true, Directory: workDir}
+
+	ctx, err := w.execRuntimeContext()
+	if err != nil {
+		return err
+	}
+
+	return ctx.RunInTarget(p, targetName)
+}
+
+func (w Workspace) RunningContainers() ([]*runtime.ContainerTarget, error) {
+	runtimeCtx, err := w.execRuntimeContext()
+
+	if err != nil {
+		return []*runtime.ContainerTarget{}, fmt.Errorf("unable to determine running containers: %v", err)
+	}
+
+	result := make([]*runtime.ContainerTarget, 0)
+	for _, p := range w.PackageList() {
+		for _, c := range runtimeCtx.FindContainers(p.RuntimeContainers()) {
+			result = append(result, c)
+		}
+	}
+
+	return result, nil
+}
+
+func (w Workspace) ExecutePackage(p Package) error {
+	if runtimeCtx, err := w.execRuntimeContext(); err != nil {
+		return err
+	} else {
+		return p.Execute(runtimeCtx)
+	}
+}
+
+func (w Workspace) execRuntimeContext() (*runtime.Runtime, error) {
+	log.Debugf("Creating runtime context for workspace %s", w.Name())
+	contextId := fmt.Sprintf("%s-exec", w.Name())
+
+	runtimeCtx := runtime.NewRuntime(contextId, w.BuildRoot())
+
+	return runtimeCtx, nil
+}
+
+func (w Workspace) Name() string {
+	_, name := filepath.Split(w.Path)
+	return name
 }
 
 // Change this
@@ -32,13 +93,7 @@ func (w Workspace) TargetPackage() (Package, error) {
 }
 
 func (w Workspace) PackageByName(name string) (Package, error) {
-	pkgList, err := w.PackageList()
-
-	if err != nil {
-		return Package{}, err
-	}
-
-	for _, pkg := range pkgList {
+	for _, pkg := range w.packages {
 		if pkg.Name == name {
 			return pkg, nil
 		}
@@ -47,61 +102,21 @@ func (w Workspace) PackageByName(name string) (Package, error) {
 	return Package{}, fmt.Errorf("No package with name %s found in the workspace", name)
 }
 
-func (w Workspace) PackageList() ([]Package, error) {
-	var packages []Package
-
-	globStr := filepath.Join(w.Path, "*")
-	files, err := filepath.Glob(globStr)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for _, f := range files {
-		fi, err := os.Stat(f)
-		if err != nil {
-			panic(err)
-		}
-		if fi.IsDir() {
-			_, pkgName := filepath.Split(f)
-			pkgPath := f
-			if !strings.HasPrefix(pkgName, ".") {
-				pkg, err := LoadPackage(pkgName, pkgPath)
-				if err != nil {
-					return packages, err
-				}
-				packages = append(packages, pkg)
-			}
-		}
-	}
-
-	return packages, nil
-
+func (w Workspace) PackageList() []Package {
+	return w.packages
 }
 
 func (w Workspace) BuildRoot() string {
-	return filepath.Join(w.Path, "build")
-}
+	buildDir := "build"
+	buildRoot := filepath.Join(w.Path, buildDir)
 
-func (w Workspace) SetupEnv() error {
-	log.Infof("Resetting environment variables!")
-	criticalVariables := []string{"USER", "USERNAME", "UID", "GID", "TTY", "PWD"}
-	oldEnv := make(map[string]string)
-	for _, key := range criticalVariables {
-		oldEnv[key] = os.Getenv(key)
+	if _, err := os.Stat(buildRoot); os.IsNotExist(err) {
+		if err := os.Mkdir(buildRoot, 0700); err != nil {
+			log.Warnf("Unable to create build dir in workspace: %v\n", err)
+		}
 	}
 
-	os.Clearenv()
-	tmpDir := filepath.Join(w.BuildRoot(), "tmp")
-	MkdirAsNeeded(tmpDir)
-	runtime.SetEnv("HOME", w.BuildRoot())
-	runtime.SetEnv("TMPDIR", tmpDir)
-
-	for _, key := range criticalVariables {
-		log.Infof("%s=%s\n", key, oldEnv[key])
-		runtime.SetEnv(key, oldEnv[key])
-	}
-
-	return nil
+	return buildRoot
 }
 
 func (w Workspace) Save() error {
@@ -118,6 +133,81 @@ func (w Workspace) Save() error {
 	return nil
 }
 
+func loadWorkspaceFromPackage(manifestFile string, path string) (Workspace, error) {
+	workspace := Workspace{}
+	pkg, err := LoadPackageAtPath(path)
+	pkg.Workspace = &workspace
+
+	if err != nil {
+		return workspace, fmt.Errorf("Couldn't load package for workspace: %v", err)
+	}
+
+	workspacesRoot, exists := os.LookupEnv("YB_WORKSPACES_ROOT")
+	if !exists {
+		u, err := user.Current()
+		if err != nil {
+			workspacesRoot = "/tmp/yourbase/workspaces"
+		} else {
+			workspacesRoot = fmt.Sprintf("%s/.yourbase/workspaces", u.HomeDir)
+		}
+	}
+
+	h := sha256.New()
+
+	h.Write([]byte(path))
+	workspaceHash := fmt.Sprintf("%x", h.Sum(nil))
+	workspace.Path = filepath.Join(workspacesRoot, workspaceHash[0:12])
+	workspace.packages = []Package{pkg}
+	workspace.Target = pkg.Name
+
+	return workspace, nil
+}
+
+func loadWorkspaceFromConfigYaml(configFile string, path string) (Workspace, error) {
+	workspace := Workspace{}
+	configyaml, _ := ioutil.ReadFile(configFile)
+	err := yaml.Unmarshal([]byte(configyaml), &workspace)
+
+	if err != nil {
+		return Workspace{}, fmt.Errorf("Error loading workspace config!")
+	}
+
+	workspace.Path = path
+
+	// Always load packages
+	globStr := filepath.Join(path, "*")
+	files, err := filepath.Glob(globStr)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, f := range files {
+		fi, err := os.Stat(f)
+		if err != nil {
+			panic(err)
+		}
+		if fi.IsDir() {
+			_, pkgName := filepath.Split(f)
+			pkgPath := f
+			if !strings.HasPrefix(pkgName, ".") {
+				pkg, err := LoadPackage(pkgName, pkgPath)
+				if err != nil {
+					if err == ErrNoManifestFile {
+						log.Debugf("No manifest file found for %s", pkgName)
+					} else {
+						log.Errorf("Error loading package '%s': %v", pkgName, err)
+					}
+				} else {
+					pkg.Workspace = &workspace
+					workspace.packages = append(workspace.packages, pkg)
+				}
+			}
+		}
+	}
+
+	return workspace, nil
+}
+
 func LoadWorkspace() (Workspace, error) {
 
 	workspacePath, err := FindWorkspaceRoot()
@@ -126,16 +216,18 @@ func LoadWorkspace() (Workspace, error) {
 		return Workspace{}, fmt.Errorf("Error getting workspace path: %v", err)
 	}
 
-	var workspace = Workspace{}
+	manifestFile := filepath.Join(workspacePath, ".yourbase.yml")
 	configFile := filepath.Join(workspacePath, "config.yml")
-	configyaml, _ := ioutil.ReadFile(configFile)
-	err = yaml.Unmarshal([]byte(configyaml), &workspace)
 
-	if err != nil {
-		return Workspace{}, fmt.Errorf("Error loading workspace config!")
+	if PathExists(manifestFile) {
+		log.Debugf("Loading workspace from manifest file: %s", manifestFile)
+		return loadWorkspaceFromPackage(manifestFile, workspacePath)
 	}
 
-	log.Infof("Workspace path: %s\n", workspacePath)
-	workspace.Path = workspacePath
-	return workspace, nil
+	if PathExists(configFile) {
+		log.Debugf("Loading workspace from config file: %s", configFile)
+		return loadWorkspaceFromConfigYaml(configFile, workspacePath)
+	}
+
+	return Workspace{}, fmt.Errorf("Error finding workspace at path %s", workspacePath)
 }

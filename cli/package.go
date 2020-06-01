@@ -4,12 +4,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/johnewart/archiver"
+	"github.com/johnewart/subcommands"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/johnewart/archiver"
-	"github.com/johnewart/subcommands"
 
 	"github.com/yourbase/narwhal"
 	. "github.com/yourbase/yb/plumbing"
@@ -24,7 +23,7 @@ type PackageCmd struct {
 func (*PackageCmd) Name() string     { return "package" }
 func (*PackageCmd) Synopsis() string { return "Create a package artifact" }
 func (*PackageCmd) Usage() string {
-	return ``
+	return `package [--target pkg]`
 }
 
 func (p *PackageCmd) SetFlags(f *flag.FlagSet) {

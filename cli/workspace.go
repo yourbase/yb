@@ -5,18 +5,17 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/johnewart/subcommands"
-	"gopkg.in/src-d/go-git.v4"
-	"gopkg.in/src-d/go-git.v4/plumbing"
-	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 
-	util "github.com/yourbase/yb/plumbing"
+	"github.com/johnewart/subcommands"
+	"gopkg.in/src-d/go-git.v4"
+	"gopkg.in/src-d/go-git.v4/plumbing"
+	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
+
 	"github.com/yourbase/yb/plumbing/log"
-	ybtypes "github.com/yourbase/yb/types"
 	. "github.com/yourbase/yb/workspace"
 )
 
@@ -37,8 +36,66 @@ func (w *WorkspaceCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interf
 	cmdr.Register(&workspaceAddCmd{}, "")
 	cmdr.Register(&workspaceTargetCmd{}, "")
 	cmdr.Register(&workspaceLocationCmd{}, "")
+	cmdr.Register(&workspaceListCmd{}, "")
 	return (cmdr.Execute(ctx))
 	//return subcommands.ExitFailure
+}
+
+// LOCATION
+type workspaceListCmd struct{}
+
+func (*workspaceListCmd) Name() string     { return "ls" }
+func (*workspaceListCmd) Synopsis() string { return "List packages in workspace" }
+func (*workspaceListCmd) Usage() string {
+	return `ls`
+}
+
+func (w *workspaceListCmd) SetFlags(f *flag.FlagSet) {
+}
+
+func (w *workspaceListCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+	ws, err := LoadWorkspace()
+
+	if err != nil {
+		log.Errorf("No package here, and no workspace, nothing to do!")
+		return subcommands.ExitFailure
+	}
+
+	pkgs := ws.PackageList()
+
+	fmt.Printf("Packages in workspace:\n")
+	for _, pkg := range pkgs {
+		fmt.Printf(" * %s\n", pkg.Name)
+	}
+	fmt.Println()
+
+	fmt.Println("Containers in workspace:")
+	if containers, err := ws.RunningContainers(); err != nil {
+		log.Warnf("Unable to get running containers: %v", err)
+	} else {
+
+		for _, c := range containers {
+
+			running, err := c.Container.IsRunning()
+			if err != nil {
+				log.Warnf("Unable to determine if %s is running: %v", c.Container.Name, err)
+			}
+
+			status := "idle"
+			if running {
+				if address, err := c.Container.IPv4Address(); err == nil {
+					status = fmt.Sprintf("up @ %s", address)
+				} else {
+					status = "up @ unknown ip"
+				}
+			}
+
+
+			fmt.Printf(" * %s (%s)", c.Container.Name, status)
+		}
+	}
+
+	return subcommands.ExitSuccess
 }
 
 // LOCATION
@@ -54,28 +111,14 @@ func (w *workspaceLocationCmd) SetFlags(f *flag.FlagSet) {
 }
 
 func (w *workspaceLocationCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	// check if we're just a package
-	if util.PathExists(ybtypes.MANIFEST_FILE) {
-		currentPath, _ := filepath.Abs(".")
-		_, pkgName := filepath.Split(currentPath)
-		pkg, err := LoadPackage(pkgName, currentPath)
-		if err != nil {
-			log.Errorf("Error loading package '%s': %v", pkgName, err)
-			return subcommands.ExitFailure
-		}
+	ws, err := LoadWorkspace()
 
-		log.Infoln(pkg.BuildRoot())
-		return subcommands.ExitSuccess
-	} else {
-		ws, err := LoadWorkspace()
-
-		if err != nil {
-			log.Errorf("No package here, and no workspace, nothing to do!")
-			return subcommands.ExitFailure
-		}
-		fmt.Println(ws.Root()) // No logging used, because this can be used by scripts
-		return subcommands.ExitSuccess
+	if err != nil {
+		log.Errorf("No package here, and no workspace, nothing to do!")
+		return subcommands.ExitFailure
 	}
+	fmt.Println(ws.Root()) // No logging used, because this can be used by scripts
+	return subcommands.ExitSuccess
 }
 
 // CREATION

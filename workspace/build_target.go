@@ -6,6 +6,7 @@ import (
 	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	"github.com/yourbase/yb/runtime"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -67,7 +68,7 @@ func (bt BuildTarget) EnvironmentVariables(data runtime.RuntimeEnvironmentData) 
 	return result
 }
 
-func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, flags BuildFlags, packagePath string, buildpacks []string) ([]CommandTimer, error) {
+func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, output io.Writer, flags BuildFlags, packagePath string, buildpacks []string) ([]CommandTimer, error) {
 	var stepTimes []CommandTimer
 
 	containers := bt.Dependencies.ContainerList()
@@ -108,10 +109,10 @@ func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, flags BuildFlags, packa
 
 		// Inject a .ssh/config to skip host key checking
 		sshConfig := "Host github.com\n\tStrictHostKeyChecking no\n"
-		builder.Run(runtime.Process{Command: "mkdir -p /root/.ssh"})
+		builder.Run(runtime.Process{Output: &output, Command: "mkdir -p /root/.ssh"})
 		builder.WriteFileContents(sshConfig, "/root/.ssh/config")
-		builder.Run(runtime.Process{Command: "chmod 0600 /root/.ssh/config"})
-		builder.Run(runtime.Process{Command: "chown root:root /root/.ssh/config"})
+		builder.Run(runtime.Process{Output: &output, Command: "chmod 0600 /root/.ssh/config"})
+		builder.Run(runtime.Process{Output: &output, Command: "chown root:root /root/.ssh/config"})
 
 		// Inject a useful gitconfig
 		configlines := []string{
@@ -136,13 +137,12 @@ func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, flags BuildFlags, packa
 				log.Infof("Forwarding SSH agent via %s", hostAddr)
 			}
 
-			//buildContainer.Environment = append(buildContainer.Environment, "SSH_AUTH_SOCK=/ssh_agent")
 			builder.SetEnv("SSH_AUTH_SOCK", "/ssh_agent")
 			forwardPath, err := builder.DownloadFile("https://yourbase-artifacts.s3-us-west-2.amazonaws.com/sockforward")
-			builder.Run(runtime.Process{Command: fmt.Sprintf("chmod a+x %s", forwardPath)})
+			builder.Run(runtime.Process{Output: &output, Command: fmt.Sprintf("chmod a+x %s", forwardPath)})
 			forwardCmd := fmt.Sprintf("%s /ssh_agent %s", forwardPath, hostAddr)
 			go func() {
-				builder.Run(runtime.Process{Command: forwardCmd})
+				builder.Run(runtime.Process{Output: &output, Command: forwardCmd})
 			}()
 		}
 	}
@@ -184,7 +184,7 @@ func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, flags BuildFlags, packa
 		p := runtime.Process{
 			Directory: workDir,
 			Command:   cmdString,
-			//Environment: buildData.EnvironmentVariables(),
+			//Environment: buildData.environmentVariables(),
 			Interactive: false,
 		}
 

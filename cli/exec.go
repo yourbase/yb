@@ -3,14 +3,9 @@ package cli
 import (
 	"context"
 	"flag"
-	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
-
 	"github.com/johnewart/subcommands"
-
 	"github.com/yourbase/yb/plumbing/log"
+	"github.com/yourbase/yb/workspace"
 )
 
 type ExecCmd struct {
@@ -37,36 +32,34 @@ Executing the target involves:
 */
 func (b *ExecCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 
-	targetPackage, err := GetTargetPackage()
+	ws, err := workspace.LoadWorkspace()
 	if err != nil {
-		log.Errorf("%v", err)
+		log.Errorf("Error loading workspace: %v", err)
 		return subcommands.ExitFailure
 	}
 
-	log.ActiveSection("Dependencies")
-	if _, err := targetPackage.SetupRuntimeDependencies(); err != nil {
-		log.Infof("Couldn't configure dependencies: %v\n", err)
-		return subcommands.ExitFailure
+	var pkg workspace.Package
+	if len(f.Args()) > 0 {
+		pkgName := f.Arg(0)
+		pkg, err = ws.PackageByName(pkgName)
+		if err != nil {
+			log.Errorf("Unable to find package named %s: %v", pkgName, err)
+			return subcommands.ExitFailure
+		}
+	} else {
+		pkg, err = ws.TargetPackage()
+		if err != nil {
+			log.Errorf("Unable to find default package: %v", err)
+			return subcommands.ExitFailure
+		}
 	}
 
-	execRuntime, err := targetPackage.ExecutionRuntime(b.environment)
-
-	c := make(chan os.Signal, 2)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-c
-		fmt.Println("\r- Ctrl+C pressed in Terminal")
-		execRuntime.Shutdown()
-		os.Exit(0)
-	}()
-
-	log.Infof("Executing package '%s'...\n", targetPackage.Name)
-
-	err = targetPackage.Execute(execRuntime)
+	err = ws.ExecutePackage(pkg)
 	if err != nil {
-		log.Errorf("Unable to run command: %v", err)
+		log.Errorf("Unable to run '%s': %v", pkg.Name, err)
 		return subcommands.ExitFailure
 	}
+
 
 	return subcommands.ExitSuccess
 }

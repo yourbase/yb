@@ -1,20 +1,22 @@
 package workspace
 
 import (
-	"crypto/sha256"
+	"errors"
 	"fmt"
 	"github.com/yourbase/narwhal"
-	. "github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/plumbing/log"
-	"github.com/yourbase/yb/runtime"
-	. "github.com/yourbase/yb/types"
 	"gopkg.in/yaml.v2"
 	"io"
 	"io/ioutil"
 	"os"
-	"os/user"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
+
+	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing/log"
+	"github.com/yourbase/yb/runtime"
+	. "github.com/yourbase/yb/types"
 )
 
 // Any flags we want to pass to the build process
@@ -25,49 +27,49 @@ type BuildFlags struct {
 }
 
 type Package struct {
-	Name     string
-	path     string
-	Manifest BuildManifest
+	Name      string
+	path      string
+	Manifest  BuildManifest
+	Workspace *Workspace
 }
+
+var ErrNoManifestFile = errors.New("manifest file not found")
 
 func (p Package) Path() string {
 	return p.path
 }
 
-func (p Package) BuildTargetToWriter(buildTargetName string, flags BuildFlags, output io.Writer) ([]CommandTimer, error) {
+func (p Package) Build(flags BuildFlags) ([]CommandTimer, error) {
+	times := make([]CommandTimer, 0)
+
 	manifest := p.Manifest
 
-	// Named target, look for that and resolve it
-	_, err := manifest.ResolveBuildTargets(buildTargetName)
-
+	tgt, err := manifest.BuildTarget("default")
 	if err != nil {
-		log.Errorf("Could not compute build target '%s': %v", buildTargetName, err)
-		log.Errorf("Valid build targets: %s", strings.Join(manifest.BuildTargetList(), ", "))
-		return []CommandTimer{}, err
+		return times, err
 	}
 
-	primaryTarget, err := manifest.BuildTarget(buildTargetName)
-	if err != nil {
-		log.Errorf("Couldn't get primary build target '%s' specs: %v", buildTargetName, err)
-		return []CommandTimer{}, err
-	}
-
-	contextId := fmt.Sprintf("%s-build-%s", p.Name, primaryTarget.Name)
+	contextId := fmt.Sprintf("%s-build-%s", p.Name, tgt.Name)
 
 	runtimeCtx := runtime.NewRuntime(contextId, p.BuildRoot())
 
-	return primaryTarget.Build(runtimeCtx, flags, p.Path(), p.Manifest.Dependencies.Build)
+	return tgt.Build(runtimeCtx, os.Stdout, flags, p.Path(), p.Manifest.Dependencies.Build)
 }
 
-func (p Package) BuildTarget(name string, flags BuildFlags) ([]CommandTimer, error) {
-	return p.BuildTargetToWriter(name, flags, os.Stdout)
+func LoadPackageAtPath(path string) (Package, error) {
+	_, pkgName := filepath.Split(path)
+	return LoadPackage(pkgName, path)
+}
+
+func (p Package) BuildRoot() string {
+	return p.Workspace.BuildRoot()
 }
 
 func LoadPackage(name string, path string) (Package, error) {
 	manifest := BuildManifest{}
 	buildYaml := filepath.Join(path, MANIFEST_FILE)
 	if _, err := os.Stat(buildYaml); os.IsNotExist(err) {
-		return Package{}, fmt.Errorf("Can't load %s: %v", MANIFEST_FILE, err)
+		return Package{}, ErrNoManifestFile
 	}
 
 	buildyaml, _ := ioutil.ReadFile(buildYaml)
@@ -85,49 +87,8 @@ func LoadPackage(name string, path string) (Package, error) {
 	return p, nil
 }
 
-func (p Package) BuildRoot() string {
-	// Are we a part of a workspace?
-	workspaceDir, err := FindWorkspaceRoot()
-
-	if err != nil {
-		// Nope, just ourselves...
-		workspacesRoot, exists := os.LookupEnv("YB_WORKSPACES_ROOT")
-		if !exists {
-			u, err := user.Current()
-			if err != nil {
-				workspacesRoot = "/tmp/yourbase/workspaces"
-			} else {
-				workspacesRoot = fmt.Sprintf("%s/.yourbase/workspaces", u.HomeDir)
-			}
-		}
-
-		h := sha256.New()
-
-		h.Write([]byte(p.path))
-		workspaceHash := fmt.Sprintf("%x", h.Sum(nil))
-		workspaceDir = filepath.Join(workspacesRoot, workspaceHash[0:12])
-	}
-
-	MkdirAsNeeded(workspaceDir)
-
-	buildDir := "build"
-	buildRoot := filepath.Join(workspaceDir, buildDir)
-
-	if _, err := os.Stat(buildRoot); os.IsNotExist(err) {
-		if err := os.Mkdir(buildRoot, 0700); err != nil {
-			log.Warnf("Unable to create build dir in workspace: %v\n", err)
-		}
-	}
-
-	return buildRoot
-
-}
-
-func (p Package) SetupRuntimeDependencies() ([]CommandTimer, error) {
-	deps := p.Manifest.Dependencies.Runtime
-	deps = append(deps, p.Manifest.Dependencies.Build...)
-	return []CommandTimer{}, nil
-	//return LoadBuildPacks(deps, p)
+func (p Package) environmentVariables(data runtime.RuntimeEnvironmentData, env string) []string {
+	return p.Manifest.Exec.EnvironmentVariables(env, data)
 }
 
 func (p Package) Execute(runtimeCtx *runtime.Runtime) error {
@@ -136,16 +97,37 @@ func (p Package) Execute(runtimeCtx *runtime.Runtime) error {
 
 func (p Package) ExecuteToWriter(runtimeCtx *runtime.Runtime, output io.Writer) error {
 
+	target, err := p.createExecutionTarget(runtimeCtx)
+	if err != nil {
+		return err
+	}
+
+	c := make(chan os.Signal, 2)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		fmt.Println("\r- Ctrl+C pressed in Terminal")
+		if err := runtimeCtx.Shutdown(); err != nil {
+			// Oops.
+			os.Exit(1)
+		}
+		// Ok!
+		os.Exit(0)
+	}()
+
+	log.Infof("Executing package '%s'...\n", p.Name)
+
 	for _, cmdString := range p.Manifest.Exec.Commands {
-		p := runtime.Process{
+		proc := runtime.Process{
 			Command:     cmdString,
 			Directory:   "/workspace",
 			Interactive: false,
 			Output:      &output,
+			Environment: p.environmentVariables(runtimeCtx.EnvironmentData(), "default"),
 		}
 
-		if err := runtimeCtx.Run(p); err != nil {
-			return fmt.Errorf("Unable to run command '%s': %v", cmdString, err)
+		if err := target.Run(proc); err != nil {
+			return fmt.Errorf("unable to run command '%s': %v", cmdString, err)
 		}
 	}
 
@@ -164,20 +146,14 @@ func (p Package) checkMounts(cd *narwhal.ContainerDefinition, srcDir string) err
 	return nil
 }
 
-func (p Package) ExecutionRuntime(environment string) (*runtime.Runtime, error) {
-	manifest := p.Manifest
-	containers := manifest.Exec.Dependencies.ContainerList()
-	contextId := fmt.Sprintf("%s-exec", p.Name)
-
-	runtimeCtx := runtime.NewRuntime(contextId, p.BuildRoot())
-
+func (p Package) createExecutionTarget(runtimeCtx *runtime.Runtime) (*runtime.ContainerTarget, error) {
 	localContainerWorkDir := filepath.Join(p.BuildRoot(), "containers")
-	if err := MkdirAsNeeded(localContainerWorkDir); err != nil {
-		return nil, fmt.Errorf("Unable to set host container work dir: %v", err)
-	}
+	MkdirAsNeeded(localContainerWorkDir)
 
 	log.Infof("Will use %s as the dependency work dir", localContainerWorkDir)
 
+	manifest := p.Manifest
+	containers := manifest.Exec.Dependencies.ContainerList()
 	for _, cd := range containers {
 		cd.LocalWorkDir = localContainerWorkDir
 		if err := p.checkMounts(&cd, localContainerWorkDir); err != nil {
@@ -227,9 +203,9 @@ func (p Package) ExecutionRuntime(environment string) (*runtime.Runtime, error) 
 	}
 
 	execContainer := manifest.Exec.Container
-	execContainer.Environment = manifest.Exec.EnvironmentVariables(environment, runtimeCtx.EnvironmentData())
+	execContainer.Environment = manifest.Exec.EnvironmentVariables("default", runtimeCtx.EnvironmentData())
 	execContainer.Command = "/usr/bin/tail -f /dev/null"
-	execContainer.Label = "exec"
+	execContainer.Label = p.Name
 	execContainer.Ports = portMappings
 
 	// Add package to mounts @ /workspace
@@ -249,7 +225,15 @@ func (p Package) ExecutionRuntime(environment string) (*runtime.Runtime, error) 
 	LoadBuildPacks(execTarget, p.Manifest.Dependencies.Build)
 	LoadBuildPacks(execTarget, p.Manifest.Dependencies.Runtime)
 
-	runtimeCtx.DefaultTarget = execTarget
+	return execTarget, nil
+}
 
-	return runtimeCtx, nil
+func (p Package) RuntimeContainers() []narwhal.ContainerDefinition {
+	m := p.Manifest
+
+	result := make([]narwhal.ContainerDefinition, 0)
+	for _, c := range m.Exec.Dependencies.ContainerList() {
+		result = append(result, c)
+	}
+	return result
 }

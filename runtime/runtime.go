@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"fmt"
+	"github.com/yourbase/yb/plumbing/log"
 	"io"
 	"strings"
 
@@ -69,6 +70,10 @@ type Runtime struct {
 	DefaultTarget           Target
 }
 
+func (r *Runtime) SupportsContainers() bool {
+	return r.ContainerServiceContext != nil
+}
+
 func (r *Runtime) AddTarget(targetId string, t Target) error {
 	if _, exists := r.Targets[targetId]; exists {
 		return fmt.Errorf("Unable to add target with id %s - already exists", targetId)
@@ -91,34 +96,60 @@ func (r *Runtime) RunInTarget(p Process, targetId string) error {
 	}
 }
 
+func (r *Runtime) FindContainers(definitions []narwhal.ContainerDefinition) []*ContainerTarget {
+	result := make([]*ContainerTarget, 0)
+
+	if r.SupportsContainers() {
+		for _, cd := range definitions {
+			container, err := r.ContainerServiceContext.FindContainer(cd)
+			if err != nil {
+				log.Warnf("Error trying to find container %s - %v", cd.Label, err)
+			} else {
+				// TODO: Env / workdir?
+				tgt := &ContainerTarget{Container: container}
+				result = append(result, tgt)
+			}
+		}
+	}
+
+	return result
+}
+
 func (r *Runtime) AddContainer(cd narwhal.ContainerDefinition) (*ContainerTarget, error) {
-	if r.ContainerServiceContext == nil {
-		sc, err := narwhal.NewServiceContextWithId(r.Identifier, r.LocalWorkDir)
+	if r.SupportsContainers() {
+		container, err := r.ContainerServiceContext.StartContainer(cd)
 		if err != nil {
+			return nil, fmt.Errorf("could not start container %s: %v", cd.Label, err)
+		}
+
+		tgt := &ContainerTarget{
+			Container: container,
+		}
+
+		if err = r.AddTarget(cd.Label, tgt); err != nil {
 			return nil, err
 		}
-		r.ContainerServiceContext = sc
-	}
 
-	container, err := r.ContainerServiceContext.StartContainer(cd)
-	if err != nil {
-		return nil, fmt.Errorf("Couldn't start container %s in service context: %v", cd.Label, err)
+		return tgt, nil
+	} else {
+		return nil, fmt.Errorf("current runtime does not support containers")
 	}
-
-	tgt := &ContainerTarget{
-		Container: container,
-	}
-
-	r.AddTarget(cd.Label, tgt)
-	return tgt, nil
 }
 
 func NewRuntime(identifier string, localWorkDir string) *Runtime {
+
+	sc, err := narwhal.NewServiceContextWithId(identifier, localWorkDir)
+	if err != nil {
+		log.Infof("Container service context failed to initialize - containers won't be supported: %v", err)
+		sc = nil
+	}
+
 	return &Runtime{
-		Identifier:    identifier,
-		LocalWorkDir:  localWorkDir,
-		Targets:       make(map[string]Target),
-		DefaultTarget: &MetalTarget{},
+		Identifier:              identifier,
+		LocalWorkDir:            localWorkDir,
+		Targets:                 make(map[string]Target),
+		DefaultTarget:           &MetalTarget{},
+		ContainerServiceContext: sc,
 	}
 }
 
@@ -138,11 +169,19 @@ func (r *Runtime) EnvironmentData() RuntimeEnvironmentData {
 		Containers: ContainerData{
 			serviceCtx: r.ContainerServiceContext,
 		},
+		Services: ServiceData{
+			serviceCtx: r.ContainerServiceContext,
+		},
 	}
 }
 
 type RuntimeEnvironmentData struct {
 	Containers ContainerData
+	Services   ServiceData
+}
+
+type ServiceData struct {
+	serviceCtx *narwhal.ServiceContext
 }
 
 type ContainerData struct {
@@ -154,6 +193,22 @@ func (c ContainerData) IP(label string) string {
 	if c.serviceCtx != nil {
 		if buildContainer, ok := c.serviceCtx.Containers[label]; ok {
 			if ipv4, err := buildContainer.IPv4Address(); err == nil {
+				return ipv4
+			}
+		}
+	}
+
+	return ""
+}
+
+func (c ServiceData) IP(label string) string {
+	// Check service context
+	log.Debugf("Looking up IP for service %s", label)
+	if c.serviceCtx != nil {
+		if buildContainer, ok := c.serviceCtx.Containers[label]; ok {
+			log.Debugf("Found service %s with container %s", label, buildContainer.Id)
+			if ipv4, err := buildContainer.IPv4Address(); err == nil {
+				log.Debugf("Service %s has IP %s", label, ipv4)
 				return ipv4
 			}
 		}
