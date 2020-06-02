@@ -3,14 +3,9 @@ package cli
 import (
 	"context"
 	"flag"
-	"path/filepath"
-	"strings"
-
-	"github.com/johnewart/narwhal"
 	"github.com/johnewart/subcommands"
-
-	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
+	"github.com/yourbase/yb/workspace"
 )
 
 type ExecCmd struct {
@@ -37,84 +32,34 @@ Executing the target involves:
 */
 func (b *ExecCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 
-	targetPackage, err := GetTargetPackage()
+	ws, err := workspace.LoadWorkspace()
 	if err != nil {
-		log.Errorf("%v", err)
+		log.Errorf("Error loading workspace: %v", err)
 		return subcommands.ExitFailure
 	}
 
-	log.ActiveSection("Dependencies")
-	if _, err := targetPackage.SetupRuntimeDependencies(); err != nil {
-		log.Infof("Couldn't configure dependencies: %v\n", err)
-		return subcommands.ExitFailure
-	}
-
-	instructions := targetPackage.Manifest
-	containers := instructions.Exec.Dependencies.ContainerList()
-
-	buildData := NewBuildData()
-
-	if len(containers) > 0 {
-		log.ActiveSection("Containers")
-		localContainerWorkDir := filepath.Join(targetPackage.BuildRoot(), "containers")
-		MkdirAsNeeded(localContainerWorkDir)
-
-		log.Infof("Will use %s as the dependency work dir", localContainerWorkDir)
-		log.Infof("Starting %d dependencies...", len(containers))
-		sc, err := narwhal.NewServiceContextWithId("exec", targetPackage.BuildRoot())
+	var pkg workspace.Package
+	if len(f.Args()) > 0 {
+		pkgName := f.Arg(0)
+		pkg, err = ws.PackageByName(pkgName)
 		if err != nil {
-			log.Errorf("Couldn't create service context for dependencies: %v", err)
+			log.Errorf("Unable to find package named %s: %v", pkgName, err)
 			return subcommands.ExitFailure
 		}
-
-		for _, c := range containers {
-			// TODO: avoid setting these here
-			c.LocalWorkDir = localContainerWorkDir
-			if _, err = sc.StartContainer(c); err != nil {
-				log.Infof("Couldn't start dependencies: %v\n", err)
-				return subcommands.ExitFailure
-			}
-		}
-
-		buildData.Containers.ServiceContext = sc
-	}
-
-	log.ActiveSection("Environment")
-	log.Infof("Setting environment variables...")
-	for _, property := range instructions.Exec.Environment["default"] {
-		s := strings.SplitN(property, "=", 2)
-		if len(s) == 2 {
-			buildData.SetEnv(s[0], s[1])
-		}
-	}
-
-	if b.environment != "default" {
-		for _, property := range instructions.Exec.Environment[b.environment] {
-			s := strings.Split(property, "=")
-			if len(s) == 2 {
-				buildData.SetEnv(s[0], s[1])
-			}
-		}
-	}
-
-	buildData.ExportEnvironmentPublicly()
-
-	log.ActiveSection("Exec")
-
-	log.Infof("Execing target package %s...\n", targetPackage.Name)
-
-	execDir := targetPackage.Path
-
-	for _, logFile := range instructions.Exec.LogFiles {
-		log.Infof("Will tail %s...\n", logFile)
-	}
-
-	for _, cmdString := range instructions.Exec.Commands {
-		if err := ExecToStdout(cmdString, execDir); err != nil {
-			log.Errorf("Failed to run %s: %v", cmdString, err)
+	} else {
+		pkg, err = ws.TargetPackage()
+		if err != nil {
+			log.Errorf("Unable to find default package: %v", err)
 			return subcommands.ExitFailure
 		}
 	}
+
+	err = ws.ExecutePackage(pkg)
+	if err != nil {
+		log.Errorf("Unable to run '%s': %v", pkg.Name, err)
+		return subcommands.ExitFailure
+	}
+
 
 	return subcommands.ExitSuccess
 }

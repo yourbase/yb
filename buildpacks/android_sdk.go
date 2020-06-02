@@ -2,11 +2,11 @@ package buildpacks
 
 import (
 	"fmt"
+	"github.com/yourbase/yb/runtime"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/johnewart/archiver"
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
@@ -74,7 +74,7 @@ func (bt AndroidBuildTool) Version() string {
 }
 
 func (bt AndroidBuildTool) InstallDir() string {
-	return filepath.Join(ToolsDir(), "android", fmt.Sprintf("android-%s", bt.Version()))
+	return filepath.Join(bt.spec.InstallTarget.ToolsDir(), "android", fmt.Sprintf("android-%s", bt.Version()))
 }
 
 func (bt AndroidBuildTool) AndroidDir() string {
@@ -121,24 +121,17 @@ func (bt AndroidBuildTool) WriteAgreements() bool {
 
 func (bt AndroidBuildTool) Setup() error {
 	androidDir := bt.AndroidDir()
-
-	binPath := fmt.Sprintf("%s/tools/bin", androidDir)
-	toolsPath := fmt.Sprintf("%s/tools", androidDir)
-	currentPath := os.Getenv("PATH")
-	newPath := fmt.Sprintf("%s:%s", binPath, currentPath)
-	newPath = fmt.Sprintf("%s:%s", toolsPath, newPath)
-	log.Infof("Setting PATH to %s", newPath)
-	os.Setenv("PATH", newPath)
-
-	//fmt.Printf("Setting ANDROID_HOME to %s\n", androidHomeDir)
-	//os.Setenv("ANDROID_HOME", androidHomeDir)
+	t := bt.spec.InstallTarget
 
 	log.Infof("Setting ANDROID_SDK_ROOT to %s", androidDir)
-	os.Setenv("ANDROID_SDK_ROOT", androidDir)
-	os.Setenv("ANDROID_HOME", androidDir)
+	runtime.SetEnv("ANDROID_SDK_ROOT", androidDir)
+	runtime.SetEnv("ANDROID_HOME", androidDir)
 
 	log.Infof("Writing agreement hashes...")
 	bt.WriteAgreements()
+
+	t.PrependToPath(filepath.Join(androidDir, "tools"))
+	t.PrependToPath(filepath.Join(androidDir, "tools", "bin"))
 
 	return nil
 }
@@ -155,12 +148,12 @@ func (bt AndroidBuildTool) Install() error {
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading Android from URL %s...", downloadUrl)
-		localFile, err := DownloadFileWithCache(downloadUrl)
+		localFile, err := bt.spec.InstallTarget.DownloadFile(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
 			return err
 		}
-		err = archiver.Unarchive(localFile, installDir)
+		err = bt.spec.InstallTarget.Unarchive(localFile, installDir)
 		if err != nil {
 			log.Errorf("Unable to decompress: %v", err)
 			return err

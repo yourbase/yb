@@ -6,9 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/johnewart/archiver"
-
-	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 )
@@ -83,9 +80,10 @@ func (bt ProtocBuildTool) ProtocDir() string {
 
 func (bt ProtocBuildTool) Setup() error {
 	protocDir := bt.ProtocDir()
+	t := bt.spec.InstallTarget
 
 	cmdPath := filepath.Join(protocDir, "bin")
-	PrependToPath(cmdPath)
+	t.PrependToPath(cmdPath)
 	return nil
 }
 
@@ -102,12 +100,12 @@ func (bt ProtocBuildTool) Install() error {
 	downloadUrl := bt.DownloadUrl()
 
 	log.Infof("Downloading Protoc from URL %s...", downloadUrl)
-	localFile, err := DownloadFileWithCache(downloadUrl)
+	localFile, err := bt.spec.InstallTarget.DownloadFile(downloadUrl)
 	if err != nil {
 		log.Errorf("Unable to download: %v", err)
 		return err
 	}
-	err = archiver.Unarchive(localFile, installDir)
+	err = bt.spec.InstallTarget.Unarchive(localFile, installDir)
 	if err != nil {
 		log.Errorf("Unable to decompress: %v", err)
 		return err

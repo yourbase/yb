@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/johnewart/archiver"
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
+	"github.com/yourbase/yb/runtime"
 	. "github.com/yourbase/yb/types"
 )
 
@@ -61,12 +61,9 @@ func (bt RLangBuildTool) RLangDir() string {
 
 func (bt RLangBuildTool) Setup() error {
 	rlangDir := bt.RLangDir()
+	t := bt.spec.InstallTarget
 
-	cmdPath := fmt.Sprintf("%s/bin", rlangDir)
-	currentPath := os.Getenv("PATH")
-	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
-	log.Infof("Setting PATH to %s", newPath)
-	os.Setenv("PATH", newPath)
+	t.PrependToPath(filepath.Join(rlangDir, "bin"))
 
 	return nil
 }
@@ -83,7 +80,7 @@ func (bt RLangBuildTool) Install() error {
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading from URL %s ...", downloadUrl)
-		localFile, err := DownloadFileWithCache(downloadUrl)
+		localFile, err := bt.spec.InstallTarget.DownloadFile(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
 			return err
@@ -93,7 +90,7 @@ func (bt RLangBuildTool) Install() error {
 		srcDir := filepath.Join(tmpDir, fmt.Sprintf("R-%s", bt.Version()))
 
 		if !DirectoryExists(srcDir) {
-			err = archiver.Unarchive(localFile, tmpDir)
+			err = bt.spec.InstallTarget.Unarchive(localFile, tmpDir)
 			if err != nil {
 				log.Errorf("Unable to decompress: %v", err)
 				return err
@@ -102,10 +99,10 @@ func (bt RLangBuildTool) Install() error {
 
 		MkdirAsNeeded(rlangDir)
 		configCmd := fmt.Sprintf("./configure --with-x=no --prefix=%s", rlangDir)
-		ExecToStdout(configCmd, srcDir)
+		runtime.ExecToStdout(configCmd, srcDir)
 
-		ExecToStdout("make", srcDir)
-		ExecToStdout("make install", srcDir)
+		runtime.ExecToStdout("make", srcDir)
+		runtime.ExecToStdout("make install", srcDir)
 	}
 
 	return nil

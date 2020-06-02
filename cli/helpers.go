@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"path/filepath"
 
-	. "github.com/yourbase/yb/packages"
 	. "github.com/yourbase/yb/plumbing"
 	. "github.com/yourbase/yb/types"
 	. "github.com/yourbase/yb/workspace"

@@ -1,24 +1,17 @@
-package buildpacks
+package workspace
 
 import (
 	"fmt"
+	"github.com/yourbase/yb/buildpacks"
+	"github.com/yourbase/yb/runtime"
 	"strings"
 	"time"
 
-	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 )
 
-type BuildToolSpec struct {
-	Tool            string
-	Version         string
-	SharedCacheDir  string
-	PackageCacheDir string
-	PackageDir      string
-}
-
-func LoadBuildPacks(dependencies []string, pkgCacheDir string, pkgDir string) ([]CommandTimer, error) {
+func LoadBuildPacks(installTarget runtime.Target, dependencies []string) ([]CommandTimer, error) {
 	setupTimers := make([]CommandTimer, 0)
 
 	for _, toolSpec := range dependencies {
@@ -31,62 +24,63 @@ func LoadBuildPacks(dependencies []string, pkgCacheDir string, pkgDir string) ([
 			versionString = parts[1]
 		}
 
-		sharedCacheDir := ToolsDir()
+		sharedCacheDir := installTarget.ToolsDir()
 
-		spec := BuildToolSpec{
+		spec := buildpacks.BuildToolSpec{
 			Tool:            buildpackName,
 			Version:         versionString,
 			SharedCacheDir:  sharedCacheDir,
-			PackageCacheDir: pkgCacheDir,
-			PackageDir:      pkgDir,
+			PackageCacheDir: installTarget.CacheDir(),
+			PackageDir:      installTarget.WorkDir(),
+			InstallTarget:   installTarget,
 		}
 
 		var bt BuildTool
-		log.Infof("Configuring build tool: %s", toolSpec)
+		log.Infof("Configuring build tool %s in %s", toolSpec, installTarget)
 
 		switch buildpackName {
 		case "anaconda2":
-			bt = NewAnaconda2BuildTool(spec)
+			bt = buildpacks.NewAnaconda2BuildTool(spec)
 		case "anaconda3":
-			bt = NewAnaconda3BuildTool(spec)
+			bt = buildpacks.NewAnaconda3BuildTool(spec)
 		case "ant":
-			bt = NewAntBuildTool(spec)
+			bt = buildpacks.NewAntBuildTool(spec)
 		case "r":
-			bt = NewRLangBuildTool(spec)
+			bt = buildpacks.NewRLangBuildTool(spec)
 		case "heroku":
-			bt = NewHerokuBuildTool(spec)
+			bt = buildpacks.NewHerokuBuildTool(spec)
 		case "node":
-			bt = NewNodeBuildTool(spec)
+			bt = buildpacks.NewNodeBuildTool(spec)
 		case "yarn":
-			bt = NewYarnBuildTool(spec)
+			bt = buildpacks.NewYarnBuildTool(spec)
 		case "glide":
-			bt = NewGlideBuildTool(spec)
+			bt = buildpacks.NewGlideBuildTool(spec)
 		case "androidndk":
-			bt = NewAndroidNdkBuildTool(spec)
+			bt = buildpacks.NewAndroidNdkBuildTool(spec)
 		case "android":
-			bt = NewAndroidBuildTool(spec)
+			bt = buildpacks.NewAndroidBuildTool(spec)
 		case "gradle":
-			bt = NewGradleBuildTool(spec)
+			bt = buildpacks.NewGradleBuildTool(spec)
 		case "flutter":
-			bt = NewFlutterBuildTool(spec)
+			bt = buildpacks.NewFlutterBuildTool(spec)
 		case "dart":
-			bt = NewDartBuildTool(spec)
+			bt = buildpacks.NewDartBuildTool(spec)
 		case "rust":
-			bt = NewRustBuildTool(spec)
+			bt = buildpacks.NewRustBuildTool(spec)
 		case "java":
-			bt = NewJavaBuildTool(spec)
+			bt = buildpacks.NewJavaBuildTool(spec)
 		case "maven":
-			bt = NewMavenBuildTool(spec)
+			bt = buildpacks.NewMavenBuildTool(spec)
 		case "go":
-			bt = NewGolangBuildTool(spec)
+			bt = buildpacks.NewGolangBuildTool(spec)
 		case "python":
-			bt = NewPythonBuildTool(spec)
+			bt = buildpacks.NewPythonBuildTool(spec)
 		case "ruby":
-			bt = NewRubyBuildTool(spec)
+			bt = buildpacks.NewRubyBuildTool(spec)
 		case "homebrew":
-			bt = NewHomebrewBuildTool(spec)
+			bt = buildpacks.NewHomebrewBuildTool(spec)
 		case "protoc":
-			bt = NewProtocBuildTool(spec)
+			bt = buildpacks.NewProtocBuildTool(spec)
 		default:
 			return setupTimers, fmt.Errorf("Unknown build tool: %s\n", toolSpec)
 		}
