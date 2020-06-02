@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 )
@@ -80,7 +79,8 @@ func (bt DartBuildTool) DartDir() string {
 func (bt DartBuildTool) Setup() error {
 	dartDir := bt.DartDir()
 	cmdPath := filepath.Join(dartDir, "bin")
-	PrependToPath(cmdPath)
+	t := bt.spec.InstallTarget
+	t.PrependToPath(cmdPath)
 
 	return nil
 }

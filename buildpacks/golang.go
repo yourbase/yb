@@ -86,8 +86,10 @@ func (bt GolangBuildTool) Setup() error {
 	cmdPath := filepath.Join(golangDir, "bin")
 	t.PrependToPath(cmdPath)
 	for _, pathElement := range goPathElements {
-		pathBinDir := filepath.Join(pathElement, "bin")
-		t.PrependToPath(pathBinDir)
+		if pathElement != "" {
+			pathBinDir := filepath.Join(pathElement, "bin")
+			t.PrependToPath(pathBinDir)
+		}
 	}
 
 	log.Infof("Setting GOROOT to %s", golangDir)

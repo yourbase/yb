@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 
-	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 )
@@ -75,9 +74,10 @@ func (bt YarnBuildTool) Install() error {
 }
 
 func (bt YarnBuildTool) Setup() error {
+	t := bt.spec.InstallTarget
 	yarnDir := bt.YarnDir()
 	cmdPath := filepath.Join(yarnDir, "bin")
-	PrependToPath(cmdPath)
+	t.PrependToPath(cmdPath)
 
 	return nil
 }

@@ -127,11 +127,11 @@ func (bt PythonBuildTool) Setup() error {
 	condaDir := bt.AnacondaInstallDir()
 	envDir := bt.EnvironmentDir()
 	t := bt.spec.InstallTarget
+	t.PrependToPath(filepath.Join(condaDir, "bin"))
 
 	if t.PathExists(envDir) {
 		log.Infof("environment installed in %s", envDir)
 	} else {
-		newPath := fmt.Sprintf("PATH=%s:%s", filepath.Join(condaDir, "bin"), t.GetDefaultPath())
 		setupDir := bt.spec.PackageDir
 		condaBin := filepath.Join(condaDir, "bin", "conda")
 
@@ -146,7 +146,6 @@ func (bt PythonBuildTool) Setup() error {
 				Command:     cmd,
 				Interactive: false,
 				Directory:   setupDir,
-				Environment: []string{newPath},
 			}
 
 			if err := t.Run(p); err != nil {

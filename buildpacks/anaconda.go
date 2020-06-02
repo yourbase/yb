@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 
-	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	"github.com/yourbase/yb/runtime"
 	. "github.com/yourbase/yb/types"
@@ -127,7 +126,8 @@ func (bt AnacondaBuildTool) DownloadUrl() string {
 
 func (bt AnacondaBuildTool) Setup() error {
 	installDir := bt.InstallDir()
-	PrependToPath(filepath.Join(installDir, "bin"))
+	t := bt.spec.InstallTarget
+	t.PrependToPath(filepath.Join(installDir, "bin"))
 	setupDir := bt.spec.PackageDir
 
 	for _, cmd := range []string{

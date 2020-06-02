@@ -25,17 +25,6 @@ import (
 
 const SNIFFLEN = 8000
 
-func PrependToPath(dir string) {
-	currentPath := os.Getenv("PATH")
-	// Only prepend if it's not already the head; presume that
-	// whomever asked for this wants to be at the front so it's okay if it's
-	// duplicated later
-	if !strings.HasPrefix(currentPath, dir) {
-		newPath := fmt.Sprintf("%s:%s", dir, currentPath)
-		os.Setenv("PATH", newPath)
-	}
-}
-
 func ConfigFilePath(filename string) string {
 	u, _ := user.Current()
 	configDir := filepath.Join(u.HomeDir, ".config", "yb")

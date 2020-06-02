@@ -75,12 +75,13 @@ func (bt HomebrewBuildTool) PackagePrefix(packageString string) (string, error) 
 
 func (bt HomebrewBuildTool) PackageInstalled() bool {
 	prefix, err := bt.PackagePrefix(bt.PackageVersionString())
+	t := bt.spec.InstallTarget
 	if err != nil {
 		return false
 	}
 
 	if prefix != "" {
-		return PathExists(prefix)
+		return t.PathExists(prefix)
 	}
 
 	return false
@@ -228,6 +229,7 @@ func (bt HomebrewBuildTool) InstallLinux() error {
 }
 
 func (bt HomebrewBuildTool) Setup() error {
+	t := bt.spec.InstallTarget
 	if bt.IsPackage() {
 		prefixPath, err := bt.PackagePrefix(bt.PackageVersionString())
 		if err != nil {
@@ -236,12 +238,12 @@ func (bt HomebrewBuildTool) Setup() error {
 		binDir := filepath.Join(prefixPath, "bin")
 		sbinDir := filepath.Join(prefixPath, "sbin")
 
-		PrependToPath(binDir)
-		PrependToPath(sbinDir)
+		t.PrependToPath(binDir)
+		t.PrependToPath(sbinDir)
 	} else {
 		brewDir := bt.HomebrewDir()
 		brewBinDir := filepath.Join(brewDir, "bin")
-		PrependToPath(brewBinDir)
+		t.PrependToPath(brewBinDir)
 		brewLibDir := filepath.Join(brewDir, "lib")
 		runtime.SetEnv("LD_LIBRARY_PATH", brewLibDir)
 	}

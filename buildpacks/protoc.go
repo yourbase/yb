@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 )
@@ -81,9 +80,10 @@ func (bt ProtocBuildTool) ProtocDir() string {
 
 func (bt ProtocBuildTool) Setup() error {
 	protocDir := bt.ProtocDir()
+	t := bt.spec.InstallTarget
 
 	cmdPath := filepath.Join(protocDir, "bin")
-	PrependToPath(cmdPath)
+	t.PrependToPath(cmdPath)
 	return nil
 }
 
