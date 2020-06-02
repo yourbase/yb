@@ -90,7 +90,6 @@ func (w *workspaceListCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...inte
 				}
 			}
 
-
 			fmt.Printf(" * %s (%s)", c.Container.Name, status)
 		}
 	}
@@ -277,6 +276,11 @@ func (*workspaceTargetCmd) Usage() string {
 func (w *workspaceTargetCmd) SetFlags(f *flag.FlagSet) {}
 
 func (w *workspaceTargetCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+	if len(f.Args()) == 0 {
+		log.Errorf("Needs a target definition")
+		return subcommands.ExitFailure
+	}
+
 	packageName := f.Args()[0]
 
 	log.Infof("Setting %s as target", packageName)
@@ -291,6 +295,7 @@ func (w *workspaceTargetCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...
 	err = workspace.Save()
 
 	if err != nil {
+		log.Errorf("Unable to save target definition to the workspace: %v", err)
 		return subcommands.ExitFailure
 	}
 
