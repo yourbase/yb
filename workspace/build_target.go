@@ -1,6 +1,7 @@
 package workspace
 
 import (
+	"context"
 	"fmt"
 	"github.com/yourbase/narwhal"
 	"github.com/yourbase/yb/plumbing"
@@ -68,7 +69,7 @@ func (bt BuildTarget) EnvironmentVariables(data runtime.RuntimeEnvironmentData) 
 	return result
 }
 
-func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, output io.Writer, flags BuildFlags, packagePath string, buildpacks []string) ([]CommandTimer, error) {
+func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, output io.Writer, flags BuildFlags, packagePath string, buildpacks []string) ([]CommandTimer, error) {
 	var stepTimes []CommandTimer
 
 	containers := bt.Dependencies.ContainerList()
@@ -98,7 +99,7 @@ func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, output io.Writer, flags
 		containers = append(containers, buildContainer)
 
 		var err error
-		builder, err = runtimeCtx.AddContainer(buildContainer)
+		builder, err = runtimeCtx.AddContainer(ctx, buildContainer)
 
 		if err != nil {
 			return []CommandTimer{}, err
@@ -149,7 +150,7 @@ func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, output io.Writer, flags
 
 	// Setup dependent containers
 	for _, cd := range bt.Dependencies.ContainerList() {
-		if _, err := runtimeCtx.AddContainer(cd); err != nil {
+		if _, err := runtimeCtx.AddContainer(ctx, cd); err != nil {
 			return []CommandTimer{}, fmt.Errorf("can't add container %s: %v", cd.Label, err)
 		}
 	}

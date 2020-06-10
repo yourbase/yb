@@ -15,6 +15,7 @@ import (
 	"gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 
+	"github.com/yourbase/narwhal"
 	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/workspace"
 )
@@ -38,10 +39,8 @@ func (w *WorkspaceCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interf
 	cmdr.Register(&workspaceLocationCmd{}, "")
 	cmdr.Register(&workspaceListCmd{}, "")
 	return (cmdr.Execute(ctx))
-	//return subcommands.ExitFailure
 }
 
-// LOCATION
 type workspaceListCmd struct{}
 
 func (*workspaceListCmd) Name() string     { return "ls" }
@@ -53,7 +52,7 @@ func (*workspaceListCmd) Usage() string {
 func (w *workspaceListCmd) SetFlags(f *flag.FlagSet) {
 }
 
-func (w *workspaceListCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (w *workspaceListCmd) Execute(listCtx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	ws, err := LoadWorkspace()
 
 	if err != nil {
@@ -70,20 +69,20 @@ func (w *workspaceListCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...inte
 	fmt.Println()
 
 	fmt.Println("Containers in workspace:")
-	if containers, err := ws.RunningContainers(); err != nil {
+	if containers, err := ws.RunningContainers(listCtx); err != nil {
 		log.Warnf("Unable to get running containers: %v", err)
 	} else {
 
 		for _, c := range containers {
 
-			running, err := c.Container.IsRunning()
+			running, err := narwhal.IsRunning(listCtx, narwhal.DockerClient(), c.Container.Id)
 			if err != nil {
 				log.Warnf("Unable to determine if %s is running: %v", c.Container.Name, err)
 			}
 
 			status := "idle"
 			if running {
-				if address, err := c.Container.IPv4Address(); err == nil {
+				if address, err := narwhal.IPv4Address(listCtx, narwhal.DockerClient(), c.Container.Id); err == nil {
 					status = fmt.Sprintf("up @ %s", address)
 				} else {
 					status = "up @ unknown ip"

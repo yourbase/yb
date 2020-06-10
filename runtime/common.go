@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"context"
 	"fmt"
 	"github.com/google/shlex"
 	"github.com/yourbase/yb/plumbing/log"
@@ -12,9 +13,8 @@ import (
 )
 
 var (
-	runtimeEnvironment = NewRuntime("uuid", "/tmp")
+	runtimeEnvironment = NewRuntime(context.TODO(), "uuid", "/tmp")
 )
-
 
 func SetEnv(key string, value string) error {
 	runtimeEnvironment.DefaultTarget.SetEnv(key, value)
@@ -162,6 +162,6 @@ func ExecToLogWithProgressDots(cmdString string, targetDir string, logPath strin
 	return ExecToLog(cmdString, targetDir, logPath)
 }
 
-func Init(identifier string, localWorkDir string) {
-	runtimeEnvironment = NewRuntime(identifier, localWorkDir)
+func Init(ctx context.Context, identifier string, localWorkDir string) {
+	runtimeEnvironment = NewRuntime(ctx, identifier, localWorkDir)
 }

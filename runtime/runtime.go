@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"context"
 	"fmt"
 	"github.com/yourbase/yb/plumbing/log"
 	"io"
@@ -55,6 +56,7 @@ type Target interface {
 }
 
 type Process struct {
+	Context     context.Context
 	Command     string
 	Interactive bool
 	Directory   string
@@ -96,12 +98,12 @@ func (r *Runtime) RunInTarget(p Process, targetId string) error {
 	}
 }
 
-func (r *Runtime) FindContainers(definitions []narwhal.ContainerDefinition) []*ContainerTarget {
+func (r *Runtime) FindContainers(ctx context.Context, definitions []narwhal.ContainerDefinition) []*ContainerTarget {
 	result := make([]*ContainerTarget, 0)
 
 	if r.SupportsContainers() {
 		for _, cd := range definitions {
-			container, err := r.ContainerServiceContext.FindContainer(cd)
+			container, err := r.ContainerServiceContext.FindContainer(ctx, &cd)
 			if err != nil {
 				log.Warnf("Error trying to find container %s - %v", cd.Label, err)
 			} else {
@@ -115,9 +117,9 @@ func (r *Runtime) FindContainers(definitions []narwhal.ContainerDefinition) []*C
 	return result
 }
 
-func (r *Runtime) AddContainer(cd narwhal.ContainerDefinition) (*ContainerTarget, error) {
+func (r *Runtime) AddContainer(ctx context.Context, cd narwhal.ContainerDefinition) (*ContainerTarget, error) {
 	if r.SupportsContainers() {
-		container, err := r.ContainerServiceContext.StartContainer(cd)
+		container, err := r.ContainerServiceContext.StartContainer(ctx, nil, &cd)
 		if err != nil {
 			return nil, fmt.Errorf("could not start container %s: %v", cd.Label, err)
 		}
@@ -136,9 +138,9 @@ func (r *Runtime) AddContainer(cd narwhal.ContainerDefinition) (*ContainerTarget
 	}
 }
 
-func NewRuntime(identifier string, localWorkDir string) *Runtime {
+func NewRuntime(ctx context.Context, identifier string, localWorkDir string) *Runtime {
 
-	sc, err := narwhal.NewServiceContextWithId(identifier, localWorkDir)
+	sc, err := narwhal.NewServiceContextWithId(ctx, narwhal.DockerClient(), identifier, localWorkDir)
 	if err != nil {
 		log.Infof("Container service context failed to initialize - containers won't be supported: %v", err)
 		sc = nil
@@ -188,7 +190,7 @@ type ContainerData struct {
 	serviceCtx *narwhal.ServiceContext
 }
 
-func (c ContainerData) IP(label string) string {
+/*func (c ContainerData) IP(ctx context.Context, label string) string {
 	// Check service context
 	if c.serviceCtx != nil {
 		if buildContainer, ok := c.serviceCtx.Containers[label]; ok {
@@ -215,15 +217,15 @@ func (c ServiceData) IP(label string) string {
 	}
 
 	return ""
-}
+}*/
 
-func (c ContainerData) Environment() map[string]string {
+func (c ContainerData) Environment(ctx context.Context) map[string]string {
 	result := make(map[string]string)
 	if c.serviceCtx != nil {
-		for label, container := range c.serviceCtx.Containers {
-			if ipv4, err := container.IPv4Address(); err == nil {
-				key := fmt.Sprintf("YB_CONTAINER_%s_IP", strings.ToUpper(label))
-				result[key] = ipv4
+		for _, containerDef := range c.serviceCtx.ContainerDefinitions {
+			if ipv4, err := narwhal.IPv4Address(ctx, narwhal.DockerClient(), containerDef.Label); err == nil {
+				key := fmt.Sprintf("YB_CONTAINER_%s_IP", strings.ToUpper(containerDef.Label))
+				result[key] = ipv4.String()
 			}
 		}
 	}
