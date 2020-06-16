@@ -38,30 +38,30 @@ func (e *TargetRunError) Error() string {
 }
 
 type Target interface {
-	Run(p Process) error
+	Run(ctx context.Context, p Process) error
 	SetEnv(key string, value string) error
-	UploadFile(localPath string, remotePath string) error
-	WriteFileContents(contents string, remotepath string) error
+	UploadFile(ctx context.Context, localPath string, remotePath string) error
+	WriteFileContents(ctx context.Context, contents string, remotepath string) error
 	WorkDir() string
-	CacheDir() string
-	DownloadFile(url string) (string, error)
-	Unarchive(src string, dst string) error
-	PrependToPath(dir string)
-	PathExists(path string) bool
+	CacheDir(ctx context.Context) string
+	DownloadFile(ctx context.Context, url string) (string, error)
+	Unarchive(ctx context.Context, src string, dst string) error
+	PrependToPath(ctx context.Context, dir string)
+	PathExists(ctx context.Context, path string) bool
 	GetDefaultPath() string
-	ToolsDir() string
+	ToolsDir(ctx context.Context) string
 	OS() Os
-	OSVersion() string
+	OSVersion(ctx context.Context) string
 	Architecture() Architecture
+	MkdirAsNeeded(ctx context.Context, path string) error
 }
 
 type Process struct {
-	Context     context.Context
 	Command     string
 	Interactive bool
 	Directory   string
 	Environment []string
-	Output      *io.Writer
+	Output      io.Writer
 }
 
 type Runtime struct {
@@ -86,13 +86,13 @@ func (r *Runtime) AddTarget(targetId string, t Target) error {
 	return nil
 }
 
-func (r *Runtime) Run(p Process) error {
-	return r.DefaultTarget.Run(p)
+func (r *Runtime) Run(ctx context.Context, p Process) error {
+	return r.DefaultTarget.Run(ctx, p)
 }
 
-func (r *Runtime) RunInTarget(p Process, targetId string) error {
+func (r *Runtime) RunInTarget(ctx context.Context, p Process, targetId string) error {
 	if target, exists := r.Targets[targetId]; exists {
-		return target.Run(p)
+		return target.Run(ctx, p)
 	} else {
 		return fmt.Errorf("Unable to find target %s in runtime", targetId)
 	}
@@ -187,6 +187,7 @@ type ServiceData struct {
 }
 
 type ContainerData struct {
+	IP         string
 	serviceCtx *narwhal.ServiceContext
 }
 
@@ -225,7 +226,8 @@ func (c ContainerData) Environment(ctx context.Context) map[string]string {
 		for _, containerDef := range c.serviceCtx.ContainerDefinitions {
 			if ipv4, err := narwhal.IPv4Address(ctx, narwhal.DockerClient(), containerDef.Label); err == nil {
 				key := fmt.Sprintf("YB_CONTAINER_%s_IP", strings.ToUpper(containerDef.Label))
-				result[key] = ipv4.String()
+				c.IP = ipv4.String()
+				result[key] = c.IP
 			}
 		}
 	}

@@ -124,11 +124,11 @@ func (p Package) ExecuteToWriter(ctx context.Context, runtimeCtx *runtime.Runtim
 			Command:     cmdString,
 			Directory:   "/workspace",
 			Interactive: false,
-			Output:      &output,
+			Output:      output,
 			Environment: p.environmentVariables(ctx, runtimeCtx.EnvironmentData(), "default"),
 		}
 
-		if err := target.Run(proc); err != nil {
+		if err := target.Run(ctx, proc); err != nil {
 			return fmt.Errorf("unable to run command '%s': %v", cmdString, err)
 		}
 	}
@@ -224,8 +224,8 @@ func (p Package) createExecutionTarget(ctx context.Context, runtimeCtx *runtime.
 		return nil, fmt.Errorf("Couldn't start exec container: %v", err)
 	}
 
-	LoadBuildPacks(execTarget, p.Manifest.Dependencies.Build)
-	LoadBuildPacks(execTarget, p.Manifest.Dependencies.Runtime)
+	LoadBuildPacks(ctx, execTarget, p.Manifest.Dependencies.Build)
+	LoadBuildPacks(ctx, execTarget, p.Manifest.Dependencies.Runtime)
 
 	return execTarget, nil
 }

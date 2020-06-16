@@ -1,6 +1,7 @@
 package workspace
 
 import (
+	"context"
 	"fmt"
 	"github.com/yourbase/yb/buildpacks"
 	"github.com/yourbase/yb/runtime"
@@ -11,7 +12,7 @@ import (
 	. "github.com/yourbase/yb/types"
 )
 
-func LoadBuildPacks(installTarget runtime.Target, dependencies []string) ([]CommandTimer, error) {
+func LoadBuildPacks(ctx context.Context, installTarget runtime.Target, dependencies []string) ([]CommandTimer, error) {
 	setupTimers := make([]CommandTimer, 0)
 
 	for _, toolSpec := range dependencies {
@@ -24,15 +25,11 @@ func LoadBuildPacks(installTarget runtime.Target, dependencies []string) ([]Comm
 			versionString = parts[1]
 		}
 
-		sharedCacheDir := installTarget.ToolsDir()
-
 		spec := buildpacks.BuildToolSpec{
-			Tool:            buildpackName,
-			Version:         versionString,
-			SharedCacheDir:  sharedCacheDir,
-			PackageCacheDir: installTarget.CacheDir(),
-			PackageDir:      installTarget.WorkDir(),
-			InstallTarget:   installTarget,
+			Tool:          buildpackName,
+			Version:       versionString,
+			PackageDir:    installTarget.WorkDir(),
+			InstallTarget: installTarget,
 		}
 
 		var bt BuildTool
@@ -87,7 +84,8 @@ func LoadBuildPacks(installTarget runtime.Target, dependencies []string) ([]Comm
 
 		// Install if needed
 		startTime := time.Now()
-		if err := bt.Install(); err != nil {
+		err, installedDir := bt.Install(ctx)
+		if err != nil {
 			return setupTimers, fmt.Errorf("Unable to install tool %s: %v", toolSpec, err)
 		}
 		endTime := time.Now()
@@ -99,7 +97,7 @@ func LoadBuildPacks(installTarget runtime.Target, dependencies []string) ([]Comm
 
 		// Setup build tool (paths, env, etc)
 		startTime = time.Now()
-		if err := bt.Setup(); err != nil {
+		if err := bt.Setup(ctx, installedDir); err != nil {
 			return setupTimers, fmt.Errorf("Unable to setup tool %s: %v", toolSpec, err)
 		}
 		endTime = time.Now()

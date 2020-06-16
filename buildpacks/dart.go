@@ -1,7 +1,7 @@
 package buildpacks
 
 import (
-	"os"
+	"context"
 	"path/filepath"
 	"strings"
 
@@ -68,46 +68,39 @@ func (bt DartBuildTool) Version() string {
 	return bt.version
 }
 
-func (bt DartBuildTool) InstallDir() string {
-	return filepath.Join(bt.spec.SharedCacheDir, "dart", bt.Version())
-}
-
-func (bt DartBuildTool) DartDir() string {
-	return filepath.Join(bt.InstallDir(), "dart-sdk")
-}
-
-func (bt DartBuildTool) Setup() error {
-	dartDir := bt.DartDir()
-	cmdPath := filepath.Join(dartDir, "bin")
+func (bt DartBuildTool) Setup(ctx context.Context, dartDir string) error {
 	t := bt.spec.InstallTarget
-	t.PrependToPath(cmdPath)
+
+	cmdPath := filepath.Join(dartDir, "bin")
+	t.PrependToPath(ctx, cmdPath)
 
 	return nil
 }
 
-// TODO, generalize downloader
-func (bt DartBuildTool) Install() error {
-	dartDir := bt.DartDir()
-	installDir := bt.InstallDir()
+func (bt DartBuildTool) Install(ctx context.Context) (error, string) {
+	t := bt.spec.InstallTarget
 
-	if _, err := os.Stat(dartDir); err == nil {
+	installDir := filepath.Join(t.ToolsDir(ctx), "dart", bt.Version())
+	dartDir := filepath.Join(installDir, "dart-sdk")
+
+	if t.PathExists(ctx, dartDir) {
 		log.Infof("Dart v%s located in %s!", bt.Version(), dartDir)
 	} else {
 		log.Infof("Will install Dart v%s into %s", bt.Version(), dartDir)
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading Dart from URL %s...", downloadUrl)
-		localFile, err := bt.spec.InstallTarget.DownloadFile(downloadUrl)
+		localFile, err := t.DownloadFile(ctx, downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
-			return err
+			return err, ""
 		}
-		err = bt.spec.InstallTarget.Unarchive(localFile, installDir)
+		err = t.Unarchive(ctx, localFile, installDir)
 		if err != nil {
 			log.Errorf("Unable to decompress: %v", err)
-			return err
+			return err, ""
 		}
 	}
 
-	return nil
+	return nil, dartDir
 }

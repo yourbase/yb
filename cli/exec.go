@@ -30,7 +30,7 @@ Executing the target involves:
 2. Run any dependent components
 3. Start target
 */
-func (b *ExecCmd) Execute(execCtx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (b *ExecCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 
 	ws, err := workspace.LoadWorkspace()
 	if err != nil {
@@ -54,7 +54,7 @@ func (b *ExecCmd) Execute(execCtx context.Context, f *flag.FlagSet, _ ...interfa
 		}
 	}
 
-	err = ws.ExecutePackage(execCtx, pkg)
+	err = ws.ExecutePackage(ctx, pkg)
 	if err != nil {
 		log.Errorf("Unable to run '%s': %v", pkg.Name, err)
 		return subcommands.ExitFailure

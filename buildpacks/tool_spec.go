@@ -8,12 +8,10 @@ import (
 )
 
 type BuildToolSpec struct {
-	Tool            string
-	Version         string
-	SharedCacheDir  string
-	PackageCacheDir string
-	PackageDir      string
-	InstallTarget   runtime.Target
+	Tool          string
+	Version       string
+	PackageDir    string
+	InstallTarget runtime.Target
 }
 
 func TemplateToString(templateText string, data interface{}) (string, error) {

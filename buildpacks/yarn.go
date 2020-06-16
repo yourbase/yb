@@ -1,8 +1,8 @@
 package buildpacks
 
 import (
+	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/yourbase/yb/plumbing/log"
@@ -28,14 +28,6 @@ func (bt YarnBuildTool) Version() string {
 	return bt.version
 }
 
-func (bt YarnBuildTool) YarnDir() string {
-	return filepath.Join(bt.InstallDir(), fmt.Sprintf("yarn-v%s", bt.Version()))
-}
-
-func (bt YarnBuildTool) InstallDir() string {
-	return filepath.Join(bt.spec.SharedCacheDir, "yarn")
-}
-
 func (bt YarnBuildTool) DownloadUrl() string {
 	urlTemplate := "https://github.com/yarnpkg/yarn/releases/download/v{{ .Version }}/yarn-v{{ .Version }}.tar.gz"
 	data := struct {
@@ -49,35 +41,35 @@ func (bt YarnBuildTool) DownloadUrl() string {
 	return url
 }
 
-func (bt YarnBuildTool) Install() error {
+func (bt YarnBuildTool) Install(ctx context.Context) (error, string) {
+	t := bt.spec.InstallTarget
 
-	yarnDir := bt.YarnDir()
-	installDir := bt.InstallDir()
+	installDir := filepath.Join(t.ToolsDir(ctx), "yarn")
+	yarnDir := filepath.Join(installDir, "yarn-v"+bt.Version())
 
-	if _, err := os.Stat(yarnDir); err == nil {
+	if t.PathExists(ctx, yarnDir) {
 		log.Infof("Yarn v%s located in %s!", bt.Version(), yarnDir)
 	} else {
 		log.Infof("Will install Yarn v%s into %s", bt.Version(), installDir)
 		downloadUrl := bt.DownloadUrl()
 		log.Infof("Downloading from URL %s...", downloadUrl)
-		localFile, err := bt.spec.InstallTarget.DownloadFile(downloadUrl)
+		localFile, err := t.DownloadFile(ctx, downloadUrl)
 		if err != nil {
-			return fmt.Errorf("Unable to download %s: %v", downloadUrl, err)
+			return fmt.Errorf("Unable to download %s: %v", downloadUrl, err), ""
 		}
 
-		if err := bt.spec.InstallTarget.Unarchive(localFile, installDir); err != nil {
-			return fmt.Errorf("Unable to decompress archive: %v", err)
+		if err := t.Unarchive(ctx, localFile, installDir); err != nil {
+			return fmt.Errorf("Unable to decompress archive: %v", err), ""
 		}
 	}
 
-	return nil
+	return nil, yarnDir
 }
 
-func (bt YarnBuildTool) Setup() error {
+func (bt YarnBuildTool) Setup(ctx context.Context, yarnDir string) error {
 	t := bt.spec.InstallTarget
-	yarnDir := bt.YarnDir()
 	cmdPath := filepath.Join(yarnDir, "bin")
-	t.PrependToPath(cmdPath)
+	t.PrependToPath(ctx, cmdPath)
 
 	return nil
 }

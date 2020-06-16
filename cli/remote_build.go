@@ -15,7 +15,6 @@ import (
 	"os"
 	"path"
 	"regexp"
-	goruntime "runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -58,6 +57,7 @@ type RemoteCmd struct {
 	publicRepo     bool
 	backupWorktree bool
 	remotes        []GitRemote
+	metalTgt       *runtime.MetalTarget
 }
 
 func (*RemoteCmd) Name() string     { return "remotebuild" }
@@ -80,7 +80,9 @@ func (p *RemoteCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.backupWorktree, "backup-worktree", false, "Saves uncommitted work into a tarball")
 }
 
-func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (p *RemoteCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+	execRuntime := runtime.NewRuntime(ctx, "remotebuild_checks", "./")
+	p.metalTgt = execRuntime.DefaultTarget.(*runtime.MetalTarget)
 
 	// Consistent with how the `build` cmd works
 	p.target = "default"
@@ -122,11 +124,11 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	if !p.goGitStatus && !p.committed {
 		// Need to check if `git` binary exists and works
-		if goruntime.GOOS == "windows" {
+		if p.metalTgt.OS() == runtime.Windows {
 			gitExe = "git.exe"
 		}
 		cmdString := fmt.Sprintf("%s --version", gitExe)
-		if err := runtime.ExecSilently(cmdString, p.repoDir); err != nil {
+		if err := p.metalTgt.ExecSilently(ctx, cmdString, p.repoDir); err != nil {
 			if strings.Contains(err.Error(), "executable file not found in $PATH") {
 				log.Warnf("The flag -go-git-status wasn't specified and '%s' wasn't found in PATH", gitExe)
 			} else {
@@ -481,7 +483,7 @@ func (p *RemoteCmd) commandTraverseChanges(worktree *git.Worktree, saver *Worktr
 	cmdString := fmt.Sprintf(gitStatusCmd, gitExe)
 	buf := bytes.NewBuffer(nil)
 	log.Debugf("Executing '%v'...", cmdString)
-	if err = runtime.ExecSilentlyToWriter(cmdString, repoDir, buf); err != nil {
+	if err = p.metalTgt.ExecSilentlyToWriter(context.TODO(), cmdString, repoDir, buf); err != nil {
 		return skipped, fmt.Errorf("When running git status: %v", err)
 	}
 

@@ -52,7 +52,7 @@ func (*workspaceListCmd) Usage() string {
 func (w *workspaceListCmd) SetFlags(f *flag.FlagSet) {
 }
 
-func (w *workspaceListCmd) Execute(listCtx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (w *workspaceListCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	ws, err := LoadWorkspace()
 
 	if err != nil {
@@ -69,20 +69,20 @@ func (w *workspaceListCmd) Execute(listCtx context.Context, f *flag.FlagSet, _ .
 	fmt.Println()
 
 	fmt.Println("Containers in workspace:")
-	if containers, err := ws.RunningContainers(listCtx); err != nil {
+	if containers, err := ws.RunningContainers(ctx); err != nil {
 		log.Warnf("Unable to get running containers: %v", err)
 	} else {
 
 		for _, c := range containers {
 
-			running, err := narwhal.IsRunning(listCtx, narwhal.DockerClient(), c.Container.Id)
+			running, err := narwhal.IsRunning(ctx, narwhal.DockerClient(), c.Container.Id)
 			if err != nil {
 				log.Warnf("Unable to determine if %s is running: %v", c.Container.Name, err)
 			}
 
 			status := "idle"
 			if running {
-				if address, err := narwhal.IPv4Address(listCtx, narwhal.DockerClient(), c.Container.Id); err == nil {
+				if address, err := narwhal.IPv4Address(ctx, narwhal.DockerClient(), c.Container.Id); err == nil {
 					status = fmt.Sprintf("up @ %s", address)
 				} else {
 					status = "up @ unknown ip"

@@ -38,7 +38,7 @@ func (w Workspace) RunInTarget(ctx context.Context, cmdString string, workDir st
 		return err
 	}
 
-	return runCtx.RunInTarget(p, targetName)
+	return runCtx.RunInTarget(ctx, p, targetName)
 }
 
 func (w Workspace) RunningContainers(ctx context.Context) ([]*runtime.ContainerTarget, error) {

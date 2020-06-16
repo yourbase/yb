@@ -110,10 +110,10 @@ func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, ou
 
 		// Inject a .ssh/config to skip host key checking
 		sshConfig := "Host github.com\n\tStrictHostKeyChecking no\n"
-		builder.Run(runtime.Process{Output: &output, Command: "mkdir -p /root/.ssh"})
-		builder.WriteFileContents(sshConfig, "/root/.ssh/config")
-		builder.Run(runtime.Process{Output: &output, Command: "chmod 0600 /root/.ssh/config"})
-		builder.Run(runtime.Process{Output: &output, Command: "chown root:root /root/.ssh/config"})
+		builder.Run(ctx, runtime.Process{Output: output, Command: "mkdir -p /root/.ssh"})
+		builder.WriteFileContents(ctx, sshConfig, "/root/.ssh/config")
+		builder.Run(ctx, runtime.Process{Output: output, Command: "chmod 0600 /root/.ssh/config"})
+		builder.Run(ctx, runtime.Process{Output: output, Command: "chown root:root /root/.ssh/config"})
 
 		// Inject a useful gitconfig
 		configlines := []string{
@@ -125,7 +125,7 @@ func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, ou
 			"insteadOf = https://bitbucket.org/",
 		}
 		gitConfig := strings.Join(configlines, "\n")
-		builder.WriteFileContents(gitConfig, "/root/.gitconfig")
+		builder.WriteFileContents(ctx, gitConfig, "/root/.gitconfig")
 
 		// TODO: Don't run this multiple times
 		// Map SSH agent into the container
@@ -139,11 +139,11 @@ func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, ou
 			}
 
 			builder.SetEnv("SSH_AUTH_SOCK", "/ssh_agent")
-			forwardPath, err := builder.DownloadFile("https://yourbase-artifacts.s3-us-west-2.amazonaws.com/sockforward")
-			builder.Run(runtime.Process{Output: &output, Command: fmt.Sprintf("chmod a+x %s", forwardPath)})
+			forwardPath, err := builder.DownloadFile(ctx, "https://yourbase-artifacts.s3-us-west-2.amazonaws.com/sockforward")
+			builder.Run(ctx, runtime.Process{Output: output, Command: fmt.Sprintf("chmod a+x %s", forwardPath)})
 			forwardCmd := fmt.Sprintf("%s /ssh_agent %s", forwardPath, hostAddr)
 			go func() {
-				builder.Run(runtime.Process{Output: &output, Command: forwardCmd})
+				builder.Run(ctx, runtime.Process{Output: output, Command: forwardCmd})
 			}()
 		}
 	}
@@ -164,7 +164,7 @@ func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, ou
 		}
 	}
 
-	LoadBuildPacks(builder, buildpacks)
+	LoadBuildPacks(ctx, builder, buildpacks)
 
 	/*if len(bt.Dependencies.Containers) > 0 {
 		log.Infof("Available side containers:")
@@ -189,7 +189,7 @@ func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, ou
 			Interactive: false,
 		}
 
-		if stepError = builder.Run(p); stepError != nil {
+		if stepError = builder.Run(ctx, p); stepError != nil {
 			log.Errorf("Failed to run %s: %v", cmdString, stepError)
 		}
 

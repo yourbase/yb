@@ -189,6 +189,8 @@ func FindWorkspaceRoot() (string, error) {
 	// Look upwards to find a manifest file
 	packageDir, err := FindNearestManifestFile()
 
+	fmt.Print("WorkspaceRoot considered: ", packageDir)
+
 	// If we find a manifest file, check the parent directory for a config.yml
 	if err == nil {
 		parent := filepath.Dir(packageDir)

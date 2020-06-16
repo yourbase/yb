@@ -1,5 +1,9 @@
 package types
 
+import (
+	"context"
+)
+
 const (
 	MANIFEST_FILE        = ".yourbase.yml"
 	DOCS_URL             = "https://docs.yourbase.io"
@@ -10,7 +14,6 @@ type EnvVariable struct {
 	Key   string
 	Value string
 }
-
 
 // API Responses -- TODO use Swagger instead, this is silly
 type Project struct {
@@ -32,10 +35,8 @@ type WorktreeSave struct {
 	Enabled bool
 }
 
-
-
 type BuildTool interface {
-	Install() error
-	Setup() error
+	Install(ctx context.Context) (error, string)
+	Setup(ctx context.Context, dir string) error
 	Version() string
 }

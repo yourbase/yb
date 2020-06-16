@@ -1,9 +1,7 @@
 package buildpacks
 
 import (
-	"fmt"
-	"github.com/yourbase/yb/runtime"
-	"os"
+	"context"
 	"path/filepath"
 
 	"github.com/yourbase/yb/plumbing/log"
@@ -61,47 +59,40 @@ func (bt AndroidNdkBuildTool) Version() string {
 	return bt.version
 }
 
-func (bt AndroidNdkBuildTool) InstallDir() string {
-	return filepath.Join(bt.spec.InstallTarget.ToolsDir(), "android-ndk")
-}
-
-func (bt AndroidNdkBuildTool) NdkDir() string {
-	return filepath.Join(bt.InstallDir(), fmt.Sprintf("android-ndk-%s", bt.Version()))
-}
-
-func (bt AndroidNdkBuildTool) Setup() error {
-	ndkDir := bt.NdkDir()
+func (bt AndroidNdkBuildTool) Setup(ctx context.Context, ndkDir string) error {
+	t := bt.spec.InstallTarget
 
 	log.Infof("Setting ANDROID_NDK_HOME to %s", ndkDir)
-	runtime.SetEnv("ANDROID_NDK_HOME", ndkDir)
+	t.SetEnv("ANDROID_NDK_HOME", ndkDir)
 
 	return nil
 }
 
-// TODO, generalize downloader
-func (bt AndroidNdkBuildTool) Install() error {
-	ndkDir := bt.NdkDir()
-	installDir := bt.InstallDir()
+func (bt AndroidNdkBuildTool) Install(ctx context.Context) (error, string) {
+	t := bt.spec.InstallTarget
 
-	if _, err := os.Stat(ndkDir); err == nil {
+	installDir := filepath.Join(t.ToolsDir(ctx), "android-ndk")
+	ndkDir := filepath.Join(installDir, "android-ndk-"+bt.Version())
+
+	if t.PathExists(ctx, ndkDir) {
 		log.Infof("Android NDK v%s located in %s!", bt.Version(), ndkDir)
 	} else {
 		log.Infof("Will install Android NDK v%s into %s", bt.Version(), ndkDir)
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading Android NDK v%s from URL %s...", bt.Version(), downloadUrl)
-		localFile, err := bt.spec.InstallTarget.DownloadFile(downloadUrl)
+		localFile, err := t.DownloadFile(ctx, downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
-			return err
+			return err, ""
 		}
-		err = bt.spec.InstallTarget.Unarchive(localFile, installDir)
+		err = t.Unarchive(ctx, localFile, installDir)
 		if err != nil {
 			log.Errorf("Unable to decompress: %v", err)
-			return err
+			return err, ""
 		}
 
 	}
 
-	return nil
+	return nil, ndkDir
 }

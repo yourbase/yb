@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -40,7 +41,7 @@ func (t *MetalTarget) OS() Os {
 }
 
 // TODO: Add support for the OS's here
-func (t *MetalTarget) OSVersion() string {
+func (t *MetalTarget) OSVersion(ctx context.Context) string {
 	return "unknown"
 }
 
@@ -63,7 +64,7 @@ func (t *MetalTarget) WriteContentsToFile(contents string, filename string) erro
 	return nil
 }
 
-func (t *MetalTarget) ToolsDir() string {
+func (t *MetalTarget) ToolsDir(ctx context.Context) string {
 	toolsDir, exists := os.LookupEnv("YB_TOOLS_DIR")
 	if !exists {
 		u, err := user.Current()
@@ -79,7 +80,7 @@ func (t *MetalTarget) ToolsDir() string {
 	return toolsDir
 }
 
-func (t *MetalTarget) PathExists(path string) bool {
+func (t *MetalTarget) PathExists(ctx context.Context, path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
 }
@@ -88,7 +89,7 @@ func (t *MetalTarget) String() string {
 	return fmt.Sprintf("Metal target: %s", t.workDir)
 }
 
-func (t *MetalTarget) PrependToPath(dir string) {
+func (t *MetalTarget) PrependToPath(ctx context.Context, dir string) {
 	currentPath := t.GetDefaultPath()
 	// Only prepend if it's not already the head; presume that
 	// whomever asked for this wants to be at the front so it's okay if it's
@@ -104,7 +105,7 @@ func (t *MetalTarget) GetDefaultPath() string {
 	return os.Getenv("PATH")
 }
 
-func (t *MetalTarget) CacheDir() string {
+func (t *MetalTarget) CacheDir(ctx context.Context) string {
 	cacheDir, exists := os.LookupEnv("YB_CACHE_DIR")
 	if !exists {
 		u, err := user.Current()
@@ -120,7 +121,7 @@ func (t *MetalTarget) CacheDir() string {
 	return cacheDir
 }
 
-func (t *MetalTarget) UploadFile(src string, dst string) error {
+func (t *MetalTarget) UploadFile(ctx context.Context, src string, dst string) error {
 	source, err := os.Open(src)
 	if err != nil {
 		return err
@@ -152,9 +153,9 @@ func (t *MetalTarget) UploadFile(src string, dst string) error {
 	return nil
 }
 
-func (t *MetalTarget) DownloadFile(url string) (string, error) {
+func (t *MetalTarget) DownloadFile(ctx context.Context, url string) (string, error) {
 
-	localFile, err := DownloadFileToCache(url, t.CacheDir())
+	localFile, err := DownloadFileToCache(ctx, url, t.CacheDir(ctx))
 
 	if err != nil {
 		log.Errorf("Unable to download: %v", err)
@@ -163,7 +164,7 @@ func (t *MetalTarget) DownloadFile(url string) (string, error) {
 	return localFile, err
 }
 
-func (t *MetalTarget) Unarchive(src string, dst string) error {
+func (t *MetalTarget) Unarchive(ctx context.Context, src string, dst string) error {
 	err := archiver.Unarchive(src, dst)
 
 	if err != nil {
@@ -177,27 +178,27 @@ func (t *MetalTarget) WorkDir() string {
 	return t.workDir
 }
 
-func (t *MetalTarget) Run(p Process) error {
-	return t.ExecToStdout(p.Command, p.Directory)
+func (t *MetalTarget) Run(ctx context.Context, p Process) error {
+	return t.ExecToStdout(ctx, p.Command, p.Directory)
 }
 
 func (t *MetalTarget) SetEnv(key string, value string) error {
 	return os.Setenv(key, value)
 }
 
-func (t *MetalTarget) ExecToStdoutWithExtraEnv(cmdString string, targetDir string, env []string) error {
+func (t *MetalTarget) ExecToStdoutWithExtraEnv(ctx context.Context, cmdString string, targetDir string, env []string) error {
 	env = append(os.Environ(), env...)
-	return t.ExecToStdoutWithEnv(cmdString, targetDir, env)
+	return t.ExecToStdoutWithEnv(ctx, cmdString, targetDir, env)
 }
 
-func (t *MetalTarget) ExecToStdoutWithEnv(cmdString string, targetDir string, env []string) error {
+func (t *MetalTarget) ExecToStdoutWithEnv(ctx context.Context, cmdString string, targetDir string, env []string) error {
 	log.Infof("Running: %s in %s", cmdString, targetDir)
 	cmdArgs, err := shlex.Split(cmdString)
 	if err != nil {
 		return fmt.Errorf("Can't parse command string '%s': %v", cmdString, err)
 	}
 
-	cmd := exec.Command(cmdArgs[0], cmdArgs[1:len(cmdArgs)]...)
+	cmd := exec.CommandContext(ctx, cmdArgs[0], cmdArgs[1:len(cmdArgs)]...)
 	cmd.Dir = targetDir
 	cmd.Stdout = os.Stdout
 	cmd.Stdin = os.Stdin
@@ -213,11 +214,11 @@ func (t *MetalTarget) ExecToStdoutWithEnv(cmdString string, targetDir string, en
 	return nil
 }
 
-func (t *MetalTarget) ExecToStdout(cmdString string, targetDir string) error {
-	return t.ExecToStdoutWithEnv(cmdString, targetDir, os.Environ())
+func (t *MetalTarget) ExecToStdout(ctx context.Context, cmdString string, targetDir string) error {
+	return t.ExecToStdoutWithEnv(ctx, cmdString, targetDir, os.Environ())
 }
 
-func (t *MetalTarget) ExecToLog(cmdString string, targetDir string, logPath string) error {
+func (t *MetalTarget) ExecToLog(ctx context.Context, cmdString string, targetDir string, logPath string) error {
 
 	cmdArgs, err := shlex.Split(cmdString)
 	if err != nil {
@@ -231,7 +232,7 @@ func (t *MetalTarget) ExecToLog(cmdString string, targetDir string, logPath stri
 
 	defer logfile.Close()
 
-	cmd := exec.Command(cmdArgs[0], cmdArgs[1:len(cmdArgs)]...)
+	cmd := exec.CommandContext(ctx, cmdArgs[0], cmdArgs[1:len(cmdArgs)]...)
 	cmd.Dir = targetDir
 	cmd.Stdout = logfile
 	cmd.Stdin = os.Stdin
@@ -247,17 +248,17 @@ func (t *MetalTarget) ExecToLog(cmdString string, targetDir string, logPath stri
 
 }
 
-func (t *MetalTarget) ExecSilently(cmdString string, targetDir string) error {
-	return t.ExecSilentlyToWriter(cmdString, targetDir, ioutil.Discard)
+func (t *MetalTarget) ExecSilently(ctx context.Context, cmdString string, targetDir string) error {
+	return t.ExecSilentlyToWriter(ctx, cmdString, targetDir, ioutil.Discard)
 }
 
-func (t *MetalTarget) ExecSilentlyToWriter(cmdString string, targetDir string, writer io.Writer) error {
+func (t *MetalTarget) ExecSilentlyToWriter(ctx context.Context, cmdString string, targetDir string, writer io.Writer) error {
 	cmdArgs, err := shlex.Split(cmdString)
 	if err != nil {
 		return fmt.Errorf("Can't parse command string '%s': %v", cmdString, err)
 	}
 
-	cmd := exec.Command(cmdArgs[0], cmdArgs[1:len(cmdArgs)]...)
+	cmd := exec.CommandContext(ctx, cmdArgs[0], cmdArgs[1:len(cmdArgs)]...)
 	cmd.Dir = targetDir
 	cmd.Stdout = writer
 	cmd.Stdin = os.Stdin
@@ -273,7 +274,7 @@ func (t *MetalTarget) ExecSilentlyToWriter(cmdString string, targetDir string, w
 
 }
 
-func (t *MetalTarget) ExecToLogWithProgressDots(cmdString string, targetDir string, logPath string) error {
+func (t *MetalTarget) ExecToLogWithProgressDots(ctx context.Context, cmdString string, targetDir string, logPath string) error {
 	stoppedchan := make(chan struct{})
 	dotchan := make(chan int)
 	defer close(stoppedchan)
@@ -303,7 +304,7 @@ func (t *MetalTarget) ExecToLogWithProgressDots(cmdString string, targetDir stri
 		}
 	}()
 
-	return t.ExecToLog(cmdString, targetDir, logPath)
+	return t.ExecToLog(ctx, cmdString, targetDir, logPath)
 }
 
 func CacheFilenameForUrl(url string) (string, error) {
@@ -315,16 +316,16 @@ func CacheFilenameForUrl(url string) (string, error) {
 	return fileName, nil
 }
 
-func DownloadFileWithCache(url string) (string, error) {
+func DownloadFileWithCache(ctx context.Context, url string) (string, error) {
 	cacheDir := "/tmp/yourbase"
 	if homeDir, exists := os.LookupEnv("HOME"); exists {
 		cacheDir = filepath.Join(homeDir, ".cache", "yourbase")
 	}
 
-	return DownloadFileToCache(url, cacheDir)
+	return DownloadFileToCache(ctx, url, cacheDir)
 }
 
-func DownloadFileToCache(url string, cachedir string) (string, error) {
+func DownloadFileToCache(ctx context.Context, url string, cachedir string) (string, error) {
 
 	filename, err := CacheFilenameForUrl(url)
 	if err != nil {
@@ -361,14 +362,18 @@ func DownloadFileToCache(url string, cachedir string) (string, error) {
 	}
 
 	// Otherwise download
-	err = doDownload(cacheFilename, url)
+	err = doDownload(ctx, cacheFilename, url)
 	return cacheFilename, err
 }
 
-func doDownload(filepath string, url string) error {
+func doDownload(ctx context.Context, filepath string, url string) error {
+
+	// Cancellable request
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	client := &http.Client{}
 
 	// Get the data
-	resp, err := http.Get(url)
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
