@@ -94,7 +94,7 @@ func (d *DockerArchiveCmd) SetFlags(f *flag.FlagSet) {
 //     exec: /dispatcher
 //   artifacts:
 //     - dispatcher
-func (d *DockerArchiveCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (d *DockerArchiveCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 
 	instructions := d.targetPackage.Manifest.Package
 	if instructions.Docker.BaseImage == "" {
@@ -122,7 +122,7 @@ func (d *DockerArchiveCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...inte
 		registry = fmt.Sprintf("%s/%s", strings.TrimRight(d.dockerRegistry, "/"), d.targetPackage.Name)
 	}
 
-	err = narwhal.BuildImageWithArchive(cd, registry, d.dockerTag, tmpArchiveFile, "tmp.tar", instructions.Docker.WorkingDir)
+	err = narwhal.BuildImageWithArchive(ctx, narwhal.DockerClient(), os.Stdout, &cd, registry, d.dockerTag, tmpArchiveFile, instructions.Docker.WorkingDir)
 	if err != nil {
 		log.Error(err)
 		return subcommands.ExitFailure

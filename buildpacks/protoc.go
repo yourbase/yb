@@ -1,8 +1,7 @@
 package buildpacks
 
 import (
-	"fmt"
-	"os"
+	"context"
 	"path/filepath"
 	"strings"
 
@@ -70,48 +69,38 @@ func (bt ProtocBuildTool) Version() string {
 	return bt.version
 }
 
-func (bt ProtocBuildTool) InstallDir() string {
-	return filepath.Join(bt.spec.PackageCacheDir, "protoc", fmt.Sprintf("protoc-%s", bt.Version()))
-}
-
-func (bt ProtocBuildTool) ProtocDir() string {
-	return filepath.Join(bt.InstallDir())
-}
-
-func (bt ProtocBuildTool) Setup() error {
-	protocDir := bt.ProtocDir()
+func (bt ProtocBuildTool) Setup(ctx context.Context, protocDir string) error {
 	t := bt.spec.InstallTarget
 
 	cmdPath := filepath.Join(protocDir, "bin")
-	t.PrependToPath(cmdPath)
+	t.PrependToPath(ctx, cmdPath)
 	return nil
 }
 
-// TODO, generalize downloader
-func (bt ProtocBuildTool) Install() error {
-	protocDir := bt.ProtocDir()
-	installDir := bt.InstallDir()
+func (bt ProtocBuildTool) Install(ctx context.Context) (error, string) {
+	t := bt.spec.InstallTarget
 
-	if _, err := os.Stat(protocDir); err == nil {
+	installDir := filepath.Join(t.ToolsDir(ctx), "protoc")
+	protocDir := filepath.Join(installDir, "protoc-"+bt.Version())
+
+	if t.PathExists(ctx, protocDir) {
 		log.Infof("Protoc v%s located in %s!", bt.Version(), protocDir)
-		return nil
+		return nil, ""
 	}
 	log.Infof("Will install Protoc v%s into %s", bt.Version(), protocDir)
 	downloadUrl := bt.DownloadUrl()
 
 	log.Infof("Downloading Protoc from URL %s...", downloadUrl)
-	localFile, err := bt.spec.InstallTarget.DownloadFile(downloadUrl)
+	localFile, err := t.DownloadFile(ctx, downloadUrl)
 	if err != nil {
 		log.Errorf("Unable to download: %v", err)
-		return err
+		return err, ""
 	}
-	err = bt.spec.InstallTarget.Unarchive(localFile, installDir)
+	err = t.Unarchive(ctx, localFile, installDir)
 	if err != nil {
 		log.Errorf("Unable to decompress: %v", err)
-		return err
+		return err, ""
 	}
 
-	//RemoveWritePermissionRecursively(installDir)
-
-	return nil
+	return nil, protocDir
 }

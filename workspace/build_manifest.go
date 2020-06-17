@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"fmt"
 	"strings"
@@ -56,7 +57,7 @@ type ExecPhase struct {
 	BuildFirst   []string                    `yaml:"build_first"`
 }
 
-func (e *ExecPhase) EnvironmentVariables(envName string, data runtime.RuntimeEnvironmentData) []string {
+func (e *ExecPhase) EnvironmentVariables(ctx context.Context, envName string, data runtime.RuntimeEnvironmentData) []string {
 
 	result := make([]string, 0)
 
@@ -72,7 +73,7 @@ func (e *ExecPhase) EnvironmentVariables(envName string, data runtime.RuntimeEnv
 		}
 	}
 
-	for k, v := range data.Containers.Environment() {
+	for k, v := range data.Containers.Environment(ctx) {
 		result = append(result, k, v)
 	}
 

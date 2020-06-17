@@ -1,11 +1,10 @@
 package buildpacks
 
 import (
+	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 
-	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 )
@@ -37,29 +36,25 @@ func (bt GlideBuildTool) Version() string {
 	return bt.version
 }
 
-func (bt GlideBuildTool) GlideDir() string {
-	return filepath.Join(bt.spec.SharedCacheDir, fmt.Sprintf("glide-%v", bt.Version()))
-}
-
-func (bt GlideBuildTool) Setup() error {
-	glideDir := bt.GlideDir()
-
+func (bt GlideBuildTool) Setup(ctx context.Context, glideDir string) error {
 	t := bt.spec.InstallTarget
+
 	cmdPath := filepath.Join(glideDir, fmt.Sprintf("%s-%s", OS(), Arch()))
 
-	t.PrependToPath(cmdPath)
+	t.PrependToPath(ctx, cmdPath)
 
 	return nil
 }
 
-func (bt GlideBuildTool) Install() error {
+func (bt GlideBuildTool) Install(ctx context.Context) (error, string) {
+	t := bt.spec.InstallTarget
 
-	glidePath := bt.GlideDir()
+	glideDir := filepath.Join(t.ToolsDir(ctx), "glide-"+bt.Version())
 
-	if _, err := os.Stat(glidePath); err == nil {
-		log.Infof("Glide v%s located in %s!", bt.Version(), glidePath)
+	if t.PathExists(ctx, glideDir) {
+		log.Infof("Glide v%s located in %s!", bt.Version(), glideDir)
 	} else {
-		log.Infof("Will install Glide v%s into %s", bt.Version(), glidePath)
+		log.Infof("Will install Glide v%s into %s", bt.Version(), glideDir)
 		params := DownloadParameters{
 			OS:      OS(),
 			Arch:    Arch(),
@@ -69,27 +64,26 @@ func (bt GlideBuildTool) Install() error {
 		downloadUrl, err := TemplateToString(GLIDE_DIST_MIRROR, params)
 		if err != nil {
 			log.Errorf("Unable to generate download URL: %v", err)
-			return err
+			return err, ""
 		}
 
 		log.Infof("Downloading from URL %s ...", downloadUrl)
-		localFile, err := bt.spec.InstallTarget.DownloadFile(downloadUrl)
+		localFile, err := t.DownloadFile(ctx, downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
-			return err
+			return err, ""
 		}
 
-		extractDir := bt.GlideDir()
-		MkdirAsNeeded(extractDir)
-		log.Infof("Extracting glide %s to %s...", bt.Version(), extractDir)
-		err = bt.spec.InstallTarget.Unarchive(localFile, extractDir)
+		t.MkdirAsNeeded(ctx, glideDir)
+		log.Infof("Extracting glide %s to %s...", bt.Version(), glideDir)
+		err = t.Unarchive(ctx, localFile, glideDir)
 		if err != nil {
 			log.Errorf("Unable to decompress: %v", err)
-			return err
+			return err, ""
 		}
 
 	}
 
-	return nil
+	return nil, glideDir
 
 }

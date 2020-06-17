@@ -1,13 +1,12 @@
 package buildpacks
 
 import (
+	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/yourbase/yb/plumbing/log"
-	"github.com/yourbase/yb/runtime"
 	. "github.com/yourbase/yb/types"
 )
 
@@ -60,51 +59,45 @@ func (bt GradleBuildTool) Version() string {
 	return bt.version
 }
 
-func (bt GradleBuildTool) GradleDir() string {
-	return filepath.Join(bt.InstallDir(), fmt.Sprintf("gradle-%s", bt.Version()))
-}
-
-func (bt GradleBuildTool) InstallDir() string {
-	return filepath.Join(bt.spec.SharedCacheDir, "gradle")
-}
-
-func (bt GradleBuildTool) Setup() error {
-	gradleDir := bt.GradleDir()
-	gradleHome := filepath.Join(bt.spec.PackageCacheDir, "gradle-home", bt.Version())
+func (bt GradleBuildTool) Setup(ctx context.Context, gradleDir string) error {
 	t := bt.spec.InstallTarget
 
-	log.Infof("Setting GRADLE_USER_HOME to %s", gradleHome)
-	runtime.SetEnv("GRADLE_USER_HOME", gradleHome)
+	gradleHome := filepath.Join(t.ToolsDir(ctx), "gradle-home", bt.Version())
 
-	t.PrependToPath(filepath.Join(gradleDir, "bin"))
+	log.Infof("Setting GRADLE_USER_HOME to %s", gradleHome)
+	t.SetEnv("GRADLE_USER_HOME", gradleHome)
+
+	t.PrependToPath(ctx, filepath.Join(gradleDir, "bin"))
 
 	return nil
 }
 
 // TODO, generalize downloader
-func (bt GradleBuildTool) Install() error {
-	gradleDir := bt.GradleDir()
-	installDir := bt.InstallDir()
+func (bt GradleBuildTool) Install(ctx context.Context) (error, string) {
+	t := bt.spec.InstallTarget
 
-	if _, err := os.Stat(gradleDir); err == nil {
+	installDir := filepath.Join(t.ToolsDir(ctx), "gradle")
+	gradleDir := filepath.Join(installDir, "gradle-"+bt.Version())
+
+	if t.PathExists(ctx, gradleDir) {
 		log.Infof("Gradle v%s located in %s!", bt.Version(), gradleDir)
 	} else {
 		log.Infof("Will install Gradle v%s into %s", bt.Version(), gradleDir)
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading Gradle from URL %s...", downloadUrl)
-		localFile, err := bt.spec.InstallTarget.DownloadFile(downloadUrl)
+		localFile, err := t.DownloadFile(ctx, downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
-			return err
+			return err, ""
 		}
-		err = bt.spec.InstallTarget.Unarchive(localFile, installDir)
+		err = t.Unarchive(ctx, localFile, installDir)
 		if err != nil {
 			log.Errorf("Unable to decompress: %v", err)
-			return err
+			return err, ""
 		}
 
 	}
 
-	return nil
+	return nil, gradleDir
 }

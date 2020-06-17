@@ -1,6 +1,7 @@
 package workspace
 
 import (
+	"context"
 	"fmt"
 	"github.com/yourbase/narwhal"
 	"github.com/yourbase/yb/plumbing"
@@ -68,7 +69,7 @@ func (bt BuildTarget) EnvironmentVariables(data runtime.RuntimeEnvironmentData) 
 	return result
 }
 
-func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, output io.Writer, flags BuildFlags, packagePath string, buildpacks []string) ([]CommandTimer, error) {
+func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, output io.Writer, flags BuildFlags, packagePath string, buildpacks []string) ([]CommandTimer, error) {
 	var stepTimes []CommandTimer
 
 	containers := bt.Dependencies.ContainerList()
@@ -98,7 +99,7 @@ func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, output io.Writer, flags
 		containers = append(containers, buildContainer)
 
 		var err error
-		builder, err = runtimeCtx.AddContainer(buildContainer)
+		builder, err = runtimeCtx.AddContainer(ctx, buildContainer)
 
 		if err != nil {
 			return []CommandTimer{}, err
@@ -109,10 +110,10 @@ func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, output io.Writer, flags
 
 		// Inject a .ssh/config to skip host key checking
 		sshConfig := "Host github.com\n\tStrictHostKeyChecking no\n"
-		builder.Run(runtime.Process{Output: &output, Command: "mkdir -p /root/.ssh"})
-		builder.WriteFileContents(sshConfig, "/root/.ssh/config")
-		builder.Run(runtime.Process{Output: &output, Command: "chmod 0600 /root/.ssh/config"})
-		builder.Run(runtime.Process{Output: &output, Command: "chown root:root /root/.ssh/config"})
+		builder.Run(ctx, runtime.Process{Output: output, Command: "mkdir -p /root/.ssh"})
+		builder.WriteFileContents(ctx, sshConfig, "/root/.ssh/config")
+		builder.Run(ctx, runtime.Process{Output: output, Command: "chmod 0600 /root/.ssh/config"})
+		builder.Run(ctx, runtime.Process{Output: output, Command: "chown root:root /root/.ssh/config"})
 
 		// Inject a useful gitconfig
 		configlines := []string{
@@ -124,7 +125,7 @@ func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, output io.Writer, flags
 			"insteadOf = https://bitbucket.org/",
 		}
 		gitConfig := strings.Join(configlines, "\n")
-		builder.WriteFileContents(gitConfig, "/root/.gitconfig")
+		builder.WriteFileContents(ctx, gitConfig, "/root/.gitconfig")
 
 		// TODO: Don't run this multiple times
 		// Map SSH agent into the container
@@ -138,18 +139,18 @@ func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, output io.Writer, flags
 			}
 
 			builder.SetEnv("SSH_AUTH_SOCK", "/ssh_agent")
-			forwardPath, err := builder.DownloadFile("https://yourbase-artifacts.s3-us-west-2.amazonaws.com/sockforward")
-			builder.Run(runtime.Process{Output: &output, Command: fmt.Sprintf("chmod a+x %s", forwardPath)})
+			forwardPath, err := builder.DownloadFile(ctx, "https://yourbase-artifacts.s3-us-west-2.amazonaws.com/sockforward")
+			builder.Run(ctx, runtime.Process{Output: output, Command: fmt.Sprintf("chmod a+x %s", forwardPath)})
 			forwardCmd := fmt.Sprintf("%s /ssh_agent %s", forwardPath, hostAddr)
 			go func() {
-				builder.Run(runtime.Process{Output: &output, Command: forwardCmd})
+				builder.Run(ctx, runtime.Process{Output: output, Command: forwardCmd})
 			}()
 		}
 	}
 
 	// Setup dependent containers
 	for _, cd := range bt.Dependencies.ContainerList() {
-		if _, err := runtimeCtx.AddContainer(cd); err != nil {
+		if _, err := runtimeCtx.AddContainer(ctx, cd); err != nil {
 			return []CommandTimer{}, fmt.Errorf("can't add container %s: %v", cd.Label, err)
 		}
 	}
@@ -163,7 +164,7 @@ func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, output io.Writer, flags
 		}
 	}
 
-	LoadBuildPacks(builder, buildpacks)
+	LoadBuildPacks(ctx, builder, buildpacks)
 
 	/*if len(bt.Dependencies.Containers) > 0 {
 		log.Infof("Available side containers:")
@@ -188,7 +189,7 @@ func (bt BuildTarget) Build(runtimeCtx *runtime.Runtime, output io.Writer, flags
 			Interactive: false,
 		}
 
-		if stepError = builder.Run(p); stepError != nil {
+		if stepError = builder.Run(ctx, p); stepError != nil {
 			log.Errorf("Failed to run %s: %v", cmdString, stepError)
 		}
 

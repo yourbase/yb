@@ -1,12 +1,11 @@
 package buildpacks
 
 import (
+	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
-	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	"github.com/yourbase/yb/runtime"
 	. "github.com/yourbase/yb/types"
@@ -51,59 +50,57 @@ func (bt RLangBuildTool) Version() string {
 	return bt.version
 }
 
-func (bt RLangBuildTool) InstallDir() string {
-	return filepath.Join(bt.spec.SharedCacheDir, "R")
-}
-
-func (bt RLangBuildTool) RLangDir() string {
-	return filepath.Join(bt.InstallDir(), fmt.Sprintf("R-%s", bt.Version()))
-}
-
-func (bt RLangBuildTool) Setup() error {
-	rlangDir := bt.RLangDir()
+func (bt RLangBuildTool) Setup(ctx context.Context, rlangDir string) error {
 	t := bt.spec.InstallTarget
 
-	t.PrependToPath(filepath.Join(rlangDir, "bin"))
+	t.PrependToPath(ctx, filepath.Join(rlangDir, "bin"))
 
 	return nil
 }
 
-// TODO, generalize downloader
-func (bt RLangBuildTool) Install() error {
-	installDir := bt.InstallDir()
-	rlangDir := bt.RLangDir()
+func (bt RLangBuildTool) Install(ctx context.Context) (error, string) {
+	t := bt.spec.InstallTarget
 
-	if _, err := os.Stat(rlangDir); err == nil {
+	installDir := filepath.Join(t.ToolsDir(ctx), "R")
+	rlangDir := filepath.Join(installDir, "R-"+bt.Version())
+
+	if t.PathExists(ctx, rlangDir) {
 		log.Infof("R v%s located in %s!", bt.Version(), rlangDir)
 	} else {
 		log.Infof("Will install R v%s into %s", bt.Version(), installDir)
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading from URL %s ...", downloadUrl)
-		localFile, err := bt.spec.InstallTarget.DownloadFile(downloadUrl)
+		localFile, err := t.DownloadFile(ctx, downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
-			return err
+			return err, ""
 		}
 
 		tmpDir := filepath.Join(installDir, "src")
 		srcDir := filepath.Join(tmpDir, fmt.Sprintf("R-%s", bt.Version()))
 
-		if !DirectoryExists(srcDir) {
-			err = bt.spec.InstallTarget.Unarchive(localFile, tmpDir)
+		if !t.PathExists(ctx, srcDir) {
+			err = t.Unarchive(ctx, localFile, tmpDir)
 			if err != nil {
 				log.Errorf("Unable to decompress: %v", err)
-				return err
+				return err, ""
 			}
 		}
 
-		MkdirAsNeeded(rlangDir)
-		configCmd := fmt.Sprintf("./configure --with-x=no --prefix=%s", rlangDir)
-		runtime.ExecToStdout(configCmd, srcDir)
+		t.MkdirAsNeeded(ctx, rlangDir)
+		p := runtime.Process{
+			Command:   "./configure --with-x=no --prefix=" + rlangDir,
+			Directory: srcDir,
+		}
+		t.Run(ctx, p)
 
-		runtime.ExecToStdout("make", srcDir)
-		runtime.ExecToStdout("make install", srcDir)
+		// TODO guarantee that we have 'make' installed
+		p.Command = "make"
+		t.Run(ctx, p)
+		p.Command = "make install"
+		t.Run(ctx, p)
 	}
 
-	return nil
+	return nil, rlangDir
 }

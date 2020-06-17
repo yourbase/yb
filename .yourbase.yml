@@ -1,7 +1,7 @@
 dependencies:
   build:
-    - go:1.14.3
-    - python:3.6
+    - go:1.14.4
+    - python:3.7
 
 build_targets:
   - name: default
