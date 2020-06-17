@@ -191,35 +191,6 @@ type ContainerData struct {
 	serviceCtx *narwhal.ServiceContext
 }
 
-/*func (c ContainerData) IP(ctx context.Context, label string) string {
-	// Check service context
-	if c.serviceCtx != nil {
-		if buildContainer, ok := c.serviceCtx.Containers[label]; ok {
-			if ipv4, err := buildContainer.IPv4Address(); err == nil {
-				return ipv4
-			}
-		}
-	}
-
-	return ""
-}
-
-func (c ServiceData) IP(label string) string {
-	// Check service context
-	log.Debugf("Looking up IP for service %s", label)
-	if c.serviceCtx != nil {
-		if buildContainer, ok := c.serviceCtx.Containers[label]; ok {
-			log.Debugf("Found service %s with container %s", label, buildContainer.Id)
-			if ipv4, err := buildContainer.IPv4Address(); err == nil {
-				log.Debugf("Service %s has IP %s", label, ipv4)
-				return ipv4
-			}
-		}
-	}
-
-	return ""
-}*/
-
 func (c ContainerData) Environment(ctx context.Context) map[string]string {
 	result := make(map[string]string)
 	if c.serviceCtx != nil {

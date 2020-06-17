@@ -23,10 +23,6 @@ type Workspace struct {
 	packages []Package
 }
 
-/*func (w Workspace) BuildPackage(p Package) error {
-	return nil
-}*/
-
 func (w Workspace) RunInTarget(ctx context.Context, cmdString string, workDir string, targetName string) error {
 
 	log.Infof("Running %s in %s from %s", cmdString, targetName, workDir)
