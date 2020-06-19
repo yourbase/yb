@@ -5,14 +5,20 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/yourbase/yb/plumbing/log"
 	"io"
 	"io/ioutil"
 	"net"
 	"os"
 	"strings"
 
+	"github.com/yourbase/yb/plumbing/log"
+
 	"github.com/yourbase/narwhal"
+)
+
+const (
+	ContainerDefaultToolsDir = "/opt/yb/tools"
+	ContainerDefaultCacheDir = "/opt/yb/cache"
 )
 
 type ContainerTarget struct {
@@ -29,7 +35,6 @@ func (t *ContainerTarget) OS() Os {
 func (t *ContainerTarget) OSVersion(ctx context.Context) string {
 	var buf bytes.Buffer
 	bufWriter := bufio.NewWriter(&buf)
-	//err := t.Container.DownloadDirectoryToWriter("/etc/os-release", &buf)
 	err := narwhal.ExecShell(ctx, narwhal.DockerClient(), t.Container.Id, "cat /etc/os-release", &narwhal.ExecShellOptions{
 		Dir:            "/",
 		CombinedOutput: bufWriter,
@@ -66,33 +71,27 @@ func (t *ContainerTarget) Architecture() Architecture {
 	return Amd64
 }
 
-func (t *ContainerTarget) mkdirInContainer(ctx context.Context, dir string) (created string) {
-	if t.PathExists(ctx, dir) {
-		return dir
-	}
-
-	cmdString := "mkdir -p " + dir
-	err := narwhal.ExecShell(ctx, narwhal.DockerClient(), t.Container.Id, cmdString, &narwhal.ExecShellOptions{})
-	if err == nil {
-		created = dir
-	}
-
-	return
-}
-
 func (t *ContainerTarget) ToolsDir(ctx context.Context) string {
-	return t.mkdirInContainer(ctx, "/opt/yb/tools")
+	err := narwhal.MkdirAll(ctx, narwhal.DockerClient(), t.Container.Id, ContainerDefaultToolsDir)
+	if err != nil {
+		return ""
+	}
+	return ContainerDefaultToolsDir
 }
 
 func (t *ContainerTarget) PathExists(ctx context.Context, path string) bool {
 	// Assume we can use stat for now
 	statCmd := fmt.Sprintf("stat %s", path)
+	// Will be ignored, but Docker only succeeds if we pass an output io stream
+	buff := new(bytes.Buffer)
 
-	err := narwhal.ExecShell(ctx, narwhal.DockerClient(), t.Container.Id, statCmd, &narwhal.ExecShellOptions{Dir: "/"})
+	err := narwhal.ExecShell(ctx, narwhal.DockerClient(), t.Container.Id, statCmd, &narwhal.ExecShellOptions{CombinedOutput: buff})
 	if err != nil {
-		if _, ok := narwhal.IsExitError(err); ok {
+		if code, _ := narwhal.IsExitError(err); code != 0 {
 			return false
 		}
+		// Return false anyway, as it errored
+		return false
 	}
 
 	return true
@@ -103,7 +102,11 @@ func (t *ContainerTarget) String() string {
 }
 
 func (t *ContainerTarget) CacheDir(ctx context.Context) string {
-	return t.mkdirInContainer(ctx, "/opt/yb/cache")
+	err := narwhal.MkdirAll(ctx, narwhal.DockerClient(), t.Container.Id, ContainerDefaultCacheDir)
+	if err != nil {
+		return ""
+	}
+	return ContainerDefaultCacheDir
 }
 
 func (t *ContainerTarget) PrependToPath(ctx context.Context, dir string) {
@@ -175,7 +178,10 @@ func (t *ContainerTarget) DownloadFile(ctx context.Context, url string) (string,
 
 func (t *ContainerTarget) Unarchive(ctx context.Context, src string, dst string) error {
 	var command string
-	t.mkdirInContainer(ctx, dst)
+	err := narwhal.MkdirAll(ctx, narwhal.DockerClient(), t.Container.Id, dst)
+	if err != nil {
+		return fmt.Errorf("making dir for unarchiving %s: %v", src, err)
+	}
 
 	if strings.HasSuffix(src, "tar.gz") {
 		command = fmt.Sprintf("tar zxf %s -C %s", src, dst)
@@ -222,6 +228,8 @@ func (t *ContainerTarget) Run(ctx context.Context, p Process) error {
 	if p.Output != nil {
 		output = p.Output
 	}
+
+	t.Container.Definition.Environment = p.Environment
 
 	if p.Interactive {
 		return narwhal.ExecShell(ctx, narwhal.DockerClient(), t.Container.Id, p.Command, &narwhal.ExecShellOptions{
