@@ -13,10 +13,13 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/signal"
 	"path"
 	"regexp"
 	"strconv"
 	"strings"
+	// nit: It's preferred to use the import "golang.org/x/sys/unix" to indicate that this package requires Unix-specific symbols.
+	"syscall"
 	"time"
 
 	"github.com/gobwas/ws"
@@ -788,12 +791,39 @@ func (cmd *RemoteCmd) savePatch() error {
 func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) error {
 
 	startTime := time.Now()
-	var submitProgress *Progress
+	var submitProgress, remoteProgress *Progress
 	submitErrored := func() {
 		if submitProgress != nil {
 			submitProgress.Fail()
 		}
 	}
+	remoteErrored := func() {
+		if remoteProgress != nil {
+			remoteProgress.Fail()
+		}
+	}
+
+	/*
+			(zombiezen) added:
+
+		This goroutine worries me for a few reasons:
+
+		    The goroutine will leak past the end of submitBuild if an interrupt signal is not sent to the process.
+		    The calls to submitErrored and remoteErrored both race on the assignment to these local variables.
+		    It races with indicating success: imagine the case where the build succeeds and then an interrupt signal is sent before the main goroutine is able to report success. It's undefined which one of these would be called first.
+
+		I recommend that we start plumbing Context throughout the yb codebase, which is the standard pattern in Go for dealing with these sorts of issues. See https://talks.golang.org/2014/gotham-context.slide for a brief overview.
+
+	*/
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		submitErrored()
+		remoteErrored()
+		os.Exit(1)
+	}()
+
 	if log.CheckIfTerminal() {
 		submitProgress = NewProgressSpinner("Submitting remote build")
 		submitProgress.Start()
@@ -896,23 +926,43 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 	log.Infof("Submission finished at %s, taking %s", endTime.Format(TIME_FORMAT), submitTime.Truncate(time.Millisecond))
 
 	startTime = time.Now()
-	var remoteProgress *Progress
-	remoteErrored := func() {
-		if remoteProgress != nil {
-			remoteProgress.Fail()
-		}
-	}
 	if log.CheckIfTerminal() {
 		remoteProgress = NewProgressSpinner("Setting up remote build")
 		remoteProgress.Start()
 	}
 
+	// Address fdbk: https://github.com/yourbase/yb/pull/90
+	/*
+		Resume of (zombiezen) ideas:
+	*/
+
 	if strings.HasPrefix(url, "ws:") || strings.HasPrefix(url, "wss:") {
+		recentReconnect := false
+		reconnectCount := 0
+	CONN:
 		conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), url)
+
+		finish := make(chan struct{})
+
 		if err != nil {
 			remoteErrored()
 			return fmt.Errorf("Cannot connect: %v", err)
 		} else {
+
+			// TODO maybe make Dispatcher give better diagnostics somehow
+			// TODO (zombiezen): Using time.After leaks a timer when <-finish is finally received from. Also, since this is a repeating edge, prefer using *time.Ticker:
+			go func() {
+				for {
+					select {
+					case <-finish:
+						return
+					case <-time.After(5 * time.Second):
+						if err := wsutil.WriteClientMessage(conn, ws.OpPing, []byte("remotebuild ping")); err != nil {
+							log.Errorf("Cannot send ping: %v", err)
+						}
+					}
+				}
+			}()
 
 			defer func() {
 				if err = conn.Close(); err != nil {
@@ -921,20 +971,52 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 			}()
 
 			buildSuccess := false
+			buildFailed := false
 			buildSetupFinished := false
 			for {
 				msg, control, err := wsutil.ReadServerData(conn)
 				if err != nil {
-					if err != io.EOF {
-						log.Tracef("Unstable connection: %v", err)
-					} else {
+					// TODO (zombiezen): In code that targets Go 1.13 or above, prefer using errors.Is:
+					if err == io.EOF {
 						if buildSuccess {
 							log.Infoln("Build Completed!")
+							close(finish)
+							return nil
+						} else if buildFailed {
+							log.Errorf("Build failed!")
+							log.Infof("Build Log: %v", managementLogUrl(url, project.OrgSlug, project.Label))
+
+							close(finish)
+							return nil
 						} else {
-							log.Errorln("Build failed or the connection was interrupted!")
+							if !recentReconnect && reconnectCount < 15 {
+								if remoteProgress != nil {
+									fmt.Println()
+								}
+								log.Tracef("Build not completed, trying to reconnect")
+								conn.Close()
+								close(finish)
+								recentReconnect = true
+								reconnectCount += 1
+								// TODO (zombiezen): This nesting and goto makes this logic hard to follow. I recommend trying to factor out some of this into a separate function.
+								goto CONN
+							} else {
+								if !buildSetupFinished {
+									remoteErrored()
+									log.Errorf("Patch failed, did you 'git rebase' recently?")
+								} else {
+									remoteErrored()
+									log.Errorf("Unable to determine build status please check:")
+								}
+								log.Infof("Build Log: %v", managementLogUrl(url, project.OrgSlug, project.Label))
+
+								close(finish)
+								return nil
+							}
 						}
-						log.Infof("Build Log: %v", managementLogUrl(url, project.OrgSlug, project.Label))
-						return nil
+					}
+					if err != io.EOF {
+						log.Tracef("Unstable connection: %v", err)
 					}
 				} else {
 					// TODO This depends on build agent output, try to structure this better
@@ -956,7 +1038,15 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 					if !buildSuccess {
 						buildSuccess = strings.Count(string(msg), "-- BUILD SUCCEEDED --") > 0
 					}
+					if !buildFailed {
+						buildFailed = strings.Count(string(msg), "-- BUILD FAILED --") > 0
+						if !buildFailed {
+							buildFailed = strings.Count(string(msg), "Patch '' didn't apply cleanly") > 0
+						}
+					}
+
 					fmt.Printf("%s", msg)
+					recentReconnect = false
 				}
 			}
 		}
