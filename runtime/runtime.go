@@ -172,7 +172,7 @@ func (r *Runtime) Shutdown(ctx context.Context) error {
 }
 
 func (r *Runtime) EnvironmentData() RuntimeEnvironmentData {
-	return RuntimeEnvironmentData{
+	d := RuntimeEnvironmentData{
 		Containers: ContainerData{
 			serviceCtx: r.ContainerServiceContext,
 		},
@@ -180,6 +180,9 @@ func (r *Runtime) EnvironmentData() RuntimeEnvironmentData {
 			serviceCtx: r.ContainerServiceContext,
 		},
 	}
+
+	d.Containers.ip = make(map[string]string)
+	return d
 }
 
 type RuntimeEnvironmentData struct {
@@ -196,6 +199,8 @@ type ContainerData struct {
 	serviceCtx *narwhal.ServiceContext
 }
 
+// Environment returns a map of enviroment variables with each container IP adress
+//  it also fill up the ip map, that is used in IP
 func (c ContainerData) Environment(ctx context.Context) map[string]string {
 	result := make(map[string]string)
 	if c.serviceCtx != nil {
@@ -210,6 +215,7 @@ func (c ContainerData) Environment(ctx context.Context) map[string]string {
 	return result
 }
 
+// IP returns an IP adress associated with an container "label"
 func (c ContainerData) IP(label string) string {
 	return c.ip[label]
 }
