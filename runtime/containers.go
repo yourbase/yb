@@ -279,6 +279,17 @@ func (t *ContainerTarget) WriteFileContents(ctx context.Context, contents string
 	return nil
 }
 
+func (t *ContainerTarget) Init(ctx context.Context, workDir string) error {
+	t.workDir = workDir
+
+	if t.workDir == "" {
+		t.workDir = "/workspace"
+	}
+
+	return nil
+
+}
+
 func GetFreePort() (int, error) {
 	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
 	if err != nil {
