@@ -83,7 +83,7 @@ func (t *ContainerTarget) PathExists(ctx context.Context, path string) bool {
 	// Assume we can use stat for now
 	statCmd := fmt.Sprintf("stat %s", path)
 
-	err := narwhal.ExecShell(ctx, narwhal.DockerClient(), t.Container.Id, statCmd, &narwhal.ExecShellOptions{})
+	err := narwhal.ExecShell(ctx, narwhal.DockerClient(), t.Container.Id, statCmd, nil)
 	if err != nil {
 		if code, _ := narwhal.IsExitError(err); code != 0 {
 			return false
