@@ -220,7 +220,7 @@ func LoadWorkspace() (Workspace, error) {
 	workspacePath, err := FindWorkspaceRoot()
 
 	if err != nil {
-		return Workspace{}, fmt.Errorf("Error getting workspace path: %v", err)
+		return Workspace{}, fmt.Errorf("error getting workspace path: %v", err)
 	}
 
 	manifestFile := filepath.Join(workspacePath, ".yourbase.yml")
@@ -231,46 +231,53 @@ func LoadWorkspace() (Workspace, error) {
 	if PathExists(manifestFile) {
 		log.Debugf("Loading workspace from manifest file: %s", manifestFile)
 		w, err = loadWorkspaceFromPackage(manifestFile, workspacePath)
-	}
-
-	if err == nil && validWorkspaceConfig(w) {
+		if err != nil {
+			return Workspace{}, fmt.Errorf("unable to load manifest file: %s", manifestFile)
+		}
+		if err = validWorkspaceConfig(w); err != nil {
+			return Workspace{}, err
+		}
 		return w, nil
 	}
 
 	if PathExists(configFile) {
 		log.Debugf("Loading workspace from config file: %s", configFile)
 		w, err = loadWorkspaceFromConfigYaml(configFile, workspacePath)
-	}
-
-	if err == nil && validWorkspaceConfig(w) {
+		if err != nil {
+			return Workspace{}, fmt.Errorf("unable to workspace config file: %s", configFile)
+		}
+		if err = validWorkspaceConfig(w); err != nil {
+			return Workspace{}, err
+		}
 		return w, nil
 	}
 
-	return Workspace{}, fmt.Errorf("Error resolving workspace at path %s", workspacePath)
+	return Workspace{}, fmt.Errorf("error resolving workspace at path %s", workspacePath)
 }
 
 // validWorkspaceConfig will check if every expected part of whole Configuration Graph is initialized
 // as expected
-func validWorkspaceConfig(workspace Workspace) (valid bool) {
+func validWorkspaceConfig(workspace Workspace) error {
+	var valid bool
 	if valid = len(workspace.packages) > 0; !valid {
-		return
+		return fmt.Errorf("no packages in this workspace")
 	}
 
 	if valid = filepath.IsAbs(workspace.Path); !valid {
-		return
+		return fmt.Errorf("workspace path isn't absolute: %s", workspace.Path)
 	}
 
 	if valid = workspace.Target != ""; !valid {
-		return
+		return fmt.Errorf("workspace target is empty")
 	}
 
 	for _, pkg := range workspace.packages {
-		if valid = filepath.IsAbs(pkg.Path()); !valid {
-			return
+		if valid = pkg.Name != ""; !valid {
+			return fmt.Errorf("package name is empty")
 		}
 
-		if valid = pkg.Name != ""; !valid {
-			return
+		if valid = filepath.IsAbs(pkg.Path()); !valid {
+			return fmt.Errorf("package %s path isn't absolute: %s", pkg.Name, pkg.Path())
 		}
 
 		if valid = len(pkg.Manifest.Exec.Commands) > 0; !valid {
@@ -281,7 +288,7 @@ func validWorkspaceConfig(workspace Workspace) (valid bool) {
 			pkg.Manifest.Exec.Environment["default"] = pkg.Manifest.Build.Environment
 			if len(pkg.Manifest.Exec.Environment["default"]) == 0 {
 				if valid = len(pkg.Manifest.BuildTargets) > 0; !valid {
-					return
+					return fmt.Errorf("no exec nor build target defined, won't be able to `yb run` or `yb exec`")
 				}
 				pkg.Manifest.Exec.Environment["default"] = pkg.Manifest.BuildTargets[0].Environment
 			}
@@ -289,5 +296,5 @@ func validWorkspaceConfig(workspace Workspace) (valid bool) {
 
 	}
 
-	return
+	return nil
 }
