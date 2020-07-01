@@ -79,6 +79,8 @@ func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, ou
 	hostOnly := bt.HostOnly || flags.HostOnly
 
 	if !hostOnly {
+		stepStartTime := time.Now()
+
 		buildContainer := bt.Container
 		buildContainer.Command = "/usr/bin/tail -f /dev/null"
 		buildContainer.Label = "build"
@@ -101,9 +103,23 @@ func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, ou
 		var err error
 		builder, err = runtimeCtx.AddContainer(ctx, buildContainer)
 
-		if err != nil {
-			return []CommandTimer{}, err
+		stepEndTime := time.Now()
+		stepTotalTime := stepEndTime.Sub(stepStartTime)
+
+		log.Infof("Completed container prep in %s", stepTotalTime)
+
+		containerTimer := CommandTimer{
+			Command:   "internal container prep",
+			StartTime: stepStartTime,
+			EndTime:   stepEndTime,
 		}
+
+		stepTimes = append(stepTimes, containerTimer)
+		if err != nil {
+			return stepTimes, err
+		}
+
+		stepStartTime = time.Now()
 
 		runtimeCtx.DefaultTarget = builder
 		workDir = sourceMapDir
@@ -146,12 +162,42 @@ func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, ou
 				builder.Run(ctx, runtime.Process{Output: output, Command: forwardCmd})
 			}()
 		}
+
+		stepEndTime = time.Now()
+		stepTotalTime = stepEndTime.Sub(stepStartTime)
+
+		log.Infof("Completed container tweaking in %s", stepTotalTime)
+
+		tweakTimer := CommandTimer{
+			Command:   "internal container tweak",
+			StartTime: stepStartTime,
+			EndTime:   stepEndTime,
+		}
+
+		stepTimes = append(stepTimes, tweakTimer)
+		if err != nil {
+			return stepTimes, err
+		}
+
 	}
 
+	depContainerStartTime := time.Now()
 	// Setup dependent containers
 	for _, cd := range bt.Dependencies.ContainerList() {
 		if _, err := runtimeCtx.AddContainer(ctx, cd); err != nil {
-			return []CommandTimer{}, fmt.Errorf("can't add container %s: %v", cd.Label, err)
+			errorTime := time.Now()
+			errorTotalTime := errorTime.Sub(depContainerStartTime)
+
+			log.Infof("When adding container %s, took %s", cd.Label, errorTotalTime)
+
+			errorTimer := CommandTimer{
+				Command:   "Starting dependencies (containers)",
+				StartTime: depContainerStartTime,
+				EndTime:   errorTime,
+			}
+			stepTimes = append(stepTimes, errorTimer)
+
+			return stepTimes, fmt.Errorf("can't add container %s: %v", cd.Label, err)
 		}
 	}
 
@@ -164,7 +210,22 @@ func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, ou
 		}
 	}
 
-	LoadBuildPacks(ctx, builder, buildpacks)
+	buildPackStartTime := time.Now()
+	buildPackTimes, err := LoadBuildPacks(ctx, builder, buildpacks)
+	buildPacksEndTime := time.Now()
+	buildPacksTotalTime := buildPacksEndTime.Sub(buildPackStartTime)
+
+	log.Infof("Completed loading build packs in: %s", buildPacksTotalTime)
+	stepTimes = append(stepTimes, buildPackTimes...)
+
+	if err != nil {
+		log.Errorf("Build packs: %v", err)
+		return stepTimes, err
+	}
+
+	if flags.DependenciesOnly {
+		return stepTimes, nil
+	}
 
 	/*if len(bt.Dependencies.Containers) > 0 {
 		log.Infof("Available side containers:")
@@ -207,7 +268,7 @@ func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, ou
 		stepTimes = append(stepTimes, cmdTimer)
 		// Make sure our goroutine gets this from stdout
 		// TODO: There must be a better way...
-		time.Sleep(10 * time.Millisecond)
+		// time.Sleep(10 * time.Millisecond)
 		if stepError != nil {
 			return stepTimes, stepError
 		}
