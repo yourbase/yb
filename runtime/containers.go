@@ -22,7 +22,6 @@ const (
 )
 
 type ContainerTarget struct {
-	Target
 	Container   *narwhal.Container
 	Environment []string
 	workDir     string
@@ -95,6 +94,12 @@ func (t *ContainerTarget) PathExists(ctx context.Context, path string) bool {
 	}
 
 	return true
+}
+
+func (t *ContainerTarget) MkdirAsNeeded(ctx context.Context, path string) error {
+	mkdirCmd := "mkdir -p " + path
+
+	return narwhal.ExecShell(ctx, narwhal.DockerClient(), t.Container.Id, mkdirCmd, nil)
 }
 
 func (t *ContainerTarget) String() string {
