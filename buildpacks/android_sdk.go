@@ -8,14 +8,14 @@ import (
 	"strings"
 
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
 )
 
-var LATEST_VERSION = "4333796"
-var ANDROID_DIST_MIRROR = "https://dl.google.com/android/repository/sdk-tools-{{.OS}}-{{.Version}}.zip"
+const (
+	latestVersion                = "4333796"
+	androidSDKDistMirrorTemplate = "https://dl.google.com/android/repository/sdk-tools-{{.OS}}-{{.Version}}.zip"
+)
 
 type AndroidBuildTool struct {
-	BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -24,7 +24,7 @@ func NewAndroidBuildTool(toolSpec BuildToolSpec) AndroidBuildTool {
 	version := toolSpec.Version
 
 	if version == "latest" {
-		version = LATEST_VERSION
+		version = latestVersion
 	}
 
 	tool := AndroidBuildTool{
@@ -35,7 +35,7 @@ func NewAndroidBuildTool(toolSpec BuildToolSpec) AndroidBuildTool {
 	return tool
 }
 
-func (bt AndroidBuildTool) DownloadUrl() string {
+func (bt AndroidBuildTool) DownloadURL(ctx context.Context) (string, error) {
 	opsys := OS()
 	arch := Arch()
 	extension := "zip"
@@ -58,9 +58,8 @@ func (bt AndroidBuildTool) DownloadUrl() string {
 		extension,
 	}
 
-	url, _ := TemplateToString(ANDROID_DIST_MIRROR, data)
-
-	return url
+	url, err := TemplateToString(androidSDKDistMirrorTemplate, data)
+	return url, err
 }
 
 func (bt AndroidBuildTool) MajorVersion() string {
@@ -131,7 +130,7 @@ func (bt AndroidBuildTool) Setup(ctx context.Context, androidDir string) error {
 }
 
 // TODO, generalize downloader
-func (bt AndroidBuildTool) Install(ctx context.Context) (error, string) {
+func (bt AndroidBuildTool) Install(ctx context.Context) (string, error) {
 	t := bt.spec.InstallTarget
 
 	installDir := filepath.Join(t.ToolsDir(ctx), "android")
@@ -139,23 +138,26 @@ func (bt AndroidBuildTool) Install(ctx context.Context) (error, string) {
 
 	if t.PathExists(ctx, androidDir) {
 		log.Infof("Android v%s located in %s!", bt.Version(), androidDir)
-	} else {
-		log.Infof("Will install Android v%s into %s", bt.Version(), androidDir)
-		downloadUrl := bt.DownloadUrl()
-
-		log.Infof("Downloading Android from URL %s...", downloadUrl)
-		localFile, err := t.DownloadFile(ctx, downloadUrl)
-		if err != nil {
-			log.Errorf("Unable to download: %v", err)
-			return err, ""
-		}
-		err = t.Unarchive(ctx, localFile, installDir)
-		if err != nil {
-			log.Errorf("Unable to decompress: %v", err)
-			return err, ""
-		}
-
+		return androidDir, nil
+	}
+	log.Infof("Will install Android v%s into %s", bt.Version(), androidDir)
+	downloadURL, err := bt.DownloadURL(ctx)
+	if err != nil {
+		log.Errorf("Unable to generate download URL: %v", err)
+		return "", err
 	}
 
-	return nil, androidDir
+	log.Infof("Downloading Android from URL %s...", downloadURL)
+	localFile, err := t.DownloadFile(ctx, downloadURL)
+	if err != nil {
+		log.Errorf("Unable to download: %v", err)
+		return "", err
+	}
+	err = t.Unarchive(ctx, localFile, installDir)
+	if err != nil {
+		log.Errorf("Unable to decompress: %v", err)
+		return "", err
+	}
+
+	return androidDir, nil
 }
