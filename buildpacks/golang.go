@@ -8,14 +8,12 @@ import (
 
 	"github.com/yourbase/yb/plumbing/log"
 	"github.com/yourbase/yb/runtime"
-	. "github.com/yourbase/yb/types"
 )
 
 //https://dl.google.com/go/go1.11.5.linux-amd64.tar.gz
-var GOLANG_DIST_MIRROR = "https://dl.google.com/go"
+const golangDistMirrorTemplate = "https://dl.google.com/go"
 
 type GolangBuildTool struct {
-	BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -48,12 +46,12 @@ func (bt GolangBuildTool) ArchiveFile() string {
 	return fmt.Sprintf("go%s.%s-%s.tar.gz", bt.Version(), os, architecture)
 }
 
-func (bt GolangBuildTool) DownloadUrl() string {
+func (bt GolangBuildTool) DownloadURL(ctx context.Context) (string, error) {
 	return fmt.Sprintf(
 		"%s/%s",
-		GOLANG_DIST_MIRROR,
+		golangDistMirrorTemplate,
 		bt.ArchiveFile(),
-	)
+	), nil
 }
 
 func (bt GolangBuildTool) MajorVersion() string {
@@ -93,7 +91,7 @@ func (bt GolangBuildTool) Setup(ctx context.Context, golangDir string) error {
 }
 
 // TODO, generalize downloader
-func (bt GolangBuildTool) Install(ctx context.Context) (error, string) {
+func (bt GolangBuildTool) Install(ctx context.Context) (string, error) {
 	t := bt.spec.InstallTarget
 
 	installDir := filepath.Join(t.ToolsDir(ctx), "go", bt.Version())
@@ -101,19 +99,23 @@ func (bt GolangBuildTool) Install(ctx context.Context) (error, string) {
 
 	if t.PathExists(ctx, golangDir) {
 		log.Infof("Golang v%s located in %s!", bt.Version(), golangDir)
-	} else {
-		log.Infof("Will install Golang v%s into %s", bt.Version(), golangDir)
-		downloadUrl := bt.DownloadUrl()
-
-		log.Infof("Downloading from URL %s ...", downloadUrl)
-		localFile, err := t.DownloadFile(ctx, downloadUrl)
-
-		err = t.Unarchive(ctx, localFile, installDir)
-		if err != nil {
-			log.Errorf("Unable to decompress: %v", err)
-			return err, ""
-		}
+		return golangDir, nil
+	}
+	log.Infof("Will install Golang v%s into %s", bt.Version(), golangDir)
+	downloadURL, err := bt.DownloadURL(ctx)
+	if err != nil {
+		log.Errorf("Unable to generate download URL: %v", err)
+		return "", err
 	}
 
-	return nil, golangDir
+	log.Infof("Downloading from URL %s ...", downloadURL)
+	localFile, err := t.DownloadFile(ctx, downloadURL)
+
+	err = t.Unarchive(ctx, localFile, installDir)
+	if err != nil {
+		log.Errorf("Unable to decompress: %v", err)
+		return "", err
+	}
+
+	return golangDir, nil
 }

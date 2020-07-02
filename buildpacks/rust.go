@@ -7,13 +7,11 @@ import (
 
 	"github.com/yourbase/yb/plumbing/log"
 	"github.com/yourbase/yb/runtime"
-	. "github.com/yourbase/yb/types"
 )
 
-var RUST_DIST_MIRROR = "https://static.rust-lang.org/rustup/dist"
+const rustDistMirrorTemplate = "https://static.rust-lang.org/rustup/dist"
 
 type RustBuildTool struct {
-	BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -42,11 +40,20 @@ func (bt RustBuildTool) Setup(ctx context.Context, rustDir string) error {
 	return nil
 }
 
-func (bt RustBuildTool) Install(ctx context.Context) (error, string) {
-	t := bt.spec.InstallTarget
+func (bt RustBuildTool) ArchiveFile() string {
+	extension := ""
+	return fmt.Sprintf("rustup-init%s", extension)
+}
 
+func (bt RustBuildTool) DownloadURL(ctx context.Context) (string, error) {
 	arch := "x86_64"
 	operatingSystem := "unknown-linux-gnu"
+
+	return fmt.Sprintf("%s/%s-%s/%s", rustDistMirrorTemplate, arch, operatingSystem, bt.ArchiveFile()), nil
+}
+
+func (bt RustBuildTool) Install(ctx context.Context) (string, error) {
+	t := bt.spec.InstallTarget
 
 	installDir := filepath.Join(t.ToolsDir(ctx), "rust")
 	rustDir := filepath.Join(installDir, "rust-"+bt.Version())
@@ -54,39 +61,41 @@ func (bt RustBuildTool) Install(ctx context.Context) (error, string) {
 
 	if t.PathExists(ctx, rustDir) {
 		log.Infof("Rust v%s located in %s!", bt.Version(), rustDir)
-	} else {
-		log.Infof("Will install Rust v%s into %s", bt.Version(), rustDir)
-		extension := ""
-		installerFile := fmt.Sprintf("rustup-init%s", extension)
-		downloadUrl := fmt.Sprintf("%s/%s-%s/%s", RUST_DIST_MIRROR, arch, operatingSystem, installerFile)
+		return rustDir, nil
+	}
+	log.Infof("Will install Rust v%s into %s", bt.Version(), rustDir)
+	downloadURL, err := bt.DownloadURL(ctx)
+	if err != nil {
+		log.Errorf("Unable to generate download URL: %v", err)
+		return "", err
+	}
 
-		downloadDir := t.ToolsDir(ctx)
-		localFile := filepath.Join(downloadDir, installerFile)
-		log.Infof("Downloading from URL %s to local file %s", downloadUrl, localFile)
-		localFile, err := t.DownloadFile(ctx, downloadUrl)
-		if err != nil {
-			log.Errorf("Unable to download: %v", err)
-			return err, ""
+	downloadDir := t.ToolsDir(ctx)
+	localFile := filepath.Join(downloadDir, bt.ArchiveFile())
+	log.Infof("Downloading from URL %s to local file %s", downloadURL, localFile)
+	localFile, err = t.DownloadFile(ctx, downloadURL)
+	if err != nil {
+		log.Errorf("Unable to download: %v", err)
+		return "", err
+	}
+
+	t.SetEnv("CARGO_HOME", rustDir)
+	t.SetEnv("RUSTUP_HOME", rustDir)
+
+	for _, cmd := range []string{
+		"chmod +x " + localFile,
+		localFile + " -y",
+	} {
+		p := runtime.Process{
+			Command:   cmd,
+			Directory: downloadDir,
 		}
-
-		t.SetEnv("CARGO_HOME", rustDir)
-		t.SetEnv("RUSTUP_HOME", rustDir)
-
-		for _, cmd := range []string{
-			"chmod +x " + localFile,
-			localFile + " -y",
-		} {
-			p := runtime.Process{
-				Command:   cmd,
-				Directory: downloadDir,
-			}
-			err = t.Run(ctx, p)
-			if err != nil {
-				return err, ""
-			}
+		err = t.Run(ctx, p)
+		if err != nil {
+			return "", err
 		}
 	}
 
-	return nil, rustDir
+	return rustDir, nil
 
 }

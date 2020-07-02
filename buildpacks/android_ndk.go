@@ -5,13 +5,11 @@ import (
 	"path/filepath"
 
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
 )
 
-var ANDROID_NDK_DIST_MIRROR = "https://dl.google.com/android/repository/android-ndk-{{.Version}}-{{.OS}}-{{.Arch}}.zip"
+const androidNDKDistMirrorTemplate = "https://dl.google.com/android/repository/android-ndk-{{.Version}}-{{.OS}}-{{.Arch}}.zip"
 
 type AndroidNdkBuildTool struct {
-	BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -27,7 +25,7 @@ func NewAndroidNdkBuildTool(toolSpec BuildToolSpec) AndroidNdkBuildTool {
 	return tool
 }
 
-func (bt AndroidNdkBuildTool) DownloadUrl() string {
+func (bt AndroidNdkBuildTool) DownloadURL(ctx context.Context) (string, error) {
 	opsys := OS()
 	arch := Arch()
 	extension := "zip"
@@ -50,9 +48,9 @@ func (bt AndroidNdkBuildTool) DownloadUrl() string {
 		extension,
 	}
 
-	url, _ := TemplateToString(ANDROID_NDK_DIST_MIRROR, data)
+	url, err := TemplateToString(androidNDKDistMirrorTemplate, data)
 
-	return url
+	return url, err
 }
 
 func (bt AndroidNdkBuildTool) Version() string {
@@ -68,7 +66,7 @@ func (bt AndroidNdkBuildTool) Setup(ctx context.Context, ndkDir string) error {
 	return nil
 }
 
-func (bt AndroidNdkBuildTool) Install(ctx context.Context) (error, string) {
+func (bt AndroidNdkBuildTool) Install(ctx context.Context) (string, error) {
 	t := bt.spec.InstallTarget
 
 	installDir := filepath.Join(t.ToolsDir(ctx), "android-ndk")
@@ -76,23 +74,26 @@ func (bt AndroidNdkBuildTool) Install(ctx context.Context) (error, string) {
 
 	if t.PathExists(ctx, ndkDir) {
 		log.Infof("Android NDK v%s located in %s!", bt.Version(), ndkDir)
-	} else {
-		log.Infof("Will install Android NDK v%s into %s", bt.Version(), ndkDir)
-		downloadUrl := bt.DownloadUrl()
-
-		log.Infof("Downloading Android NDK v%s from URL %s...", bt.Version(), downloadUrl)
-		localFile, err := t.DownloadFile(ctx, downloadUrl)
-		if err != nil {
-			log.Errorf("Unable to download: %v", err)
-			return err, ""
-		}
-		err = t.Unarchive(ctx, localFile, installDir)
-		if err != nil {
-			log.Errorf("Unable to decompress: %v", err)
-			return err, ""
-		}
-
+		return ndkDir, nil
+	}
+	log.Infof("Will install Android NDK v%s into %s", bt.Version(), ndkDir)
+	downloadURL, err := bt.DownloadURL(ctx)
+	if err != nil {
+		log.Errorf("Unable to generate download URL: %v", err)
+		return "", err
 	}
 
-	return nil, ndkDir
+	log.Infof("Downloading Android NDK v%s from URL %s...", bt.Version(), downloadURL)
+	localFile, err := t.DownloadFile(ctx, downloadURL)
+	if err != nil {
+		log.Errorf("Unable to download: %v", err)
+		return "", err
+	}
+	err = t.Unarchive(ctx, localFile, installDir)
+	if err != nil {
+		log.Errorf("Unable to decompress: %v", err)
+		return "", err
+	}
+
+	return ndkDir, nil
 }

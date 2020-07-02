@@ -8,11 +8,9 @@ import (
 	"strings"
 
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
 )
 
 type JavaBuildTool struct {
-	BuildTool
 	version      string
 	spec         BuildToolSpec
 	majorVersion int64
@@ -117,7 +115,7 @@ func (bt JavaBuildTool) Setup(ctx context.Context, installDir string) error {
 	return nil
 }
 
-func (bt JavaBuildTool) DownloadUrl() string {
+func (bt JavaBuildTool) DownloadURL(ctx context.Context) (string, error) {
 
 	// This changes pretty dramatically depending on major version :~(
 	// Using HotSpot version, we should consider an OpenJ9 option
@@ -166,15 +164,10 @@ func (bt JavaBuildTool) DownloadUrl() string {
 	log.Debugf("URL params: %#v", data)
 
 	url, err := TemplateToString(urlPattern, data)
-
-	if err != nil {
-		log.Errorf("Error generating download URL: %v", err)
-	}
-
-	return url
+	return url, err
 }
 
-func (bt JavaBuildTool) Install(ctx context.Context) (error, string) {
+func (bt JavaBuildTool) Install(ctx context.Context) (string, error) {
 	t := bt.spec.InstallTarget
 
 	javaInstallDir := filepath.Join(t.ToolsDir(ctx), "java")
@@ -184,24 +177,27 @@ func (bt JavaBuildTool) Install(ctx context.Context) (error, string) {
 
 	if t.PathExists(ctx, javaPath) {
 		log.Infof("Java v%s located in %s!", bt.Version(), javaPath)
-	} else {
-		log.Infof("Will install Java v%s into %s", bt.Version(), javaInstallDir)
-		downloadUrl := bt.DownloadUrl()
-
-		log.Infof("Downloading from URL %s ", downloadUrl)
-		localFile, err := t.DownloadFile(ctx, downloadUrl)
-		if err != nil {
-			log.Errorf("Unable to download: %v", err)
-			return err, ""
-		}
-		err = t.Unarchive(ctx, localFile, javaInstallDir)
-		if err != nil {
-			log.Errorf("Unable to decompress: %v", err)
-			return err, ""
-		}
-
+		return javaPath, nil
+	}
+	log.Infof("Will install Java v%s into %s", bt.Version(), javaInstallDir)
+	downloadURL, err := bt.DownloadURL(ctx)
+	if err != nil {
+		log.Errorf("Unable to generate download URL: %v", err)
+		return "", err
 	}
 
-	return nil, javaInstallDir
+	log.Infof("Downloading from URL %s ", downloadURL)
+	localFile, err := t.DownloadFile(ctx, downloadURL)
+	if err != nil {
+		log.Errorf("Unable to download: %v", err)
+		return "", err
+	}
+	err = t.Unarchive(ctx, localFile, javaInstallDir)
+	if err != nil {
+		log.Errorf("Unable to decompress: %v", err)
+		return "", err
+	}
+
+	return javaInstallDir, nil
 
 }

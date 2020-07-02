@@ -7,15 +7,13 @@ import (
 
 	"github.com/yourbase/yb/plumbing/log"
 	"github.com/yourbase/yb/runtime"
-	. "github.com/yourbase/yb/types"
 )
 
 // TODO add yourbase/release-test testing facilities
 
-var GORELEASE_DIST_TEMPLATE_URL = "https://github.com/goreleaser/goreleaser/releases/download/%s/%s"
+const goreleaseDistMirrorTemplate = "https://github.com/goreleaser/goreleaser/releases/download/%s/%s"
 
 type GoReleaserBuildTool struct {
-	BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -51,40 +49,45 @@ func (bt GoReleaserBuildTool) ArchiveFile() string {
 	return fmt.Sprintf("goreleaser_%s_%s.%s", os, architecture, ext)
 }
 
-func (bt GoReleaserBuildTool) DonwloadUrl() string {
-	return fmt.Sprintf(GORELEASE_DIST_TEMPLATE_URL, bt.Version(), bt.ArchiveFile())
+func (bt GoReleaserBuildTool) DonwloadUrl() (string, error) {
+	return fmt.Sprintf(goreleaseDistMirrorTemplate, bt.Version(), bt.ArchiveFile()), nil
 }
 
 func (bt GoReleaserBuildTool) Version() string {
 	return bt.version
 }
 
-func (bt GoReleaserBuildTool) Install(ctx context.Context) (error, string) {
+func (bt GoReleaserBuildTool) Install(ctx context.Context) (string, error) {
 	t := bt.spec.InstallTarget
 
 	installDir := filepath.Join(t.ToolsDir(ctx), "goreleaser", bt.Version())
 
 	if t.PathExists(ctx, installDir) {
 		log.Infof("GoReleaser v%s located in %s!", bt.Version(), installDir)
-	} else {
-		log.Infof("Will install GoReleaser v%s into %s", bt.Version(), installDir)
+		return installDir, nil
+	}
+	log.Infof("Will install GoReleaser v%s into %s", bt.Version(), installDir)
 
-		downloadUrl := bt.DonwloadUrl()
-		log.Infof("Downloading from URL %s ...", downloadUrl)
-		localFile, err := t.DownloadFile(ctx, downloadUrl)
-		if err != nil {
-			log.Errorf("Unable to download: %v", err)
-			return err, ""
-		}
-
-		err = t.Unarchive(ctx, localFile, installDir)
-		if err != nil {
-			log.Errorf("Unable to decompress: %v", err)
-			return err, ""
-		}
+	downloadURL, err := bt.DonwloadUrl()
+	if err != nil {
+		log.Errorf("Unable to generate download URL: %v", err)
+		return "", err
 	}
 
-	return nil, installDir
+	log.Infof("Downloading from URL %s ...", downloadURL)
+	localFile, err := t.DownloadFile(ctx, downloadURL)
+	if err != nil {
+		log.Errorf("Unable to download: %v", err)
+		return "", err
+	}
+
+	err = t.Unarchive(ctx, localFile, installDir)
+	if err != nil {
+		log.Errorf("Unable to decompress: %v", err)
+		return "", err
+	}
+
+	return installDir, nil
 }
 
 func (bt GoReleaserBuildTool) Setup(ctx context.Context, installDir string) error {

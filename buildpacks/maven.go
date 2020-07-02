@@ -7,14 +7,12 @@ import (
 	"strings"
 
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
 )
 
 //https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apache-maven-3.3.3-bin.tar.gz
-var MAVEN_DIST_MIRROR = "https://archive.apache.org/dist/maven/"
+const mavenDistMirrorTemplate = "https://archive.apache.org/dist/maven/"
 
 type MavenBuildTool struct {
-	BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -32,14 +30,14 @@ func (bt MavenBuildTool) ArchiveFile() string {
 	return fmt.Sprintf("apache-maven-%s-bin.tar.gz", bt.Version())
 }
 
-func (bt MavenBuildTool) DownloadUrl() string {
+func (bt MavenBuildTool) DownloadURL(ctx context.Context) (string, error) {
 	return fmt.Sprintf(
 		"%s/maven-%s/%s/binaries/%s",
-		MAVEN_DIST_MIRROR,
+		mavenDistMirrorTemplate,
 		bt.MajorVersion(),
 		bt.Version(),
 		bt.ArchiveFile(),
-	)
+	), nil
 }
 
 func (bt MavenBuildTool) MajorVersion() string {
@@ -59,7 +57,7 @@ func (bt MavenBuildTool) Setup(ctx context.Context, mavenDir string) error {
 	return nil
 }
 
-func (bt MavenBuildTool) Install(ctx context.Context) (error, string) {
+func (bt MavenBuildTool) Install(ctx context.Context) (string, error) {
 	t := bt.spec.InstallTarget
 
 	installDir := filepath.Join(t.ToolsDir(ctx), "maven")
@@ -67,23 +65,26 @@ func (bt MavenBuildTool) Install(ctx context.Context) (error, string) {
 
 	if t.PathExists(ctx, mavenDir) {
 		log.Infof("Maven v%s located in %s!", bt.Version(), mavenDir)
-	} else {
-		log.Infof("Will install Maven v%s into %s", bt.Version(), installDir)
-		downloadUrl := bt.DownloadUrl()
-
-		log.Infof("Downloading Maven from URL %s...", downloadUrl)
-		localFile, err := t.DownloadFile(ctx, downloadUrl)
-		if err != nil {
-			log.Errorf("Unable to download: %v", err)
-			return err, ""
-		}
-		err = t.Unarchive(ctx, localFile, installDir)
-		if err != nil {
-			log.Errorf("Unable to decompress: %v", err)
-			return err, ""
-		}
-
+		return mavenDir, nil
+	}
+	log.Infof("Will install Maven v%s into %s", bt.Version(), installDir)
+	downloadURL, err := bt.DownloadURL(ctx)
+	if err != nil {
+		log.Errorf("Unable to generate download URL: %v", err)
+		return "", err
 	}
 
-	return nil, mavenDir
+	log.Infof("Downloading Maven from URL %s...", downloadURL)
+	localFile, err := t.DownloadFile(ctx, downloadURL)
+	if err != nil {
+		log.Errorf("Unable to download: %v", err)
+		return "", err
+	}
+	err = t.Unarchive(ctx, localFile, installDir)
+	if err != nil {
+		log.Errorf("Unable to decompress: %v", err)
+		return "", err
+	}
+
+	return mavenDir, nil
 }
