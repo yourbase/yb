@@ -212,8 +212,7 @@ func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, ou
 
 	buildPackStartTime := time.Now()
 	buildPackTimes, err := LoadBuildPacks(ctx, builder, buildpacks)
-	buildPacksEndTime := time.Now()
-	buildPacksTotalTime := buildPacksEndTime.Sub(buildPackStartTime)
+	buildPacksTotalTime := time.Since(buildPackStartTime)
 
 	log.Infof("Completed loading build packs in: %s", buildPacksTotalTime)
 	stepTimes = append(stepTimes, buildPackTimes...)
@@ -226,14 +225,6 @@ func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, ou
 	if flags.DependenciesOnly {
 		return stepTimes, nil
 	}
-
-	/*if len(bt.Dependencies.Containers) > 0 {
-		log.Infof("Available side containers:")
-		for label, c := range bt.Dependencies.Containers {
-			ipv4 := buildData.Containers.IP(label)
-			log.Infof("  * %s (using %s) has IP address %s", label, c.ImageNameWithTag(), ipv4)
-		}
-	}*/
 
 	for _, cmdString := range bt.Commands {
 		var stepError error
@@ -266,9 +257,6 @@ func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, ou
 		}
 
 		stepTimes = append(stepTimes, cmdTimer)
-		// Make sure our goroutine gets this from stdout
-		// TODO: There must be a better way...
-		// time.Sleep(10 * time.Millisecond)
 		if stepError != nil {
 			return stepTimes, stepError
 		}

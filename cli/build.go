@@ -61,26 +61,16 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 	var pkg workspace.Package
 	var target, pkgName string
 	if f.NArg() > 0 {
-		name := f.Arg(0)
-		if strings.HasPrefix(name, "@") {
-			// Parse package name and target name
-			// <@package:target>
+		pkgName, target, err = parseArgs(f.Arg(0))
+		if err != nil {
+			log.Errorf("Unable to parse argument: %v", err)
+			return subcommands.ExitFailure
+		}
 
-			parts := strings.SplitN(strings.TrimPrefix(name, "@"), ":", 2)
-			if len(parts) < 2 {
-				log.Errorf("Unable to parse package/target definition: %s", name)
-				return subcommands.ExitFailure
-			}
-			pkgName = parts[0]
-
-			pkg, err = ws.PackageByName(pkgName)
-			if err != nil {
-				log.Errorf("Unable to find package named %s: %v", pkgName, err)
-				return subcommands.ExitFailure
-			}
-			target = parts[1]
-		} else {
-			target = name
+		pkg, err = ws.PackageByName(pkgName)
+		if err != nil {
+			log.Errorf("Unable to find package name %s: %v", pkgName, err)
+			return subcommands.ExitFailure
 		}
 	}
 	if pkgName == "" {
@@ -184,6 +174,25 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 
 	// No errors, :+1:
 	return subcommands.ExitSuccess
+}
+
+func parseArgs(lonelyArg string) (pkgName, target string, err error) {
+	if strings.HasPrefix(lonelyArg, "@") {
+		// Parse package lonelyArg and target lonelyArg
+		// <@package:target>
+
+		parts := strings.SplitN(strings.TrimPrefix(lonelyArg, "@"), ":", 2)
+		if len(parts) < 2 {
+			err = fmt.Errorf("unable to parse package/target definition: %s", lonelyArg)
+			return
+		}
+		pkgName = parts[0]
+
+		target = parts[1]
+	} else {
+		target = lonelyArg
+	}
+	return
 }
 
 func UploadBuildLogsToAPI(buf *bytes.Buffer) {
