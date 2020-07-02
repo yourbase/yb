@@ -7,20 +7,17 @@ import (
 
 	"github.com/yourbase/yb/plumbing/log"
 	"github.com/yourbase/yb/runtime"
-	. "github.com/yourbase/yb/types"
 )
 
-var (
+const (
 	anacondaToolVersion = "4.7.10"
+	anacondaURLTemplate = "https://repo.continuum.io/miniconda/Miniconda{{.PyNum}}-{{.Version}}-{{.OS}}-{{.Arch}}.{{.Extension}}"
 )
 
 type PythonBuildTool struct {
-	BuildTool
 	version string
 	spec    BuildToolSpec
 }
-
-var anacondaURLTemplate = "https://repo.continuum.io/miniconda/Miniconda{{.PyNum}}-{{.Version}}-{{.OS}}-{{.Arch}}.{{.Extension}}"
 
 func NewPythonBuildTool(toolSpec BuildToolSpec) PythonBuildTool {
 	tool := PythonBuildTool{
@@ -35,7 +32,7 @@ func (bt PythonBuildTool) Version() string {
 	return bt.version
 }
 
-func (bt PythonBuildTool) Install(ctx context.Context) (error, string) {
+func (bt PythonBuildTool) Install(ctx context.Context) (string, error) {
 	t := bt.spec.InstallTarget
 
 	anacondaDir := filepath.Join(t.ToolsDir(ctx), "miniconda3", "miniconda-"+anacondaToolVersion)
@@ -43,39 +40,42 @@ func (bt PythonBuildTool) Install(ctx context.Context) (error, string) {
 
 	if t.PathExists(ctx, anacondaDir) {
 		log.Infof("anaconda installed in %s", anacondaDir)
-	} else {
-		log.Infof("Installing anaconda")
+		return anacondaDir, nil
+	}
+	log.Infof("Installing anaconda")
 
-		downloadUrl := bt.DownloadUrl()
-
-		log.Infof("Downloading Miniconda from URL %s...", downloadUrl)
-		localFile, err := t.DownloadFile(ctx, downloadUrl)
-		if err != nil {
-			log.Errorf("Unable to download: %v", err)
-			return err, ""
-		}
-
-		// TODO: Windows
-		for _, cmd := range []string{
-			fmt.Sprintf("chmod +x %s", localFile),
-			fmt.Sprintf("bash %s -b -p %s", localFile, anacondaDir),
-		} {
-			log.Infof("Running: '%v' ", cmd)
-			p := runtime.Process{
-				Command:   cmd,
-				Directory: setupDir,
-			}
-			if err := t.Run(ctx, p); err != nil {
-				return fmt.Errorf("Couldn't install python: %v", err), ""
-			}
-		}
-
+	downloadURL, err := bt.DownloadURL(ctx)
+	if err != nil {
+		log.Errorf("Unable to generate download URL: %v", err)
+		return "", err
 	}
 
-	return nil, anacondaDir
+	log.Infof("Downloading Miniconda from URL %s...", downloadURL)
+	localFile, err := t.DownloadFile(ctx, downloadURL)
+	if err != nil {
+		log.Errorf("Unable to download: %v", err)
+		return "", err
+	}
+
+	// TODO: Windows
+	for _, cmd := range []string{
+		fmt.Sprintf("chmod +x %s", localFile),
+		fmt.Sprintf("bash %s -b -p %s", localFile, anacondaDir),
+	} {
+		log.Infof("Running: '%v' ", cmd)
+		p := runtime.Process{
+			Command:   cmd,
+			Directory: setupDir,
+		}
+		if err := t.Run(ctx, p); err != nil {
+			return "", fmt.Errorf("Couldn't install python: %v", err)
+		}
+	}
+
+	return anacondaDir, nil
 }
 
-func (bt PythonBuildTool) DownloadUrl() string {
+func (bt PythonBuildTool) DownloadURL(ctx context.Context) (string, error) {
 	opsys := ""
 	arch := ""
 	extension := "sh"
@@ -114,9 +114,8 @@ func (bt PythonBuildTool) DownloadUrl() string {
 		extension,
 	}
 
-	url, _ := TemplateToString(anacondaURLTemplate, data)
-
-	return url
+	url, err := TemplateToString(anacondaURLTemplate, data)
+	return url, err
 }
 
 func (bt PythonBuildTool) Setup(ctx context.Context, condaDir string) error {

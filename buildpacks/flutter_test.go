@@ -4,9 +4,9 @@ import (
 	"testing"
 )
 
-// Test_downloadUrlVersion tests the different version formats for downloading
+// Test_downloadURLVersion tests the different version formats for downloading
 // flutter
-func Test_downloadUrlVersion(t *testing.T) {
+func Test_downloadURLVersion(t *testing.T) {
 	tests := []struct {
 		in   string
 		want string
@@ -46,8 +46,8 @@ func Test_downloadUrlVersion(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {
-			if got := downloadUrlVersion(tt.in); got != tt.want {
-				t.Errorf("downloadUrlVersion() = %v, want %v", got, tt.want)
+			if got := downloadURLVersion(tt.in); got != tt.want {
+				t.Errorf("downloadURLVersion() = %v, want %v", got, tt.want)
 			}
 		})
 	}
