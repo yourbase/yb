@@ -90,6 +90,9 @@ TODO: Install libssl-dev (or equivalent / warn) and zlib-dev based on platform
 */
 func (bt RubyBuildTool) Install(ctx context.Context) (string, error) {
 	t := bt.spec.InstallTarget
+	if err := bt.installPlatformDependencies(ctx); err != nil {
+		return "", err
+	}
 
 	rbenvDir := filepath.Join(t.ToolsDir(ctx), "rbenv")
 	rubyVersionsDir := filepath.Join(rbenvDir, "versions")
@@ -195,24 +198,6 @@ func (bt RubyBuildTool) Setup(ctx context.Context, rubyDir string) error {
 	return nil
 }
 
-// TODO When we have another type of isolation mechanism, change this to support it
-/*func (bt RubyBuildTool) InstallPlatformDependencies() error {
-	gi := goInfo.GetInfo()
-	if gi.GoOS == "darwin" {
-		if strings.HasPrefix(gi.Core, "18.") {
-			// Need to install the headers on Mojave
-			if !PathExists("/usr/include/zlib.h") {
-				installCmd := "sudo -S installer -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg -target /"
-				log.Infof("Going to run: %s", installCmd)
-				cmdArgs := strings.Split(installCmd, " ")
-				cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
-				cmd.Stdout = os.Stdout
-				cmd.Stdin = os.Stdin
-				cmd.Stderr = os.Stderr
-				cmd.Run()
-			}
-		}
-	}
-
-	return nil
-}*/
+func (bt RubyBuildTool) installPlatformDependencies(ctx context.Context) error {
+	return installPlatformDependencies(ctx, bt)
+}
