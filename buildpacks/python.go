@@ -34,6 +34,9 @@ func (bt PythonBuildTool) Version() string {
 
 func (bt PythonBuildTool) Install(ctx context.Context) (string, error) {
 	t := bt.spec.InstallTarget
+	if err := bt.installPlatformDependencies(ctx); err != nil {
+		return "", err
+	}
 
 	anacondaDir := filepath.Join(t.ToolsDir(ctx), "miniconda3", "miniconda-"+anacondaToolVersion)
 	setupDir := bt.spec.PackageDir
@@ -154,4 +157,8 @@ func (bt PythonBuildTool) Setup(ctx context.Context, condaDir string) error {
 
 	return nil
 
+}
+
+func (bt PythonBuildTool) installPlatformDependencies(ctx context.Context) error {
+	return installPlatformDependencies(ctx, bt)
 }

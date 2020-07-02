@@ -17,6 +17,7 @@ import (
 
 	"github.com/google/shlex"
 	"github.com/johnewart/archiver"
+	"github.com/matishsiao/goInfo"
 	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 )
@@ -39,8 +40,11 @@ func (t *MetalTarget) OS() Os {
 	return Unknown
 }
 
-// TODO: Add support for the OS's here
 func (t *MetalTarget) OSVersion(ctx context.Context) string {
+	info := goInfo.GetInfo()
+	if info.Core != "" {
+		return info.Core
+	}
 	return "unknown"
 }
 
