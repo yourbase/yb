@@ -207,6 +207,8 @@ func (t *MetalTarget) ExecToStdoutWithEnv(ctx context.Context, cmdString string,
 	cmd.Stderr = os.Stdout
 	cmd.Env = env
 
+	log.Debugf("Process env: %v", env)
+
 	err = cmd.Run()
 
 	if err != nil {
