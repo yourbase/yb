@@ -90,9 +90,6 @@ TODO: Install libssl-dev (or equivalent / warn) and zlib-dev based on platform
 */
 func (bt RubyBuildTool) Install(ctx context.Context) (string, error) {
 	t := bt.spec.InstallTarget
-	if err := bt.installPlatformDependencies(ctx); err != nil {
-		return "", err
-	}
 
 	rbenvDir := filepath.Join(t.ToolsDir(ctx), "rbenv")
 	rubyVersionsDir := filepath.Join(rbenvDir, "versions")
@@ -196,8 +193,4 @@ func (bt RubyBuildTool) Setup(ctx context.Context, rubyDir string) error {
 	t.PrependToPath(ctx, gemBinDir)
 
 	return nil
-}
-
-func (bt RubyBuildTool) installPlatformDependencies(ctx context.Context) error {
-	return installPlatformDependencies(ctx, bt)
 }

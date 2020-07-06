@@ -221,9 +221,6 @@ func (bt HomebrewBuildTool) installDarwin(ctx context.Context, brewDir string) e
 
 func (bt HomebrewBuildTool) installLinux(ctx context.Context, brewDir string) error {
 	t := bt.spec.InstallTarget
-	if err := bt.installPlatformDependencies(ctx); err != nil {
-		return err
-	}
 
 	brewGitUrl := "https://github.com/Homebrew/brew.git"
 
@@ -278,10 +275,4 @@ func (bt HomebrewBuildTool) Setup(ctx context.Context, brewDir string) error {
 func (bt HomebrewBuildTool) DownloadURL(ctx context.Context) (string, error) {
 	// No-op
 	return "", nil
-}
-
-// TODO dig up if homebrew for Mac OS needs something special
-func (bt HomebrewBuildTool) installPlatformDependencies(ctx context.Context) error {
-	// Currently a no-op
-	return nil
 }
