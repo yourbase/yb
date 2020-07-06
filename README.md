@@ -163,7 +163,7 @@ Currently, the _inner_ yb that runs inside the build container will use the stab
 
 # Mac OS X dependency
 
-Some build packs (Python, Ruby and Homebrew) needs Mac OS SDK Headers to be installed:
+Some build packs (Python, Ruby and Homebrew) needs macOS SDK Headers to be installed:
 `sudo -S installer -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg -target /`
 
 # Contributing 
@@ -175,4 +175,3 @@ information.
 
 This project is licensed under the Apache 2.0 license, please see the LICENSE
 file for more information.
-
