@@ -1,4 +1,4 @@
-package cli
+package remote
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 	"github.com/yourbase/yb/plumbing/log"
 )
 
-func fastFindAncestor(r *git.Repository) (h plumbing.Hash, c int, branchName string) {
+func fastFindAncestor(r *git.Repository) (headCommit, remoteCommit, ancestorCommit *object.Commit, h plumbing.Hash, c int, branchName string, err error) {
 	/*
 		go doc gopkg.in/src-d/go-git.v4/plumbing/object Commit.MergeBase
 
@@ -48,12 +48,12 @@ func fastFindAncestor(r *git.Repository) (h plumbing.Hash, c int, branchName str
 		branchName = ref.Name().Short() // "master"
 	}
 
-	headCommit, err := r.CommitObject(ref.Hash())
+	headCommit, err = r.CommitObject(ref.Hash())
 	if err != nil {
 		log.Errorf("%v", err)
 		return
 	}
-	remoteCommit, err := r.CommitObject(remoteBranch.Hash())
+	remoteCommit, err = r.CommitObject(remoteBranch.Hash())
 	if err != nil {
 		log.Errorf("%v", err)
 		return
@@ -70,6 +70,10 @@ func fastFindAncestor(r *git.Repository) (h plumbing.Hash, c int, branchName str
 	// For now we'll return the first one
 	if len(commonAncestors) > 0 {
 		h = commonAncestors[0].Hash
+		ancestorCommit, err = r.CommitObject(h)
+		if err != nil {
+			return
+		}
 	}
 
 	// Show remote name from branch complete name

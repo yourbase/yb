@@ -266,7 +266,7 @@ func (t *ContainerTarget) Run(ctx context.Context, p Process) error {
 			if code, ok := narwhal.IsExitError(err); ok {
 				return &TargetRunError{
 					ExitCode: code,
-					Message:  fmt.Sprintf("Error: %v", err),
+					Message:  fmt.Sprintf("error: %w", err),
 				}
 			}
 		}
