@@ -9,6 +9,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/johnewart/subcommands"
@@ -58,14 +59,21 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 	}
 
 	var pkg workspace.Package
-	if len(f.Args()) > 0 {
-		pkgName := f.Arg(0)
-		pkg, err = ws.PackageByName(pkgName)
+	var target, pkgName string
+	if f.NArg() > 0 {
+		pkgName, target, err = parseArgs(f.Arg(0))
 		if err != nil {
-			log.Errorf("Unable to find package named %s: %v", pkgName, err)
+			log.Errorf("Unable to parse argument: %v", err)
 			return subcommands.ExitFailure
 		}
-	} else {
+
+		pkg, err = ws.PackageByName(pkgName)
+		if err != nil {
+			log.Errorf("Unable to find package name %s: %v", pkgName, err)
+			return subcommands.ExitFailure
+		}
+	}
+	if pkgName == "" {
 		pkg, err = ws.TargetPackage()
 		if err != nil {
 			log.Errorf("Unable to find default package: %v", err)
@@ -76,11 +84,12 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 	var targetTimers []workspace.TargetTimer
 
 	buildFlags := workspace.BuildFlags{
-		HostOnly:   b.NoContainer,
-		CleanBuild: b.CleanBuild,
-		ExecPrefix: b.ExecPrefix,
+		HostOnly:         b.NoContainer,
+		CleanBuild:       b.CleanBuild,
+		ExecPrefix:       b.ExecPrefix,
+		DependenciesOnly: b.DependenciesOnly,
 	}
-	stepTimers, buildError := pkg.Build(ctx, buildFlags)
+	stepTimers, buildError := pkg.Build(ctx, buildFlags, target)
 
 	if err != nil {
 		log.Errorf("Failed to build target package: %v\n", err)
@@ -165,6 +174,25 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 
 	// No errors, :+1:
 	return subcommands.ExitSuccess
+}
+
+func parseArgs(lonelyArg string) (pkgName, target string, err error) {
+	if strings.HasPrefix(lonelyArg, "@") {
+		// Parse package lonelyArg and target lonelyArg
+		// <@package:target>
+
+		parts := strings.SplitN(strings.TrimPrefix(lonelyArg, "@"), ":", 2)
+		if len(parts) < 2 {
+			err = fmt.Errorf("unable to parse package/target definition: %s", lonelyArg)
+			return
+		}
+		pkgName = parts[0]
+
+		target = parts[1]
+	} else {
+		target = lonelyArg
+	}
+	return
 }
 
 func UploadBuildLogsToAPI(buf *bytes.Buffer) {

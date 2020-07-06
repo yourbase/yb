@@ -2,14 +2,14 @@ module github.com/yourbase/yb
 
 require (
 	github.com/beholders-eye/diffparser v0.0.0-20190814025112-fcedf0a097ba
-	github.com/containerd/containerd v1.3.5 // indirect
+	github.com/containerd/containerd v1.3.6 // indirect
 	github.com/containerd/continuity v0.0.0-20200413184840-d3ef23f19fbb // indirect
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/equinox-io/equinox v1.2.0
 	github.com/frankban/quicktest v1.5.0 // indirect
 	github.com/fsouza/go-dockerclient v1.6.5 // indirect
 	github.com/gobwas/httphead v0.0.0-20180130184737-2c6c146eadee // indirect
-	github.com/gobwas/pool v0.2.0 // indirect
+	github.com/gobwas/pool v0.2.1 // indirect
 	github.com/gobwas/ws v1.0.3
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
@@ -39,7 +39,7 @@ require (
 	golang.org/x/net v0.0.0-20200625001655-4c5254603344 // indirect
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208 // indirect
 	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae // indirect
-	google.golang.org/genproto v0.0.0-20200626011028-ee7919e894b5 // indirect
+	google.golang.org/genproto v0.0.0-20200701001935-0939c5918c31 // indirect
 	google.golang.org/grpc v1.30.0 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/ini.v1 v1.57.0

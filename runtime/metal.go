@@ -22,7 +22,6 @@ import (
 )
 
 type MetalTarget struct {
-	Target
 	workDir string
 }
 
@@ -185,6 +184,9 @@ func (t *MetalTarget) Run(ctx context.Context, p Process) error {
 func (t *MetalTarget) SetEnv(key string, value string) error {
 	return os.Setenv(key, value)
 }
+func (t *MetalTarget) MkdirAsNeeded(ctx context.Context, path string) error {
+	return plumbing.MkdirAsNeeded(path)
+}
 
 func (t *MetalTarget) ExecToStdoutWithExtraEnv(ctx context.Context, cmdString string, targetDir string, env []string) error {
 	env = append(os.Environ(), env...)
@@ -305,6 +307,10 @@ func (t *MetalTarget) ExecToLogWithProgressDots(ctx context.Context, cmdString s
 	}()
 
 	return t.ExecToLog(ctx, cmdString, targetDir, logPath)
+}
+
+func (t *MetalTarget) WriteFileContents(ctx context.Context, contents string, path string) error {
+	return ioutil.WriteFile(path, []byte(contents), 0644)
 }
 
 func CacheFilenameForUrl(url string) (string, error) {
