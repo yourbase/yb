@@ -161,6 +161,11 @@ You can change yb to other channels by using `-channel`:
 
 Currently, the _inner_ yb that runs inside the build container will use the stable channel by default. To change that, set the environment variable `YB_UPDATE_CHANNEL=unstable` before running yb.
 
+# Mac OS X dependency
+
+Some build packs (Python, Ruby and Homebrew) needs Mac OS SDK Headers to be installed:
+`sudo -S installer -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg -target /`
+
 # Contributing 
 
 We welcome contributions to this CLI, please see the CONTRIBUTING file for more
