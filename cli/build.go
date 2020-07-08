@@ -65,14 +65,13 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 		if err != nil {
 			log.Errorf("Unable to parse argument: %v", err)
 			return subcommands.ExitFailure
-		} else {
-			if pkgName != "" {
-				pkg, err = ws.PackageByName(pkgName)
-				if err != nil {
-					log.Errorf("Unable to find package name %s: %v", pkgName, err)
-					return subcommands.ExitFailure
-				}
-			}
+		}
+	}
+	if pkgName != "" {
+		pkg, err = ws.PackageByName(pkgName)
+		if err != nil {
+			log.Errorf("Unable to find package name %s: %v", pkgName, err)
+			return subcommands.ExitFailure
 		}
 	}
 	if pkgName == "" {
