@@ -10,6 +10,11 @@ import (
 	. "github.com/yourbase/yb/types"
 )
 
+const (
+	anacondaToolVersion = "4.8.3"
+	anacondaURLTemplate = "https://repo.continuum.io/miniconda/Miniconda{{.PyNum}}-{{.Version}}-{{.OS}}-{{.Arch}}.{{.Extension}}"
+)
+
 type PythonBuildTool struct {
 	BuildTool
 	version string
@@ -17,8 +22,6 @@ type PythonBuildTool struct {
 }
 
 var ANACONDA_URL_TEMPLATE = "https://repo.continuum.io/miniconda/Miniconda{{.PyNum}}-{{.Version}}-{{.OS}}-{{.Arch}}.{{.Extension}}"
-
-const AnacondaToolVersion = "4.7.10"
 
 func NewPythonBuildTool(toolSpec BuildToolSpec) PythonBuildTool {
 	tool := PythonBuildTool{
@@ -34,7 +37,7 @@ func (bt PythonBuildTool) Version() string {
 }
 
 func (bt PythonBuildTool) AnacondaInstallDir() string {
-	return filepath.Join(bt.spec.SharedCacheDir, "miniconda3", fmt.Sprintf("miniconda-%s", AnacondaToolVersion))
+	return filepath.Join(bt.spec.SharedCacheDir, "miniconda3", fmt.Sprintf("miniconda-%s", anacondaToolVersion))
 }
 
 func (bt PythonBuildTool) EnvironmentDir() string {
