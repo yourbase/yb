@@ -5,7 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/blang/semver"
 	. "github.com/yourbase/yb/plumbing"
+
 	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 )
@@ -17,7 +19,8 @@ type AnacondaBuildTool struct {
 	pyCompatibleNum int
 }
 
-var ANACONDA_DIST_MIRROR = "https://repo.continuum.io/miniconda/Miniconda{{.PyNum}}-{{.Version}}-{{.OS}}-{{.Arch}}.{{.Extension}}"
+const anacondaDistMirrorTemplate = "https://repo.continuum.io/miniconda/Miniconda{{.PyNum}}-{{.Version}}-{{.OS}}-{{.Arch}}.{{.Extension}}"
+const anacondaNewerDistMirrorTemplate = "https://repo.continuum.io/miniconda/Miniconda{{.PyNum}}-{{.PyMajorVersion}}_{{.Version}}-{{.OS}}-{{.Arch}}.{{.Extension}}"
 
 func NewAnaconda2BuildTool(toolSpec BuildToolSpec) AnacondaBuildTool {
 	tool := AnacondaBuildTool{
@@ -78,6 +81,8 @@ func (bt AnacondaBuildTool) Install() error {
 }
 
 func (bt AnacondaBuildTool) DownloadUrl() string {
+	var v semver.Version
+
 	opsys := OS()
 	arch := Arch()
 	extension := "sh"
@@ -85,6 +90,12 @@ func (bt AnacondaBuildTool) DownloadUrl() string {
 
 	if version == "" {
 		version = "latest"
+	} else {
+		var errv error
+		v, errv = semver.Parse(version)
+		if errv != nil {
+			return ""
+		}
 	}
 
 	if arch == "amd64" {
@@ -105,20 +116,30 @@ func (bt AnacondaBuildTool) DownloadUrl() string {
 	}
 
 	data := struct {
-		PyNum     int
-		OS        string
-		Arch      string
-		Version   string
-		Extension string
+		PyNum          int
+		PyMajorVersion string
+		OS             string
+		Arch           string
+		Version        string
+		Extension      string
 	}{
 		bt.pyCompatibleNum,
+		"py37",
 		opsys,
 		arch,
 		version,
 		extension,
 	}
 
-	url, _ := TemplateToString(ANACONDA_DIST_MIRROR, data)
+	// Newest Miniconda installs has different installers for Python 3.7 and Python 3.8
+	// We'll stick to Python 3.7, the stable version right now
+	if v.Major == 4 && v.Minor == 8 {
+		url, err := TemplateToString(anacondaNewerDistMirrorTemplate, data)
+		log.Errorf("Unable to apply template: %v", err)
+		return url
+	}
+	url, err := TemplateToString(anacondaDistMirrorTemplate, data)
+	log.Errorf("Unable to apply template: %v", err)
 
 	return url
 }
