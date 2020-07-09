@@ -92,10 +92,9 @@ func doDownload(ctx context.Context, filepath string, url string) (err error) {
 	if err != nil {
 		return
 	}
-	client := &http.Client{}
 
 	// Get the data
-	resp, err := client.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return
 	}
