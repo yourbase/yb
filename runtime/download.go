@@ -6,12 +6,11 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"os/user"
 	"path/filepath"
 	"regexp"
-	"strings"
 
 	"github.com/yourbase/yb/plumbing/log"
+	"go4.org/xdgdir"
 )
 
 const defaultCacheDir = "/tmp/yourbase/cache"
@@ -20,13 +19,9 @@ func localCacheDir() string {
 	if cacheDir, exists := os.LookupEnv("YB_CACHE_DIR"); exists {
 		return cacheDir
 	}
-	// Resolve current homeDir
-	if u, err := user.Current(); err == nil && u.HomeDir != "" {
-		return filepath.Join(u.HomeDir, ".cache", "yourbase")
-	}
-	// Try again
-	if homeDir, exists := os.LookupEnv("HOME"); exists {
-		return filepath.Join(homeDir, ".cache", "yourbase")
+	// Tries to find a XDG Cache dir
+	if cacheDir := xdgdir.Cache.Path(); cacheDir != "" {
+		return filepath.Join(cacheDir, "yourbase")
 	}
 	return defaultCacheDir
 }
@@ -48,42 +43,40 @@ func downloadFileWithCache(ctx context.Context, url string) (string, error) {
 		return "", err
 	}
 
-	os.MkdirAll(cacheDir, 0700)
+	if err := os.MkdirAll(cacheDir, 0700); err != nil {
+		return "", fmt.Errorf("creating dir %s: %v", cacheDir, err)
+	}
 
 	cacheFilename := filepath.Join(cacheDir, filename)
 	log.Infof("Downloading %s to cache as %s", url, cacheFilename)
 
-	fileExists := false
-	fileSizeMismatch := false
-
 	// Exists, don't re-download
 	if fi, err := os.Stat(cacheFilename); !os.IsNotExist(err) && fi != nil {
-		fileExists = true
-
-		// try HEAD'ing the URL and comparing to local file
-		resp, err := http.Head(url)
-		if err == nil {
-			// checks response HTTP status
-			// 404, 500 or others like it
-			if strings.HasPrefix(resp.Status, "40") || strings.HasPrefix(resp.Status, "50") {
-				return "", fmt.Errorf("%s status %s", url, resp.Status)
-			}
-			if fi.Size() != resp.ContentLength {
-				log.Infof("Re-downloading %s because remote file and local file differ in size", url)
-				fileSizeMismatch = true
-			}
-		} else {
-			return "", fmt.Errorf("fetching %s: %v", url, err)
+		// Cancellable request
+		req, err := http.NewRequestWithContext(ctx, "HEAD", url, nil)
+		if err != nil {
+			return "", err
 		}
 
-	}
+		// try HEAD'ing the URL and comparing to local file
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return "", fmt.Errorf("fetching %s: %v", url, err)
+		}
+		// checks response HTTP status
+		// TODO add support for retrying and resuming partial downloads
+		if resp.StatusCode != http.StatusOK {
+			return "", fmt.Errorf("%s status %s", url, resp.Status)
+		}
+		if fi.Size() == resp.ContentLength {
+			log.Infof("Re-using cached version of %s", url)
+			return cacheFilename, nil
+		}
 
-	// TODO add checksum validation
+		// TODO add checksum validation
 
-	if fileExists && !fileSizeMismatch {
-		// No mismatch known, but exists, use cached version
-		log.Infof("Re-using cached version of %s", url)
-		return cacheFilename, nil
+		log.Infof("Re-downloading %s because remote file and local file differ in size", url)
+
 	}
 
 	// Otherwise download
@@ -91,30 +84,41 @@ func downloadFileWithCache(ctx context.Context, url string) (string, error) {
 	return cacheFilename, err
 }
 
-func doDownload(ctx context.Context, filepath string, url string) error {
+// doDownload uses a named err to better control edge cases of async writes to the disk
+func doDownload(ctx context.Context, filepath string, url string) (err error) {
 
 	// Cancellable request
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		return err
+		return
 	}
 	client := &http.Client{}
 
 	// Get the data
 	resp, err := client.Do(req)
 	if err != nil {
-		return err
+		return
 	}
-	defer resp.Body.Close()
+	defer func() {
+		cerr := resp.Body.Close()
+		if err == nil {
+			err = cerr
+		}
+	}()
 
 	// Create the file
 	out, err := os.Create(filepath)
 	if err != nil {
-		return err
+		return
 	}
-	defer out.Close()
+	defer func() {
+		cerr := out.Close()
+		if err == nil {
+			err = cerr
+		}
+	}()
 
 	// Write the body to file
 	_, err = io.Copy(out, resp.Body)
-	return err
+	return
 }
