@@ -3,8 +3,10 @@ package runtime
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -13,9 +15,17 @@ import (
 )
 
 func Test_downloadFileWithCache(t *testing.T) {
-	contantMock := "Please download me"
+	const constantMock = "Please download me"
+	var headMethodCount, getMethodCount int
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, contantMock)
+		t.Logf("Current request: %v\nMethod: %s", r, r.Method)
+		switch r.Method {
+		case "HEAD":
+			headMethodCount += 1
+		case "GET", "":
+			getMethodCount += 1
+		}
+		fmt.Fprint(w, constantMock)
 	}))
 
 	defer ts.Close()
@@ -25,11 +35,25 @@ func Test_downloadFileWithCache(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cacheFilename == "" {
-		t.Error("got an empty sring instead of a cache filename")
-	}
 	if !strings.HasPrefix(cacheFilename, cachePath) {
 		t.Errorf("cache filename doesn't start with %s", cachePath)
+	}
+
+	// Checks contents
+	data, err := ioutil.ReadFile(cacheFilename)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if constantMock != string(data) {
+		t.Errorf("file contents: want '%s'; got '%s'", constantMock, data)
+	}
+
+	if headMethodCount > 0 {
+		t.Errorf("expected 0 HEAD, got %d", headMethodCount)
+	}
+	if getMethodCount > 1 {
+		t.Errorf("expected 1 GET, got: %d", getMethodCount)
 	}
 
 	// Try again the same URL, should hit cache
@@ -37,10 +61,29 @@ func Test_downloadFileWithCache(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cacheFilename == "" {
-		t.Error("got an empty sring instead of a cache filename")
-	}
 	if !strings.HasPrefix(cacheFilename, cachePath) {
 		t.Errorf("cache filename doesn't start with %s", cachePath)
 	}
+
+	// Checks contents
+	data, err = ioutil.ReadFile(cacheFilename)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if constantMock != string(data) {
+		t.Errorf("file contents: want %s; got %s", constantMock, data)
+	}
+
+	if headMethodCount > 1 {
+		t.Errorf("expected 1 HEAD, got: %d", headMethodCount)
+	}
+	if getMethodCount > 1 {
+		t.Errorf("expected 1 GET, got: %d", getMethodCount)
+	}
+
+	if err := os.Remove(cacheFilename); err != nil {
+		t.Fatal(err)
+	}
+
 }

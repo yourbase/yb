@@ -51,7 +51,7 @@ func downloadFileWithCache(ctx context.Context, url string) (string, error) {
 	log.Infof("Downloading %s to cache as %s", url, cacheFilename)
 
 	// Exists, don't re-download
-	if fi, err := os.Stat(cacheFilename); !os.IsNotExist(err) && fi != nil {
+	if fi, err := os.Stat(cacheFilename); err == nil {
 		// Cancellable request
 		req, err := http.NewRequestWithContext(ctx, "HEAD", url, nil)
 		if err != nil {
@@ -62,6 +62,10 @@ func downloadFileWithCache(ctx context.Context, url string) (string, error) {
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			return "", fmt.Errorf("fetching %s: %v", url, err)
+		}
+		if err := resp.Body.Close(); err != nil {
+			// Non fatal
+			log.Warnf("trying to close response body: %v", err)
 		}
 		// checks response HTTP status
 		// TODO add support for retrying and resuming partial downloads
