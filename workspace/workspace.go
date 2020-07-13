@@ -95,7 +95,7 @@ func (w Workspace) TargetPackage() (Package, error) {
 	if w.Target != "" {
 		return w.PackageByName(w.Target)
 	} else {
-		return Package{}, fmt.Errorf("No default package specified for the workspace")
+		return Package{}, fmt.Errorf("no default package specified for the workspace")
 	}
 }
 
@@ -106,7 +106,7 @@ func (w Workspace) PackageByName(name string) (Package, error) {
 		}
 	}
 
-	return Package{}, fmt.Errorf("No package with name %s found in the workspace", name)
+	return Package{}, fmt.Errorf("no package with name %s found in the workspace", name)
 }
 
 func (w Workspace) PackageList() []Package {
@@ -146,7 +146,7 @@ func loadWorkspaceFromPackage(manifestFile string, path string) (Workspace, erro
 	pkg.Workspace = &workspace
 
 	if err != nil {
-		return workspace, fmt.Errorf("Couldn't load package for workspace: %v", err)
+		return workspace, fmt.Errorf("loading package for workspace: %v", err)
 	}
 
 	workspacesRoot, exists := os.LookupEnv("YB_WORKSPACES_ROOT")
@@ -176,7 +176,7 @@ func loadWorkspaceFromConfigYaml(configFile string, path string) (Workspace, err
 	err := yaml.Unmarshal([]byte(configyaml), &workspace)
 
 	if err != nil {
-		return Workspace{}, fmt.Errorf("Error loading workspace config!")
+		return Workspace{}, fmt.Errorf("loading workspace config!")
 	}
 
 	workspace.Path = path

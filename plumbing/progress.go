@@ -1,5 +1,5 @@
 // This came from https://raw.githubusercontent.com/BTBurke/clt/7f5151b6bef1b0da4b03f965b47cbe2de87a3ac0/progress.go
-// NOTE the next steps in the field of UX for the CLI, we should consider moving to use clt
+// TODO use github.com/urfave/cli/v2 + github.com/manifoldco/promptui + github.com/vbauerster/mpb
 package plumbing
 
 import (

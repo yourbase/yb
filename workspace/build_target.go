@@ -197,7 +197,7 @@ func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, ou
 			}
 			stepTimes = append(stepTimes, errorTimer)
 
-			return stepTimes, fmt.Errorf("can't add container %s: %v", cd.Label, err)
+			return stepTimes, fmt.Errorf("adding container %s: %v", cd.Label, err)
 		}
 	}
 
