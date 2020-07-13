@@ -81,14 +81,14 @@ func LoadBuildPacks(ctx context.Context, installTarget runtime.Target, dependenc
 		case "protoc":
 			bt = buildpacks.NewProtocBuildTool(spec)
 		default:
-			return setupTimers, fmt.Errorf("Unknown build tool: %s\n", toolSpec)
+			return setupTimers, fmt.Errorf("unknown build tool: %s\n", toolSpec)
 		}
 
 		// Install if needed
 		startTime := time.Now()
 		installedDir, err := bt.Install(ctx)
 		if err != nil {
-			return setupTimers, fmt.Errorf("Unable to install tool %s: %v", toolSpec, err)
+			return setupTimers, fmt.Errorf("installing tool %s: %v", toolSpec, err)
 		}
 		endTime := time.Now()
 		setupTimers = append(setupTimers, CommandTimer{
@@ -100,7 +100,7 @@ func LoadBuildPacks(ctx context.Context, installTarget runtime.Target, dependenc
 		// Setup build tool (paths, env, etc)
 		startTime = time.Now()
 		if err := bt.Setup(ctx, installedDir); err != nil {
-			return setupTimers, fmt.Errorf("Unable to setup tool %s: %v", toolSpec, err)
+			return setupTimers, fmt.Errorf("setting up tool %s: %v", toolSpec, err)
 		}
 		endTime = time.Now()
 		setupTimers = append(setupTimers, CommandTimer{

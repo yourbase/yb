@@ -69,7 +69,7 @@ func (bt PythonBuildTool) Install(ctx context.Context) (string, error) {
 			Directory: setupDir,
 		}
 		if err := t.Run(ctx, p); err != nil {
-			return "", fmt.Errorf("Couldn't install python: %v", err)
+			return "", fmt.Errorf("installing python: %v", err)
 		}
 	}
 
@@ -145,7 +145,7 @@ func (bt PythonBuildTool) Setup(ctx context.Context, condaDir string) error {
 
 			if err := t.Run(ctx, p); err != nil {
 				log.Errorf("Unable to run setup command: %s", cmd)
-				return fmt.Errorf("Unable to run '%s': %v", cmd, err)
+				return fmt.Errorf("running '%s': %v", cmd, err)
 			}
 		}
 	}

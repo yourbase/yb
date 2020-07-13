@@ -29,7 +29,7 @@ func localCacheDir() string {
 func cacheFilenameForURL(url string) (string, error) {
 	reg, err := regexp.Compile("[^a-zA-Z0-9.]+")
 	if err != nil {
-		return "", fmt.Errorf("Can't compile regex: %v", err)
+		return "", fmt.Errorf("compiling regex: %v", err)
 	}
 	fileName := reg.ReplaceAllString(url, "")
 	return fileName, nil
@@ -65,7 +65,7 @@ func downloadFileWithCache(ctx context.Context, url string) (string, error) {
 		}
 		if err := resp.Body.Close(); err != nil {
 			// Non fatal
-			log.Warnf("trying to close response body: %v", err)
+			log.Warnf("Trying to close response body: %v", err)
 		}
 		// checks response HTTP status
 		// TODO add support for retrying and resuming partial downloads

@@ -89,7 +89,7 @@ func LoadPackage(name string, path string) (Package, error) {
 	buildyaml, _ := ioutil.ReadFile(buildYaml)
 	err := yaml.Unmarshal([]byte(buildyaml), &manifest)
 	if err != nil {
-		return Package{}, fmt.Errorf("Error loading %s for %s: %v", MANIFEST_FILE, name, err)
+		return Package{}, fmt.Errorf("loading %s for %s: %v", MANIFEST_FILE, name, err)
 	}
 
 	p := Package{
@@ -167,12 +167,12 @@ func (p Package) createExecutionTarget(ctx context.Context, runtimeCtx *runtime.
 	for _, cd := range containers {
 		cd.LocalWorkDir = localContainerWorkDir
 		if err := p.checkMounts(&cd, localContainerWorkDir); err != nil {
-			return nil, fmt.Errorf("Unable to set host container mount dir: %v", err)
+			return nil, fmt.Errorf("set host container mount dir: %v", err)
 		}
 
 		_, err := runtimeCtx.AddContainer(ctx, cd)
 		if err != nil {
-			return nil, fmt.Errorf("Couldn't start container dependency: %v", err)
+			return nil, fmt.Errorf("starting container dependency: %v", err)
 		}
 	}
 
@@ -224,13 +224,13 @@ func (p Package) createExecutionTarget(ctx context.Context, runtimeCtx *runtime.
 		sourceMapDir = execContainer.WorkDir
 	}
 	if err := p.checkMounts(&execContainer, p.Path()); err != nil {
-		return nil, fmt.Errorf("Unable to set host container mount dir: %v", err)
+		return nil, fmt.Errorf("set host container mount dir: %v", err)
 	}
 	p.addMount(&execContainer, p.Path(), sourceMapDir, "package")
 
 	execTarget, err := runtimeCtx.AddContainer(ctx, execContainer)
 	if err != nil {
-		return nil, fmt.Errorf("Couldn't start exec container: %v", err)
+		return nil, fmt.Errorf("starting exec container: %v", err)
 	}
 
 	LoadBuildPacks(ctx, execTarget, p.Manifest.Dependencies.Build)
