@@ -110,6 +110,10 @@ func (bt GolangBuildTool) Install(ctx context.Context) (string, error) {
 
 	log.Infof("Downloading from URL %s ...", downloadURL)
 	localFile, err := t.DownloadFile(ctx, downloadURL)
+	if err != nil {
+		log.Errorf("Error downloading file: %v", err)
+		return "", err
+	}
 
 	err = t.Unarchive(ctx, localFile, installDir)
 	if err != nil {
