@@ -2,7 +2,6 @@ package buildpacks
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
 
 	"github.com/yourbase/yb/plumbing/log"
@@ -58,11 +57,13 @@ func (bt YarnBuildTool) Install(ctx context.Context) (string, error) {
 	log.Infof("Downloading from URL %s...", downloadURL)
 	localFile, err := t.DownloadFile(ctx, downloadURL)
 	if err != nil {
-		return "", fmt.Errorf("Unable to download %s: %v", downloadURL, err)
+		log.Errorf("Unable to download: %v", err)
+		return "", err
 	}
 
 	if err := t.Unarchive(ctx, localFile, installDir); err != nil {
-		return "", fmt.Errorf("Unable to decompress archive: %v", err)
+		log.Errorf("Unable to decompress: %v", err)
+		return "", err
 	}
 
 	return yarnDir, nil

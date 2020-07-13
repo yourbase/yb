@@ -15,17 +15,17 @@ import (
 
 func applyPatch(file *diffparser.DiffFile, from string) (to string, err error) {
 	if file == nil {
-		return "", fmt.Errorf("Needs a file to process")
+		return "", fmt.Errorf("no file to process")
 	}
 	lines := strings.Split(from, "\n")
 	if len(lines) == 0 {
-		return "", fmt.Errorf("Won't process an empty string")
+		return "", fmt.Errorf("empty string")
 	}
 	var unmatchedLines int64
 	for _, hunk := range file.Hunks {
 		idx := hunk.OrigRange.Start - 1
 		if idx < 0 {
-			return "", fmt.Errorf("Malformed patch, wrong start position (%d): %v\n", idx, strings.Join(file.Changes, "\n"))
+			return "", fmt.Errorf("wrong start position (%d): %v\n", idx, strings.Join(file.Changes, "\n"))
 		}
 		for i, line := range hunk.OrigRange.Lines {
 			index := idx + i
@@ -61,13 +61,13 @@ func applyPatch(file *diffparser.DiffFile, from string) (to string, err error) {
 //   If the worktree isn't passsed it will try working on the local directory
 func UnifiedPatchOnGit(patch string, commit *object.Commit, w, originWorktree *git.Worktree, wd string) (patchError error) {
 	if commit == nil && w == nil && wd == "" {
-		return fmt.Errorf("Nowhere to apply the patch on, please pass a git commit + git worktree, or a workdir to work on files")
+		return fmt.Errorf("no git commit + git worktree, or a workdir")
 	}
 
 	getCommitFileContents := func(file *diffparser.DiffFile) (contents string) {
 		tree, err := commit.Tree()
 		if err != nil {
-			patchError = fmt.Errorf("Unable to resolve commit tree: %v", err)
+			patchError = fmt.Errorf("resolving commit tree: %v", err)
 			return ""
 		}
 		var workFile *object.File
@@ -77,14 +77,14 @@ func UnifiedPatchOnGit(patch string, commit *object.Commit, w, originWorktree *g
 		case diffparser.MODIFIED:
 			workFile, err = tree.File(file.OrigName)
 			if err != nil {
-				patchError = fmt.Errorf("Unable to retrieve tree entry %s: %v", file.OrigName, err)
+				patchError = fmt.Errorf("retrieving tree entry %s: %v", file.OrigName, err)
 				return ""
 			}
 			contents, err = workFile.Contents()
 		case diffparser.NEW:
 			newFile, err := originWorktree.Filesystem.Open(file.NewName)
 			if err != nil {
-				patchError = fmt.Errorf("Unable to open %s on the work tree: %v", file.NewName, err)
+				patchError = fmt.Errorf("opening %s in the work tree: %v", file.NewName, err)
 				return ""
 			}
 			newBytes := bytes.NewBuffer(nil)
@@ -93,7 +93,7 @@ func UnifiedPatchOnGit(patch string, commit *object.Commit, w, originWorktree *g
 			_ = newFile.Close()
 		}
 		if err != nil {
-			patchError = fmt.Errorf("Couldn't get contents of %s: %v", file.OrigName, err)
+			patchError = fmt.Errorf("geting contents of %s: %v", file.OrigName, err)
 			return ""
 		}
 		return
@@ -102,7 +102,7 @@ func UnifiedPatchOnGit(patch string, commit *object.Commit, w, originWorktree *g
 	// Detect in the patch string (unified) which files were affected and how
 	diff, err := diffparser.Parse(patch)
 	if err != nil {
-		return fmt.Errorf("Generated patch parse failed: %v", err)
+		return fmt.Errorf("patch parsing: %v", err)
 	}
 
 	for _, file := range diff.Files {
@@ -111,25 +111,25 @@ func UnifiedPatchOnGit(patch string, commit *object.Commit, w, originWorktree *g
 		case diffparser.DELETED:
 			w.Remove(file.OrigName)
 		case diffparser.MOVED:
-			return fmt.Errorf("Not implemented yet")
+			return fmt.Errorf("not implemented yet")
 		default:
 			contents := getCommitFileContents(file)
 			if contents == "" && patchError != nil {
-				return fmt.Errorf("Unable to fetch contents from %s: %v", file, patchError)
+				return fmt.Errorf("fetching contents from %s: %v", file, patchError)
 			}
 
 			var fixedContents string
 			if file.Mode == diffparser.MODIFIED {
 				fixedContents, err = applyPatch(file, contents)
 				if err != nil {
-					return fmt.Errorf("Apply Patch failed for <%s>: %v", file, err)
+					return fmt.Errorf("applying patch for <%s>: %v", file, err)
 				}
 			}
 
 			if w != nil {
 				newFile, err := w.Filesystem.Create(file.NewName)
 				if err != nil {
-					return fmt.Errorf("Unable to open %s on the cloned tree: %v", file.NewName, err)
+					return fmt.Errorf("opening %s: %v", file.NewName, err)
 				}
 
 				var c string
@@ -139,14 +139,14 @@ func UnifiedPatchOnGit(patch string, commit *object.Commit, w, originWorktree *g
 					c = contents
 				}
 				if _, err = newFile.Write([]byte(c)); err != nil {
-					return fmt.Errorf("Unable to write patch hunk to %s: %v", file.NewName, err)
+					return fmt.Errorf("writing patch hunk to %s: %v", file.NewName, err)
 				}
 				_ = newFile.Close()
 
 				w.Add(file.NewName)
 			} else if wd != "" {
 				//TODO Change file contents directly on the directory
-				return fmt.Errorf("Not implemented")
+				return fmt.Errorf("not implemented")
 			}
 		}
 	}
