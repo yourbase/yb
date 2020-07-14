@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	MANIFEST_FILE        = ".yourbase.yml"
+	ManifestFile        = ".yourbase.yml"
 	DOCS_URL             = "https://docs.yourbase.io"
 	DEFAULT_YB_CONTAINER = "yourbase/yb_ubuntu:18.04"
 )

@@ -15,6 +15,7 @@ import (
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	"github.com/yourbase/yb/runtime"
+	. "github.com/yourbase/yb/types"
 )
 
 type Workspace struct {
@@ -216,11 +217,15 @@ func loadWorkspaceFromConfigYaml(configFile string, path string) (Workspace, err
 }
 
 func LoadWorkspace() (Workspace, error) {
+	return loadWorkspace()
+}
 
-	workspacePath, err := FindWorkspaceRoot()
+func loadWorkspace() (Workspace, error) {
+
+	workspacePath, err := findWorkspaceRoot()
 
 	if err != nil {
-		return Workspace{}, fmt.Errorf("error getting workspace path: %v", err)
+		return Workspace{}, fmt.Errorf("getting workspace path: %v", err)
 	}
 
 	manifestFile := filepath.Join(workspacePath, ".yourbase.yml")
@@ -232,7 +237,7 @@ func LoadWorkspace() (Workspace, error) {
 		log.Debugf("Loading workspace from manifest file: %s", manifestFile)
 		w, err = loadWorkspaceFromPackage(manifestFile, workspacePath)
 		if err != nil {
-			return Workspace{}, fmt.Errorf("unable to load manifest file: %s", manifestFile)
+			return Workspace{}, fmt.Errorf("loading manifest file %s: %v", manifestFile, err)
 		}
 		if err = validWorkspaceConfig(w); err != nil {
 			return Workspace{}, err
@@ -252,7 +257,7 @@ func LoadWorkspace() (Workspace, error) {
 		return w, nil
 	}
 
-	return Workspace{}, fmt.Errorf("error resolving workspace at path %s", workspacePath)
+	return Workspace{}, fmt.Errorf("resolving workspace at path %s", workspacePath)
 }
 
 // validWorkspaceConfig will check if every expected part of whole Configuration Graph is initialized
@@ -297,4 +302,60 @@ func validWorkspaceConfig(workspace Workspace) error {
 	}
 
 	return nil
+}
+
+// findWorkspaceRoot looks in the directory above the manifest file, if there's a config.yml, use that
+// otherwise we use the directory of the manifest file as the workspace root
+func findWorkspaceRoot() (string, error) {
+	wd, err := os.Getwd()
+
+	if err != nil {
+		panic(err)
+	}
+
+	if _, err := os.Stat(filepath.Join(wd, "config.yml")); err == nil {
+		// If we're currently in the directory with the config.yml
+		return wd, nil
+	}
+
+	// Look upwards to find a manifest file
+	packageDir, err := findNearestManifestFile()
+	if err != nil {
+		return "", err
+	}
+
+	// If we find a manifest file, check the parent directory for a config.yml
+	parent := filepath.Dir(packageDir)
+	if _, err := os.Stat(filepath.Join(parent, "config.yml")); err == nil {
+		return parent, nil
+	} else {
+		return packageDir, nil
+	}
+
+	// No config in the parent of the package? No workspace!
+	return "", fmt.Errorf("searching for a workspace root")
+}
+
+func findFileUpTree(filename string) (string, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+
+	for {
+		file_path := filepath.Join(wd, filename)
+		if _, err := os.Stat(file_path); err == nil {
+			return wd, nil
+		}
+
+		wd = filepath.Dir(wd)
+
+		if strings.HasSuffix(wd, "/") {
+			return "", fmt.Errorf("searching %s, ended up at the root", filename)
+		}
+	}
+}
+
+func findNearestManifestFile() (string, error) {
+	return findFileUpTree(ManifestFile)
 }

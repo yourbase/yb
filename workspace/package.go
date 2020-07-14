@@ -81,7 +81,7 @@ func (p Package) BuildRoot() string {
 
 func LoadPackage(name string, path string) (Package, error) {
 	manifest := BuildManifest{}
-	buildYaml := filepath.Join(path, MANIFEST_FILE)
+	buildYaml := filepath.Join(path, ManifestFile)
 	if _, err := os.Stat(buildYaml); os.IsNotExist(err) {
 		return Package{}, ErrNoManifestFile
 	}
@@ -89,7 +89,7 @@ func LoadPackage(name string, path string) (Package, error) {
 	buildyaml, _ := ioutil.ReadFile(buildYaml)
 	err := yaml.Unmarshal([]byte(buildyaml), &manifest)
 	if err != nil {
-		return Package{}, fmt.Errorf("loading %s for %s: %v", MANIFEST_FILE, name, err)
+		return Package{}, fmt.Errorf("loading %s for %s: %v", ManifestFile, name, err)
 	}
 
 	p := Package{
