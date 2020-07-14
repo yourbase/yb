@@ -23,6 +23,7 @@ const TIME_FORMAT = "15:04:05 MST"
 type BuildCmd struct {
 	Channel          string
 	Version          string
+	Date             string
 	ExecPrefix       string
 	NoContainer      bool
 	DependenciesOnly bool
