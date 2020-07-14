@@ -7,7 +7,7 @@ build_targets:
   - name: default
     commands:
       - go test ./...
-      - go build
+      - bash -c "go build -ldflags \"-X 'main.date=$(date)'\""
 
   - name: release
     build_after:

@@ -21,7 +21,7 @@ func main() {
 	cmdr.Register(cmdr.HelpCommand(), "")
 	cmdr.Register(cmdr.FlagsCommand(), "")
 	cmdr.Register(cmdr.CommandsCommand(), "")
-	cmdr.Register(&BuildCmd{Version: version, Channel: channel}, "")
+	cmdr.Register(&BuildCmd{Version: version, Channel: channel, Date: date}, "")
 	cmdr.Register(&CheckConfigCmd{}, "")
 	cmdr.Register(&ConfigCmd{}, "")
 	cmdr.Register(&ExecCmd{}, "")
@@ -32,7 +32,7 @@ func main() {
 	cmdr.Register(&RunCmd{}, "")
 	cmdr.Register(&UpdateCmd{}, "")
 	cmdr.Register(&WorkspaceCmd{}, "")
-	cmdr.Register(&VersionCmd{Version: version, Channel: channel}, "")
+	cmdr.Register(&VersionCmd{Version: version, Channel: channel, Date: date}, "")
 
 	flag.Parse()
 	ctx, cancel := context.WithCancel(context.Background())
