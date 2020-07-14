@@ -51,6 +51,7 @@ type Target interface {
 	PathExists(ctx context.Context, path string) bool
 	GetDefaultPath() string
 	ToolsDir(ctx context.Context) string
+	ToolOutputSharedDir(ctx context.Context) string
 	OS() Os
 	OSVersion(ctx context.Context) string
 	Architecture() Architecture

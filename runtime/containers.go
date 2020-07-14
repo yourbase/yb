@@ -18,9 +18,10 @@ import (
 
 const (
 	// Linux container defaults
-	containerDefaultToolsDir = "/opt/yb/tools"
-	containerDefaultCacheDir = "/opt/yb/cache"
-	containerDefaultWorkDir  = "/workspace"
+	containerDefaultToolsDir            = "/opt/yb/tools"
+	containerDefaultCacheDir            = "/opt/yb/cache"
+	containerDefaultToolOutputSharedDir = "/opt/yb/output"
+	containerDefaultWorkDir             = "/workspace"
 )
 
 type ContainerTarget struct {
@@ -80,6 +81,13 @@ func (t *ContainerTarget) ToolsDir(ctx context.Context) string {
 	return containerDefaultToolsDir
 }
 
+func (t *ContainerTarget) ToolOutputSharedDir(ctx context.Context) string {
+	err := narwhal.MkdirAll(ctx, narwhal.DockerClient(), t.Container.Id, containerDefaultToolOutputSharedDir)
+	if err != nil {
+		return ""
+	}
+	return defaultOutputSharedDir
+}
 func (t *ContainerTarget) PathExists(ctx context.Context, path string) bool {
 	// Assume we can use stat for now
 	statCmd := fmt.Sprintf("stat %s", path)

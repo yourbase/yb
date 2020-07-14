@@ -34,7 +34,7 @@ func (bt RustBuildTool) Setup(ctx context.Context, rustDir string) error {
 
 	t.PrependToPath(ctx, filepath.Join(rustDir, "bin"))
 
-	t.SetEnv("CARGO_HOME", rustDir)
+	t.SetEnv("CARGO_HOME", filepath.Join(t.ToolOutputSharedDir(ctx), "rust", bt.Version()))
 	t.SetEnv("RUSTUP_HOME", rustDir)
 
 	return nil
