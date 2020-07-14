@@ -1,0 +1,19 @@
+dependencies:
+  build:
+    # TODO Add "matrix like" support
+    # ruby:2.1.10
+    # ruby:2.2.10
+    # ruby:2.3.8
+    # ruby:2.4.10
+    # ruby:2.5.8
+    # ruby:2.6.6
+    # ruby:latest (head)
+    - ruby:2.7.1
+
+build_targets:
+  - name: default
+    commands:
+      - bundle update --bundler
+      - bundle install --jobs=3
+      - ./bin/test Gemfile
+      - ./bin/test gemfiles/Gemfile.rails-6.0-stable
