@@ -10,6 +10,7 @@ build_targets:
       - bash -c "go build -ldflags \"-X 'main.date=$(date)'\""
 
   - name: integration
+    host_only: true
     commands:
       - bash -c "cd integration-tests; yb build -no-container"
       - bash -c "cd integration-tests; yb build -no-container python"

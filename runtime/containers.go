@@ -163,15 +163,26 @@ func (t *ContainerTarget) DownloadFile(ctx context.Context, url string) (string,
 	// TODO: upload if locally found
 
 	localFile, err := downloadFileWithCache(ctx, url)
+	if err != nil {
+		return "", err
+	}
+	if !strings.Contains(url, "/") {
+		return "", fmt.Errorf("downloading URL %s: bad URL?", url)
+	}
+
+	const injectPath = "/var/tmp/yb-inject/"
+	err = t.MkdirAsNeeded(ctx, injectPath)
+	if err != nil {
+		return "", err
+	}
+
 	parts := strings.Split(url, "/")
 	filename := parts[len(parts)-1]
-	outputFilename := fmt.Sprintf("/tmp/%s", filename)
+	outputFilename := injectPath + filename
 
-	if err == nil {
-		// Downloaded locally, inject
-		log.Infof("Injecting locally cached file %s as %s", localFile, outputFilename)
-		err = narwhal.UploadFile(ctx, narwhal.DockerClient(), t.Container.Id, outputFilename, localFile)
-	}
+	// Downloaded locally, inject
+	log.Infof("Injecting locally cached file %s as %s", localFile, outputFilename)
+	err = narwhal.UploadFile(ctx, narwhal.DockerClient(), t.Container.Id, outputFilename, localFile)
 
 	// If download or injection failed, fallback
 	if err != nil {
@@ -179,7 +190,7 @@ func (t *ContainerTarget) DownloadFile(ctx context.Context, url string) (string,
 		log.Infof("Will download via curl in container")
 		p := Process{
 			Command:     fmt.Sprintf("curl %s -o %s", url, outputFilename),
-			Directory:   "/tmp",
+			Directory:   injectPath,
 			Interactive: false,
 		}
 
@@ -232,6 +243,35 @@ func (t *ContainerTarget) SetEnv(key string, value string) error {
 	return nil
 }
 
+func (t *ContainerTarget) processUidGid(ctx context.Context, p Process, opts *narwhal.ExecShellOptions) error {
+	if p.UID == "0" || p.GID == "0" {
+		return nil
+	}
+
+	// A little, at first, naive but realistic table
+	packageManagers := []string{
+		"apt",
+		"dpkg",
+		"apk",
+		"yum",
+		"rpm",
+		"emerge",
+		"ebuild",
+		"cave",
+	}
+	for _, pkg := range packageManagers {
+		if strings.HasPrefix(p.Command, pkg) {
+			p.UID = "0"
+			p.GID = "0"
+			return nil
+		}
+	}
+
+	opts.UID = p.UID
+	opts.GID = p.GID
+	return nil
+}
+
 func (t *ContainerTarget) Run(ctx context.Context, p Process) error {
 	log.Infof("Running container process: %s\n", p.Command)
 
@@ -248,20 +288,21 @@ func (t *ContainerTarget) Run(ctx context.Context, p Process) error {
 	}
 
 	t.Container.Definition.Environment = p.Environment
+	opts := &narwhal.ExecShellOptions{
+		Dir:            p.Directory,
+		CombinedOutput: output,
+		Env:            p.Environment,
+	}
+
+	if err := t.processUidGid(ctx, p, opts); err != nil {
+		return err
+	}
 
 	if p.Interactive {
-		return narwhal.ExecShell(ctx, narwhal.DockerClient(), t.Container.Id, p.Command, &narwhal.ExecShellOptions{
-			Dir:            p.Directory,
-			CombinedOutput: output,
-			Env:            p.Environment,
-			Interactive:    true,
-		})
+		opts.Interactive = true
+		return narwhal.ExecShell(ctx, narwhal.DockerClient(), t.Container.Id, p.Command, opts)
 	} else {
-		err := narwhal.ExecShell(ctx, narwhal.DockerClient(), t.Container.Id, p.Command, &narwhal.ExecShellOptions{
-			Dir:            p.Directory,
-			CombinedOutput: output,
-			Env:            p.Environment,
-		})
+		err := narwhal.ExecShell(ctx, narwhal.DockerClient(), t.Container.Id, p.Command, opts)
 		if err != nil {
 			if code, ok := narwhal.IsExitError(err); ok {
 				return &TargetRunError{

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os/user"
 	"strings"
 
 	"github.com/yourbase/yb/plumbing/log"
@@ -63,6 +64,8 @@ type Process struct {
 	Interactive bool
 	Directory   string
 	Environment []string
+	UID         string
+	GID         string
 	Output      io.Writer
 }
 
@@ -93,10 +96,20 @@ func (r *Runtime) AddTarget(targetId string, t Target) error {
 }
 
 func (r *Runtime) Run(ctx context.Context, p Process) error {
+	var err error
+	p.UID, p.GID, err = runningUserGroup()
+	if err != nil {
+		return err
+	}
 	return r.DefaultTarget.Run(ctx, p)
 }
 
 func (r *Runtime) RunInTarget(ctx context.Context, p Process, targetId string) error {
+	var err error
+	p.UID, p.GID, err = runningUserGroup()
+	if err != nil {
+		return err
+	}
 	if target, exists := r.Targets[targetId]; exists {
 		return target.Run(ctx, p)
 	} else {
@@ -151,6 +164,8 @@ func NewRuntime(ctx context.Context, identifier string, localWorkDir string) *Ru
 		log.Infof("Container service context failed to initialize - containers won't be supported: %v", err)
 		sc = nil
 	}
+
+	// Should run user commands with the current user
 
 	return &Runtime{
 		Identifier:              identifier,
@@ -234,4 +249,12 @@ func HostOS() Os {
 	default:
 		return Unknown
 	}
+}
+
+func runningUserGroup() (string, string, error) {
+	u, err := user.Current()
+	if err != nil {
+		return "", "", err
+	}
+	return u.Uid, u.Gid, nil
 }
