@@ -76,6 +76,7 @@ func (t *ContainerTarget) Architecture() Architecture {
 func (t *ContainerTarget) ToolsDir(ctx context.Context) string {
 	err := narwhal.MkdirAll(ctx, narwhal.DockerClient(), t.Container.Id, containerDefaultToolsDir)
 	if err != nil {
+		log.Errorf("Unable to create %s inside the container: %v", containerDefaultToolsDir, err)
 		return ""
 	}
 	return containerDefaultToolsDir
@@ -84,9 +85,10 @@ func (t *ContainerTarget) ToolsDir(ctx context.Context) string {
 func (t *ContainerTarget) ToolOutputSharedDir(ctx context.Context) string {
 	err := narwhal.MkdirAll(ctx, narwhal.DockerClient(), t.Container.Id, containerDefaultToolOutputSharedDir)
 	if err != nil {
+		log.Errorf("Unable to create %s inside the container: %v", containerDefaultToolOutputSharedDir, err)
 		return ""
 	}
-	return defaultOutputSharedDir
+	return containerDefaultToolOutputSharedDir
 }
 func (t *ContainerTarget) PathExists(ctx context.Context, path string) bool {
 	// Assume we can use stat for now

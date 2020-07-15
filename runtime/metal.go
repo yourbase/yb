@@ -83,8 +83,8 @@ func toolsDir() string {
 		return toolsDir
 	}
 	// Tries to find a XDG Shared dir
-	if toolsDir := xdgdir.Runtime.Path(); toolsDir != "" {
-		return filepath.Join(toolsDir, "yourbase")
+	if toolsDir := xdgdir.Data.Path(); toolsDir != "" {
+		return filepath.Join(toolsDir, "yourbase", "tools")
 	}
 	return defaultToolsDir
 }
