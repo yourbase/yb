@@ -108,6 +108,16 @@ func TestGitRemoteParse(t *testing.T) {
 			org:      "something",
 			rType:    SshRemote,
 		},
+		{
+			in:       "ssh://git@gitlab.xu/something/where",
+			token:    "",
+			user:     "git",
+			password: "",
+			valid:    true,
+			project:  "where",
+			org:      "something",
+			rType:    SshRemote,
+		},
 	} {
 		got := NewGitRemote(l.in)
 		t.Logf("Remote '%s'...", l.in)
