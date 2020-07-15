@@ -1,0 +1,27 @@
+[submodule "integration-tests/python/flask"]
+	path = integration-tests/python/flask
+	url = https://github.com/pallets/flask.git
+[submodule "integration-tests/python/httpie"]
+	path = integration-tests/python/httpie
+	url = https://github.com/jakubroztocil/httpie.git
+[submodule "integration-tests/java/RxJava"]
+	path = integration-tests/java/RxJava
+	url = https://github.com/ReactiveX/RxJava.git
+[submodule "integration-tests/java/guava"]
+	path = integration-tests/java/guava
+	url = https://github.com/google/guava.git
+[submodule "integration-tests/java/java-design-patterns"]
+	path = integration-tests/java/java-design-patterns
+	url = https://github.com/iluwatar/java-design-patterns.git
+[submodule "integration-tests/go/gin"]
+	path = integration-tests/go/gin
+	url = https://github.com/gin-gonic/gin.git
+[submodule "integration-tests/ruby/capistrano"]
+	path = integration-tests/ruby/capistrano
+	url = https://github.com/capistrano/capistrano.git
+[submodule "integration-tests/ruby/devise"]
+	path = integration-tests/ruby/devise
+	url = https://github.com/heartcombo/devise.git
+[submodule "integration-tests/go/gg"]
+	path = integration-tests/go/gg
+	url = https://github.com/zombiezen/gg.git

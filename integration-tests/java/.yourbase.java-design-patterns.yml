@@ -1,0 +1,9 @@
+dependencies:
+  build:
+    - java:11.0.6+10
+
+build_targets:
+  - name: default
+    commands:
+      - apt-get install xvfb
+      - xvfb-run mvn clean verify

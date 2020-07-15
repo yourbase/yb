@@ -9,6 +9,14 @@ build_targets:
       - go test ./...
       - bash -c "go build -ldflags \"-X 'main.date=$(date)'\""
 
+  - name: integration
+    commands:
+      - bash -c "cd integration-tests; yb build -no-container"
+      - bash -c "cd integration-tests; yb build -no-container python"
+      - bash -c "cd integration-tests; yb build -no-container gopher"
+      - bash -c "cd integration-tests; yb build -no-container ruby"
+      - bash -c "cd integration-tests; yb build -no-container java"
+
   - name: release
     build_after:
       - default
