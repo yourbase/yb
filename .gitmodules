@@ -1,6 +1,3 @@
-[submodule "integration-tests/python/ansible"]
-	path = integration-tests/python/ansible
-	url = https://github.com/ansible/ansible.git
 [submodule "integration-tests/python/flask"]
 	path = integration-tests/python/flask
 	url = https://github.com/pallets/flask.git

@@ -5,18 +5,14 @@
 build_targets:
   - name: default
     commands:
-      # TODO, add submodule awareness to the CLI
       - git submodule update --checkout --depth 2
 
   - name: python
     commands:
-      # cp python/.yourbase.ansible.yml python/ansible/.yourbase.yml
       - cp python/.yourbase.flask.yml python/flask/.yourbase.yml
       - cp python/.yourbase.httpie.yml python/httpie/.yourbase.yml
-      # bash -c "cd python/ansible; yb build -no-container default; git restore ."
       - bash -c "cd python/flask && yb build -no-container default; git restore ."
       - bash -c "cd python/httpie && yb build -no-container default; git restore ."
-      # rm python/ansible/.yourbase.yml
       - rm python/flask/.yourbase.yml
       - rm python/httpie/.yourbase.yml
 
