@@ -103,7 +103,7 @@ func (bt AndroidBuildTool) Setup(ctx context.Context, androidDir string) error {
 
 	log.Infof("Setting ANDROID_SDK_ROOT to %s", androidDir)
 	t.SetEnv("ANDROID_SDK_ROOT", androidDir)
-	t.SetEnv("ANDROID_HOME", androidDir)
+	t.SetEnv("ANDROID_HOME", filepath.Join(t.ToolOutputSharedDir(ctx), "android", bt.Version()))
 
 	log.Infof("Writing agreement hashes...")
 	if !bt.writeAgreements(ctx, androidDir) {
