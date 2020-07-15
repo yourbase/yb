@@ -83,9 +83,12 @@ func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, ou
 
 		buildContainer := bt.Container
 		buildContainer.Command = "/usr/bin/tail -f /dev/null"
-		buildContainer.Label = "build"
+		if buildContainer.Label == "" {
+			buildContainer.Label = "build"
+		}
 
 		// Append build environment variables
+		// TODO this actually removes anything defined in the YML!
 		buildContainer.Environment = []string{}
 
 		// Add package to mounts @ /workspace
@@ -126,10 +129,22 @@ func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, ou
 
 		// Inject a .ssh/config to skip host key checking
 		sshConfig := "Host github.com\n\tStrictHostKeyChecking no\n"
-		builder.Run(ctx, runtime.Process{Output: output, Command: "mkdir -p /root/.ssh"})
-		builder.WriteFileContents(ctx, sshConfig, "/root/.ssh/config")
-		builder.Run(ctx, runtime.Process{Output: output, Command: "chmod 0600 /root/.ssh/config"})
-		builder.Run(ctx, runtime.Process{Output: output, Command: "chown root:root /root/.ssh/config"})
+		err = builder.Run(ctx, runtime.Process{Output: output, Command: "mkdir -p /root/.ssh"})
+		if err != nil {
+			return stepTimes, err
+		}
+		err = builder.WriteFileContents(ctx, sshConfig, "/root/.ssh/config")
+		if err != nil {
+			return stepTimes, err
+		}
+		err = builder.Run(ctx, runtime.Process{Output: output, Command: "chmod 0600 /root/.ssh/config"})
+		if err != nil {
+			return stepTimes, err
+		}
+		err = builder.Run(ctx, runtime.Process{Output: output, Command: "chown root:root /root/.ssh/config"})
+		if err != nil {
+			return stepTimes, err
+		}
 
 		// Inject a useful gitconfig
 		configlines := []string{
@@ -156,10 +171,21 @@ func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, ou
 
 			builder.SetEnv("SSH_AUTH_SOCK", "/ssh_agent")
 			forwardPath, err := builder.DownloadFile(ctx, "https://yourbase-artifacts.s3-us-west-2.amazonaws.com/sockforward")
-			builder.Run(ctx, runtime.Process{Output: output, Command: fmt.Sprintf("chmod a+x %s", forwardPath)})
+			// Manual fix for the time being, still searching why this is happening, suspicious of how narwhal.archiveFile processes tar headers :think:
+			err = builder.Run(ctx, runtime.Process{Output: output, Command: "chmod 1777 /tmp"})
+			if err != nil {
+				return stepTimes, err
+			}
+			err = builder.Run(ctx, runtime.Process{Output: output, Command: fmt.Sprintf("chmod ugo+x %s", forwardPath)})
+			if err != nil {
+				return stepTimes, err
+			}
 			forwardCmd := fmt.Sprintf("%s /ssh_agent %s", forwardPath, hostAddr)
 			go func() {
-				builder.Run(ctx, runtime.Process{Output: output, Command: forwardCmd})
+				if err := builder.Run(ctx, runtime.Process{Output: output, Command: forwardCmd}); err != nil {
+					log.Errorf("starting ssh_agent: %v", err)
+					return
+				}
 			}()
 		}
 

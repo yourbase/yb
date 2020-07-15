@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os/user"
 	"strings"
 
 	"github.com/yourbase/yb/plumbing/log"
@@ -234,4 +235,12 @@ func HostOS() Os {
 	default:
 		return Unknown
 	}
+}
+
+func RunningUserGroup() (string, string, error) {
+	u, err := user.Current()
+	if err != nil {
+		return "", "", err
+	}
+	return u.Uid, u.Gid, nil
 }

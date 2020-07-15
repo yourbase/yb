@@ -170,7 +170,18 @@ func (p Package) createExecutionTarget(ctx context.Context, runtimeCtx *runtime.
 			return nil, fmt.Errorf("set host container mount dir: %v", err)
 		}
 
-		_, err := runtimeCtx.AddContainer(ctx, cd)
+		// Uses local user name and group in the ContainerDefinition
+		uid := "1000"
+		gid := "1000"
+
+		uid, gid, err := runtime.RunningUserGroup()
+		if err != nil {
+			log.Warnf("Unable to get uid and gid for the current user: %v", err)
+		}
+		cd.ExecUserId = uid
+		cd.ExecGroupId = gid
+
+		_, err = runtimeCtx.AddContainer(ctx, cd)
 		if err != nil {
 			return nil, fmt.Errorf("starting container dependency: %v", err)
 		}

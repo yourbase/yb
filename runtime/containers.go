@@ -170,6 +170,7 @@ func (t *ContainerTarget) DownloadFile(ctx context.Context, url string) (string,
 	if err == nil {
 		// Downloaded locally, inject
 		log.Infof("Injecting locally cached file %s as %s", localFile, outputFilename)
+		// NOTE something in Narwhall is setting the wrong permissions in /tmp, it should be 1777
 		err = narwhal.UploadFile(ctx, narwhal.DockerClient(), t.Container.Id, outputFilename, localFile)
 	}
 
