@@ -76,65 +76,6 @@ func RemoveWritePermission(path string) bool {
 	return true
 }
 
-/*
- * Look in the directory above the manifest file, if there's a config.yml, use that
- * otherwise we use the directory of the manifest file as the workspace root
- */
-func FindWorkspaceRoot() (string, error) {
-	wd, err := os.Getwd()
-
-	if err != nil {
-		panic(err)
-	}
-
-	if _, err := os.Stat(filepath.Join(wd, "config.yml")); err == nil {
-		// If we're currently in the directory with the config.yml
-		return wd, nil
-	}
-
-	// Look upwards to find a manifest file
-	packageDir, err := FindNearestManifestFile()
-
-	// If we find a manifest file, check the parent directory for a config.yml
-	if err == nil {
-		parent := filepath.Dir(packageDir)
-		if _, err := os.Stat(filepath.Join(parent, "config.yml")); err == nil {
-			return parent, nil
-		} else {
-			return packageDir, nil
-		}
-	} else {
-		return "", err
-	}
-
-	// No config in the parent of the package? No workspace!
-	return "", fmt.Errorf("searching for a workspace root")
-}
-
-func FindFileUpTree(filename string) (string, error) {
-	wd, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-
-	for {
-		file_path := filepath.Join(wd, filename)
-		if _, err := os.Stat(file_path); err == nil {
-			return wd, nil
-		}
-
-		wd = filepath.Dir(wd)
-
-		if strings.HasSuffix(wd, "/") {
-			return "", fmt.Errorf("searching %s, ended up at the root", filename)
-		}
-	}
-}
-
-func FindNearestManifestFile() (string, error) {
-	return FindFileUpTree(MANIFEST_FILE)
-}
-
 // Because, why not?
 // Based on https://github.com/sindresorhus/is-docker/blob/master/index.js and https://github.com/moby/moby/issues/18355
 // Discussion is not settled yet: https://stackoverflow.com/questions/23513045/how-to-check-if-a-process-is-running-inside-docker-container#25518538
