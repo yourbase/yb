@@ -64,6 +64,7 @@ type Process struct {
 	Interactive bool
 	Directory   string
 	Environment []string
+	AsRoot      bool
 	Output      io.Writer
 }
 

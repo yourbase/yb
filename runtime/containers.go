@@ -163,16 +163,26 @@ func (t *ContainerTarget) DownloadFile(ctx context.Context, url string) (string,
 	// TODO: upload if locally found
 
 	localFile, err := downloadFileWithCache(ctx, url)
+	if err != nil {
+		return "", err
+	}
+	if !strings.Contains(url, "/") {
+		return "", fmt.Errorf("downloading URL %s: bad URL?", url)
+	}
+
+	const injectPath = "/var/tmp/yb-inject/"
+	err = t.MkdirAsNeeded(ctx, injectPath)
+	if err != nil {
+		return "", err
+	}
+
 	parts := strings.Split(url, "/")
 	filename := parts[len(parts)-1]
-	outputFilename := fmt.Sprintf("/tmp/%s", filename)
+	outputFilename := injectPath + filename
 
-	if err == nil {
-		// Downloaded locally, inject
-		log.Infof("Injecting locally cached file %s as %s", localFile, outputFilename)
-		// NOTE something in Narwhall is setting the wrong permissions in /tmp, it should be 1777
-		err = narwhal.UploadFile(ctx, narwhal.DockerClient(), t.Container.Id, outputFilename, localFile)
-	}
+	// Downloaded locally, inject
+	log.Infof("Injecting locally cached file %s as %s", localFile, outputFilename)
+	err = narwhal.UploadFile(ctx, narwhal.DockerClient(), t.Container.Id, outputFilename, localFile)
 
 	// If download or injection failed, fallback
 	if err != nil {
@@ -180,7 +190,7 @@ func (t *ContainerTarget) DownloadFile(ctx context.Context, url string) (string,
 		log.Infof("Will download via curl in container")
 		p := Process{
 			Command:     fmt.Sprintf("curl %s -o %s", url, outputFilename),
-			Directory:   "/tmp",
+			Directory:   injectPath,
 			Interactive: false,
 		}
 

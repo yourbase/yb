@@ -156,7 +156,10 @@ func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, ou
 			"insteadOf = https://bitbucket.org/",
 		}
 		gitConfig := strings.Join(configlines, "\n")
-		builder.WriteFileContents(ctx, gitConfig, "/root/.gitconfig")
+		err = builder.WriteFileContents(ctx, gitConfig, "/root/.gitconfig")
+		if err != nil {
+			return stepTimes, err
+		}
 
 		// TODO: Don't run this multiple times
 		// Map SSH agent into the container
@@ -171,20 +174,17 @@ func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, ou
 
 			builder.SetEnv("SSH_AUTH_SOCK", "/ssh_agent")
 			forwardPath, err := builder.DownloadFile(ctx, "https://yourbase-artifacts.s3-us-west-2.amazonaws.com/sockforward")
-			// Manual fix for the time being, still searching why this is happening, suspicious of how narwhal.archiveFile processes tar headers :think:
-			err = builder.Run(ctx, runtime.Process{Output: output, Command: "chmod 1777 /tmp"})
 			if err != nil {
 				return stepTimes, err
 			}
-			err = builder.Run(ctx, runtime.Process{Output: output, Command: fmt.Sprintf("chmod ugo+x %s", forwardPath)})
+			err = builder.Run(ctx, runtime.Process{Output: output, Command: fmt.Sprintf("chmod a+x %s", forwardPath)})
 			if err != nil {
 				return stepTimes, err
 			}
 			forwardCmd := fmt.Sprintf("%s /ssh_agent %s", forwardPath, hostAddr)
 			go func() {
 				if err := builder.Run(ctx, runtime.Process{Output: output, Command: forwardCmd}); err != nil {
-					log.Errorf("starting ssh_agent: %v", err)
-					return
+					log.Errorf("Starting ssh_agent: %v", err)
 				}
 			}()
 		}
@@ -201,10 +201,6 @@ func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, ou
 		}
 
 		stepTimes = append(stepTimes, tweakTimer)
-		if err != nil {
-			return stepTimes, err
-		}
-
 	}
 
 	depContainerStartTime := time.Now()
