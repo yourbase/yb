@@ -193,7 +193,6 @@ func IsBinary(filePath string) (bool, error) {
 		} else {
 			err = fmt.Errorf("check for binary: %w", err)
 		}
-		return false, 
 	}
 	for _, b := range buf[:n] {
 		if b == 0 {
