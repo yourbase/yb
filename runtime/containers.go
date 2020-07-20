@@ -11,23 +11,26 @@ import (
 	"os"
 	"strings"
 
-	"github.com/yourbase/yb/plumbing/log"
-
 	"github.com/yourbase/narwhal"
+	"github.com/yourbase/yb/plumbing/log"
 )
 
 const (
-	// Linux container defaults
-	containerDefaultToolsDir            = "/opt/yb/tools"
-	containerDefaultCacheDir            = "/opt/yb/cache"
-	containerDefaultToolOutputSharedDir = "/opt/yb/output"
-	containerDefaultWorkDir             = "/workspace"
+	containerYbDir      = "/opt/yb"
+	containerToolsDir   = containerYbDir + "/tools"
+	containerCacheDir   = containerYbDir + "/cache"
+	containerOutputDir  = containerYbDir + "/output"
+	containerInjectDir  = containerYbDir + "/tmp"
+	containerWorkDir    = "/workspace"
+	containerRunnerHome = "/home/runner"
+	containerPermFixCmd = "chown -R runner:runner " + containerWorkDir + " " + containerYbDir + " " + containerRunnerHome
 )
 
 type ContainerTarget struct {
 	Container   *narwhal.Container
 	Environment []string
 	workDir     string
+	runtime     *Runtime
 }
 
 func (t *ContainerTarget) OS() Os {
@@ -74,21 +77,21 @@ func (t *ContainerTarget) Architecture() Architecture {
 }
 
 func (t *ContainerTarget) ToolsDir(ctx context.Context) string {
-	err := narwhal.MkdirAll(ctx, narwhal.DockerClient(), t.Container.Id, containerDefaultToolsDir)
+	err := narwhal.MkdirAll(ctx, narwhal.DockerClient(), t.Container.Id, containerToolsDir)
 	if err != nil {
-		log.Errorf("Unable to create %s inside the container: %v", containerDefaultToolsDir, err)
+		log.Errorf("Unable to create %s inside the container: %v", containerToolsDir, err)
 		return ""
 	}
-	return containerDefaultToolsDir
+	return containerToolsDir
 }
 
 func (t *ContainerTarget) ToolOutputSharedDir(ctx context.Context) string {
-	err := narwhal.MkdirAll(ctx, narwhal.DockerClient(), t.Container.Id, containerDefaultToolOutputSharedDir)
+	err := narwhal.MkdirAll(ctx, narwhal.DockerClient(), t.Container.Id, containerOutputDir)
 	if err != nil {
-		log.Errorf("Unable to create %s inside the container: %v", containerDefaultToolOutputSharedDir, err)
+		log.Errorf("Unable to create %s inside the container: %v", containerOutputDir, err)
 		return ""
 	}
-	return containerDefaultToolOutputSharedDir
+	return containerOutputDir
 }
 func (t *ContainerTarget) PathExists(ctx context.Context, path string) bool {
 	// Assume we can use stat for now
@@ -117,11 +120,11 @@ func (t *ContainerTarget) String() string {
 }
 
 func (t *ContainerTarget) CacheDir(ctx context.Context) string {
-	err := narwhal.MkdirAll(ctx, narwhal.DockerClient(), t.Container.Id, containerDefaultCacheDir)
+	err := narwhal.MkdirAll(ctx, narwhal.DockerClient(), t.Container.Id, containerCacheDir)
 	if err != nil {
 		return ""
 	}
-	return containerDefaultCacheDir
+	return containerCacheDir
 }
 
 func (t *ContainerTarget) PrependToPath(ctx context.Context, dir string) {
@@ -154,6 +157,13 @@ func (t *ContainerTarget) UploadFile(ctx context.Context, src string, dest strin
 	if err != nil {
 		return fmt.Errorf("uploading file to container: %v", err)
 	}
+	// Fix permissions after uploading
+	if t.runtime.AsCurrentUser {
+		err = t.Run(ctx, Process{Interactive: false, Output: nil, Command: containerPermFixCmd, Sudo: true})
+		if err != nil {
+			return err
+		}
+	}
 	log.Infof("Done")
 	return nil
 
@@ -170,15 +180,14 @@ func (t *ContainerTarget) DownloadFile(ctx context.Context, url string) (string,
 		return "", fmt.Errorf("downloading URL %s: bad URL?", url)
 	}
 
-	const injectPath = "/var/tmp/yb-inject/"
-	err = t.MkdirAsNeeded(ctx, injectPath)
+	err = t.MkdirAsNeeded(ctx, containerInjectDir)
 	if err != nil {
 		return "", err
 	}
 
 	parts := strings.Split(url, "/")
 	filename := parts[len(parts)-1]
-	outputFilename := injectPath + filename
+	outputFilename := containerInjectDir + "/" + filename
 
 	// Downloaded locally, inject
 	log.Infof("Injecting locally cached file %s as %s", localFile, outputFilename)
@@ -190,7 +199,7 @@ func (t *ContainerTarget) DownloadFile(ctx context.Context, url string) (string,
 		log.Infof("Will download via curl in container")
 		p := Process{
 			Command:     fmt.Sprintf("curl %s -o %s", url, outputFilename),
-			Directory:   injectPath,
+			Directory:   containerInjectDir,
 			Interactive: false,
 		}
 
@@ -229,9 +238,13 @@ func (t *ContainerTarget) Unarchive(ctx context.Context, src string, dst string)
 
 func (t *ContainerTarget) WorkDir() string {
 	if t.workDir == "" {
-		t.workDir = containerDefaultWorkDir
+		t.workDir = containerWorkDir
 	}
 	return t.workDir
+}
+
+func (t *ContainerTarget) HomeDir() string {
+	return containerRunnerHome
 }
 
 func (t *ContainerTarget) SetEnv(key string, value string) error {
@@ -240,35 +253,6 @@ func (t *ContainerTarget) SetEnv(key string, value string) error {
 		t.Environment = make([]string, 0)
 	}
 	t.Environment = append(t.Environment, envString)
-	return nil
-}
-
-func (t *ContainerTarget) processUidGid(ctx context.Context, p Process, opts *narwhal.ExecShellOptions) error {
-	if p.UID == "0" || p.GID == "0" {
-		return nil
-	}
-
-	// A little, at first, naive but realistic table
-	packageManagers := []string{
-		"apt",
-		"dpkg",
-		"apk",
-		"yum",
-		"rpm",
-		"emerge",
-		"ebuild",
-		"cave",
-	}
-	for _, pkg := range packageManagers {
-		if strings.HasPrefix(p.Command, pkg) {
-			p.UID = "0"
-			p.GID = "0"
-			return nil
-		}
-	}
-
-	opts.UID = p.UID
-	opts.GID = p.GID
 	return nil
 }
 
@@ -294,8 +278,20 @@ func (t *ContainerTarget) Run(ctx context.Context, p Process) error {
 		Env:            p.Environment,
 	}
 
-	if err := t.processUidGid(ctx, p, opts); err != nil {
-		return err
+	if t.runtime.AsCurrentUser && !p.Sudo {
+		cmd, err := newCommand(p.Command)
+		if err != nil {
+			return fmt.Errorf("parsing shell like syntax of: %s: %w", p.Command, err)
+		}
+		if cmd.valid && !cmd.cowPower {
+			opts.UID = t.runtime.uid
+			opts.GID = t.runtime.gid
+			log.Debugf("Running as 'runner' %s:%s", opts.UID, opts.GID)
+		}
+	}
+
+	if p.Sudo {
+		log.Debugf("Running as root")
 	}
 
 	if p.Interactive {
@@ -418,4 +414,27 @@ func ForwardUnixSocketToTcp(unixSocket string) (string, error) {
 	}()
 
 	return listenAddr, nil
+}
+
+// runnerUser creates the 'runner' user, so build commands (not setup commands) will run as him/her
+// and also sets up correct ownership, used by containerized executions/builds
+func (r *Runtime) runnerUser(ctx context.Context, container *narwhal.Container) error {
+	log.Debug("Sane Linux base setup:")
+	for _, cmd := range []string{
+		"groupadd -g " + r.gid + " -f runner",
+		"bash -c 'id runner &>/dev/null || useradd -u " + r.uid + " -m -g " + r.gid + " runner'",
+		"install -d " + containerRunnerHome + " -o runner -g runner",
+		"bash -c 'stat " + containerWorkDir + " &>/dev/null || install -d " + containerWorkDir + " -o runner -g runner'",
+		"install -d " + containerInjectDir + " -o runner -g runner",
+		"bash -c 'stat " + containerYbDir + " &>/dev/null || install -d " + containerYbDir + " -o runner -g runner'",
+		containerPermFixCmd,
+	} {
+		log.Debug(cmd)
+		err := narwhal.ExecShell(ctx, narwhal.DockerClient(), container.Id, cmd, &narwhal.ExecShellOptions{CombinedOutput: nil, Dir: "/"})
+		if err != nil {
+			return fmt.Errorf("(re)creating runner with: '%s': %w", cmd, err)
+		}
+	}
+
+	return nil
 }

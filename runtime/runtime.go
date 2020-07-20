@@ -5,13 +5,11 @@ import (
 	"fmt"
 	"io"
 	"os/user"
+	goruntime "runtime"
 	"strings"
 
-	"github.com/yourbase/yb/plumbing/log"
-
-	goruntime "runtime"
-
 	"github.com/yourbase/narwhal"
+	"github.com/yourbase/yb/plumbing/log"
 )
 
 type Os int
@@ -22,6 +20,8 @@ const (
 	Windows
 	Unknown
 )
+
+const ()
 
 type Architecture int
 
@@ -45,6 +45,7 @@ type Target interface {
 	UploadFile(ctx context.Context, localPath string, remotePath string) error
 	WriteFileContents(ctx context.Context, contents string, remotepath string) error
 	WorkDir() string
+	HomeDir() string
 	CacheDir(ctx context.Context) string
 	DownloadFile(ctx context.Context, url string) (string, error)
 	Unarchive(ctx context.Context, src string, dst string) error
@@ -62,10 +63,9 @@ type Target interface {
 type Process struct {
 	Command     string
 	Interactive bool
+	Sudo        bool
 	Directory   string
 	Environment []string
-	UID         string
-	GID         string
 	Output      io.Writer
 }
 
@@ -75,6 +75,10 @@ type Runtime struct {
 	Targets                 map[string]Target
 	ContainerServiceContext *narwhal.ServiceContext
 	DefaultTarget           Target
+	DetectSetupCommands     bool
+	AsCurrentUser           bool
+	uid                     string
+	gid                     string
 }
 
 func (r *Runtime) SupportsContainers() bool {
@@ -96,20 +100,11 @@ func (r *Runtime) AddTarget(targetId string, t Target) error {
 }
 
 func (r *Runtime) Run(ctx context.Context, p Process) error {
-	var err error
-	p.UID, p.GID, err = runningUserGroup()
-	if err != nil {
-		return err
-	}
 	return r.DefaultTarget.Run(ctx, p)
 }
 
 func (r *Runtime) RunInTarget(ctx context.Context, p Process, targetId string) error {
-	var err error
-	p.UID, p.GID, err = runningUserGroup()
-	if err != nil {
-		return err
-	}
+
 	if target, exists := r.Targets[targetId]; exists {
 		return target.Run(ctx, p)
 	} else {
@@ -127,7 +122,7 @@ func (r *Runtime) FindContainers(ctx context.Context, definitions []narwhal.Cont
 				log.Warnf("Error trying to find container %s - %v", cd.Label, err)
 			} else {
 				// TODO: Env / workdir?
-				tgt := &ContainerTarget{Container: container}
+				tgt := &ContainerTarget{Container: container, runtime: r}
 				result = append(result, tgt)
 			}
 		}
@@ -143,8 +138,22 @@ func (r *Runtime) AddContainer(ctx context.Context, cd narwhal.ContainerDefiniti
 			return nil, fmt.Errorf("could not start container %s: %v", cd.Label, err)
 		}
 
+		workDir := container.Definition.WorkDir
+		if workDir == "" {
+			workDir = containerWorkDir
+		}
+
 		tgt := &ContainerTarget{
 			Container: container,
+			workDir:   workDir,
+			runtime:   r,
+		}
+
+		if r.AsCurrentUser {
+			err = r.runnerUser(ctx, container)
+			if err != nil {
+				return nil, fmt.Errorf("linux needs a runner user, or else generated files will be owned by root: %w", err)
+			}
 		}
 
 		if err = r.AddTarget(cd.Label, tgt); err != nil {
@@ -165,15 +174,30 @@ func NewRuntime(ctx context.Context, identifier string, localWorkDir string) *Ru
 		sc = nil
 	}
 
-	// Should run user commands with the current user
+	var gotUid bool
+	uid, gid, err := runningUserGroup()
+	if err != nil {
+		log.Warnf("Unable to retrieve current user uid/gid: %v", err)
+	} else {
+		gotUid = true
+	}
 
-	return &Runtime{
+	defaultMetalTarget := &MetalTarget{
+		workDir: localWorkDir,
+	}
+	r := &Runtime{
 		Identifier:              identifier,
 		LocalWorkDir:            localWorkDir,
 		Targets:                 make(map[string]Target),
-		DefaultTarget:           &MetalTarget{workDir: localWorkDir},
+		DefaultTarget:           defaultMetalTarget,
 		ContainerServiceContext: sc,
+		DetectSetupCommands:     true,
+		AsCurrentUser:           gotUid && HostOS() == Linux,
+		uid:                     uid,
+		gid:                     gid,
 	}
+	defaultMetalTarget.runtime = r
+	return r
 }
 
 func (r *Runtime) Shutdown(ctx context.Context) error {
@@ -196,6 +220,10 @@ func (r *Runtime) EnvironmentData() RuntimeEnvironmentData {
 			serviceCtx: r.ContainerServiceContext,
 		},
 	}
+}
+
+func (r *Runtime) EndUser() string {
+	return r.uid + ":" + r.gid
 }
 
 type RuntimeEnvironmentData struct {

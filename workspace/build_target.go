@@ -88,7 +88,7 @@ func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, ou
 		}
 
 		// Append build environment variables
-		// TODO this actually removes anything defined in the YML!
+		// NOTE this actually removes anything defined in the YML!
 		buildContainer.Environment = []string{}
 
 		// Add package to mounts @ /workspace
@@ -127,21 +127,29 @@ func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, ou
 		runtimeCtx.DefaultTarget = builder
 		workDir = sourceMapDir
 
+		baseDir := "/root"
+
+		if runtimeCtx.AsCurrentUser {
+			baseDir = "/home/runner"
+		}
+		sshDir := baseDir + "/.ssh"
+		sshConfigFile := sshDir + "/config"
+
 		// Inject a .ssh/config to skip host key checking
 		sshConfig := "Host github.com\n\tStrictHostKeyChecking no\n"
-		err = builder.Run(ctx, runtime.Process{Output: output, Command: "mkdir -p /root/.ssh"})
+		err = builder.Run(ctx, runtime.Process{Output: output, Command: "mkdir -p " + sshDir})
 		if err != nil {
 			return stepTimes, err
 		}
-		err = builder.WriteFileContents(ctx, sshConfig, "/root/.ssh/config")
+		err = builder.WriteFileContents(ctx, sshConfig, sshConfigFile)
 		if err != nil {
 			return stepTimes, err
 		}
-		err = builder.Run(ctx, runtime.Process{Output: output, Command: "chmod 0600 /root/.ssh/config"})
+		err = builder.Run(ctx, runtime.Process{Output: output, Command: "chmod 0600 " + sshConfigFile})
 		if err != nil {
 			return stepTimes, err
 		}
-		err = builder.Run(ctx, runtime.Process{Output: output, Command: "chown root:root /root/.ssh/config"})
+		err = builder.Run(ctx, runtime.Process{Output: output, Command: "chown " + runtimeCtx.EndUser() + " " + sshConfigFile})
 		if err != nil {
 			return stepTimes, err
 		}
@@ -156,37 +164,16 @@ func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, ou
 			"insteadOf = https://bitbucket.org/",
 		}
 		gitConfig := strings.Join(configlines, "\n")
-		err = builder.WriteFileContents(ctx, gitConfig, "/root/.gitconfig")
+		err = builder.WriteFileContents(ctx, gitConfig, baseDir+"/.gitconfig")
 		if err != nil {
 			return stepTimes, err
 		}
 
-		// TODO: Don't run this multiple times
-		// Map SSH agent into the container
 		if agentPath, exists := os.LookupEnv("SSH_AUTH_SOCK"); exists {
-			log.Infof("Running SSH agent socket forwarder...")
-			hostAddr, err := runtime.ForwardUnixSocketToTcp(agentPath)
-			if err != nil {
-				log.Warnf("Could not forward SSH agent: %v", err)
-			} else {
-				log.Infof("Forwarding SSH agent via %s", hostAddr)
-			}
-
-			builder.SetEnv("SSH_AUTH_SOCK", "/ssh_agent")
-			forwardPath, err := builder.DownloadFile(ctx, "https://yourbase-artifacts.s3-us-west-2.amazonaws.com/sockforward")
+			err = bt.injectSockForward(ctx, builder, output, agentPath, baseDir)
 			if err != nil {
 				return stepTimes, err
 			}
-			err = builder.Run(ctx, runtime.Process{Output: output, Command: fmt.Sprintf("chmod a+x %s", forwardPath)})
-			if err != nil {
-				return stepTimes, err
-			}
-			forwardCmd := fmt.Sprintf("%s /ssh_agent %s", forwardPath, hostAddr)
-			go func() {
-				if err := builder.Run(ctx, runtime.Process{Output: output, Command: forwardCmd}); err != nil {
-					log.Errorf("Starting ssh_agent: %v", err)
-				}
-			}()
 		}
 
 		stepEndTime = time.Now()

@@ -6,7 +6,7 @@ import (
 )
 
 func TestOpenJDKUrlGeneration(t *testing.T) {
-	// NOTE This can go on forever, so we better come up with a generic and reliable way of keep tools versions up to date
+	// NOTE This can go on forever, so we better come up with a generic and reliable way of keeping tools versions up to date
 	for _, data := range []struct {
 		version string
 		url     string

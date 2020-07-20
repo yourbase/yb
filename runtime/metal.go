@@ -27,6 +27,7 @@ const (
 
 type MetalTarget struct {
 	workDir string
+	runtime *Runtime
 }
 
 func (t *MetalTarget) OS() Os {
@@ -198,6 +199,13 @@ func (t *MetalTarget) WorkDir() string {
 	return t.workDir
 }
 
+func (t *MetalTarget) HomeDir() string {
+	if home, exists := os.LookupEnv("HOME"); exists {
+		return home
+	}
+	return ""
+}
+
 func (t *MetalTarget) Run(ctx context.Context, p Process) error {
 	return t.ExecToStdout(ctx, p.Command, p.Directory)
 }
@@ -215,11 +223,11 @@ func (t *MetalTarget) ExecToStdoutWithExtraEnv(ctx context.Context, cmdString st
 }
 
 func (t *MetalTarget) ExecToStdoutWithEnv(ctx context.Context, cmdString string, targetDir string, env []string) error {
-	log.Infof("Running: %s in %s", cmdString, targetDir)
-	cmdArgs, err := shlex.Split(cmdString)
+	cmdArgs, err := privilegedCommands(cmdString)
 	if err != nil {
-		return fmt.Errorf("parsing command string '%s': %v", cmdString, err)
+		return err
 	}
+	log.Infof("Running: %s in %s", strings.Join(cmdArgs, " "), targetDir)
 
 	cmd := exec.CommandContext(ctx, cmdArgs[0], cmdArgs[1:len(cmdArgs)]...)
 	cmd.Dir = targetDir
