@@ -82,7 +82,7 @@ func (bt AndroidBuildTool) writeAgreements(ctx context.Context, androidDir strin
 
 	licensesDir := filepath.Join(androidDir, "licenses")
 	t := bt.spec.InstallTarget
-	t.MkdirAsNeeded(ctx, licensesDir)
+	t.MkdirAll(ctx, licensesDir)
 
 	for filename, hash := range agreements {
 		agreementFile := filepath.Join(licensesDir, filename)

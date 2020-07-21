@@ -21,8 +21,6 @@ const (
 	Unknown
 )
 
-const ()
-
 type Architecture int
 
 const (
@@ -57,7 +55,7 @@ type Target interface {
 	OS() Os
 	OSVersion(ctx context.Context) string
 	Architecture() Architecture
-	MkdirAsNeeded(ctx context.Context, path string) error
+	MkdirAll(ctx context.Context, path string) error
 }
 
 type Process struct {

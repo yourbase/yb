@@ -77,7 +77,7 @@ func (t *ContainerTarget) Architecture() Architecture {
 }
 
 func (t *ContainerTarget) ToolsDir(ctx context.Context) string {
-	err := narwhal.MkdirAll(ctx, narwhal.DockerClient(), t.Container.Id, containerToolsDir)
+	err := t.MkdirAll(ctx, containerToolsDir)
 	if err != nil {
 		log.Errorf("Unable to create %s inside the container: %v", containerToolsDir, err)
 		return ""
@@ -86,7 +86,7 @@ func (t *ContainerTarget) ToolsDir(ctx context.Context) string {
 }
 
 func (t *ContainerTarget) ToolOutputSharedDir(ctx context.Context) string {
-	err := narwhal.MkdirAll(ctx, narwhal.DockerClient(), t.Container.Id, containerOutputDir)
+	err := t.MkdirAll(ctx, containerOutputDir)
 	if err != nil {
 		log.Errorf("Unable to create %s inside the container: %v", containerOutputDir, err)
 		return ""
@@ -109,10 +109,13 @@ func (t *ContainerTarget) PathExists(ctx context.Context, path string) bool {
 	return true
 }
 
-func (t *ContainerTarget) MkdirAsNeeded(ctx context.Context, path string) error {
-	mkdirCmd := "mkdir -p " + path
-
-	return narwhal.ExecShell(ctx, narwhal.DockerClient(), t.Container.Id, mkdirCmd, nil)
+func (t *ContainerTarget) MkdirAll(ctx context.Context, path string) error {
+	var uid, gid string
+	if t.runtime.AsCurrentUser {
+		uid = t.runtime.uid
+		gid = t.runtime.gid
+	}
+	return narwhal.MkdirAllOwnedBy(ctx, narwhal.DockerClient(), t.Container.Id, containerToolsDir, uid, gid)
 }
 
 func (t *ContainerTarget) String() string {
@@ -120,7 +123,7 @@ func (t *ContainerTarget) String() string {
 }
 
 func (t *ContainerTarget) CacheDir(ctx context.Context) string {
-	err := narwhal.MkdirAll(ctx, narwhal.DockerClient(), t.Container.Id, containerCacheDir)
+	err := t.MkdirAll(ctx, containerCacheDir)
 	if err != nil {
 		return ""
 	}
@@ -180,7 +183,7 @@ func (t *ContainerTarget) DownloadFile(ctx context.Context, url string) (string,
 		return "", fmt.Errorf("downloading URL %s: bad URL?", url)
 	}
 
-	err = t.MkdirAsNeeded(ctx, containerInjectDir)
+	err = t.MkdirAll(ctx, containerInjectDir)
 	if err != nil {
 		return "", err
 	}
@@ -191,7 +194,7 @@ func (t *ContainerTarget) DownloadFile(ctx context.Context, url string) (string,
 
 	// Downloaded locally, inject
 	log.Infof("Injecting locally cached file %s as %s", localFile, outputFilename)
-	err = narwhal.UploadFile(ctx, narwhal.DockerClient(), t.Container.Id, outputFilename, localFile)
+	err = t.UploadFile(ctx, outputFilename, localFile)
 
 	// If download or injection failed, fallback
 	if err != nil {

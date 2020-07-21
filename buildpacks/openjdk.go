@@ -197,7 +197,7 @@ func (bt JavaBuildTool) Install(ctx context.Context) (string, error) {
 	javaInstallDir := filepath.Join(t.ToolsDir(ctx), "java")
 	javaPath := bt.JavaDir(javaInstallDir)
 
-	t.MkdirAsNeeded(ctx, javaInstallDir)
+	t.MkdirAll(ctx, javaInstallDir)
 
 	if t.PathExists(ctx, javaPath) {
 		log.Infof("Java v%s located in %s!", bt.Version(), javaPath)

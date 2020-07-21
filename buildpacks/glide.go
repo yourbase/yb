@@ -82,7 +82,7 @@ func (bt GlideBuildTool) Install(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	t.MkdirAsNeeded(ctx, glideDir)
+	t.MkdirAll(ctx, glideDir)
 	log.Infof("Extracting glide %s to %s...", bt.Version(), glideDir)
 	err = t.Unarchive(ctx, localFile, glideDir)
 	if err != nil {

@@ -60,7 +60,7 @@ func (bt RustBuildTool) Install(ctx context.Context) (string, error) {
 
 	installDir := filepath.Join(t.ToolsDir(ctx), "rust")
 	rustDir := filepath.Join(installDir, "rust-"+bt.Version())
-	t.MkdirAsNeeded(ctx, installDir)
+	t.MkdirAll(ctx, installDir)
 
 	if t.PathExists(ctx, rustDir) {
 		log.Infof("Rust v%s located in %s!", bt.Version(), rustDir)

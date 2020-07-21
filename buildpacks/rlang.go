@@ -91,7 +91,7 @@ func (bt RLangBuildTool) Install(ctx context.Context) (string, error) {
 		}
 	}
 
-	t.MkdirAsNeeded(ctx, rlangDir)
+	t.MkdirAll(ctx, rlangDir)
 	p := runtime.Process{
 		Command:   "./configure --with-x=no --prefix=" + rlangDir,
 		Directory: srcDir,

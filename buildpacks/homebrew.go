@@ -118,7 +118,7 @@ func (bt HomebrewBuildTool) Install(ctx context.Context) (string, error) {
 	t := bt.spec.InstallTarget
 
 	installDir := filepath.Join(t.ToolsDir(ctx), "homebrew")
-	t.MkdirAsNeeded(ctx, installDir)
+	t.MkdirAll(ctx, installDir)
 
 	// Normally we want to put this in the tools dir; for now we put it in the build dir because I'm not
 	// sure how to handle installation of multiple versions of things via Brew so this will allow project-specific

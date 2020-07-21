@@ -10,14 +10,6 @@ import (
 
 // injectSockForward maps a running SSH agent into the container
 func (bt *BuildTarget) injectSockForward(ctx context.Context, builder runtime.Target, output io.Writer, agentPath, baseDir string) error {
-	// Checks if sockforward is already running inside the container
-	err := builder.Run(ctx, runtime.Process{Command: "pgrep -x sockforward"})
-	if err == nil {
-		return nil
-	}
-
-	var localSockForward = builder.ToolsDir(ctx) + "/sockforward"
-
 	hostAddr, err := runtime.ForwardUnixSocketToTcp(agentPath)
 	if err != nil {
 		log.Warnf("Could not forward SSH agent: %v", err)
@@ -25,18 +17,31 @@ func (bt *BuildTarget) injectSockForward(ctx context.Context, builder runtime.Ta
 		log.Infof("Forwarding SSH agent via %s", hostAddr)
 	}
 
-	builder.SetEnv("SSH_AUTH_SOCK", "/ssh_agent")
+	// Checks if sockforward is already running inside the container
+	err = builder.Run(ctx, runtime.Process{Command: "pgrep -x sockforward"})
+	if err == nil {
+		if rerr := builder.Run(ctx, runtime.Process{Command: "pkill -x sockforward"}); rerr != nil {
+			return rerr
+		}
+	}
+
+	var (
+		localSockForward = builder.ToolsDir(ctx) + "/sockforward"
+		sshAgentSck      = baseDir + "/ssh_agent.sock"
+	)
+
+	builder.SetEnv("SSH_AUTH_SOCK", sshAgentSck)
 
 	// start gouroutine
 	startMe := func() {
 		log.Infof("Running SSH agent socket forwarder...")
-		forwardCmd := localSockForward + " " + baseDir + "/ssh_agent " + hostAddr
+		forwardCmd := localSockForward + " " + sshAgentSck + " " + hostAddr
 		if err := builder.Run(ctx, runtime.Process{Output: output, Command: forwardCmd}); err != nil {
 			log.Warnf("Starting ssh_agent: %v", err)
 		}
 	}
 
-	// Not running, checks if we already injected it
+	// Checks if we already injected it
 	err = builder.Run(ctx, runtime.Process{Output: output, Command: "stat " + localSockForward})
 	if err == nil {
 		// No need to download it again
@@ -53,7 +58,7 @@ func (bt *BuildTarget) injectSockForward(ctx context.Context, builder runtime.Ta
 	if err != nil {
 		return err
 	}
-	err = builder.Run(ctx, runtime.Process{Output: output, Command: "cp " + forwardPath + " " + localSockForward})
+	err = builder.Run(ctx, runtime.Process{Output: output, Command: "mv " + forwardPath + " " + localSockForward})
 	if err != nil {
 		return err
 	}

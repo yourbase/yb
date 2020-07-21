@@ -143,7 +143,7 @@ func (bt RubyBuildTool) Install(ctx context.Context) (string, error) {
 	}
 
 	pluginsDir := filepath.Join(rbenvDir, "plugins")
-	t.MkdirAsNeeded(ctx, pluginsDir)
+	t.MkdirAll(ctx, pluginsDir)
 
 	rubyBuildGitUrl := "https://github.com/rbenv/ruby-build.git"
 	rubyBuildDir := filepath.Join(pluginsDir, "ruby-build")

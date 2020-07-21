@@ -137,7 +137,7 @@ func (t *MetalTarget) GetDefaultPath() string {
 // CacheDir returns a local filesystem cache path to hold tools distributed archives
 func (t *MetalTarget) CacheDir(ctx context.Context) string {
 	dir := localCacheDir()
-	t.MkdirAsNeeded(ctx, dir)
+	t.MkdirAll(ctx, dir)
 
 	return dir
 }
@@ -213,7 +213,7 @@ func (t *MetalTarget) Run(ctx context.Context, p Process) error {
 func (t *MetalTarget) SetEnv(key string, value string) error {
 	return os.Setenv(key, value)
 }
-func (t *MetalTarget) MkdirAsNeeded(ctx context.Context, path string) error {
+func (t *MetalTarget) MkdirAll(ctx context.Context, path string) error {
 	return plumbing.MkdirAsNeeded(path)
 }
 
