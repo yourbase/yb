@@ -156,6 +156,9 @@ func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, ou
 
 			builder.SetEnv("SSH_AUTH_SOCK", "/ssh_agent")
 			forwardPath, err := builder.DownloadFile(ctx, "https://yourbase-artifacts.s3-us-west-2.amazonaws.com/sockforward")
+			if err != nil {
+				return stepTimes, err
+			}
 			builder.Run(ctx, runtime.Process{Output: output, Command: fmt.Sprintf("chmod a+x %s", forwardPath)})
 			forwardCmd := fmt.Sprintf("%s /ssh_agent %s", forwardPath, hostAddr)
 			go func() {
