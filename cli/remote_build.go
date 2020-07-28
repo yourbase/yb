@@ -456,6 +456,9 @@ func shouldSkip(file string, worktree *git.Worktree) bool {
 			return true
 		}
 		dir, err := f.Readdir(0)
+		if err != nil {
+			return true
+		}
 		log.Debugf("Ls dir %s", filePath)
 		for _, f := range dir {
 			child := path.Join(file, f.Name())
