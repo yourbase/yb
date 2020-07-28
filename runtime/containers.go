@@ -17,10 +17,8 @@ import (
 )
 
 const (
-	// Linux container defaults
-	containerDefaultToolsDir = "/opt/yb/tools"
-	containerDefaultCacheDir = "/opt/yb/cache"
-	containerDefaultWorkDir  = "/workspace"
+	ContainerDefaultToolsDir = "/opt/yb/tools"
+	ContainerDefaultCacheDir = "/opt/yb/cache"
 )
 
 type ContainerTarget struct {
@@ -74,11 +72,11 @@ func (t *ContainerTarget) Architecture() Architecture {
 }
 
 func (t *ContainerTarget) ToolsDir(ctx context.Context) string {
-	err := narwhal.MkdirAll(ctx, narwhal.DockerClient(), t.Container.Id, containerDefaultToolsDir)
+	err := narwhal.MkdirAll(ctx, narwhal.DockerClient(), t.Container.Id, ContainerDefaultToolsDir)
 	if err != nil {
 		return ""
 	}
-	return containerDefaultToolsDir
+	return ContainerDefaultToolsDir
 }
 
 func (t *ContainerTarget) PathExists(ctx context.Context, path string) bool {
@@ -102,11 +100,11 @@ func (t *ContainerTarget) String() string {
 }
 
 func (t *ContainerTarget) CacheDir(ctx context.Context) string {
-	err := narwhal.MkdirAll(ctx, narwhal.DockerClient(), t.Container.Id, containerDefaultCacheDir)
+	err := narwhal.MkdirAll(ctx, narwhal.DockerClient(), t.Container.Id, ContainerDefaultCacheDir)
 	if err != nil {
 		return ""
 	}
-	return containerDefaultCacheDir
+	return ContainerDefaultCacheDir
 }
 
 func (t *ContainerTarget) PrependToPath(ctx context.Context, dir string) {
@@ -202,9 +200,6 @@ func (t *ContainerTarget) Unarchive(ctx context.Context, src string, dst string)
 }
 
 func (t *ContainerTarget) WorkDir() string {
-	if t.workDir == "" {
-		t.workDir = containerDefaultWorkDir
-	}
 	return t.workDir
 }
 
