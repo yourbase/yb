@@ -192,34 +192,26 @@ type ServiceData struct {
 }
 
 type ContainerData struct {
+	ip         map[string]string
 	serviceCtx *narwhal.ServiceContext
 }
 
-// Environment returns a map of enviroment variables with each container IP adress
-//  it also fill up the ip map, that is used in IP
 func (c ContainerData) Environment(ctx context.Context) map[string]string {
 	result := make(map[string]string)
 	if c.serviceCtx != nil {
 		for _, containerDef := range c.serviceCtx.ContainerDefinitions {
 			if ipv4, err := narwhal.IPv4Address(ctx, narwhal.DockerClient(), containerDef.Label); err == nil {
 				key := fmt.Sprintf("YB_CONTAINER_%s_IP", strings.ToUpper(containerDef.Label))
-				result[key] = ipv4.String()
+				c.ip[containerDef.Label] = ipv4.String()
+				result[key] = c.ip[containerDef.Label]
 			}
 		}
 	}
 	return result
 }
 
-// IP returns an IP adress associated with an container "label"
 func (c ContainerData) IP(label string) string {
-	if c.serviceCtx != nil {
-		for _, containerDef := range c.serviceCtx.ContainerDefinitions {
-			if ipv4, err := narwhal.IPv4Address(context.Background(), narwhal.DockerClient(), containerDef.Label); err == nil {
-				return ipv4.String()
-			}
-		}
-	}
-	return ""
+	return c.ip[label]
 }
 
 func HostOS() Os {
