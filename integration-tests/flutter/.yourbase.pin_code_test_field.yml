@@ -7,3 +7,10 @@ build_targets:
   - name: default
     commands:
       - flutter packages get
+
+  - name: beta
+    dependencies:
+      build:
+        - flutter:1.17.2
+    commands:
+      - flutter packages get

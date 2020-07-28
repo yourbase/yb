@@ -55,6 +55,7 @@ type ExecPhase struct {
 }
 
 type BuildDependencies struct {
+	Build      []string                               `yaml:"build"`
 	Containers map[string]narwhal.ContainerDefinition `yaml:"containers"`
 }
 
