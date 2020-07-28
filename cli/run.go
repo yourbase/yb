@@ -46,13 +46,7 @@ func (b *RunCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{})
 		return subcommands.ExitFailure
 	}
 
-	pkg, err := ws.TargetPackage()
-	if err != nil {
-		log.Errorf("Error loading workspace: %v", err)
-		return subcommands.ExitFailure
-	}
-
-	runtimeTarget := pkg.Name
+	runtimeTarget := "default"
 	argList := f.Args()
 	workDir := "/workspace"
 

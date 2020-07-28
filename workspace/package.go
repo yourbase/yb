@@ -4,15 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/yourbase/narwhal"
+	"gopkg.in/yaml.v2"
 	"io"
 	"io/ioutil"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
 
-	"gopkg.in/yaml.v2"
-
-	"github.com/yourbase/narwhal"
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	"github.com/yourbase/yb/runtime"
@@ -102,6 +103,20 @@ func (p Package) ExecuteToWriter(ctx context.Context, runtimeCtx *runtime.Runtim
 		return err
 	}
 
+	// TODO Be smarter
+	c := make(chan os.Signal, 2)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		fmt.Println("\r- Ctrl+C pressed in Terminal")
+		if err := runtimeCtx.Shutdown(); err != nil {
+			// Oops.
+			os.Exit(1)
+		}
+		// Ok!
+		os.Exit(0)
+	}()
+
 	log.Infof("Executing package '%s'...\n", p.Name)
 
 	for _, cmdString := range p.Manifest.Exec.Commands {
@@ -119,15 +134,6 @@ func (p Package) ExecuteToWriter(ctx context.Context, runtimeCtx *runtime.Runtim
 	}
 
 	return nil
-}
-
-func (p Package) addMount(cd *narwhal.ContainerDefinition, localPath, remotePath, thing string) {
-	if thing == "" {
-		thing = "package"
-	}
-	log.Infof("Will mount %s %s at %s in container", thing, localPath, remotePath)
-	mount := fmt.Sprintf("%s:%s", localPath, remotePath)
-	cd.Mounts = append(cd.Mounts, mount)
 }
 
 func (p Package) checkMounts(cd *narwhal.ContainerDefinition, srcDir string) error {
@@ -209,10 +215,9 @@ func (p Package) createExecutionTarget(ctx context.Context, runtimeCtx *runtime.
 	if execContainer.WorkDir != "" {
 		sourceMapDir = execContainer.WorkDir
 	}
-	if err := p.checkMounts(&execContainer, p.Path()); err != nil {
-		return nil, fmt.Errorf("Unable to set host container mount dir: %v", err)
-	}
-	p.addMount(&execContainer, p.Path(), sourceMapDir, "package")
+	log.Infof("Will mount package %s at %s in container", p.Path(), sourceMapDir)
+	mount := fmt.Sprintf("%s:%s", p.Path(), sourceMapDir)
+	execContainer.Mounts = append(execContainer.Mounts, mount)
 
 	execTarget, err := runtimeCtx.AddContainer(ctx, execContainer)
 	if err != nil {

@@ -3,10 +3,9 @@ package runtime
 import (
 	"context"
 	"fmt"
+	"github.com/yourbase/yb/plumbing/log"
 	"io"
 	"strings"
-
-	"github.com/yourbase/yb/plumbing/log"
 
 	goruntime "runtime"
 
@@ -75,10 +74,6 @@ type Runtime struct {
 
 func (r *Runtime) SupportsContainers() bool {
 	return r.ContainerServiceContext != nil
-}
-
-func (r *Runtime) NTargets() int {
-	return len(r.Targets)
 }
 
 func (r *Runtime) AddTarget(targetId string, t Target) error {
@@ -155,15 +150,15 @@ func NewRuntime(ctx context.Context, identifier string, localWorkDir string) *Ru
 		Identifier:              identifier,
 		LocalWorkDir:            localWorkDir,
 		Targets:                 make(map[string]Target),
-		DefaultTarget:           &MetalTarget{workDir: localWorkDir},
+		DefaultTarget:           &MetalTarget{},
 		ContainerServiceContext: sc,
 	}
 }
 
-func (r *Runtime) Shutdown(ctx context.Context) error {
+func (r *Runtime) Shutdown() error {
 
 	if r.ContainerServiceContext != nil {
-		if err := r.ContainerServiceContext.TearDown(ctx); err != nil {
+		if err := r.ContainerServiceContext.TearDown(); err != nil {
 			return err
 		}
 	}

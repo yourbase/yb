@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"github.com/yourbase/yb/runtime"
 	"io/ioutil"
 	"os"
 	"os/user"
@@ -14,7 +15,6 @@ import (
 
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	"github.com/yourbase/yb/runtime"
 )
 
 type Workspace struct {
@@ -27,23 +27,13 @@ func (w Workspace) RunInTarget(ctx context.Context, cmdString string, workDir st
 
 	log.Infof("Running %s in %s from %s", cmdString, targetName, workDir)
 
-	pkg, err := w.TargetPackage()
-	if err != nil {
-		return err
-	}
-
-	p := runtime.Process{Command: cmdString, Interactive: true, Directory: workDir, Environment: pkg.Manifest.Exec.Environment["default"]}
+	p := runtime.Process{Command: cmdString, Interactive: true, Directory: workDir}
 
 	runCtx, err := w.execRuntimeContext(ctx)
 	if err != nil {
 		return err
 	}
 
-	_, err = pkg.createExecutionTarget(ctx, runCtx)
-	if err != nil {
-		return err
-
-	}
 	return runCtx.RunInTarget(ctx, p, targetName)
 }
 
@@ -226,68 +216,15 @@ func LoadWorkspace() (Workspace, error) {
 	manifestFile := filepath.Join(workspacePath, ".yourbase.yml")
 	configFile := filepath.Join(workspacePath, "config.yml")
 
-	var w Workspace
-
 	if PathExists(manifestFile) {
 		log.Debugf("Loading workspace from manifest file: %s", manifestFile)
-		w, err = loadWorkspaceFromPackage(manifestFile, workspacePath)
-	}
-
-	if err == nil && validWorkspaceConfig(w) {
-		return w, nil
+		return loadWorkspaceFromPackage(manifestFile, workspacePath)
 	}
 
 	if PathExists(configFile) {
 		log.Debugf("Loading workspace from config file: %s", configFile)
-		w, err = loadWorkspaceFromConfigYaml(configFile, workspacePath)
+		return loadWorkspaceFromConfigYaml(configFile, workspacePath)
 	}
 
-	if err == nil && validWorkspaceConfig(w) {
-		return w, nil
-	}
-
-	return Workspace{}, fmt.Errorf("Error resolving workspace at path %s", workspacePath)
-}
-
-// validWorkspaceConfig will check if every expected part of whole Configuration Graph is initialized
-// as expected
-func validWorkspaceConfig(workspace Workspace) (valid bool) {
-	if valid = len(workspace.packages) > 0; !valid {
-		return
-	}
-
-	if valid = filepath.IsAbs(workspace.Path); !valid {
-		return
-	}
-
-	if valid = workspace.Target != ""; !valid {
-		return
-	}
-
-	for _, pkg := range workspace.packages {
-		if valid = filepath.IsAbs(pkg.Path()); !valid {
-			return
-		}
-
-		if valid = pkg.Name != ""; !valid {
-			return
-		}
-
-		if valid = len(pkg.Manifest.Exec.Commands) > 0; !valid {
-			if pkg.Manifest.Exec.Environment == nil {
-				pkg.Manifest.Exec.Environment = make(map[string][]string)
-			}
-			// No Exec Phase defined, not required, but `yb run should still work`
-			pkg.Manifest.Exec.Environment["default"] = pkg.Manifest.Build.Environment
-			if len(pkg.Manifest.Exec.Environment["default"]) == 0 {
-				if valid = len(pkg.Manifest.BuildTargets) > 0; !valid {
-					return
-				}
-				pkg.Manifest.Exec.Environment["default"] = pkg.Manifest.BuildTargets[0].Environment
-			}
-		}
-
-	}
-
-	return
+	return Workspace{}, fmt.Errorf("Error finding workspace at path %s", workspacePath)
 }
