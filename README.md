@@ -47,7 +47,6 @@ The primary features of the YB tooling are:
 1. Clone a package from GitHub 
 1. Write a simple build manifest (more below)
 1. Build awesome things!
-1. Some build packs (Python, Ruby and Homebrew) needs macOS SDK Headers to be installed: `sudo -S installer -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg -target /`
 
 # Getting Started
 
@@ -161,6 +160,11 @@ You can change yb to other channels by using `-channel`:
 `yb update -channel=preview`
 
 Currently, the _inner_ yb that runs inside the build container will use the stable channel by default. To change that, set the environment variable `YB_UPDATE_CHANNEL=unstable` before running yb.
+
+# Mac OS X dependency
+
+Some build packs (Python, Ruby and Homebrew) needs macOS SDK Headers to be installed:
+`sudo -S installer -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg -target /`
 
 # Contributing 
 
