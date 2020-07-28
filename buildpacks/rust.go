@@ -40,7 +40,7 @@ func (bt RustBuildTool) Setup(ctx context.Context, rustDir string) error {
 	return nil
 }
 
-func (bt RustBuildTool) installerFile() string {
+func (bt RustBuildTool) ArchiveFile() string {
 	extension := ""
 	return fmt.Sprintf("rustup-init%s", extension)
 }
@@ -49,7 +49,7 @@ func (bt RustBuildTool) DownloadURL(ctx context.Context) (string, error) {
 	arch := "x86_64"
 	operatingSystem := "unknown-linux-gnu"
 
-	return fmt.Sprintf("%s/%s-%s/%s", rustDistMirrorTemplate, arch, operatingSystem, bt.installerFile()), nil
+	return fmt.Sprintf("%s/%s-%s/%s", rustDistMirrorTemplate, arch, operatingSystem, bt.ArchiveFile()), nil
 }
 
 func (bt RustBuildTool) Install(ctx context.Context) (string, error) {
@@ -71,7 +71,7 @@ func (bt RustBuildTool) Install(ctx context.Context) (string, error) {
 	}
 
 	downloadDir := t.ToolsDir(ctx)
-	localFile := filepath.Join(downloadDir, bt.installerFile())
+	localFile := filepath.Join(downloadDir, bt.ArchiveFile())
 	log.Infof("Downloading from URL %s to local file %s", downloadURL, localFile)
 	localFile, err = t.DownloadFile(ctx, downloadURL)
 	if err != nil {
@@ -82,15 +82,10 @@ func (bt RustBuildTool) Install(ctx context.Context) (string, error) {
 	t.SetEnv("CARGO_HOME", rustDir)
 	t.SetEnv("RUSTUP_HOME", rustDir)
 
-	_, newName := filepath.Split(localFile)
-	renamedFilePath := filepath.Join(downloadDir, newName)
-
 	for _, cmd := range []string{
 		"chmod +x " + localFile,
-		"mv " + localFile + " " + renamedFilePath,
-		"./" + newName + " -y",
+		localFile + " -y",
 	} {
-		log.Infof("Running %v", cmd)
 		p := runtime.Process{
 			Command:   cmd,
 			Directory: downloadDir,
