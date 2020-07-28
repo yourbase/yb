@@ -6,4 +6,4 @@ dependencies:
 build_targets:
   - name: default
     commands:
-      - flutter pacakges get
+      - flutter packages get
