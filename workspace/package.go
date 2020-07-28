@@ -21,10 +21,9 @@ import (
 
 // Any flags we want to pass to the build process
 type BuildFlags struct {
-	HostOnly         bool
-	CleanBuild       bool
-	DependenciesOnly bool
-	ExecPrefix       string
+	HostOnly   bool
+	CleanBuild bool
+	ExecPrefix string
 }
 
 type Package struct {
@@ -40,34 +39,21 @@ func (p Package) Path() string {
 	return p.path
 }
 
-func (p Package) Build(ctx context.Context, flags BuildFlags, targetName string) ([]CommandTimer, error) {
+func (p Package) Build(ctx context.Context, flags BuildFlags) ([]CommandTimer, error) {
 	times := make([]CommandTimer, 0)
 
 	manifest := p.Manifest
 
-	if targetName == "" {
-		targetName = "default"
-	}
-
-	tgts, err := manifest.ResolveBuildTargets(targetName)
+	tgt, err := manifest.BuildTarget("default")
 	if err != nil {
 		return times, err
 	}
 
-	for _, tgt := range tgts {
+	contextId := fmt.Sprintf("%s-build-%s", p.Name, tgt.Name)
 
-		contextId := fmt.Sprintf("%s-build-%s", p.Name, tgt.Name)
-		runtimeCtx := runtime.NewRuntime(ctx, contextId, p.BuildRoot())
+	runtimeCtx := runtime.NewRuntime(ctx, contextId, p.BuildRoot())
 
-		buildTimes, err := tgt.Build(ctx, runtimeCtx, os.Stdout, flags, p.Path(), p.Manifest.Dependencies.Build)
-		if err != nil {
-			return buildTimes, err
-		}
-
-		times = append(times, buildTimes...)
-	}
-
-	return times, nil
+	return tgt.Build(ctx, runtimeCtx, os.Stdout, flags, p.Path(), p.Manifest.Dependencies.Build)
 }
 
 func LoadPackageAtPath(path string) (Package, error) {
