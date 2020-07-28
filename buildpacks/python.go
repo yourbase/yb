@@ -127,26 +127,26 @@ func (bt PythonBuildTool) Setup(ctx context.Context, condaDir string) error {
 
 	if t.PathExists(ctx, envDir) {
 		log.Infof("environment installed in %s", envDir)
-		return nil
-	}
-	setupDir := bt.spec.PackageDir
-	condaBin := filepath.Join(condaDir, "bin", "conda")
+	} else {
+		setupDir := bt.spec.PackageDir
+		condaBin := filepath.Join(condaDir, "bin", "conda")
 
-	for _, cmd := range []string{
-		fmt.Sprintf("%s install -c anaconda setuptools", condaBin),
-		fmt.Sprintf("%s config --set always_yes yes --set changeps1 no", condaBin),
-		fmt.Sprintf("%s update -q conda", condaBin),
-		fmt.Sprintf("%s create --prefix %s python=%s", condaBin, envDir, bt.Version()),
-	} {
-		log.Infof("Running: '%v' ", cmd)
-		p := runtime.Process{
-			Command:   cmd,
-			Directory: setupDir,
-		}
+		for _, cmd := range []string{
+			fmt.Sprintf("%s install -c anaconda setuptools", condaBin),
+			fmt.Sprintf("%s config --set always_yes yes --set changeps1 no", condaBin),
+			fmt.Sprintf("%s update -q conda", condaBin),
+			fmt.Sprintf("%s create --prefix %s python=%s", condaBin, envDir, bt.Version()),
+		} {
+			log.Infof("Running: '%v' ", cmd)
+			p := runtime.Process{
+				Command:   cmd,
+				Directory: setupDir,
+			}
 
-		if err := t.Run(ctx, p); err != nil {
-			log.Errorf("Unable to run setup command: %s", cmd)
-			return fmt.Errorf("running '%s': %v", cmd, err)
+			if err := t.Run(ctx, p); err != nil {
+				log.Errorf("Unable to run setup command: %s", cmd)
+				return fmt.Errorf("running '%s': %v", cmd, err)
+			}
 		}
 	}
 

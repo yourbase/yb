@@ -60,7 +60,7 @@ func (bt GradleBuildTool) Version() string {
 func (bt GradleBuildTool) Setup(ctx context.Context, gradleDir string) error {
 	t := bt.spec.InstallTarget
 
-	gradleHome := filepath.Join(t.ToolOutputSharedDir(ctx), "gradle-home", bt.Version())
+	gradleHome := filepath.Join(t.ToolsDir(ctx), "gradle-home", bt.Version())
 
 	log.Infof("Setting GRADLE_USER_HOME to %s", gradleHome)
 	t.SetEnv("GRADLE_USER_HOME", gradleHome)

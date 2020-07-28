@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"path/filepath"
+	"os/user"
 	goruntime "runtime"
 	"strings"
 	"time"
@@ -17,12 +17,6 @@ import (
 	"github.com/matishsiao/goInfo"
 	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	"go4.org/xdgdir"
-)
-
-const (
-	defaultOutputSharedDir = "/tmp/yourbase/shared"
-	defaultToolsDir        = "/tmp/yourbase/tools"
 )
 
 type MetalTarget struct {
@@ -71,41 +65,19 @@ func (t *MetalTarget) WriteContentsToFile(contents string, filename string) erro
 }
 
 func (t *MetalTarget) ToolsDir(ctx context.Context) string {
-	toolsDir := toolsDir()
+	toolsDir, exists := os.LookupEnv("YB_TOOLS_DIR")
+	if !exists {
+		u, err := user.Current()
+		if err != nil {
+			toolsDir = "/tmp/yourbase/tools"
+		} else {
+			toolsDir = fmt.Sprintf("%s/.yourbase/tools", u.HomeDir)
+		}
+	}
 
 	plumbing.MkdirAsNeeded(toolsDir)
 
 	return toolsDir
-}
-
-func toolsDir() string {
-	if toolsDir, exists := os.LookupEnv("YB_TOOLS_DIR"); exists {
-		return toolsDir
-	}
-	// Tries to find a XDG Shared dir
-	if toolsDir := xdgdir.Data.Path(); toolsDir != "" {
-		return filepath.Join(toolsDir, "yourbase", "tools")
-	}
-	return defaultToolsDir
-}
-
-func (t *MetalTarget) ToolOutputSharedDir(ctx context.Context) string {
-	dir := outputSharedDir()
-
-	plumbing.MkdirAsNeeded(dir)
-
-	return dir
-}
-
-func outputSharedDir() string {
-	if sharedDir, exists := os.LookupEnv("YB_TOOLS_OUTPUT_SHARED_DIR"); exists {
-		return sharedDir
-	}
-	// Tries to find a XDG Shared dir
-	if sharedDir := xdgdir.Data.Path(); sharedDir != "" {
-		return filepath.Join(sharedDir, "yourbase", "output")
-	}
-	return defaultOutputSharedDir
 }
 
 func (t *MetalTarget) PathExists(ctx context.Context, path string) bool {

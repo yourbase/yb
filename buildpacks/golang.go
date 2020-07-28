@@ -67,7 +67,7 @@ func (bt GolangBuildTool) Version() string {
 func (bt GolangBuildTool) Setup(ctx context.Context, golangDir string) error {
 	t := bt.spec.InstallTarget
 
-	goPath := filepath.Join(t.ToolOutputSharedDir(ctx), "go", bt.Version())
+	goPath := t.ToolsDir(ctx)
 	pkgPath := bt.spec.PackageDir
 
 	var goPathElements = []string{goPath, pkgPath}
@@ -84,7 +84,7 @@ func (bt GolangBuildTool) Setup(ctx context.Context, golangDir string) error {
 
 	log.Infof("Setting GOROOT to %s", golangDir)
 	t.SetEnv("GOROOT", golangDir)
-	log.Infof("Setting GOPATH to %s", goPathVar)
+	log.Infof("Setting GOPATH to %s", goPath)
 	t.SetEnv("GOPATH", goPathVar)
 
 	return nil

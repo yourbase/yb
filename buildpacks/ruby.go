@@ -182,7 +182,7 @@ func (bt RubyBuildTool) Install(ctx context.Context) (string, error) {
 func (bt RubyBuildTool) Setup(ctx context.Context, rubyDir string) error {
 	t := bt.spec.InstallTarget
 
-	gemsDir := filepath.Join(t.ToolOutputSharedDir(ctx), "rubygems")
+	gemsDir := filepath.Join(t.ToolsDir(ctx), "rubygems")
 
 	log.Infof("Setting GEM_HOME to %s", gemsDir)
 	t.SetEnv("GEM_HOME", gemsDir)
