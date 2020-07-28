@@ -152,7 +152,7 @@ func (t *ContainerTarget) UploadFile(ctx context.Context, src string, dest strin
 func (t *ContainerTarget) DownloadFile(ctx context.Context, url string) (string, error) {
 	// TODO: upload if locally found
 
-	localFile, err := downloadFileWithCache(ctx, url)
+	localFile, err := DownloadFileWithCache(ctx, url)
 	parts := strings.Split(url, "/")
 	filename := parts[len(parts)-1]
 	outputFilename := fmt.Sprintf("/tmp/%s", filename)

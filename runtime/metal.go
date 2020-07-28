@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/user"
+	"path/filepath"
+	"regexp"
 	goruntime "runtime"
 	"strings"
 	"time"
@@ -105,12 +108,20 @@ func (t *MetalTarget) GetDefaultPath() string {
 	return os.Getenv("PATH")
 }
 
-// CacheDir returns a local filesystem cache path to hold tools distributed archives
 func (t *MetalTarget) CacheDir(ctx context.Context) string {
-	dir := localCacheDir()
-	t.MkdirAsNeeded(ctx, dir)
+	cacheDir, exists := os.LookupEnv("YB_CACHE_DIR")
+	if !exists {
+		u, err := user.Current()
+		if err != nil {
+			cacheDir = "/tmp/yourbase/cache"
+		} else {
+			cacheDir = fmt.Sprintf("%s/.yourbase/cache", u.HomeDir)
+		}
+	}
 
-	return dir
+	plumbing.MkdirAsNeeded(cacheDir)
+
+	return cacheDir
 }
 
 func (t *MetalTarget) UploadFile(ctx context.Context, src string, dst string) error {
@@ -147,7 +158,7 @@ func (t *MetalTarget) UploadFile(ctx context.Context, src string, dst string) er
 
 func (t *MetalTarget) DownloadFile(ctx context.Context, url string) (string, error) {
 
-	localFile, err := downloadFileWithCache(ctx, url)
+	localFile, err := DownloadFileToCache(ctx, url, t.CacheDir(ctx))
 
 	if err != nil {
 		log.Errorf("Unable to download: %v", err)
@@ -303,6 +314,91 @@ func (t *MetalTarget) ExecToLogWithProgressDots(ctx context.Context, cmdString s
 
 	return t.ExecToLog(ctx, cmdString, targetDir, logPath)
 }
+
 func (t *MetalTarget) WriteFileContents(ctx context.Context, contents string, path string) error {
 	return ioutil.WriteFile(path, []byte(contents), 0644)
+}
+
+func CacheFilenameForUrl(url string) (string, error) {
+	reg, err := regexp.Compile("[^a-zA-Z0-9.]+")
+	if err != nil {
+		return "", fmt.Errorf("Can't compile regex: %v", err)
+	}
+	fileName := reg.ReplaceAllString(url, "")
+	return fileName, nil
+}
+
+func DownloadFileWithCache(ctx context.Context, url string) (string, error) {
+	cacheDir := "/tmp/yourbase"
+	if homeDir, exists := os.LookupEnv("HOME"); exists {
+		cacheDir = filepath.Join(homeDir, ".cache", "yourbase")
+	}
+
+	return DownloadFileToCache(ctx, url, cacheDir)
+}
+
+func DownloadFileToCache(ctx context.Context, url string, cachedir string) (string, error) {
+
+	filename, err := CacheFilenameForUrl(url)
+	if err != nil {
+		return "", err
+	}
+
+	os.MkdirAll(cachedir, 0700)
+
+	cacheFilename := filepath.Join(cachedir, filename)
+	log.Infof("Downloading %s to cache as %s", url, cacheFilename)
+
+	fileExists := false
+	fileSizeMismatch := false
+
+	// Exists, don't re-download
+	if fi, err := os.Stat(cacheFilename); !os.IsNotExist(err) && fi != nil {
+		fileExists = true
+
+		// try HEAD'ing the URL and comparing to local file
+		resp, err := http.Head(url)
+		if err == nil {
+			if fi.Size() != resp.ContentLength {
+				log.Infof("Re-downloading %s because remote file and local file differ in size", url)
+				fileSizeMismatch = true
+			}
+		}
+
+	}
+
+	if fileExists && !fileSizeMismatch {
+		// No mismatch known, but exists, use cached version
+		log.Infof("Re-using cached version of %s", url)
+		return cacheFilename, nil
+	}
+
+	// Otherwise download
+	err = doDownload(ctx, cacheFilename, url)
+	return cacheFilename, err
+}
+
+func doDownload(ctx context.Context, filepath string, url string) error {
+
+	// Cancellable request
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	client := &http.Client{}
+
+	// Get the data
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	// Create the file
+	out, err := os.Create(filepath)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	// Write the body to file
+	_, err = io.Copy(out, resp.Body)
+	return err
 }
