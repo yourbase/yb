@@ -185,18 +185,10 @@ func parseRemote(s string) (token, user, password, domain, path, protocol string
 			path = strings.Join(remainder[1:], "/")
 		}
 	} else {
-		if t == SshRemote && !strings.Contains(afterAuth, ":") {
-			remainder := strings.Split(afterAuth, "/")
-			if len(remainder) > 1 {
-				domain = remainder[0]
-				path = strings.Join(remainder[1:], "/")
-			}
-		} else {
-			sides := strings.Split(afterAuth, ":")
-			if len(sides) > 1 {
-				domain = sides[0]
-				path = sides[1]
-			}
+		sides := strings.Split(afterAuth, ":")
+		if len(sides) > 1 {
+			domain = sides[0]
+			path = sides[1]
 		}
 	}
 
