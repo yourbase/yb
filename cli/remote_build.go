@@ -732,6 +732,9 @@ func (p *RemoteCmd) fetchProject(urls []string) (*Project, GitRemote, error) {
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, empty, err
+	}
 	var project Project
 	err = json.Unmarshal(body, &project)
 	if err != nil {
