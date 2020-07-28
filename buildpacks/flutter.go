@@ -1,8 +1,8 @@
 package buildpacks
 
 import (
-	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -84,42 +84,50 @@ func (bt FlutterBuildTool) Version() string {
 	return bt.version
 }
 
-func (bt FlutterBuildTool) Setup(ctx context.Context, flutterDir string) error {
+func (bt FlutterBuildTool) InstallDir() string {
+	return filepath.Join(bt.spec.PackageCacheDir, "flutter", fmt.Sprintf("flutter-%s", bt.Version()))
+}
+
+func (bt FlutterBuildTool) FlutterDir() string {
+	return filepath.Join(bt.InstallDir(), "flutter")
+}
+
+func (bt FlutterBuildTool) Setup() error {
+	flutterDir := bt.FlutterDir()
 	t := bt.spec.InstallTarget
 
-	t.PrependToPath(ctx, filepath.Join(flutterDir, "bin"))
+	t.PrependToPath(filepath.Join(flutterDir, "bin"))
 
 	return nil
 }
 
-func (bt FlutterBuildTool) Install(ctx context.Context) (error, string) {
-	t := bt.spec.InstallTarget
+// TODO, generalize downloader
+func (bt FlutterBuildTool) Install() error {
+	flutterDir := bt.FlutterDir()
+	installDir := bt.InstallDir()
 
-	installDir := filepath.Join(t.ToolsDir(ctx), "flutter", "flutter-"+bt.Version())
-	flutterDir := filepath.Join(installDir, "flutter")
-
-	if t.PathExists(ctx, flutterDir) {
+	if _, err := os.Stat(flutterDir); err == nil {
 		log.Infof("Flutter %s located in %s!", downloadUrlVersion(bt.Version()), flutterDir)
 	} else {
 		log.Infof("Will install Flutter %s into %s", downloadUrlVersion(bt.Version()), flutterDir)
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading Flutter from URL %s...", downloadUrl)
-		localFile, err := t.DownloadFile(ctx, downloadUrl)
+		localFile, err := bt.spec.InstallTarget.DownloadFile(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
-			return err, ""
+			return err
 		}
-		err = t.Unarchive(ctx, localFile, installDir)
+		err = bt.spec.InstallTarget.Unarchive(localFile, installDir)
 		if err != nil {
 			log.Errorf("Unable to decompress: %v", err)
-			return err, ""
+			return err
 		}
 
 		//RemoveWritePermissionRecursively(installDir)
 	}
 
-	return nil, flutterDir
+	return nil
 }
 
 // Starting with flutter 1.17 the version format changed.

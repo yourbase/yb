@@ -46,7 +46,7 @@ func (b *BuildCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&b.CleanBuild, "clean", false, "Perform a completely clean build -- don't reuse anything when building")
 }
 
-func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	startTime := time.Now()
 
 	log.Infof("Build started at %s", startTime.Format(TIME_FORMAT))
@@ -80,7 +80,7 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 		CleanBuild: b.CleanBuild,
 		ExecPrefix: b.ExecPrefix,
 	}
-	stepTimers, buildError := pkg.Build(ctx, buildFlags)
+	stepTimers, buildError := pkg.Build(buildFlags)
 
 	if err != nil {
 		log.Errorf("Failed to build target package: %v\n", err)

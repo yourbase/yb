@@ -1,8 +1,8 @@
 package buildpacks
 
 import (
-	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/yourbase/yb/plumbing/log"
@@ -43,39 +43,39 @@ func (bt AnacondaBuildTool) Version() string {
 	return bt.version
 }
 
-func (bt AnacondaBuildTool) Install(ctx context.Context) (error, string) {
+func (bt AnacondaBuildTool) InstallDir() string {
+	return filepath.Join(bt.spec.PackageCacheDir, "miniconda", fmt.Sprintf("miniconda-%s", bt.Version()))
+}
+
+func (bt AnacondaBuildTool) Install() error {
+	anacondaDir := bt.InstallDir()
+	setupDir := bt.spec.PackageDir
 	t := bt.spec.InstallTarget
 
-	anacondaDir := filepath.Join(t.ToolsDir(ctx), "miniconda", "miniconda-"+bt.Version())
-	setupDir := bt.spec.PackageDir
-
-	if t.PathExists(ctx, anacondaDir) {
-		log.Infof("Anaconda installed in %s", anacondaDir)
+	if _, err := os.Stat(anacondaDir); err == nil {
+		log.Infof("anaconda installed in %s", anacondaDir)
 	} else {
 		log.Infof("Installing anaconda")
 
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading Miniconda from URL %s...", downloadUrl)
-		localFile, err := t.DownloadFile(ctx, downloadUrl)
+		localFile, err := t.DownloadFile(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v\n", err)
-			return err, ""
+			return err
 		}
 		for _, cmd := range []string{
 			fmt.Sprintf("chmod +x %s", localFile),
 			fmt.Sprintf("bash %s -b -p %s", localFile, anacondaDir),
 		} {
 			log.Infof("Running: '%v' ", cmd)
-			t.Run(ctx, runtime.Process{
-				Command:   cmd,
-				Directory: setupDir,
-			})
+			runtime.ExecToStdout(cmd, setupDir)
 		}
 
 	}
 
-	return nil, anacondaDir
+	return nil
 }
 
 func (bt AnacondaBuildTool) DownloadUrl() string {
@@ -124,10 +124,10 @@ func (bt AnacondaBuildTool) DownloadUrl() string {
 	return url
 }
 
-func (bt AnacondaBuildTool) Setup(ctx context.Context, installDir string) error {
+func (bt AnacondaBuildTool) Setup() error {
+	installDir := bt.InstallDir()
 	t := bt.spec.InstallTarget
-
-	t.PrependToPath(ctx, filepath.Join(installDir, "bin"))
+	t.PrependToPath(filepath.Join(installDir, "bin"))
 	setupDir := bt.spec.PackageDir
 
 	for _, cmd := range []string{
@@ -135,13 +135,7 @@ func (bt AnacondaBuildTool) Setup(ctx context.Context, installDir string) error 
 		fmt.Sprintf("conda update -q conda"),
 	} {
 		log.Infof("Running: '%v' ", cmd)
-		err := t.Run(ctx, runtime.Process{
-			Command:   cmd,
-			Directory: setupDir,
-		})
-		if err != nil {
-			return err
-		}
+		runtime.ExecToStdout(cmd, setupDir)
 	}
 
 	return nil

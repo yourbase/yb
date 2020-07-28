@@ -1,7 +1,6 @@
 package buildpacks
 
 import (
-	"context"
 	"fmt"
 	"path/filepath"
 
@@ -10,17 +9,15 @@ import (
 	. "github.com/yourbase/yb/types"
 )
 
-var (
-	anacondaToolVersion = "4.7.10"
-)
-
 type PythonBuildTool struct {
 	BuildTool
 	version string
 	spec    BuildToolSpec
 }
 
-var anacondaURLTemplate = "https://repo.continuum.io/miniconda/Miniconda{{.PyNum}}-{{.Version}}-{{.OS}}-{{.Arch}}.{{.Extension}}"
+var ANACONDA_URL_TEMPLATE = "https://repo.continuum.io/miniconda/Miniconda{{.PyNum}}-{{.Version}}-{{.OS}}-{{.Arch}}.{{.Extension}}"
+
+const AnacondaToolVersion = "4.7.10"
 
 func NewPythonBuildTool(toolSpec BuildToolSpec) PythonBuildTool {
 	tool := PythonBuildTool{
@@ -35,13 +32,20 @@ func (bt PythonBuildTool) Version() string {
 	return bt.version
 }
 
-func (bt PythonBuildTool) Install(ctx context.Context) (error, string) {
+func (bt PythonBuildTool) AnacondaInstallDir() string {
+	return filepath.Join(bt.spec.SharedCacheDir, "miniconda3", fmt.Sprintf("miniconda-%s", AnacondaToolVersion))
+}
+
+func (bt PythonBuildTool) EnvironmentDir() string {
+	return filepath.Join(bt.spec.PackageCacheDir, "conda-python", bt.Version())
+}
+
+func (bt PythonBuildTool) Install() error {
+	anacondaDir := bt.AnacondaInstallDir()
+	setupDir := bt.spec.PackageDir
 	t := bt.spec.InstallTarget
 
-	anacondaDir := filepath.Join(t.ToolsDir(ctx), "miniconda3", "miniconda-"+anacondaToolVersion)
-	setupDir := bt.spec.PackageDir
-
-	if t.PathExists(ctx, anacondaDir) {
+	if bt.spec.InstallTarget.PathExists(anacondaDir) {
 		log.Infof("anaconda installed in %s", anacondaDir)
 	} else {
 		log.Infof("Installing anaconda")
@@ -49,10 +53,10 @@ func (bt PythonBuildTool) Install(ctx context.Context) (error, string) {
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading Miniconda from URL %s...", downloadUrl)
-		localFile, err := t.DownloadFile(ctx, downloadUrl)
+		localFile, err := t.DownloadFile(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
-			return err, ""
+			return err
 		}
 
 		// TODO: Windows
@@ -65,14 +69,14 @@ func (bt PythonBuildTool) Install(ctx context.Context) (error, string) {
 				Command:   cmd,
 				Directory: setupDir,
 			}
-			if err := t.Run(ctx, p); err != nil {
-				return fmt.Errorf("Couldn't install python: %v", err), ""
+			if err := t.Run(p); err != nil {
+				return fmt.Errorf("Couldn't install python: %v", err)
 			}
 		}
 
 	}
 
-	return nil, anacondaDir
+	return nil
 }
 
 func (bt PythonBuildTool) DownloadUrl() string {
@@ -110,22 +114,22 @@ func (bt PythonBuildTool) DownloadUrl() string {
 		3,
 		opsys,
 		arch,
-		anacondaToolVersion,
+		AnacondaToolVersion,
 		extension,
 	}
 
-	url, _ := TemplateToString(anacondaURLTemplate, data)
+	url, _ := TemplateToString(ANACONDA_URL_TEMPLATE, data)
 
 	return url
 }
 
-func (bt PythonBuildTool) Setup(ctx context.Context, condaDir string) error {
+func (bt PythonBuildTool) Setup() error {
+	condaDir := bt.AnacondaInstallDir()
+	envDir := bt.EnvironmentDir()
 	t := bt.spec.InstallTarget
+	t.PrependToPath(filepath.Join(condaDir, "bin"))
 
-	envDir := filepath.Join(t.ToolsDir(ctx), "conda-python", bt.Version())
-	t.PrependToPath(ctx, filepath.Join(condaDir, "bin"))
-
-	if t.PathExists(ctx, envDir) {
+	if t.PathExists(envDir) {
 		log.Infof("environment installed in %s", envDir)
 	} else {
 		setupDir := bt.spec.PackageDir
@@ -139,11 +143,12 @@ func (bt PythonBuildTool) Setup(ctx context.Context, condaDir string) error {
 		} {
 			log.Infof("Running: '%v' ", cmd)
 			p := runtime.Process{
-				Command:   cmd,
-				Directory: setupDir,
+				Command:     cmd,
+				Interactive: false,
+				Directory:   setupDir,
 			}
 
-			if err := t.Run(ctx, p); err != nil {
+			if err := t.Run(p); err != nil {
 				log.Errorf("Unable to run setup command: %s", cmd)
 				return fmt.Errorf("Unable to run '%s': %v", cmd, err)
 			}
@@ -151,7 +156,7 @@ func (bt PythonBuildTool) Setup(ctx context.Context, condaDir string) error {
 	}
 
 	// Add new env to path
-	t.PrependToPath(ctx, filepath.Join(envDir, "bin"))
+	t.PrependToPath(filepath.Join(envDir, "bin"))
 
 	return nil
 

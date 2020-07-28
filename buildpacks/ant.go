@@ -1,8 +1,8 @@
 package buildpacks
 
 import (
-	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -54,40 +54,47 @@ func (bt AntBuildTool) Version() string {
 	return bt.version
 }
 
-func (bt AntBuildTool) Setup(ctx context.Context, antDir string) error {
+func (bt AntBuildTool) AntDir() string {
+	return filepath.Join(bt.InstallDir(), fmt.Sprintf("apache-ant-%s", bt.Version()))
+}
+
+func (bt AntBuildTool) InstallDir() string {
+	return filepath.Join(bt.spec.SharedCacheDir, "ant")
+}
+
+func (bt AntBuildTool) Setup() error {
+	antDir := bt.AntDir()
 	t := bt.spec.InstallTarget
 
-	t.PrependToPath(ctx, filepath.Join(antDir, "bin"))
+	t.PrependToPath(filepath.Join(antDir, "bin"))
 
 	return nil
 }
 
 // TODO, generalize downloader
-func (bt AntBuildTool) Install(ctx context.Context) (error, string) {
-	t := bt.spec.InstallTarget
+func (bt AntBuildTool) Install() error {
+	antDir := bt.AntDir()
+	installDir := bt.InstallDir()
 
-	installDir := filepath.Join(t.ToolsDir(ctx), "ant")
-	antDir := filepath.Join(installDir, "apache-ant-"+bt.Version())
-
-	if t.PathExists(ctx, antDir) {
+	if _, err := os.Stat(antDir); err == nil {
 		log.Infof("Ant v%s located in %s!", bt.Version(), antDir)
 	} else {
 		log.Infof("Will install Ant v%s into %s", bt.Version(), antDir)
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading Ant from URL %s...", downloadUrl)
-		localFile, err := t.DownloadFile(ctx, downloadUrl)
+		localFile, err := bt.spec.InstallTarget.DownloadFile(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
-			return err, ""
+			return err
 		}
-		err = t.Unarchive(ctx, localFile, installDir)
+		err = bt.spec.InstallTarget.Unarchive(localFile, installDir)
 		if err != nil {
 			log.Errorf("Unable to decompress: %v", err)
-			return err, ""
+			return err
 		}
 
 	}
 
-	return nil, antDir
+	return nil
 }

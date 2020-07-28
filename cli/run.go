@@ -33,7 +33,7 @@ Executing the target involves:
 2. Run any dependent components
 3. Start target
 */
-func (b *RunCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (b *RunCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 
 	if len(f.Args()) == 0 {
 		fmt.Println(b.Usage())
@@ -61,10 +61,11 @@ func (b *RunCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{})
 	}
 
 	cmdString := strings.Join(argList, " ")
-	if runErr := ws.RunInTarget(ctx, cmdString, workDir, runtimeTarget); runErr != nil {
+	if runErr := ws.RunInTarget(cmdString, workDir, runtimeTarget); runErr != nil {
 		log.Errorf("Unable to run command: %v", runErr)
 		return subcommands.ExitFailure
 	}
+
 
 	return subcommands.ExitSuccess
 }

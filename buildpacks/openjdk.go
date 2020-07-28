@@ -1,24 +1,27 @@
 package buildpacks
 
 import (
-	"context"
 	"fmt"
+	"github.com/yourbase/yb/runtime"
+	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
+        "strconv"
 
+	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 )
 
+
 type JavaBuildTool struct {
 	BuildTool
-	version      string
-	spec         BuildToolSpec
+	version string
+	spec    BuildToolSpec
 	majorVersion int64
 	minorVersion int64
 	patchVersion int64
-	subVersion   string
+	subVersion string
 }
 
 func NewJavaBuildTool(toolSpec BuildToolSpec) JavaBuildTool {
@@ -26,13 +29,13 @@ func NewJavaBuildTool(toolSpec BuildToolSpec) JavaBuildTool {
 	vparts := strings.SplitN(toolSpec.Version, "+", 2)
 	subVersion := ""
 	version := toolSpec.Version
-	if len(vparts) > 1 {
+	if len(vparts) > 1 { 
 		subVersion = vparts[1]
 		version = vparts[0]
 	}
 
 	parts := strings.Split(version, ".")
-	c := len(parts)
+  c := len(parts)
 
 	var majorVersion int64
 	var minorVersion int64
@@ -48,7 +51,7 @@ func NewJavaBuildTool(toolSpec BuildToolSpec) JavaBuildTool {
 		}
 	}
 
-	// Maybe we just require people format it with the build number?
+	// Maybe we just require people format it with the build number? 
 	// Alternatively we can have a table of defaults somewhere
 	if subVersion == "" {
 		switch majorVersion {
@@ -71,13 +74,14 @@ func NewJavaBuildTool(toolSpec BuildToolSpec) JavaBuildTool {
 		}
 	}
 
+
 	tool := JavaBuildTool{
-		version:      toolSpec.Version,
+		version: toolSpec.Version,
 		majorVersion: majorVersion,
 		minorVersion: minorVersion,
 		patchVersion: patchVersion,
-		subVersion:   subVersion,
-		spec:         toolSpec,
+		subVersion: subVersion,
+		spec:    toolSpec,
 	}
 
 	return tool
@@ -87,7 +91,11 @@ func (bt JavaBuildTool) Version() string {
 	return bt.version
 }
 
-func (bt JavaBuildTool) JavaDir(installDir string) string {
+func (bt JavaBuildTool) InstallDir() string {
+	return filepath.Join(bt.spec.SharedCacheDir, "java")
+}
+
+func (bt JavaBuildTool) JavaDir() string {
 	opsys := OS()
 	// Versions..
 	archiveDir := ""
@@ -97,7 +105,7 @@ func (bt JavaBuildTool) JavaDir(installDir string) string {
 		archiveDir = fmt.Sprintf("jdk-%d.%d.%d+%s", bt.majorVersion, bt.minorVersion, bt.patchVersion, bt.subVersion)
 	}
 
-	basePath := filepath.Join(installDir, archiveDir)
+	basePath := filepath.Join(bt.InstallDir(), archiveDir)
 
 	if opsys == "darwin" {
 		basePath = filepath.Join(basePath, "Contents", "Home")
@@ -106,13 +114,15 @@ func (bt JavaBuildTool) JavaDir(installDir string) string {
 	return basePath
 }
 
-func (bt JavaBuildTool) Setup(ctx context.Context, installDir string) error {
-	javaDir := bt.JavaDir(installDir)
-	t := bt.spec.InstallTarget
-	t.SetEnv("JAVA_HOME", javaDir)
-
-	cmdPath := filepath.Join(javaDir, "bin")
-	t.PrependToPath(ctx, cmdPath)
+func (bt JavaBuildTool) Setup() error {
+	javaDir := bt.JavaDir()
+	cmdPath := fmt.Sprintf("%s/bin", javaDir)
+	currentPath := os.Getenv("PATH")
+	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
+	log.Infof("Setting PATH to %s", newPath)
+	runtime.SetEnv("PATH", newPath)
+	log.Infof("Setting JAVA_HOME to %s", javaDir)
+	runtime.SetEnv("JAVA_HOME", javaDir)
 
 	return nil
 }
@@ -120,7 +130,7 @@ func (bt JavaBuildTool) Setup(ctx context.Context, installDir string) error {
 func (bt JavaBuildTool) DownloadUrl() string {
 
 	// This changes pretty dramatically depending on major version :~(
-	// Using HotSpot version, we should consider an OpenJ9 option
+    // Using HotSpot version, we should consider an OpenJ9 option 
 	urlPattern := ""
 	if bt.majorVersion < 9 {
 		urlPattern = "https://github.com/AdoptOpenJDK/openjdk{{.MajorVersion}}-binaries/releases/download/jdk{{.MajorVersion}}u{{.MinorVersion}}-b{{.SubVersion}}/OpenJDK{{.MajorVersion}}U-jdk_{{.Arch}}_{{.OS}}_hotspot_{{.MajorVersion}}u{{.MinorVersion}}b{{.SubVersion}}.{{.Extension}}"
@@ -132,7 +142,7 @@ func (bt JavaBuildTool) DownloadUrl() string {
 			urlPattern = "https://github.com/AdoptOpenJDK/openjdk{{ .MajorVersion }}-binaries/releases/download/jdk-{{ .MajorVersion }}%2B{{ .SubVersion }}/OpenJDK{{ .MajorVersion }}U-jdk_x64_linux_hotspot_{{ .MajorVersion }}_{{ .SubVersion }}.{{ .Extension }}"
 		}
 	}
-
+	
 	arch := "x64"
 	extension := "tar.gz"
 
@@ -151,7 +161,7 @@ func (bt JavaBuildTool) DownloadUrl() string {
 		MajorVersion int64
 		MinorVersion int64
 		PatchVersion int64
-		SubVersion   string // not always an int, sometimes a float
+		SubVersion   string // not always an int, sometimes a float 
 		Extension    string
 	}{
 		operatingSystem,
@@ -174,34 +184,32 @@ func (bt JavaBuildTool) DownloadUrl() string {
 	return url
 }
 
-func (bt JavaBuildTool) Install(ctx context.Context) (error, string) {
-	t := bt.spec.InstallTarget
+func (bt JavaBuildTool) Install() error {
+	javaInstallDir := bt.InstallDir()
+	javaPath := bt.JavaDir()
 
-	javaInstallDir := filepath.Join(t.ToolsDir(ctx), "java")
-	javaPath := bt.JavaDir(javaInstallDir)
+	MkdirAsNeeded(javaInstallDir)
 
-	t.MkdirAsNeeded(ctx, javaInstallDir)
-
-	if t.PathExists(ctx, javaPath) {
+	if _, err := os.Stat(javaPath); err == nil {
 		log.Infof("Java v%s located in %s!", bt.Version(), javaPath)
 	} else {
 		log.Infof("Will install Java v%s into %s", bt.Version(), javaInstallDir)
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading from URL %s ", downloadUrl)
-		localFile, err := t.DownloadFile(ctx, downloadUrl)
+		localFile, err := bt.spec.InstallTarget.DownloadFile(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
-			return err, ""
+			return err
 		}
-		err = t.Unarchive(ctx, localFile, javaInstallDir)
+		err = bt.spec.InstallTarget.Unarchive(localFile, javaInstallDir)
 		if err != nil {
 			log.Errorf("Unable to decompress: %v", err)
-			return err, ""
+			return err
 		}
 
 	}
 
-	return nil, javaInstallDir
+	return nil
 
 }

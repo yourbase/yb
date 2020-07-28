@@ -1,7 +1,6 @@
 package workspace
 
 import (
-	"context"
 	"crypto/sha256"
 	"fmt"
 	"github.com/yourbase/yb/runtime"
@@ -23,22 +22,26 @@ type Workspace struct {
 	packages []Package
 }
 
-func (w Workspace) RunInTarget(ctx context.Context, cmdString string, workDir string, targetName string) error {
+func (w Workspace) BuildPackage(p Package) error {
+	return nil
+}
+
+func (w Workspace) RunInTarget(cmdString string, workDir string, targetName string) error {
 
 	log.Infof("Running %s in %s from %s", cmdString, targetName, workDir)
 
 	p := runtime.Process{Command: cmdString, Interactive: true, Directory: workDir}
 
-	runCtx, err := w.execRuntimeContext(ctx)
+	ctx, err := w.execRuntimeContext()
 	if err != nil {
 		return err
 	}
 
-	return runCtx.RunInTarget(ctx, p, targetName)
+	return ctx.RunInTarget(p, targetName)
 }
 
-func (w Workspace) RunningContainers(ctx context.Context) ([]*runtime.ContainerTarget, error) {
-	runtimeCtx, err := w.execRuntimeContext(ctx)
+func (w Workspace) RunningContainers() ([]*runtime.ContainerTarget, error) {
+	runtimeCtx, err := w.execRuntimeContext()
 
 	if err != nil {
 		return []*runtime.ContainerTarget{}, fmt.Errorf("unable to determine running containers: %v", err)
@@ -46,7 +49,7 @@ func (w Workspace) RunningContainers(ctx context.Context) ([]*runtime.ContainerT
 
 	result := make([]*runtime.ContainerTarget, 0)
 	for _, p := range w.PackageList() {
-		for _, c := range runtimeCtx.FindContainers(ctx, p.RuntimeContainers()) {
+		for _, c := range runtimeCtx.FindContainers(p.RuntimeContainers()) {
 			result = append(result, c)
 		}
 	}
@@ -54,19 +57,19 @@ func (w Workspace) RunningContainers(ctx context.Context) ([]*runtime.ContainerT
 	return result, nil
 }
 
-func (w Workspace) ExecutePackage(ctx context.Context, p Package) error {
-	if runtimeCtx, err := w.execRuntimeContext(ctx); err != nil {
+func (w Workspace) ExecutePackage(p Package) error {
+	if runtimeCtx, err := w.execRuntimeContext(); err != nil {
 		return err
 	} else {
-		return p.Execute(ctx, runtimeCtx)
+		return p.Execute(runtimeCtx)
 	}
 }
 
-func (w Workspace) execRuntimeContext(ctx context.Context) (*runtime.Runtime, error) {
+func (w Workspace) execRuntimeContext() (*runtime.Runtime, error) {
 	log.Debugf("Creating runtime context for workspace %s", w.Name())
 	contextId := fmt.Sprintf("%s-exec", w.Name())
 
-	runtimeCtx := runtime.NewRuntime(ctx, contextId, w.BuildRoot())
+	runtimeCtx := runtime.NewRuntime(contextId, w.BuildRoot())
 
 	return runtimeCtx, nil
 }

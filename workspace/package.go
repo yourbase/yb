@@ -1,7 +1,6 @@
 package workspace
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"github.com/yourbase/narwhal"
@@ -40,7 +39,7 @@ func (p Package) Path() string {
 	return p.path
 }
 
-func (p Package) Build(ctx context.Context, flags BuildFlags) ([]CommandTimer, error) {
+func (p Package) Build(flags BuildFlags) ([]CommandTimer, error) {
 	times := make([]CommandTimer, 0)
 
 	manifest := p.Manifest
@@ -52,9 +51,9 @@ func (p Package) Build(ctx context.Context, flags BuildFlags) ([]CommandTimer, e
 
 	contextId := fmt.Sprintf("%s-build-%s", p.Name, tgt.Name)
 
-	runtimeCtx := runtime.NewRuntime(ctx, contextId, p.BuildRoot())
+	runtimeCtx := runtime.NewRuntime(contextId, p.BuildRoot())
 
-	return tgt.Build(ctx, runtimeCtx, os.Stdout, flags, p.Path(), p.Manifest.Dependencies.Build)
+	return tgt.Build(runtimeCtx, os.Stdout, flags, p.Path(), p.Manifest.Dependencies.Build)
 }
 
 func LoadPackageAtPath(path string) (Package, error) {
@@ -88,22 +87,21 @@ func LoadPackage(name string, path string) (Package, error) {
 	return p, nil
 }
 
-func (p Package) environmentVariables(ctx context.Context, data runtime.RuntimeEnvironmentData, env string) []string {
-	return p.Manifest.Exec.EnvironmentVariables(ctx, env, data)
+func (p Package) environmentVariables(data runtime.RuntimeEnvironmentData, env string) []string {
+	return p.Manifest.Exec.EnvironmentVariables(env, data)
 }
 
-func (p Package) Execute(ctx context.Context, runtimeCtx *runtime.Runtime) error {
-	return p.ExecuteToWriter(ctx, runtimeCtx, os.Stdout)
+func (p Package) Execute(runtimeCtx *runtime.Runtime) error {
+	return p.ExecuteToWriter(runtimeCtx, os.Stdout)
 }
 
-func (p Package) ExecuteToWriter(ctx context.Context, runtimeCtx *runtime.Runtime, output io.Writer) error {
+func (p Package) ExecuteToWriter(runtimeCtx *runtime.Runtime, output io.Writer) error {
 
-	target, err := p.createExecutionTarget(ctx, runtimeCtx)
+	target, err := p.createExecutionTarget(runtimeCtx)
 	if err != nil {
 		return err
 	}
 
-	// TODO Be smarter
 	c := make(chan os.Signal, 2)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
@@ -124,11 +122,11 @@ func (p Package) ExecuteToWriter(ctx context.Context, runtimeCtx *runtime.Runtim
 			Command:     cmdString,
 			Directory:   "/workspace",
 			Interactive: false,
-			Output:      output,
-			Environment: p.environmentVariables(ctx, runtimeCtx.EnvironmentData(), "default"),
+			Output:      &output,
+			Environment: p.environmentVariables(runtimeCtx.EnvironmentData(), "default"),
 		}
 
-		if err := target.Run(ctx, proc); err != nil {
+		if err := target.Run(proc); err != nil {
 			return fmt.Errorf("unable to run command '%s': %v", cmdString, err)
 		}
 	}
@@ -148,7 +146,7 @@ func (p Package) checkMounts(cd *narwhal.ContainerDefinition, srcDir string) err
 	return nil
 }
 
-func (p Package) createExecutionTarget(ctx context.Context, runtimeCtx *runtime.Runtime) (*runtime.ContainerTarget, error) {
+func (p Package) createExecutionTarget(runtimeCtx *runtime.Runtime) (*runtime.ContainerTarget, error) {
 	localContainerWorkDir := filepath.Join(p.BuildRoot(), "containers")
 	MkdirAsNeeded(localContainerWorkDir)
 
@@ -162,7 +160,7 @@ func (p Package) createExecutionTarget(ctx context.Context, runtimeCtx *runtime.
 			return nil, fmt.Errorf("Unable to set host container mount dir: %v", err)
 		}
 
-		_, err := runtimeCtx.AddContainer(ctx, cd)
+		_, err := runtimeCtx.AddContainer(cd)
 		if err != nil {
 			return nil, fmt.Errorf("Couldn't start container dependency: %v", err)
 		}
@@ -205,7 +203,7 @@ func (p Package) createExecutionTarget(ctx context.Context, runtimeCtx *runtime.
 	}
 
 	execContainer := manifest.Exec.Container
-	execContainer.Environment = manifest.Exec.EnvironmentVariables(ctx, "default", runtimeCtx.EnvironmentData())
+	execContainer.Environment = manifest.Exec.EnvironmentVariables("default", runtimeCtx.EnvironmentData())
 	execContainer.Command = "/usr/bin/tail -f /dev/null"
 	execContainer.Label = p.Name
 	execContainer.Ports = portMappings
@@ -219,13 +217,13 @@ func (p Package) createExecutionTarget(ctx context.Context, runtimeCtx *runtime.
 	mount := fmt.Sprintf("%s:%s", p.Path(), sourceMapDir)
 	execContainer.Mounts = append(execContainer.Mounts, mount)
 
-	execTarget, err := runtimeCtx.AddContainer(ctx, execContainer)
+	execTarget, err := runtimeCtx.AddContainer(execContainer)
 	if err != nil {
 		return nil, fmt.Errorf("Couldn't start exec container: %v", err)
 	}
 
-	LoadBuildPacks(ctx, execTarget, p.Manifest.Dependencies.Build)
-	LoadBuildPacks(ctx, execTarget, p.Manifest.Dependencies.Runtime)
+	LoadBuildPacks(execTarget, p.Manifest.Dependencies.Build)
+	LoadBuildPacks(execTarget, p.Manifest.Dependencies.Runtime)
 
 	return execTarget, nil
 }

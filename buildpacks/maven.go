@@ -1,8 +1,8 @@
 package buildpacks
 
 import (
-	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -51,39 +51,46 @@ func (bt MavenBuildTool) Version() string {
 	return bt.version
 }
 
-func (bt MavenBuildTool) Setup(ctx context.Context, mavenDir string) error {
+func (bt MavenBuildTool) InstallDir() string {
+	return filepath.Join(bt.spec.InstallTarget.ToolsDir(), "maven")
+}
+
+func (bt MavenBuildTool) MavenDir() string {
+	return filepath.Join(bt.InstallDir(), fmt.Sprintf("apache-maven-%s", bt.Version()))
+}
+
+func (bt MavenBuildTool) Setup() error {
+	mavenDir := bt.MavenDir()
 	t := bt.spec.InstallTarget
 
-	t.PrependToPath(ctx, filepath.Join(mavenDir, "bin"))
+	t.PrependToPath(filepath.Join(mavenDir, "bin"))
 
 	return nil
 }
 
-func (bt MavenBuildTool) Install(ctx context.Context) (error, string) {
-	t := bt.spec.InstallTarget
+// TODO, generalize downloader
+func (bt MavenBuildTool) Install() error {
+	mavenDir := bt.MavenDir()
 
-	installDir := filepath.Join(t.ToolsDir(ctx), "maven")
-	mavenDir := filepath.Join(installDir, "apache-maven-"+bt.Version())
-
-	if t.PathExists(ctx, mavenDir) {
+	if _, err := os.Stat(mavenDir); err == nil {
 		log.Infof("Maven v%s located in %s!", bt.Version(), mavenDir)
 	} else {
-		log.Infof("Will install Maven v%s into %s", bt.Version(), installDir)
+		log.Infof("Will install Maven v%s into %s", bt.Version(), bt.InstallDir())
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading Maven from URL %s...", downloadUrl)
-		localFile, err := t.DownloadFile(ctx, downloadUrl)
+		localFile, err := bt.spec.InstallTarget.DownloadFile(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
-			return err, ""
+			return err
 		}
-		err = t.Unarchive(ctx, localFile, installDir)
+		err = bt.spec.InstallTarget.Unarchive(localFile, bt.InstallDir())
 		if err != nil {
 			log.Errorf("Unable to decompress: %v", err)
-			return err, ""
+			return err
 		}
 
 	}
 
-	return nil, mavenDir
+	return nil
 }

@@ -1,12 +1,13 @@
 package buildpacks
 
 import (
-	"context"
 	"fmt"
+	"github.com/yourbase/yb/runtime"
 	"os"
 	"path/filepath"
 	"strings"
 
+	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 )
@@ -72,7 +73,15 @@ func (bt AndroidBuildTool) Version() string {
 	return bt.version
 }
 
-func (bt AndroidBuildTool) WriteAgreements(ctx context.Context, androidDir string) bool {
+func (bt AndroidBuildTool) InstallDir() string {
+	return filepath.Join(bt.spec.InstallTarget.ToolsDir(), "android", fmt.Sprintf("android-%s", bt.Version()))
+}
+
+func (bt AndroidBuildTool) AndroidDir() string {
+	return filepath.Join(bt.InstallDir())
+}
+
+func (bt AndroidBuildTool) WriteAgreements() bool {
 	agreements := map[string]string{
 		"android-googletv-license":      "601085b94cd77f0b54ff86406957099ebe79c4d6",
 		"android-sdk-license":           "24333f8a63b6825ea9c5514f83c2829b004d1fee",
@@ -82,13 +91,11 @@ func (bt AndroidBuildTool) WriteAgreements(ctx context.Context, androidDir strin
 		"mips-android-sysimage-license": "e9acab5b5fbb560a72cfaecce8946896ff6aab9d",
 	}
 
-	licensesDir := filepath.Join(androidDir, "licenses")
-	t := bt.spec.InstallTarget
-	t.MkdirAsNeeded(ctx, licensesDir)
+	licensesDir := filepath.Join(bt.AndroidDir(), "licenses")
+	MkdirAsNeeded(licensesDir)
 
 	for filename, hash := range agreements {
 		agreementFile := filepath.Join(licensesDir, filename)
-		// TODO add as a Runtime/Target method: CreateFile
 		f, err := os.Create(agreementFile)
 		if err != nil {
 			log.Errorf("Can't create agreement file %s: %v", agreementFile, err)
@@ -112,50 +119,47 @@ func (bt AndroidBuildTool) WriteAgreements(ctx context.Context, androidDir strin
 
 }
 
-func (bt AndroidBuildTool) Setup(ctx context.Context, androidDir string) error {
+func (bt AndroidBuildTool) Setup() error {
+	androidDir := bt.AndroidDir()
 	t := bt.spec.InstallTarget
 
 	log.Infof("Setting ANDROID_SDK_ROOT to %s", androidDir)
-	t.SetEnv("ANDROID_SDK_ROOT", androidDir)
-	t.SetEnv("ANDROID_HOME", androidDir)
+	runtime.SetEnv("ANDROID_SDK_ROOT", androidDir)
+	runtime.SetEnv("ANDROID_HOME", androidDir)
 
 	log.Infof("Writing agreement hashes...")
-	if !bt.WriteAgreements(ctx, androidDir) {
-		return fmt.Errorf("Unable to auto write the agreements")
-	}
+	bt.WriteAgreements()
 
-	t.PrependToPath(ctx, filepath.Join(androidDir, "tools"))
-	t.PrependToPath(ctx, filepath.Join(androidDir, "tools", "bin"))
+	t.PrependToPath(filepath.Join(androidDir, "tools"))
+	t.PrependToPath(filepath.Join(androidDir, "tools", "bin"))
 
 	return nil
 }
 
 // TODO, generalize downloader
-func (bt AndroidBuildTool) Install(ctx context.Context) (error, string) {
-	t := bt.spec.InstallTarget
+func (bt AndroidBuildTool) Install() error {
+	androidDir := bt.AndroidDir()
+	installDir := bt.InstallDir()
 
-	installDir := filepath.Join(t.ToolsDir(ctx), "android")
-	androidDir := filepath.Join(installDir, "android-"+bt.Version())
-
-	if t.PathExists(ctx, androidDir) {
+	if _, err := os.Stat(androidDir); err == nil {
 		log.Infof("Android v%s located in %s!", bt.Version(), androidDir)
 	} else {
 		log.Infof("Will install Android v%s into %s", bt.Version(), androidDir)
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading Android from URL %s...", downloadUrl)
-		localFile, err := t.DownloadFile(ctx, downloadUrl)
+		localFile, err := bt.spec.InstallTarget.DownloadFile(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
-			return err, ""
+			return err
 		}
-		err = t.Unarchive(ctx, localFile, installDir)
+		err = bt.spec.InstallTarget.Unarchive(localFile, installDir)
 		if err != nil {
 			log.Errorf("Unable to decompress: %v", err)
-			return err, ""
+			return err
 		}
 
 	}
 
-	return nil, androidDir
+	return nil
 }

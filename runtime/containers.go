@@ -3,7 +3,6 @@ package runtime
 import (
 	"bufio"
 	"bytes"
-	"context"
 	"fmt"
 	"github.com/yourbase/yb/plumbing/log"
 	"io"
@@ -26,20 +25,11 @@ func (t *ContainerTarget) OS() Os {
 	return Linux
 }
 
-func (t *ContainerTarget) OSVersion(ctx context.Context) string {
-	var buf bytes.Buffer
-	bufWriter := bufio.NewWriter(&buf)
+func (t *ContainerTarget) OSVersion() string {
+	buf := bytes.Buffer{}
 	//err := t.Container.DownloadDirectoryToWriter("/etc/os-release", &buf)
-	err := narwhal.ExecShell(ctx, narwhal.DockerClient(), t.Container.Id, "cat /etc/os-release", &narwhal.ExecShellOptions{
-		Dir:            "/",
-		CombinedOutput: bufWriter,
-	})
+	err := t.Container.ExecToWriter("cat /etc/os-release", "/", &buf)
 
-	if err != nil {
-		return "unknown"
-	}
-
-	err = bufWriter.Flush()
 	if err != nil {
 		return "unknown"
 	}
@@ -66,33 +56,26 @@ func (t *ContainerTarget) Architecture() Architecture {
 	return Amd64
 }
 
-func (t *ContainerTarget) mkdirInContainer(ctx context.Context, dir string) (created string) {
-	if t.PathExists(ctx, dir) {
-		return dir
-	}
-
-	cmdString := "mkdir -p " + dir
-	err := narwhal.ExecShell(ctx, narwhal.DockerClient(), t.Container.Id, cmdString, &narwhal.ExecShellOptions{})
-	if err == nil {
-		created = dir
-	}
-
-	return
+func (t *ContainerTarget) ToolsDir() string {
+	t.Container.MakeDirectoryInContainer("/opt/yb/tools")
+	return "/opt/yb/tools"
 }
 
-func (t *ContainerTarget) ToolsDir(ctx context.Context) string {
-	return t.mkdirInContainer(ctx, "/opt/yb/tools")
-}
-
-func (t *ContainerTarget) PathExists(ctx context.Context, path string) bool {
+func (t *ContainerTarget) PathExists(path string) bool {
 	// Assume we can use stat for now
 	statCmd := fmt.Sprintf("stat %s", path)
 
-	err := narwhal.ExecShell(ctx, narwhal.DockerClient(), t.Container.Id, statCmd, &narwhal.ExecShellOptions{Dir: "/"})
+	err := t.Container.ExecToWriter(statCmd, "/", ioutil.Discard)
 	if err != nil {
-		if _, ok := narwhal.IsExitError(err); ok {
-			return false
+		if execerr, ok := err.(*narwhal.ExecError); ok {
+			if execerr.ExitCode != 0 {
+				return false
+			} else {
+				// Error but retcode zero... ?
+				return true
+			}
 		}
+		return false
 	}
 
 	return true
@@ -102,11 +85,12 @@ func (t *ContainerTarget) String() string {
 	return fmt.Sprintf("Container ID: %s workDir: %s", t.Container.Id, t.workDir)
 }
 
-func (t *ContainerTarget) CacheDir(ctx context.Context) string {
-	return t.mkdirInContainer(ctx, "/opt/yb/cache")
+func (t *ContainerTarget) CacheDir() string {
+	t.Container.MakeDirectoryInContainer("/opt/yb/cache")
+	return "/opt/yb/cache"
 }
 
-func (t *ContainerTarget) PrependToPath(ctx context.Context, dir string) {
+func (t *ContainerTarget) PrependToPath(dir string) {
 	pathSet := false
 	for i, e := range t.Environment {
 		parts := strings.Split(e, "=")
@@ -130,9 +114,15 @@ func (t *ContainerTarget) GetDefaultPath() string {
 	return "/usr/bin:/bin:/sbin:/usr/sbin"
 }
 
-func (t *ContainerTarget) UploadFile(ctx context.Context, src string, dest string) error {
-	log.Infof("Uploading %s to %s", src, dest)
-	err := narwhal.UploadFile(ctx, narwhal.DockerClient(), t.Container.Id, dest, src)
+func (t *ContainerTarget) UploadFile(src string, dest string) error {
+	parts := strings.Split(dest, "/")
+	filename := parts[len(parts)-1]
+	destDir := strings.Join(parts[0:len(parts)-1], "/")
+	if destDir == "" {
+		destDir = "/"
+	}
+	log.Infof("Uploading %s to %s in %s", src, filename, destDir)
+	err := t.Container.UploadFile(src, filename, destDir)
 	if err != nil {
 		return fmt.Errorf("Couldn't upload file to container: %v", err)
 	}
@@ -141,10 +131,10 @@ func (t *ContainerTarget) UploadFile(ctx context.Context, src string, dest strin
 
 }
 
-func (t *ContainerTarget) DownloadFile(ctx context.Context, url string) (string, error) {
+func (t *ContainerTarget) DownloadFile(url string) (string, error) {
 	// TODO: upload if locally found
 
-	localFile, err := DownloadFileWithCache(ctx, url)
+	localFile, err := DownloadFileWithCache(url)
 	parts := strings.Split(url, "/")
 	filename := parts[len(parts)-1]
 	outputFilename := fmt.Sprintf("/tmp/%s", filename)
@@ -152,7 +142,7 @@ func (t *ContainerTarget) DownloadFile(ctx context.Context, url string) (string,
 	if err == nil {
 		// Downloaded locally, inject
 		log.Infof("Injecting locally cached file %s as %s", localFile, outputFilename)
-		err = narwhal.UploadFile(ctx, narwhal.DockerClient(), t.Container.Id, outputFilename, localFile)
+		err = t.Container.UploadFile(localFile, filename, "/tmp")
 	}
 
 	// If download or injection failed, fallback
@@ -165,7 +155,7 @@ func (t *ContainerTarget) DownloadFile(ctx context.Context, url string) (string,
 			Interactive: false,
 		}
 
-		if err := t.Run(ctx, p); err != nil {
+		if err := t.Run(p); err != nil {
 			return "", err
 		}
 	}
@@ -173,9 +163,9 @@ func (t *ContainerTarget) DownloadFile(ctx context.Context, url string) (string,
 	return outputFilename, nil
 }
 
-func (t *ContainerTarget) Unarchive(ctx context.Context, src string, dst string) error {
+func (t *ContainerTarget) Unarchive(src string, dst string) error {
 	var command string
-	t.mkdirInContainer(ctx, dst)
+	t.Container.MakeDirectoryInContainer(dst)
 
 	if strings.HasSuffix(src, "tar.gz") {
 		command = fmt.Sprintf("tar zxf %s -C %s", src, dst)
@@ -192,7 +182,7 @@ func (t *ContainerTarget) Unarchive(ctx context.Context, src string, dst string)
 		Environment: nil,
 	}
 
-	return t.Run(ctx, p)
+	return t.Run(p)
 }
 
 func (t *ContainerTarget) WorkDir() string {
@@ -208,7 +198,7 @@ func (t *ContainerTarget) SetEnv(key string, value string) error {
 	return nil
 }
 
-func (t *ContainerTarget) Run(ctx context.Context, p Process) error {
+func (t *ContainerTarget) Run(p Process) error {
 	log.Infof("Running container process: %s\n", p.Command)
 
 	p.Environment = append(p.Environment, t.Environment...)
@@ -220,28 +210,17 @@ func (t *ContainerTarget) Run(ctx context.Context, p Process) error {
 
 	output = os.Stdout
 	if p.Output != nil {
-		output = p.Output
+		output = *(p.Output)
 	}
 
 	if p.Interactive {
-		return narwhal.ExecShell(ctx, narwhal.DockerClient(), t.Container.Id, p.Command, &narwhal.ExecShellOptions{
-			Dir:            p.Directory,
-			CombinedOutput: output,
-			Env:            p.Environment,
-			Interactive:    true,
-		})
+		return t.Container.ExecInteractivelyWithEnv(p.Command, p.Directory, p.Environment)
 	} else {
-		err := narwhal.ExecShell(ctx, narwhal.DockerClient(), t.Container.Id, p.Command, &narwhal.ExecShellOptions{
-			Dir:            p.Directory,
-			CombinedOutput: output,
-			Env:            p.Environment,
-		})
-		if err != nil {
-			if code, ok := narwhal.IsExitError(err); ok {
-				return &TargetRunError{
-					ExitCode: code,
-					Message:  fmt.Sprintf("Error: %v", err),
-				}
+		err := t.Container.ExecToWriterWithEnv(p.Command, p.Directory, output, p.Environment)
+		if execerr, ok := err.(*narwhal.ExecError); ok {
+			return &TargetRunError{
+				ExitCode: execerr.ExitCode,
+				Message:  execerr.Message,
 			}
 		}
 
@@ -249,7 +228,7 @@ func (t *ContainerTarget) Run(ctx context.Context, p Process) error {
 	}
 }
 
-func (t *ContainerTarget) WriteFileContents(ctx context.Context, contents string, remotepath string) error {
+func (t *ContainerTarget) WriteFileContents(contents string, remotepath string) error {
 	if tmpfile, err := ioutil.TempFile("", "injection"); err != nil {
 		log.Infof("Couldn't make temporary file: %v", err)
 		return err
@@ -264,7 +243,7 @@ func (t *ContainerTarget) WriteFileContents(ctx context.Context, contents string
 		tmpfile.Sync()
 
 		log.Infof("Will inject %s as %s", tmpfile.Name(), remotepath)
-		t.UploadFile(ctx, tmpfile.Name(), remotepath)
+		t.UploadFile(tmpfile.Name(), remotepath)
 		tmpfile.Close()
 	}
 

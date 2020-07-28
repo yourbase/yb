@@ -37,7 +37,6 @@ type SandboxParameters struct {
 	ToolsDir      string
 }
 
-// TODO Implement sandbox
 func ExecInSandbox(command string, workingDir string) error {
 	/* Temporarily disabled
 	workspace := LoadWorkspace()
@@ -63,6 +62,5 @@ func ExecInSandbox(command string, workingDir string) error {
 	return runtime.ExecToStdout(sandboxedCommand, workingDir)
 	*/
 
-	return nil
-	//return ExecToStdout(command, workingDir)
+	return ExecToStdout(command, workingDir)
 }
