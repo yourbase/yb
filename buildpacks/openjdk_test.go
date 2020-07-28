@@ -1,9 +1,6 @@
 package buildpacks
 
-import (
-	"context"
-	"testing"
-)
+import "testing"
 
 func TestOpenJDKUrlGeneration(t *testing.T) {
 	for _, data := range []struct {
@@ -33,10 +30,7 @@ func TestOpenJDKUrlGeneration(t *testing.T) {
 	} {
 		bt := NewJavaBuildTool(BuildToolSpec{Tool: "java", Version: data.version, PackageDir: "/opt/tools/java"})
 
-		url, err := bt.DownloadURL(context.Background())
-		if err != nil {
-			t.Fatalf("Template wasn't applied correctly: %v", err)
-		}
+		url := bt.DownloadUrl()
 		wanted := data.url
 
 		if url != wanted {

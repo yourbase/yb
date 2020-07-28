@@ -36,8 +36,7 @@ type WorktreeSave struct {
 }
 
 type BuildTool interface {
-	Install(ctx context.Context) (string, error)
+	Install(ctx context.Context) (error, string)
 	Setup(ctx context.Context, dir string) error
-	DownloadURL(ctx context.Context) (string, error)
 	Version() string
 }

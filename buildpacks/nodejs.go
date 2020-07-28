@@ -6,11 +6,13 @@ import (
 	"path/filepath"
 
 	"github.com/yourbase/yb/plumbing/log"
+	. "github.com/yourbase/yb/types"
 )
 
-const nodeDistMirrorTemplate = "https://nodejs.org/dist"
+var NODE_DIST_MIRROR = "https://nodejs.org/dist"
 
 type NodeBuildTool struct {
+	BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -40,48 +42,34 @@ func (bt NodeBuildTool) PackageString() string {
 	return fmt.Sprintf("node-v%s-%s-%s", version, osName, arch)
 }
 
-func (bt NodeBuildTool) ArchiveFile() string {
-	return fmt.Sprintf("%s.tar.gz", bt.PackageString())
-}
-
-func (bt NodeBuildTool) DownloadURL(ctx context.Context) (string, error) {
-	return fmt.Sprintf("%s/v%s/%s",
-		nodeDistMirrorTemplate,
-		bt.Version(),
-		bt.ArchiveFile()), nil
-}
-
-func (bt NodeBuildTool) Install(ctx context.Context) (string, error) {
+func (bt NodeBuildTool) Install(ctx context.Context) (error, string) {
 	t := bt.spec.InstallTarget
 
 	installDir := filepath.Join(t.ToolsDir(ctx), "nodejs")
-	nodeDir := filepath.Join(installDir, bt.PackageString())
+	nodePkgString := bt.PackageString()
+	nodeDir := filepath.Join(installDir, nodePkgString)
 
 	if t.PathExists(ctx, nodeDir) {
 		log.Infof("Node v%s located in %s!", bt.Version(), nodeDir)
-		return nodeDir, nil
-	}
-	log.Infof("Would install Node v%s into %s", bt.Version(), installDir)
-	downloadURL, err := bt.DownloadURL(ctx)
-	if err != nil {
-		log.Errorf("Unable to generate download URL: %v", err)
-		return "", err
+	} else {
+		log.Infof("Would install Node v%s into %s", bt.Version(), installDir)
+		archiveFile := fmt.Sprintf("%s.tar.gz", nodePkgString)
+		downloadUrl := fmt.Sprintf("%s/v%s/%s", NODE_DIST_MIRROR, bt.Version(), archiveFile)
+		log.Infof("Downloading from URL %s...", downloadUrl)
+		localFile, err := t.DownloadFile(ctx, downloadUrl)
+		if err != nil {
+			log.Errorf("Unable to download: %v", err)
+			return err, ""
+		}
+
+		err = t.Unarchive(ctx, localFile, installDir)
+		if err != nil {
+			log.Errorf("Unable to decompress: %v", err)
+			return err, ""
+		}
 	}
 
-	log.Infof("Downloading from URL %s...", downloadURL)
-	localFile, err := t.DownloadFile(ctx, downloadURL)
-	if err != nil {
-		log.Errorf("Unable to download: %v", err)
-		return "", err
-	}
-
-	err = t.Unarchive(ctx, localFile, installDir)
-	if err != nil {
-		log.Errorf("Unable to decompress: %v", err)
-		return "", err
-	}
-
-	return nodeDir, nil
+	return nil, nodeDir
 }
 
 func (bt NodeBuildTool) Setup(ctx context.Context, nodeDir string) error {

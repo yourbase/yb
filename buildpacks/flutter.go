@@ -9,12 +9,14 @@ import (
 	"golang.org/x/mod/semver"
 
 	"github.com/yourbase/yb/plumbing/log"
+	. "github.com/yourbase/yb/types"
 )
 
 // https://archive.apache.org/dist/flutter/flutter-3/3.3.3/binaries/apache-flutter-3.3.3-bin.tar.gz
-const flutterDistMirrorTemplate = "https://storage.googleapis.com/flutter_infra/releases/{{.Channel}}/{{.OS}}/flutter_{{.OS}}_{{.Version}}-{{.Channel}}.{{.Extension}}"
+var FLUTTER_DIST_MIRROR = "https://storage.googleapis.com/flutter_infra/releases/{{.Channel}}/{{.OS}}/flutter_{{.OS}}_{{.Version}}-{{.Channel}}.{{.Extension}}"
 
 type FlutterBuildTool struct {
+	BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -29,7 +31,7 @@ func NewFlutterBuildTool(spec BuildToolSpec) FlutterBuildTool {
 	return tool
 }
 
-func (bt FlutterBuildTool) DownloadURL(ctx context.Context) (string, error) {
+func (bt FlutterBuildTool) DownloadUrl() string {
 	opsys := OS()
 	arch := Arch()
 	extension := "tar.xz"
@@ -63,12 +65,12 @@ func (bt FlutterBuildTool) DownloadURL(ctx context.Context) (string, error) {
 		channel,
 		opsys,
 		arch,
-		downloadURLVersion(version),
+		downloadUrlVersion(version),
 		extension,
 	}
-	url, err := TemplateToString(flutterDistMirrorTemplate, data)
+	url, _ := TemplateToString(FLUTTER_DIST_MIRROR, data)
 
-	return url, err
+	return url
 }
 
 // TODO: Add Channel method?
@@ -90,36 +92,34 @@ func (bt FlutterBuildTool) Setup(ctx context.Context, flutterDir string) error {
 	return nil
 }
 
-func (bt FlutterBuildTool) Install(ctx context.Context) (string, error) {
+func (bt FlutterBuildTool) Install(ctx context.Context) (error, string) {
 	t := bt.spec.InstallTarget
 
 	installDir := filepath.Join(t.ToolsDir(ctx), "flutter", "flutter-"+bt.Version())
 	flutterDir := filepath.Join(installDir, "flutter")
 
 	if t.PathExists(ctx, flutterDir) {
-		log.Infof("Flutter %s located in %s!", downloadURLVersion(bt.Version()), flutterDir)
-		return flutterDir, nil
-	}
-	log.Infof("Will install Flutter %s into %s", downloadURLVersion(bt.Version()), flutterDir)
-	downloadURL, err := bt.DownloadURL(ctx)
-	if err != nil {
-		log.Errorf("Unable to generate download URL: %v", err)
-		return "", err
+		log.Infof("Flutter %s located in %s!", downloadUrlVersion(bt.Version()), flutterDir)
+	} else {
+		log.Infof("Will install Flutter %s into %s", downloadUrlVersion(bt.Version()), flutterDir)
+		downloadUrl := bt.DownloadUrl()
+
+		log.Infof("Downloading Flutter from URL %s...", downloadUrl)
+		localFile, err := t.DownloadFile(ctx, downloadUrl)
+		if err != nil {
+			log.Errorf("Unable to download: %v", err)
+			return err, ""
+		}
+		err = t.Unarchive(ctx, localFile, installDir)
+		if err != nil {
+			log.Errorf("Unable to decompress: %v", err)
+			return err, ""
+		}
+
+		//RemoveWritePermissionRecursively(installDir)
 	}
 
-	log.Infof("Downloading Flutter from URL %s...", downloadURL)
-	localFile, err := t.DownloadFile(ctx, downloadURL)
-	if err != nil {
-		log.Errorf("Unable to download: %v", err)
-		return "", err
-	}
-	err = t.Unarchive(ctx, localFile, installDir)
-	if err != nil {
-		log.Errorf("Unable to decompress: %v", err)
-		return "", err
-	}
-
-	return flutterDir, nil
+	return nil, flutterDir
 }
 
 // Starting with flutter 1.17 the version format changed.
@@ -136,7 +136,7 @@ func (bt FlutterBuildTool) Install(ctx context.Context) (string, error) {
 // Note: We are predicting the future since they could require a "v" again if 1.17.0
 // was a mistake
 //
-func downloadURLVersion(version string) string {
+func downloadUrlVersion(version string) string {
 	version_1_17_0 := "v1.17.0"
 	compVersion := version
 

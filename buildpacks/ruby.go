@@ -9,13 +9,14 @@ import (
 
 	"github.com/yourbase/yb/plumbing/log"
 	"github.com/yourbase/yb/runtime"
+	. "github.com/yourbase/yb/types"
 
 	"gopkg.in/src-d/go-git.v4"
 )
 
 const rubyDownloadTemplate = "https://yourbase-build-tools.s3-us-west-2.amazonaws.com/ruby/ruby-{{ .Version }}-{{ .OS }}-{{ .Arch }}-{{ .OsVersion }}.{{ .Extension }}"
 
-func (bt RubyBuildTool) DownloadURL(ctx context.Context) (string, error) {
+func (bt RubyBuildTool) DownloadUrl(ctx context.Context) string {
 	extension := "tar.bz2"
 	operatingSystem := "unknown"
 	osVersion := bt.spec.InstallTarget.OSVersion(ctx)
@@ -50,10 +51,16 @@ func (bt RubyBuildTool) DownloadURL(ctx context.Context) (string, error) {
 	}
 
 	url, err := TemplateToString(rubyDownloadTemplate, data)
-	return url, err
+
+	if err != nil {
+		log.Infof("Error generating download URL: %v", err)
+	}
+
+	return url
 }
 
 type RubyBuildTool struct {
+	BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -71,8 +78,8 @@ func (bt RubyBuildTool) Version() string {
 	return bt.version
 }
 
-func (bt RubyBuildTool) binaryExists(downloadURL string) bool {
-	resp, err := http.Head(downloadURL)
+func (bt RubyBuildTool) binaryExists(downloadUrl string) bool {
+	resp, err := http.Head(downloadUrl)
 
 	if err != nil {
 		return false
@@ -88,95 +95,91 @@ func (bt RubyBuildTool) binaryExists(downloadURL string) bool {
 /*
 TODO: Install libssl-dev (or equivalent / warn) and zlib-dev based on platform
 */
-func (bt RubyBuildTool) Install(ctx context.Context) (string, error) {
+func (bt RubyBuildTool) Install(ctx context.Context) (error, string) {
 	t := bt.spec.InstallTarget
 
 	rbenvDir := filepath.Join(t.ToolsDir(ctx), "rbenv")
 	rubyVersionsDir := filepath.Join(rbenvDir, "versions")
 	rubyVersionDir := filepath.Join(rubyVersionsDir, bt.Version())
+	downloadUrl := bt.DownloadUrl(ctx)
 
 	if t.PathExists(ctx, rubyVersionDir) {
 		log.Infof("Ruby %s installed in %s", bt.Version(), rubyVersionDir)
-		return rubyVersionDir, nil
-	}
-
-	downloadURL, err := bt.DownloadURL(ctx)
-	if err != nil {
-		log.Errorf("Unable to generate download URL: %v", err)
-		return "", err
-	}
-	if bt.binaryExists(downloadURL) {
-		log.Infof("Will download pre-built Ruby from %s", downloadURL)
-
-		localFile, err := t.DownloadFile(ctx, downloadURL)
-		if err != nil {
-			log.Errorf("Unable to download: %v", err)
-			return "", err
-		}
-		err = t.Unarchive(ctx, localFile, rubyVersionsDir)
-		if err != nil {
-			log.Errorf("Unable to decompress: %v", err)
-			return "", err
-		}
-
-		return rubyVersionDir, nil
 	} else {
-		log.Infof("Couldn't find a file at %s...", downloadURL)
-	}
 
-	rbenvGitUrl := "https://github.com/rbenv/rbenv.git"
+		if bt.binaryExists(downloadUrl) {
+			log.Infof("Will download pre-built Ruby from %s", downloadUrl)
 
-	if t.PathExists(ctx, rbenvDir) {
-		log.Infof("rbenv installed in %s", rbenvDir)
-	} else {
-		log.Infof("Installing rbenv")
+			localFile, err := t.DownloadFile(ctx, downloadUrl)
+			if err != nil {
+				log.Errorf("Unable to download: %v", err)
+				return err, ""
+			}
+			err = t.Unarchive(ctx, localFile, rubyVersionsDir)
+			if err != nil {
+				log.Errorf("Unable to decompress: %v", err)
+				return err, ""
+			}
 
-		_, err := git.PlainClone(rbenvDir, false, &git.CloneOptions{
-			URL:      rbenvGitUrl,
-			Progress: os.Stdout,
-		})
+			return nil, rubyVersionDir
+		} else {
+			log.Infof("Couldn't find a file at %s...", bt.DownloadUrl(ctx))
+		}
 
+		rbenvGitUrl := "https://github.com/rbenv/rbenv.git"
+
+		if t.PathExists(ctx, rbenvDir) {
+			log.Infof("rbenv installed in %s", rbenvDir)
+		} else {
+			log.Infof("Installing rbenv")
+
+			_, err := git.PlainClone(rbenvDir, false, &git.CloneOptions{
+				URL:      rbenvGitUrl,
+				Progress: os.Stdout,
+			})
+
+			if err != nil {
+				log.Infof("Unable to clone rbenv!")
+				return fmt.Errorf("Couldn't clone rbenv: %v", err), ""
+			}
+		}
+
+		pluginsDir := filepath.Join(rbenvDir, "plugins")
+		t.MkdirAsNeeded(ctx, pluginsDir)
+
+		rubyBuildGitUrl := "https://github.com/rbenv/ruby-build.git"
+		rubyBuildDir := filepath.Join(pluginsDir, "ruby-build")
+
+		if t.PathExists(ctx, rubyBuildDir) {
+			log.Infof("ruby-build installed in %s", rubyBuildDir)
+		} else {
+			log.Infof("Installing ruby-build")
+
+			_, err := git.PlainClone(rubyBuildDir, false, &git.CloneOptions{
+				URL:      rubyBuildGitUrl,
+				Progress: os.Stdout,
+			})
+
+			if err != nil {
+				log.Errorf("Unable to clone ruby-build!")
+				return fmt.Errorf("Couldn't clone ruby-build: %v", err), ""
+			}
+		}
+
+		t.SetEnv("RBENV_ROOT", rbenvDir)
+		t.PrependToPath(ctx, filepath.Join(rbenvDir, "bin"))
+
+		p := runtime.Process{
+			Command:   "rbenv install " + bt.Version(),
+			Directory: rbenvDir,
+		}
+		err := t.Run(ctx, p)
 		if err != nil {
-			log.Infof("Unable to clone rbenv!")
-			return "", fmt.Errorf("Couldn't clone rbenv: %v", err)
+			return err, ""
 		}
 	}
 
-	pluginsDir := filepath.Join(rbenvDir, "plugins")
-	t.MkdirAsNeeded(ctx, pluginsDir)
-
-	rubyBuildGitUrl := "https://github.com/rbenv/ruby-build.git"
-	rubyBuildDir := filepath.Join(pluginsDir, "ruby-build")
-
-	if t.PathExists(ctx, rubyBuildDir) {
-		log.Infof("ruby-build installed in %s", rubyBuildDir)
-	} else {
-		log.Infof("Installing ruby-build")
-
-		_, err := git.PlainClone(rubyBuildDir, false, &git.CloneOptions{
-			URL:      rubyBuildGitUrl,
-			Progress: os.Stdout,
-		})
-
-		if err != nil {
-			log.Errorf("Unable to clone ruby-build!")
-			return "", fmt.Errorf("Couldn't clone ruby-build: %v", err)
-		}
-	}
-
-	t.SetEnv("RBENV_ROOT", rbenvDir)
-	t.PrependToPath(ctx, filepath.Join(rbenvDir, "bin"))
-
-	p := runtime.Process{
-		Command:   "rbenv install " + bt.Version(),
-		Directory: rbenvDir,
-	}
-	err = t.Run(ctx, p)
-	if err != nil {
-		return "", err
-	}
-
-	return rubyVersionDir, nil
+	return nil, rubyVersionDir
 }
 
 func (bt RubyBuildTool) Setup(ctx context.Context, rubyDir string) error {

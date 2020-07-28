@@ -6,12 +6,14 @@ import (
 	"strings"
 
 	"github.com/yourbase/yb/plumbing/log"
+	. "github.com/yourbase/yb/types"
 )
 
 // https://github.com/google/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip
-const protocDistMirror = "https://github.com/google/protobuf/releases/download/v{{.Version}}/protoc-{{.Version}}-{{.OS}}-x86_64.{{.Extension}}"
+const ProtocDistMirror = "https://github.com/google/protobuf/releases/download/v{{.Version}}/protoc-{{.Version}}-{{.OS}}-x86_64.{{.Extension}}"
 
 type ProtocBuildTool struct {
+	BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -26,7 +28,7 @@ func NewProtocBuildTool(spec BuildToolSpec) ProtocBuildTool {
 	return tool
 }
 
-func (bt ProtocBuildTool) DownloadURL(ctx context.Context) (string, error) {
+func (bt ProtocBuildTool) DownloadUrl() string {
 	opsys := OS()
 	arch := Arch()
 	extension := "zip"
@@ -53,8 +55,9 @@ func (bt ProtocBuildTool) DownloadURL(ctx context.Context) (string, error) {
 		extension,
 	}
 
-	url, err := TemplateToString(protocDistMirror, data)
-	return url, err
+	url, _ := TemplateToString(ProtocDistMirror, data)
+
+	return url
 }
 
 func (bt ProtocBuildTool) MajorVersion() string {
@@ -74,7 +77,7 @@ func (bt ProtocBuildTool) Setup(ctx context.Context, protocDir string) error {
 	return nil
 }
 
-func (bt ProtocBuildTool) Install(ctx context.Context) (string, error) {
+func (bt ProtocBuildTool) Install(ctx context.Context) (error, string) {
 	t := bt.spec.InstallTarget
 
 	installDir := filepath.Join(t.ToolsDir(ctx), "protoc")
@@ -82,26 +85,22 @@ func (bt ProtocBuildTool) Install(ctx context.Context) (string, error) {
 
 	if t.PathExists(ctx, protocDir) {
 		log.Infof("Protoc v%s located in %s!", bt.Version(), protocDir)
-		return protocDir, nil
+		return nil, ""
 	}
 	log.Infof("Will install Protoc v%s into %s", bt.Version(), protocDir)
-	downloadURL, err := bt.DownloadURL(ctx)
-	if err != nil {
-		log.Errorf("Unable to generate download URL: %v", err)
-		return "", err
-	}
+	downloadUrl := bt.DownloadUrl()
 
-	log.Infof("Downloading Protoc from URL %s...", downloadURL)
-	localFile, err := t.DownloadFile(ctx, downloadURL)
+	log.Infof("Downloading Protoc from URL %s...", downloadUrl)
+	localFile, err := t.DownloadFile(ctx, downloadUrl)
 	if err != nil {
 		log.Errorf("Unable to download: %v", err)
-		return "", err
+		return err, ""
 	}
 	err = t.Unarchive(ctx, localFile, installDir)
 	if err != nil {
 		log.Errorf("Unable to decompress: %v", err)
-		return "", err
+		return err, ""
 	}
 
-	return protocDir, nil
+	return nil, protocDir
 }

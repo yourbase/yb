@@ -7,12 +7,14 @@ import (
 	"strings"
 
 	"github.com/yourbase/yb/plumbing/log"
+	. "github.com/yourbase/yb/types"
 )
 
 //http://apache.mirrors.lucidnetworks.net//ant/binaries/apache-ant-1.10.6-bin.tar.gz
-const antDistMirrorTemplate = "http://apache.mirrors.lucidnetworks.net/ant/binaries/apache-ant-{{.Version}}-bin.zip"
+var ANT_DIST_MIRROR = "http://apache.mirrors.lucidnetworks.net/ant/binaries/apache-ant-{{.Version}}-bin.zip"
 
 type AntBuildTool struct {
+	BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -31,16 +33,16 @@ func (bt AntBuildTool) ArchiveFile() string {
 	return fmt.Sprintf("apache-ant-%s-bin.zip", bt.Version())
 }
 
-func (bt AntBuildTool) DownloadURL(ctx context.Context) (string, error) {
+func (bt AntBuildTool) DownloadUrl() string {
 	data := struct {
 		Version string
 	}{
 		bt.Version(),
 	}
 
-	url, err := TemplateToString(antDistMirrorTemplate, data)
+	url, _ := TemplateToString(ANT_DIST_MIRROR, data)
 
-	return url, err
+	return url
 }
 
 func (bt AntBuildTool) MajorVersion() string {
@@ -61,7 +63,7 @@ func (bt AntBuildTool) Setup(ctx context.Context, antDir string) error {
 }
 
 // TODO, generalize downloader
-func (bt AntBuildTool) Install(ctx context.Context) (string, error) {
+func (bt AntBuildTool) Install(ctx context.Context) (error, string) {
 	t := bt.spec.InstallTarget
 
 	installDir := filepath.Join(t.ToolsDir(ctx), "ant")
@@ -69,27 +71,23 @@ func (bt AntBuildTool) Install(ctx context.Context) (string, error) {
 
 	if t.PathExists(ctx, antDir) {
 		log.Infof("Ant v%s located in %s!", bt.Version(), antDir)
-		return antDir, nil
+	} else {
+		log.Infof("Will install Ant v%s into %s", bt.Version(), antDir)
+		downloadUrl := bt.DownloadUrl()
+
+		log.Infof("Downloading Ant from URL %s...", downloadUrl)
+		localFile, err := t.DownloadFile(ctx, downloadUrl)
+		if err != nil {
+			log.Errorf("Unable to download: %v", err)
+			return err, ""
+		}
+		err = t.Unarchive(ctx, localFile, installDir)
+		if err != nil {
+			log.Errorf("Unable to decompress: %v", err)
+			return err, ""
+		}
+
 	}
 
-	log.Infof("Will install Ant v%s into %s", bt.Version(), antDir)
-	downloadURL, err := bt.DownloadURL(ctx)
-	if err != nil {
-		log.Errorf("Unable to generate download URL: %v", err)
-		return "", err
-	}
-
-	log.Infof("Downloading Ant from URL %s...", downloadURL)
-	localFile, err := t.DownloadFile(ctx, downloadURL)
-	if err != nil {
-		log.Errorf("Unable to download: %v", err)
-		return "", err
-	}
-	err = t.Unarchive(ctx, localFile, installDir)
-	if err != nil {
-		log.Errorf("Unable to decompress: %v", err)
-		return "", err
-	}
-
-	return antDir, nil
+	return nil, antDir
 }

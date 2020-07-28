@@ -12,10 +12,12 @@ import (
 	"github.com/matishsiao/goInfo"
 	"github.com/yourbase/yb/plumbing/log"
 	"github.com/yourbase/yb/runtime"
+	. "github.com/yourbase/yb/types"
 	"gopkg.in/src-d/go-git.v4"
 )
 
 type HomebrewBuildTool struct {
+	BuildTool
 	version   string
 	spec      BuildToolSpec
 	pkgName   string
@@ -114,7 +116,7 @@ func (bt HomebrewBuildTool) PackageVersionString() string {
 
 	return fmt.Sprintf("%s%s", bt.pkgName, pkgVersion)
 }
-func (bt HomebrewBuildTool) Install(ctx context.Context) (string, error) {
+func (bt HomebrewBuildTool) Install(ctx context.Context) (error, string) {
 	t := bt.spec.InstallTarget
 
 	installDir := filepath.Join(t.ToolsDir(ctx), "homebrew")
@@ -138,7 +140,7 @@ func (bt HomebrewBuildTool) Install(ctx context.Context) (string, error) {
 	}
 
 	if err != nil {
-		return "", fmt.Errorf("Unable to install Homebrew: %v", err)
+		return fmt.Errorf("Unable to install Homebrew: %v", err), ""
 	}
 
 	if bt.IsPackage() {
@@ -148,12 +150,12 @@ func (bt HomebrewBuildTool) Install(ctx context.Context) (string, error) {
 			log.Infof("Installing package %s", bt.PackageVersionString())
 			err = bt.InstallPackage(ctx, brewDir)
 			if err != nil {
-				return "", err
+				return err, ""
 			}
 		}
 	}
 
-	return brewDir, nil
+	return nil, brewDir
 }
 
 func (bt HomebrewBuildTool) InstallPackage(ctx context.Context, brewDir string) error {
@@ -272,11 +274,6 @@ func (bt HomebrewBuildTool) Setup(ctx context.Context, brewDir string) error {
 		t.SetEnv("LD_LIBRARY_PATH", brewLibDir)
 	}
 	return nil
-}
-
-func (bt HomebrewBuildTool) DownloadURL(ctx context.Context) (string, error) {
-	// No-op
-	return "", nil
 }
 
 func (bt HomebrewBuildTool) InstallPlatformDependencies() error {

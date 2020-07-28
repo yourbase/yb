@@ -7,11 +7,13 @@ import (
 	"strings"
 
 	"github.com/yourbase/yb/plumbing/log"
+	. "github.com/yourbase/yb/types"
 )
 
-const gradleDistMirrorTemplate = "https://services.gradle.org/distributions/gradle-{{.Version}}-bin.zip"
+var GRADLE_DIST_MIRROR = "https://services.gradle.org/distributions/gradle-{{.Version}}-bin.zip"
 
 type GradleBuildTool struct {
+	BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -30,7 +32,7 @@ func (bt GradleBuildTool) ArchiveFile() string {
 	return fmt.Sprintf("apache-gradle-%s-bin.tar.gz", bt.Version())
 }
 
-func (bt GradleBuildTool) DownloadURL(ctx context.Context) (string, error) {
+func (bt GradleBuildTool) DownloadUrl() string {
 	data := struct {
 		OS        string
 		Arch      string
@@ -43,9 +45,9 @@ func (bt GradleBuildTool) DownloadURL(ctx context.Context) (string, error) {
 		"zip",
 	}
 
-	url, err := TemplateToString(gradleDistMirrorTemplate, data)
+	url, _ := TemplateToString(GRADLE_DIST_MIRROR, data)
 
-	return url, err
+	return url
 }
 
 func (bt GradleBuildTool) MajorVersion() string {
@@ -71,7 +73,7 @@ func (bt GradleBuildTool) Setup(ctx context.Context, gradleDir string) error {
 }
 
 // TODO, generalize downloader
-func (bt GradleBuildTool) Install(ctx context.Context) (string, error) {
+func (bt GradleBuildTool) Install(ctx context.Context) (error, string) {
 	t := bt.spec.InstallTarget
 
 	installDir := filepath.Join(t.ToolsDir(ctx), "gradle")
@@ -79,26 +81,23 @@ func (bt GradleBuildTool) Install(ctx context.Context) (string, error) {
 
 	if t.PathExists(ctx, gradleDir) {
 		log.Infof("Gradle v%s located in %s!", bt.Version(), gradleDir)
-		return gradleDir, nil
-	}
-	log.Infof("Will install Gradle v%s into %s", bt.Version(), gradleDir)
-	downloadURL, err := bt.DownloadURL(ctx)
-	if err != nil {
-		log.Errorf("Unable to generate download URL: %v", err)
-		return "", err
+	} else {
+		log.Infof("Will install Gradle v%s into %s", bt.Version(), gradleDir)
+		downloadUrl := bt.DownloadUrl()
+
+		log.Infof("Downloading Gradle from URL %s...", downloadUrl)
+		localFile, err := t.DownloadFile(ctx, downloadUrl)
+		if err != nil {
+			log.Errorf("Unable to download: %v", err)
+			return err, ""
+		}
+		err = t.Unarchive(ctx, localFile, installDir)
+		if err != nil {
+			log.Errorf("Unable to decompress: %v", err)
+			return err, ""
+		}
+
 	}
 
-	log.Infof("Downloading Gradle from URL %s...", downloadURL)
-	localFile, err := t.DownloadFile(ctx, downloadURL)
-	if err != nil {
-		log.Errorf("Unable to download: %v", err)
-		return "", err
-	}
-	err = t.Unarchive(ctx, localFile, installDir)
-	if err != nil {
-		log.Errorf("Unable to decompress: %v", err)
-		return "", err
-	}
-
-	return gradleDir, nil
+	return nil, gradleDir
 }

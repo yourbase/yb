@@ -84,7 +84,7 @@ func LoadBuildPacks(ctx context.Context, installTarget runtime.Target, dependenc
 
 		// Install if needed
 		startTime := time.Now()
-		installedDir, err := bt.Install(ctx)
+		err, installedDir := bt.Install(ctx)
 		if err != nil {
 			return setupTimers, fmt.Errorf("Unable to install tool %s: %v", toolSpec, err)
 		}

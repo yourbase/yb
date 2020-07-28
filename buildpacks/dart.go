@@ -6,12 +6,14 @@ import (
 	"strings"
 
 	"github.com/yourbase/yb/plumbing/log"
+	. "github.com/yourbase/yb/types"
 )
 
 //https://archive.apache.org/dist/dart/dart-3/3.3.3/binaries/apache-dart-3.3.3-bin.tar.gz
-const dartDistMirrorTemplate = "https://storage.googleapis.com/dart-archive/channels/stable/release/{{.Version}}/sdk/dartsdk-{{.OS}}-{{.Arch}}-release.zip"
+var DART_DIST_MIRROR = "https://storage.googleapis.com/dart-archive/channels/stable/release/{{.Version}}/sdk/dartsdk-{{.OS}}-{{.Arch}}-release.zip"
 
 type DartBuildTool struct {
+	BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -25,7 +27,7 @@ func NewDartBuildTool(toolSpec BuildToolSpec) DartBuildTool {
 	return tool
 }
 
-func (bt DartBuildTool) DownloadURL(ctx context.Context) (string, error) {
+func (bt DartBuildTool) DownloadUrl() string {
 	opsys := OS()
 	arch := Arch()
 	extension := "zip"
@@ -52,9 +54,9 @@ func (bt DartBuildTool) DownloadURL(ctx context.Context) (string, error) {
 		extension,
 	}
 
-	url, err := TemplateToString(dartDistMirrorTemplate, data)
+	url, _ := TemplateToString(DART_DIST_MIRROR, data)
 
-	return url, err
+	return url
 }
 
 func (bt DartBuildTool) MajorVersion() string {
@@ -75,7 +77,7 @@ func (bt DartBuildTool) Setup(ctx context.Context, dartDir string) error {
 	return nil
 }
 
-func (bt DartBuildTool) Install(ctx context.Context) (string, error) {
+func (bt DartBuildTool) Install(ctx context.Context) (error, string) {
 	t := bt.spec.InstallTarget
 
 	installDir := filepath.Join(t.ToolsDir(ctx), "dart", bt.Version())
@@ -83,26 +85,22 @@ func (bt DartBuildTool) Install(ctx context.Context) (string, error) {
 
 	if t.PathExists(ctx, dartDir) {
 		log.Infof("Dart v%s located in %s!", bt.Version(), dartDir)
-		return dartDir, nil
-	}
-	log.Infof("Will install Dart v%s into %s", bt.Version(), dartDir)
-	downloadURL, err := bt.DownloadURL(ctx)
-	if err != nil {
-		log.Errorf("Unable to generate download URL: %v", err)
-		return "", err
+	} else {
+		log.Infof("Will install Dart v%s into %s", bt.Version(), dartDir)
+		downloadUrl := bt.DownloadUrl()
+
+		log.Infof("Downloading Dart from URL %s...", downloadUrl)
+		localFile, err := t.DownloadFile(ctx, downloadUrl)
+		if err != nil {
+			log.Errorf("Unable to download: %v", err)
+			return err, ""
+		}
+		err = t.Unarchive(ctx, localFile, installDir)
+		if err != nil {
+			log.Errorf("Unable to decompress: %v", err)
+			return err, ""
+		}
 	}
 
-	log.Infof("Downloading Dart from URL %s...", downloadURL)
-	localFile, err := t.DownloadFile(ctx, downloadURL)
-	if err != nil {
-		log.Errorf("Unable to download: %v", err)
-		return "", err
-	}
-	err = t.Unarchive(ctx, localFile, installDir)
-	if err != nil {
-		log.Errorf("Unable to decompress: %v", err)
-		return "", err
-	}
-
-	return dartDir, nil
+	return nil, dartDir
 }
