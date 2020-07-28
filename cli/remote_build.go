@@ -456,9 +456,6 @@ func shouldSkip(file string, worktree *git.Worktree) bool {
 			return true
 		}
 		dir, err := f.Readdir(0)
-		if err != nil {
-			return true
-		}
 		log.Debugf("Ls dir %s", filePath)
 		for _, f := range dir {
 			child := path.Join(file, f.Name())
@@ -735,9 +732,6 @@ func (p *RemoteCmd) fetchProject(urls []string) (*Project, GitRemote, error) {
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, empty, err
-	}
 	var project Project
 	err = json.Unmarshal(body, &project)
 	if err != nil {
