@@ -6,8 +6,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/johnewart/archiver"
 	"golang.org/x/mod/semver"
 
+	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 )
@@ -94,9 +96,12 @@ func (bt FlutterBuildTool) FlutterDir() string {
 
 func (bt FlutterBuildTool) Setup() error {
 	flutterDir := bt.FlutterDir()
-	t := bt.spec.InstallTarget
 
-	t.PrependToPath(filepath.Join(flutterDir, "bin"))
+	cmdPath := filepath.Join(flutterDir, "bin")
+	currentPath := os.Getenv("PATH")
+	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
+	log.Infof("Setting PATH to %s", newPath)
+	os.Setenv("PATH", newPath)
 
 	return nil
 }
@@ -113,12 +118,12 @@ func (bt FlutterBuildTool) Install() error {
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading Flutter from URL %s...", downloadUrl)
-		localFile, err := bt.spec.InstallTarget.DownloadFile(downloadUrl)
+		localFile, err := DownloadFileWithCache(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
 			return err
 		}
-		err = bt.spec.InstallTarget.Unarchive(localFile, installDir)
+		err = archiver.Unarchive(localFile, installDir)
 		if err != nil {
 			log.Errorf("Unable to decompress: %v", err)
 			return err

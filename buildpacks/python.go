@@ -2,10 +2,11 @@ package buildpacks
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
+	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	"github.com/yourbase/yb/runtime"
 	. "github.com/yourbase/yb/types"
 )
 
@@ -43,9 +44,8 @@ func (bt PythonBuildTool) EnvironmentDir() string {
 func (bt PythonBuildTool) Install() error {
 	anacondaDir := bt.AnacondaInstallDir()
 	setupDir := bt.spec.PackageDir
-	t := bt.spec.InstallTarget
 
-	if bt.spec.InstallTarget.PathExists(anacondaDir) {
+	if _, err := os.Stat(anacondaDir); err == nil {
 		log.Infof("anaconda installed in %s", anacondaDir)
 	} else {
 		log.Infof("Installing anaconda")
@@ -53,7 +53,7 @@ func (bt PythonBuildTool) Install() error {
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading Miniconda from URL %s...", downloadUrl)
-		localFile, err := t.DownloadFile(downloadUrl)
+		localFile, err := DownloadFileWithCache(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
 			return err
@@ -65,13 +65,7 @@ func (bt PythonBuildTool) Install() error {
 			fmt.Sprintf("bash %s -b -p %s", localFile, anacondaDir),
 		} {
 			log.Infof("Running: '%v' ", cmd)
-			p := runtime.Process{
-				Command:   cmd,
-				Directory: setupDir,
-			}
-			if err := t.Run(p); err != nil {
-				return fmt.Errorf("Couldn't install python: %v", err)
-			}
+			ExecToStdout(cmd, setupDir)
 		}
 
 	}
@@ -80,8 +74,8 @@ func (bt PythonBuildTool) Install() error {
 }
 
 func (bt PythonBuildTool) DownloadUrl() string {
-	opsys := ""
-	arch := ""
+	opsys := OS()
+	arch := Arch()
 	extension := "sh"
 	version := bt.Version()
 
@@ -89,17 +83,19 @@ func (bt PythonBuildTool) DownloadUrl() string {
 		version = "latest"
 	}
 
-	switch bt.spec.InstallTarget.Architecture() {
-	case runtime.Amd64:
+	if arch == "amd64" {
 		arch = "x86_64"
 	}
 
-	switch bt.spec.InstallTarget.OS() {
-	case runtime.Linux:
-		opsys = "Linux"
-	case runtime.Darwin:
+	if opsys == "darwin" {
 		opsys = "MacOSX"
-	case runtime.Windows:
+	}
+
+	if opsys == "linux" {
+		opsys = "Linux"
+	}
+
+	if opsys == "windows" {
 		opsys = "Windows"
 		extension = "exe"
 	}
@@ -126,12 +122,12 @@ func (bt PythonBuildTool) DownloadUrl() string {
 func (bt PythonBuildTool) Setup() error {
 	condaDir := bt.AnacondaInstallDir()
 	envDir := bt.EnvironmentDir()
-	t := bt.spec.InstallTarget
-	t.PrependToPath(filepath.Join(condaDir, "bin"))
 
-	if t.PathExists(envDir) {
+	if _, err := os.Stat(envDir); err == nil {
 		log.Infof("environment installed in %s", envDir)
 	} else {
+		currentPath := os.Getenv("PATH")
+		newPath := fmt.Sprintf("PATH=%s:%s", filepath.Join(condaDir, "bin"), currentPath)
 		setupDir := bt.spec.PackageDir
 		condaBin := filepath.Join(condaDir, "bin", "conda")
 
@@ -142,13 +138,7 @@ func (bt PythonBuildTool) Setup() error {
 			fmt.Sprintf("%s create --prefix %s python=%s", condaBin, envDir, bt.Version()),
 		} {
 			log.Infof("Running: '%v' ", cmd)
-			p := runtime.Process{
-				Command:     cmd,
-				Interactive: false,
-				Directory:   setupDir,
-			}
-
-			if err := t.Run(p); err != nil {
+			if err := ExecToStdoutWithEnv(cmd, setupDir, []string{newPath}); err != nil {
 				log.Errorf("Unable to run setup command: %s", cmd)
 				return fmt.Errorf("Unable to run '%s': %v", cmd, err)
 			}
@@ -156,7 +146,7 @@ func (bt PythonBuildTool) Setup() error {
 	}
 
 	// Add new env to path
-	t.PrependToPath(filepath.Join(envDir, "bin"))
+	PrependToPath(filepath.Join(envDir, "bin"))
 
 	return nil
 

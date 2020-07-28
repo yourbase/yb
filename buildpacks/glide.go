@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/johnewart/archiver"
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
@@ -43,11 +44,11 @@ func (bt GlideBuildTool) GlideDir() string {
 
 func (bt GlideBuildTool) Setup() error {
 	glideDir := bt.GlideDir()
-
-	t := bt.spec.InstallTarget
-	cmdPath := filepath.Join(glideDir, fmt.Sprintf("%s-%s", OS(), Arch()))
-
-	t.PrependToPath(cmdPath)
+	cmdPath := fmt.Sprintf("%s/%s-%s", glideDir, OS(), Arch())
+	currentPath := os.Getenv("PATH")
+	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
+	log.Infof("Setting PATH to %s", newPath)
+	os.Setenv("PATH", newPath)
 
 	return nil
 }
@@ -73,7 +74,7 @@ func (bt GlideBuildTool) Install() error {
 		}
 
 		log.Infof("Downloading from URL %s ...", downloadUrl)
-		localFile, err := bt.spec.InstallTarget.DownloadFile(downloadUrl)
+		localFile, err := DownloadFileWithCache(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
 			return err
@@ -82,7 +83,7 @@ func (bt GlideBuildTool) Install() error {
 		extractDir := bt.GlideDir()
 		MkdirAsNeeded(extractDir)
 		log.Infof("Extracting glide %s to %s...", bt.Version(), extractDir)
-		err = bt.spec.InstallTarget.Unarchive(localFile, extractDir)
+		err = archiver.Unarchive(localFile, extractDir)
 		if err != nil {
 			log.Errorf("Unable to decompress: %v", err)
 			return err

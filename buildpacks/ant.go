@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/johnewart/archiver"
+	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 )
@@ -64,9 +66,12 @@ func (bt AntBuildTool) InstallDir() string {
 
 func (bt AntBuildTool) Setup() error {
 	antDir := bt.AntDir()
-	t := bt.spec.InstallTarget
 
-	t.PrependToPath(filepath.Join(antDir, "bin"))
+	cmdPath := filepath.Join(antDir, "bin")
+	currentPath := os.Getenv("PATH")
+	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
+	log.Infof("Setting PATH to %s", newPath)
+	os.Setenv("PATH", newPath)
 
 	return nil
 }
@@ -83,12 +88,12 @@ func (bt AntBuildTool) Install() error {
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading Ant from URL %s...", downloadUrl)
-		localFile, err := bt.spec.InstallTarget.DownloadFile(downloadUrl)
+		localFile, err := DownloadFileWithCache(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
 			return err
 		}
-		err = bt.spec.InstallTarget.Unarchive(localFile, installDir)
+		err = archiver.Unarchive(localFile, installDir)
 		if err != nil {
 			log.Errorf("Unable to decompress: %v", err)
 			return err

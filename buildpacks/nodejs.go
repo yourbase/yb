@@ -2,8 +2,11 @@ package buildpacks
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
+	"github.com/johnewart/archiver"
+	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 )
@@ -54,22 +57,21 @@ func (bt NodeBuildTool) Install() error {
 	nodeDir := bt.NodeDir()
 	installDir := bt.InstallDir()
 	nodePkgString := bt.PackageString()
-	t := bt.spec.InstallTarget
 
-	if t.PathExists(nodeDir) {
+	if _, err := os.Stat(nodeDir); err == nil {
 		log.Infof("Node v%s located in %s!", bt.Version(), nodeDir)
 	} else {
 		log.Infof("Would install Node v%s into %s", bt.Version(), installDir)
 		archiveFile := fmt.Sprintf("%s.tar.gz", nodePkgString)
 		downloadUrl := fmt.Sprintf("%s/v%s/%s", NODE_DIST_MIRROR, bt.Version(), archiveFile)
 		log.Infof("Downloading from URL %s...", downloadUrl)
-		localFile, err := bt.spec.InstallTarget.DownloadFile(downloadUrl)
+		localFile, err := DownloadFileWithCache(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
 			return err
 		}
 
-		err = bt.spec.InstallTarget.Unarchive(localFile, installDir)
+		err = archiver.Unarchive(localFile, installDir)
 		if err != nil {
 			log.Errorf("Unable to decompress: %v", err)
 			return err
@@ -80,17 +82,16 @@ func (bt NodeBuildTool) Install() error {
 }
 
 func (bt NodeBuildTool) Setup() error {
-	t := bt.spec.InstallTarget
 	nodeDir := bt.NodeDir()
 	cmdPath := filepath.Join(nodeDir, "bin")
-	t.PrependToPath(cmdPath)
+	PrependToPath(cmdPath)
 	// TODO: Fix this to be the package cache?
 	nodePath := bt.spec.PackageDir
 	log.Infof("Setting NODE_PATH to %s", nodePath)
-	t.SetEnv("NODE_PATH", nodePath)
+	os.Setenv("NODE_PATH", nodePath)
 
 	npmBinPath := filepath.Join(nodePath, "node_modules", ".bin")
-	t.PrependToPath(npmBinPath)
+	PrependToPath(npmBinPath)
 
 	return nil
 }

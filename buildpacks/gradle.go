@@ -6,8 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/johnewart/archiver"
+	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	"github.com/yourbase/yb/runtime"
 	. "github.com/yourbase/yb/types"
 )
 
@@ -71,12 +72,15 @@ func (bt GradleBuildTool) InstallDir() string {
 func (bt GradleBuildTool) Setup() error {
 	gradleDir := bt.GradleDir()
 	gradleHome := filepath.Join(bt.spec.PackageCacheDir, "gradle-home", bt.Version())
-	t := bt.spec.InstallTarget
+
+	cmdPath := filepath.Join(gradleDir, "bin")
+	currentPath := os.Getenv("PATH")
+	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
+	log.Infof("Setting PATH to %s", newPath)
+	os.Setenv("PATH", newPath)
 
 	log.Infof("Setting GRADLE_USER_HOME to %s", gradleHome)
-	runtime.SetEnv("GRADLE_USER_HOME", gradleHome)
-
-	t.PrependToPath(filepath.Join(gradleDir, "bin"))
+	os.Setenv("GRADLE_USER_HOME", gradleHome)
 
 	return nil
 }
@@ -93,12 +97,12 @@ func (bt GradleBuildTool) Install() error {
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading Gradle from URL %s...", downloadUrl)
-		localFile, err := bt.spec.InstallTarget.DownloadFile(downloadUrl)
+		localFile, err := DownloadFileWithCache(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
 			return err
 		}
-		err = bt.spec.InstallTarget.Unarchive(localFile, installDir)
+		err = archiver.Unarchive(localFile, installDir)
 		if err != nil {
 			log.Errorf("Unable to decompress: %v", err)
 			return err

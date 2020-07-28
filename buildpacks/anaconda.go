@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
+	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	"github.com/yourbase/yb/runtime"
 	. "github.com/yourbase/yb/types"
 )
 
@@ -50,7 +50,6 @@ func (bt AnacondaBuildTool) InstallDir() string {
 func (bt AnacondaBuildTool) Install() error {
 	anacondaDir := bt.InstallDir()
 	setupDir := bt.spec.PackageDir
-	t := bt.spec.InstallTarget
 
 	if _, err := os.Stat(anacondaDir); err == nil {
 		log.Infof("anaconda installed in %s", anacondaDir)
@@ -60,7 +59,7 @@ func (bt AnacondaBuildTool) Install() error {
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading Miniconda from URL %s...", downloadUrl)
-		localFile, err := t.DownloadFile(downloadUrl)
+		localFile, err := DownloadFileWithCache(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v\n", err)
 			return err
@@ -70,7 +69,7 @@ func (bt AnacondaBuildTool) Install() error {
 			fmt.Sprintf("bash %s -b -p %s", localFile, anacondaDir),
 		} {
 			log.Infof("Running: '%v' ", cmd)
-			runtime.ExecToStdout(cmd, setupDir)
+			ExecToStdout(cmd, setupDir)
 		}
 
 	}
@@ -126,8 +125,7 @@ func (bt AnacondaBuildTool) DownloadUrl() string {
 
 func (bt AnacondaBuildTool) Setup() error {
 	installDir := bt.InstallDir()
-	t := bt.spec.InstallTarget
-	t.PrependToPath(filepath.Join(installDir, "bin"))
+	PrependToPath(filepath.Join(installDir, "bin"))
 	setupDir := bt.spec.PackageDir
 
 	for _, cmd := range []string{
@@ -135,7 +133,7 @@ func (bt AnacondaBuildTool) Setup() error {
 		fmt.Sprintf("conda update -q conda"),
 	} {
 		log.Infof("Running: '%v' ", cmd)
-		runtime.ExecToStdout(cmd, setupDir)
+		ExecToStdout(cmd, setupDir)
 	}
 
 	return nil

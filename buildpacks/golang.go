@@ -2,10 +2,12 @@ package buildpacks
 
 import (
 	"fmt"
-	"github.com/yourbase/yb/runtime"
+	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/johnewart/archiver"
+	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 )
@@ -29,22 +31,9 @@ func NewGolangBuildTool(toolSpec BuildToolSpec) GolangBuildTool {
 }
 
 func (bt GolangBuildTool) ArchiveFile() string {
-	operatingSystem := bt.spec.InstallTarget.OS()
-	arch := bt.spec.InstallTarget.Architecture()
-	os := "linux"
-	architecture := "amd64"
-
-	if operatingSystem == runtime.Linux {
-		os = "linux"
-	} else {
-		os = "darwin"
-	}
-
-	if arch == runtime.Amd64 {
-		architecture = "amd64"
-	}
-
-	return fmt.Sprintf("go%s.%s-%s.tar.gz", bt.Version(), os, architecture)
+	operatingSystem := OS()
+	arch := Arch()
+	return fmt.Sprintf("go%s.%s-%s.tar.gz", bt.Version(), operatingSystem, arch)
 }
 
 func (bt GolangBuildTool) DownloadUrl() string {
@@ -74,8 +63,6 @@ func (bt GolangBuildTool) GolangDir() string {
 
 // TODO: handle multiple packages, for now this is ok
 func (bt GolangBuildTool) Setup() error {
-	t := bt.spec.InstallTarget
-
 	golangDir := bt.GolangDir()
 	goPath := bt.spec.PackageCacheDir
 	pkgPath := bt.spec.PackageDir
@@ -84,43 +71,45 @@ func (bt GolangBuildTool) Setup() error {
 	goPathVar := strings.Join(goPathElements, ":")
 
 	cmdPath := filepath.Join(golangDir, "bin")
-	t.PrependToPath(cmdPath)
+	PrependToPath(cmdPath)
 	for _, pathElement := range goPathElements {
-		if pathElement != "" {
-			pathBinDir := filepath.Join(pathElement, "bin")
-			t.PrependToPath(pathBinDir)
-		}
+		pathBinDir := filepath.Join(pathElement, "bin")
+		PrependToPath(pathBinDir)
 	}
 
 	log.Infof("Setting GOROOT to %s", golangDir)
-	t.SetEnv("GOROOT", golangDir)
+	os.Setenv("GOROOT", golangDir)
 	log.Infof("Setting GOPATH to %s", goPath)
-	t.SetEnv("GOPATH", goPathVar)
+	os.Setenv("GOPATH", goPathVar)
 
 	return nil
 }
 
 // TODO, generalize downloader
 func (bt GolangBuildTool) Install() error {
-	t := bt.spec.InstallTarget
-
 	installDir := bt.InstallDir()
 	golangDir := bt.GolangDir()
 
-	if t.PathExists(golangDir) {
+	if _, err := os.Stat(golangDir); err == nil {
 		log.Infof("Golang v%s located in %s!", bt.Version(), golangDir)
 	} else {
 		log.Infof("Will install Golang v%s into %s", bt.Version(), golangDir)
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading from URL %s ...", downloadUrl)
-		localFile, err := t.DownloadFile(downloadUrl)
-
-		err = t.Unarchive(localFile, installDir)
+		localFile, err := DownloadFileWithCache(downloadUrl)
+		if err != nil {
+			log.Errorf("Unable to download: %v", err)
+			return err
+		}
+		err = archiver.Unarchive(localFile, installDir)
 		if err != nil {
 			log.Errorf("Unable to decompress: %v", err)
 			return err
 		}
+
+		log.Infof("Making go installation in %s read-only", golangDir)
+		RemoveWritePermissionRecursively(golangDir)
 	}
 
 	return nil

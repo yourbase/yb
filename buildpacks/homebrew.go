@@ -10,7 +10,6 @@ import (
 	"github.com/matishsiao/goInfo"
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	"github.com/yourbase/yb/runtime"
 	. "github.com/yourbase/yb/types"
 	"gopkg.in/src-d/go-git.v4"
 )
@@ -75,13 +74,12 @@ func (bt HomebrewBuildTool) PackagePrefix(packageString string) (string, error) 
 
 func (bt HomebrewBuildTool) PackageInstalled() bool {
 	prefix, err := bt.PackagePrefix(bt.PackageVersionString())
-	t := bt.spec.InstallTarget
 	if err != nil {
 		return false
 	}
 
 	if prefix != "" {
-		return t.PathExists(prefix)
+		return PathExists(prefix)
 	}
 
 	return false
@@ -145,7 +143,7 @@ func (bt HomebrewBuildTool) InstallPackage() error {
 	brewDir := bt.HomebrewDir()
 
 	updateCmd := "brew update"
-	err := runtime.ExecToStdout(updateCmd, brewDir)
+	err := ExecToStdout(updateCmd, brewDir)
 	if err != nil {
 		return fmt.Errorf("Couldn't update brew: %v", err)
 	}
@@ -157,7 +155,7 @@ func (bt HomebrewBuildTool) InstallPackage() error {
 
 	log.Infof("Going to install %s%s from Homebrew...", bt.pkgName, pkgVersion)
 	installCmd := fmt.Sprintf("brew install %s%s", bt.pkgName, pkgVersion)
-	err = runtime.ExecToStdout(installCmd, brewDir)
+	err = ExecToStdout(installCmd, brewDir)
 
 	if err != nil {
 		return fmt.Errorf("Couldn't intall %s@%s from  Homebrew: %v", bt.pkgName, bt.version, err)
@@ -191,7 +189,7 @@ func (bt HomebrewBuildTool) InstallDarwin() error {
 	}
 	log.Infof("Updating brew")
 	updateCmd := "brew update"
-	runtime.ExecToStdout(updateCmd, brewDir)
+	ExecToStdout(updateCmd, brewDir)
 
 	return nil
 }
@@ -223,13 +221,12 @@ func (bt HomebrewBuildTool) InstallLinux() error {
 
 		log.Infof("Updating brew")
 		updateCmd := "brew update"
-		runtime.ExecToStdout(updateCmd, brewDir)
+		ExecToStdout(updateCmd, brewDir)
 	}
 	return nil
 }
 
 func (bt HomebrewBuildTool) Setup() error {
-	t := bt.spec.InstallTarget
 	if bt.IsPackage() {
 		prefixPath, err := bt.PackagePrefix(bt.PackageVersionString())
 		if err != nil {
@@ -238,14 +235,14 @@ func (bt HomebrewBuildTool) Setup() error {
 		binDir := filepath.Join(prefixPath, "bin")
 		sbinDir := filepath.Join(prefixPath, "sbin")
 
-		t.PrependToPath(binDir)
-		t.PrependToPath(sbinDir)
+		PrependToPath(binDir)
+		PrependToPath(sbinDir)
 	} else {
 		brewDir := bt.HomebrewDir()
 		brewBinDir := filepath.Join(brewDir, "bin")
-		t.PrependToPath(brewBinDir)
+		PrependToPath(brewBinDir)
 		brewLibDir := filepath.Join(brewDir, "lib")
-		runtime.SetEnv("LD_LIBRARY_PATH", brewLibDir)
+		os.Setenv("LD_LIBRARY_PATH", brewLibDir)
 	}
 	return nil
 }

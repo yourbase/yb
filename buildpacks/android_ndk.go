@@ -2,10 +2,11 @@ package buildpacks
 
 import (
 	"fmt"
-	"github.com/yourbase/yb/runtime"
 	"os"
 	"path/filepath"
 
+	"github.com/johnewart/archiver"
+	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
 )
@@ -62,7 +63,7 @@ func (bt AndroidNdkBuildTool) Version() string {
 }
 
 func (bt AndroidNdkBuildTool) InstallDir() string {
-	return filepath.Join(bt.spec.InstallTarget.ToolsDir(), "android-ndk")
+	return filepath.Join(ToolsDir(), "android-ndk")
 }
 
 func (bt AndroidNdkBuildTool) NdkDir() string {
@@ -73,7 +74,7 @@ func (bt AndroidNdkBuildTool) Setup() error {
 	ndkDir := bt.NdkDir()
 
 	log.Infof("Setting ANDROID_NDK_HOME to %s", ndkDir)
-	runtime.SetEnv("ANDROID_NDK_HOME", ndkDir)
+	os.Setenv("ANDROID_NDK_HOME", ndkDir)
 
 	return nil
 }
@@ -90,12 +91,12 @@ func (bt AndroidNdkBuildTool) Install() error {
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading Android NDK v%s from URL %s...", bt.Version(), downloadUrl)
-		localFile, err := bt.spec.InstallTarget.DownloadFile(downloadUrl)
+		localFile, err := DownloadFileWithCache(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
 			return err
 		}
-		err = bt.spec.InstallTarget.Unarchive(localFile, installDir)
+		err = archiver.Unarchive(localFile, installDir)
 		if err != nil {
 			log.Errorf("Unable to decompress: %v", err)
 			return err

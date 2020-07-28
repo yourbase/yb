@@ -1,4 +1,4 @@
-package runtime
+package plumbing
 
 /*
 import (
@@ -59,7 +59,7 @@ func ExecInSandbox(command string, workingDir string) error {
 	}
 	sandboxFile.Close()
 	sandboxedCommand := fmt.Sprintf("sandbox-exec -f %s %s", sandboxFile.Name(), command)
-	return runtime.ExecToStdout(sandboxedCommand, workingDir)
+	return ExecToStdout(sandboxedCommand, workingDir)
 	*/
 
 	return ExecToStdout(command, workingDir)
