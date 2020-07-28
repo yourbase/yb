@@ -11,8 +11,7 @@ import (
 
 const (
 	anacondaToolVersion = "4.8.3"
-	// The version above needs a newer template
-	anacondaURLTemplate = "https://repo.continuum.io/miniconda/Miniconda{{.PyNum}}-py37_{{.Version}}-{{.OS}}-{{.Arch}}.{{.Extension}}"
+	anacondaURLTemplate = "https://repo.continuum.io/miniconda/Miniconda{{.PyNum}}-{{.Version}}-{{.OS}}-{{.Arch}}.{{.Extension}}"
 )
 
 type PythonBuildTool struct {
