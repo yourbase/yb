@@ -13,7 +13,7 @@ func GetTargetPackageNamed(file string) (Package, error) {
 	var targetPackage Package
 
 	if file == "" {
-		file = ManifestFile
+		file = MANIFEST_FILE
 	}
 
 	// check if we're just a package
@@ -47,5 +47,5 @@ func GetTargetPackageNamed(file string) (Package, error) {
 }
 
 func GetTargetPackage() (Package, error) {
-	return GetTargetPackageNamed(ManifestFile)
+	return GetTargetPackageNamed(MANIFEST_FILE)
 }
