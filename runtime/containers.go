@@ -82,8 +82,10 @@ func (t *ContainerTarget) ToolsDir(ctx context.Context) string {
 func (t *ContainerTarget) PathExists(ctx context.Context, path string) bool {
 	// Assume we can use stat for now
 	statCmd := fmt.Sprintf("stat %s", path)
+	// Will be ignored, but Docker only succeeds if we pass an output io stream
+	buff := new(bytes.Buffer)
 
-	err := narwhal.ExecShell(ctx, narwhal.DockerClient(), t.Container.Id, statCmd, nil)
+	err := narwhal.ExecShell(ctx, narwhal.DockerClient(), t.Container.Id, statCmd, &narwhal.ExecShellOptions{CombinedOutput: buff})
 	if err != nil {
 		if code, _ := narwhal.IsExitError(err); code != 0 {
 			return false
