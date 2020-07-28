@@ -30,7 +30,7 @@ func configFilePath() (string, error) {
 func loadConfigFile() (*ini.File, error) {
 	iniPath, err := configFilePath()
 	if err != nil {
-		return nil, fmt.Errorf("determining config file path: %v", err)
+		return nil, fmt.Errorf("Couldn't determine config file path: %v", err)
 	}
 
 	cfg, err := ini.Load(iniPath)
@@ -57,7 +57,7 @@ func pathExists(path string) bool {
 func mkdirAsNeeded(dir string) error {
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		if err := os.MkdirAll(dir, 0700); err != nil {
-			return fmt.Errorf("creating dir: %v", err)
+			return fmt.Errorf("Unable to create dir: %v", err)
 		}
 	}
 

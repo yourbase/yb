@@ -1,4 +1,3 @@
-// TODO use GoReleaser + github.com/rhysd/go-github-selfupdate instead of Equinox
 package selfupdate
 
 import (

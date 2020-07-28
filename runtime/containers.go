@@ -142,7 +142,7 @@ func (t *ContainerTarget) UploadFile(ctx context.Context, src string, dest strin
 	log.Infof("Uploading %s to %s", src, dest)
 	err := narwhal.UploadFile(ctx, narwhal.DockerClient(), t.Container.Id, dest, src)
 	if err != nil {
-		return fmt.Errorf("uploading file to container: %v", err)
+		return fmt.Errorf("Couldn't upload file to container: %v", err)
 	}
 	log.Infof("Done")
 	return nil
@@ -345,7 +345,7 @@ func ForwardUnixSocketToTcp(unixSocket string) (string, error) {
 		for {
 			conn, err := l.Accept()
 			if err != nil {
-				log.Errorf("Accept failed: %s", err)
+				log.Errorf("accept failed: %s", err)
 				continue
 			}
 
@@ -353,7 +353,7 @@ func ForwardUnixSocketToTcp(unixSocket string) (string, error) {
 				defer conn.Close()
 				uconn, err := net.Dial("unix", unixSocket)
 				if err != nil {
-					log.Warnf("UNIX dial failed: %s", err)
+					log.Warnf("unix dial failed: %s", err)
 					return
 				}
 				log.Infof("Opened %s", unixSocket)

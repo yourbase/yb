@@ -83,7 +83,7 @@ func (r *Runtime) NTargets() int {
 
 func (r *Runtime) AddTarget(targetId string, t Target) error {
 	if _, exists := r.Targets[targetId]; exists {
-		return fmt.Errorf("adding target with id %s - already exists", targetId)
+		return fmt.Errorf("Unable to add target with id %s - already exists", targetId)
 	}
 
 	r.Targets[targetId] = t
@@ -99,7 +99,7 @@ func (r *Runtime) RunInTarget(ctx context.Context, p Process, targetId string) e
 	if target, exists := r.Targets[targetId]; exists {
 		return target.Run(ctx, p)
 	} else {
-		return fmt.Errorf("finding target %s in runtime", targetId)
+		return fmt.Errorf("Unable to find target %s in runtime", targetId)
 	}
 }
 

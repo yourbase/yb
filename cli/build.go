@@ -184,7 +184,7 @@ func parseArgs(lonelyArg string) (pkgName, target string, err error) {
 
 		parts := strings.SplitN(strings.TrimPrefix(lonelyArg, "@"), ":", 2)
 		if len(parts) < 2 {
-			err = fmt.Errorf("parsing package/target definition: %s", lonelyArg)
+			err = fmt.Errorf("unable to parse package/target definition: %s", lonelyArg)
 			return
 		}
 		pkgName = parts[0]

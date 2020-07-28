@@ -77,6 +77,100 @@ func RemoveWritePermission(path string) bool {
 }
 
 /*
+func PrintDownloadPercent(done chan int64, path string, total int64) {
+
+	var stop bool = false
+
+	for {
+		select {
+		case <-done:
+			stop = true
+		default:
+
+			file, err := os.Open(path)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			fi, err := file.Stat()
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			size := fi.Size()
+
+			if size == 0 {
+				size = 1
+			}
+
+			var percent float64 = float64(size) / float64(total) * 100
+
+			fmt.Printf("%.0f", percent)
+			fmt.Println("%")
+		}
+
+		if stop {
+			break
+		}
+
+		time.Sleep(time.Second)
+	}
+}
+
+func DownloadFile(dest string, url string) error {
+
+	log.Printf("Downloading file %s from %s\n", dest, url)
+
+	start := time.Now()
+
+	out, err := os.Create(dest)
+
+	if err != nil {
+		return fmt.Errorf("Unable to open destination '%s': %v\n", dest, err)
+	}
+
+	defer out.Close()
+
+	headResp, err := http.Head(url)
+
+	if err != nil {
+		panic(err)
+	}
+
+	defer headResp.Body.Close()
+
+	size, err := strconv.Atoi(headResp.Header.Get("Content-Length"))
+
+	if err != nil {
+		panic(err)
+	}
+
+	done := make(chan int64)
+
+	go PrintDownloadPercent(done, dest, int64(size))
+
+	resp, err := http.Get(url)
+
+	if err != nil {
+		panic(err)
+	}
+
+	defer resp.Body.Close()
+
+	n, err := io.Copy(out, resp.Body)
+
+	if err != nil {
+		panic(err)
+	}
+
+	done <- n
+
+	elapsed := time.Since(start)
+	log.Printf("Download completed in %s", elapsed)
+	return nil
+} */
+
+/*
  * Look in the directory above the manifest file, if there's a config.yml, use that
  * otherwise we use the directory of the manifest file as the workspace root
  */
@@ -108,7 +202,7 @@ func FindWorkspaceRoot() (string, error) {
 	}
 
 	// No config in the parent of the package? No workspace!
-	return "", fmt.Errorf("searching for a workspace root")
+	return "", fmt.Errorf("No workspace root found nearby.")
 }
 
 func FindFileUpTree(filename string) (string, error) {
@@ -126,7 +220,7 @@ func FindFileUpTree(filename string) (string, error) {
 		wd = filepath.Dir(wd)
 
 		if strings.HasSuffix(wd, "/") {
-			return "", fmt.Errorf("searching %s, ended up at the root", filename)
+			return "", fmt.Errorf("Can't find %s, ended up at the root...", filename)
 		}
 	}
 }
@@ -154,11 +248,11 @@ func CompressBuffer(b *bytes.Buffer) error {
 
 	xzWriter, err := xz.NewWriter(&buf)
 	if err != nil {
-		return fmt.Errorf("compressing data: %s\n", err)
+		return fmt.Errorf("Unable to compress data: %s\n", err)
 	}
 
 	if _, err := io.Copy(xzWriter, b); err != nil {
-		return fmt.Errorf("compressing data: %s\n", err)
+		return fmt.Errorf("Unable to compress data: %s\n", err)
 	}
 	xzWriter.Close()
 
@@ -172,13 +266,13 @@ func DecompressBuffer(b *bytes.Buffer) error {
 	xzReader, err := xz.NewReader(b)
 
 	if err != nil {
-		return fmt.Errorf("decompressing data: %s\n", err)
+		return fmt.Errorf("Unable to decompress data: %s\n", err)
 	}
 
 	var buf bytes.Buffer
 
 	if _, err := io.Copy(&buf, xzReader); err != nil {
-		return fmt.Errorf("decompressing data: %v", err)
+		return fmt.Errorf("Unable to decompress data: %v", err)
 	}
 
 	b.Reset()
@@ -200,7 +294,7 @@ func SaneEnvironmentVar(env string) (name, value string, sane bool) {
 
 func CloneRepository(remote GitRemote, inMem bool, basePath string) (rep *git.Repository, err error) {
 	if remote.Branch == "" {
-		return nil, fmt.Errorf("define a branch to clone repo %v", remote.Url)
+		return nil, fmt.Errorf("No branch defined to clone repo %v", remote.Url)
 	}
 
 	cloneOpts := &git.CloneOptions{
@@ -232,7 +326,7 @@ func CloneRepository(remote GitRemote, inMem bool, basePath string) (rep *git.Re
 		rep, err = git.PlainClone(basePath, false, cloneOpts)
 	}
 	if err != nil && strings.Count(err.Error(), "SSH") > 0 {
-		err = fmt.Errorf("searching for a SSH agent/key configuration")
+		err = fmt.Errorf("Please check your SSH agent/key configuration")
 	}
 
 	return

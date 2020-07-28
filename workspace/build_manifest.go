@@ -164,7 +164,7 @@ func (b BuildManifest) CIBuild(buildName string) (CIBuild, error) {
 			return build, nil
 		}
 	}
-	return CIBuild{}, fmt.Errorf("no such CI build '%s' in build manifest", buildName)
+	return CIBuild{}, fmt.Errorf("No such CI build '%s' in build manifest", buildName)
 }
 
 func (b BuildManifest) BuildTarget(targetName string) (BuildTarget, error) {
@@ -173,7 +173,7 @@ func (b BuildManifest) BuildTarget(targetName string) (BuildTarget, error) {
 			return target, nil
 		}
 	}
-	return BuildTarget{}, fmt.Errorf("no such target '%s' in build manifest", targetName)
+	return BuildTarget{}, fmt.Errorf("No such target '%s' in build manifest", targetName)
 }
 
 func (b BuildManifest) BuildTargetList() []string {

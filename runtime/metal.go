@@ -190,7 +190,7 @@ func (t *MetalTarget) ExecToStdoutWithEnv(ctx context.Context, cmdString string,
 	log.Infof("Running: %s in %s", cmdString, targetDir)
 	cmdArgs, err := shlex.Split(cmdString)
 	if err != nil {
-		return fmt.Errorf("parsing command string '%s': %v", cmdString, err)
+		return fmt.Errorf("Can't parse command string '%s': %v", cmdString, err)
 	}
 
 	cmd := exec.CommandContext(ctx, cmdArgs[0], cmdArgs[1:len(cmdArgs)]...)
@@ -205,7 +205,7 @@ func (t *MetalTarget) ExecToStdoutWithEnv(ctx context.Context, cmdString string,
 	err = cmd.Run()
 
 	if err != nil {
-		return fmt.Errorf("command failed to run: %v", err)
+		return fmt.Errorf("Command failed to run with error: %v", err)
 	}
 
 	return nil
@@ -219,12 +219,12 @@ func (t *MetalTarget) ExecToLog(ctx context.Context, cmdString string, targetDir
 
 	cmdArgs, err := shlex.Split(cmdString)
 	if err != nil {
-		return fmt.Errorf("parsing command string '%s': %v", cmdString, err)
+		return fmt.Errorf("Can't parse command string '%s': %v", cmdString, err)
 	}
 
 	logfile, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
-		return fmt.Errorf("opening log file %s: %v", logPath, err)
+		return fmt.Errorf("Couldn't open log file %s: %v", logPath, err)
 	}
 
 	defer logfile.Close()
@@ -238,7 +238,7 @@ func (t *MetalTarget) ExecToLog(ctx context.Context, cmdString string, targetDir
 	err = cmd.Run()
 
 	if err != nil {
-		return fmt.Errorf("command '%s' failed to run with error -- see log for information: %s", cmdString, logPath)
+		return fmt.Errorf("Command '%s' failed to run with error -- see log for information: %s", cmdString, logPath)
 	}
 
 	return nil
@@ -252,7 +252,7 @@ func (t *MetalTarget) ExecSilently(ctx context.Context, cmdString string, target
 func (t *MetalTarget) ExecSilentlyToWriter(ctx context.Context, cmdString string, targetDir string, writer io.Writer) error {
 	cmdArgs, err := shlex.Split(cmdString)
 	if err != nil {
-		return fmt.Errorf("parsing command string '%s': %v", cmdString, err)
+		return fmt.Errorf("Can't parse command string '%s': %v", cmdString, err)
 	}
 
 	cmd := exec.CommandContext(ctx, cmdArgs[0], cmdArgs[1:len(cmdArgs)]...)
@@ -264,7 +264,7 @@ func (t *MetalTarget) ExecSilentlyToWriter(ctx context.Context, cmdString string
 	err = cmd.Run()
 
 	if err != nil {
-		return fmt.Errorf("command '%s' failed to run: %v", cmdString, err)
+		return fmt.Errorf("Command '%s' failed to run with error %v", cmdString, err)
 	}
 
 	return nil

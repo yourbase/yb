@@ -138,7 +138,7 @@ func (bt RubyBuildTool) Install(ctx context.Context) (string, error) {
 
 		if err != nil {
 			log.Infof("Unable to clone rbenv!")
-			return "", fmt.Errorf("trying to clone rbenv: %v", err)
+			return "", fmt.Errorf("Couldn't clone rbenv: %v", err)
 		}
 	}
 
@@ -160,7 +160,7 @@ func (bt RubyBuildTool) Install(ctx context.Context) (string, error) {
 
 		if err != nil {
 			log.Errorf("Unable to clone ruby-build!")
-			return "", fmt.Errorf("trying to clone ruby-build: %v", err)
+			return "", fmt.Errorf("Couldn't clone ruby-build: %v", err)
 		}
 	}
 
