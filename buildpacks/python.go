@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	anacondaToolVersion = "4.8.3"
+	anacondaToolVersion = "4.7.10"
 	anacondaURLTemplate = "https://repo.continuum.io/miniconda/Miniconda{{.PyNum}}-{{.Version}}-{{.OS}}-{{.Arch}}.{{.Extension}}"
 )
 
