@@ -1,0 +1,10 @@
+dependencies:
+  build:
+    # TODO MATRIX support ;)
+    - ruby:2.7.1
+
+build_targets:
+  - name: default
+    commands:
+      - bundle install --jobs=3
+      - bundle exec rake spec rubocop
