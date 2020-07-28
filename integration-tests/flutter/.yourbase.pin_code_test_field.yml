@@ -1,0 +1,9 @@
+dependencies:
+  build:
+    - gradle:6.5.1
+    - flutter:1.17.5
+
+build_targets:
+  - name: default
+    commands:
+      - flutter pacakges get

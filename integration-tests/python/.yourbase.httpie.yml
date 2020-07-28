@@ -1,0 +1,10 @@
+dependencies:
+  build:
+    - python:3.8
+
+build_targets:
+  - name: default
+    commands:
+      - pip install --upgrade pip setuptools wheel
+      - pip install --upgrade --editable .
+      - python setup.py test

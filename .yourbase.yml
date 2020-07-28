@@ -10,6 +10,17 @@ build_targets:
       - go test ./...
       - go build
 
+  - name: integration
+    build_after:
+      - default
+    host_only: true
+    commands:
+      - bash -c "cd integration-tests; yb build -no-container"
+      - bash -c "cd integration-tests; yb build -no-container python"
+      - bash -c "cd integration-tests; yb build -no-container gopher"
+      - bash -c "cd integration-tests; yb build -no-container ruby"
+      - bash -c "cd integration-tests; yb build -no-container java"
+
   - name: release
     build_after:
       - default
@@ -54,6 +65,9 @@ ci:
   builds:
     - name: test_build
       build_target: default
+
+    - name: test_integration
+      build_target: integration
 
     - name: pre_release
       build_target: preview_release

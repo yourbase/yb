@@ -1,0 +1,11 @@
+dependencies:
+  build:
+    - go:1.14.4
+
+build_targets:
+  - name: default
+    commands:
+      - make vet
+      - make fmt-check
+      - make misspell-check
+      - make test
