@@ -3,6 +3,7 @@ package buildpacks
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -70,7 +71,7 @@ func (bt AndroidBuildTool) Version() string {
 	return bt.version
 }
 
-func (bt AndroidBuildTool) writeAgreements(ctx context.Context, androidDir string) bool {
+func (bt AndroidBuildTool) WriteAgreements(ctx context.Context, androidDir string) bool {
 	agreements := map[string]string{
 		"android-googletv-license":      "601085b94cd77f0b54ff86406957099ebe79c4d6",
 		"android-sdk-license":           "24333f8a63b6825ea9c5514f83c2829b004d1fee",
@@ -86,11 +87,23 @@ func (bt AndroidBuildTool) writeAgreements(ctx context.Context, androidDir strin
 
 	for filename, hash := range agreements {
 		agreementFile := filepath.Join(licensesDir, filename)
-		err := t.WriteFileContents(ctx, hash, agreementFile)
+		// TODO add as a Runtime/Target method: CreateFile
+		f, err := os.Create(agreementFile)
 		if err != nil {
 			log.Errorf("Can't create agreement file %s: %v", agreementFile, err)
 			return false
 		}
+
+		defer f.Close()
+		_, err = f.WriteString(hash)
+
+		if err != nil {
+			log.Errorf("Can't write agreement file %s: %v", agreementFile, err)
+			return false
+		}
+
+		f.Sync()
+
 		log.Infof("Wrote hash for agreement: %s", agreementFile)
 	}
 
@@ -106,8 +119,8 @@ func (bt AndroidBuildTool) Setup(ctx context.Context, androidDir string) error {
 	t.SetEnv("ANDROID_HOME", androidDir)
 
 	log.Infof("Writing agreement hashes...")
-	if !bt.writeAgreements(ctx, androidDir) {
-		return fmt.Errorf("auto write the agreements")
+	if !bt.WriteAgreements(ctx, androidDir) {
+		return fmt.Errorf("Unable to auto write the agreements")
 	}
 
 	t.PrependToPath(ctx, filepath.Join(androidDir, "tools"))

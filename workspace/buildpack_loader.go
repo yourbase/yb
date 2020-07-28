@@ -56,8 +56,6 @@ func LoadBuildPacks(ctx context.Context, installTarget runtime.Target, dependenc
 			bt = buildpacks.NewAndroidNdkBuildTool(spec)
 		case "android":
 			bt = buildpacks.NewAndroidBuildTool(spec)
-		case "androidsdk":
-			bt = buildpacks.NewAndroidBuildTool(spec)
 		case "gradle":
 			bt = buildpacks.NewGradleBuildTool(spec)
 		case "flutter":
