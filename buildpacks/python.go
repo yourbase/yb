@@ -1,24 +1,24 @@
 package buildpacks
 
 import (
-	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 
+	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	"github.com/yourbase/yb/runtime"
-)
-
-const (
-	anacondaToolVersion = "4.8.3"
-	// The version above needs a newer template
-	anacondaURLTemplate = "https://repo.continuum.io/miniconda/Miniconda{{.PyNum}}-py37_{{.Version}}-{{.OS}}-{{.Arch}}.{{.Extension}}"
+	. "github.com/yourbase/yb/types"
 )
 
 type PythonBuildTool struct {
+	BuildTool
 	version string
 	spec    BuildToolSpec
 }
+
+var ANACONDA_URL_TEMPLATE = "https://repo.continuum.io/miniconda/Miniconda{{.PyNum}}-{{.Version}}-{{.OS}}-{{.Arch}}.{{.Extension}}"
+
+const AnacondaToolVersion = "4.7.10"
 
 func NewPythonBuildTool(toolSpec BuildToolSpec) PythonBuildTool {
 	tool := PythonBuildTool{
@@ -33,52 +33,49 @@ func (bt PythonBuildTool) Version() string {
 	return bt.version
 }
 
-func (bt PythonBuildTool) Install(ctx context.Context) (string, error) {
-	t := bt.spec.InstallTarget
-
-	anacondaDir := filepath.Join(t.ToolsDir(ctx), "miniconda3", "miniconda-"+anacondaToolVersion)
-	setupDir := bt.spec.PackageDir
-
-	if t.PathExists(ctx, anacondaDir) {
-		log.Infof("anaconda installed in %s", anacondaDir)
-		return anacondaDir, nil
-	}
-	log.Infof("Installing anaconda")
-
-	downloadURL, err := bt.DownloadURL(ctx)
-	if err != nil {
-		log.Errorf("Unable to generate download URL: %v", err)
-		return "", err
-	}
-
-	log.Infof("Downloading Miniconda from URL %s...", downloadURL)
-	localFile, err := t.DownloadFile(ctx, downloadURL)
-	if err != nil {
-		log.Errorf("Unable to download: %v", err)
-		return "", err
-	}
-
-	// TODO: Windows
-	for _, cmd := range []string{
-		fmt.Sprintf("chmod +x %s", localFile),
-		fmt.Sprintf("bash %s -b -p %s", localFile, anacondaDir),
-	} {
-		log.Infof("Running: '%v' ", cmd)
-		p := runtime.Process{
-			Command:   cmd,
-			Directory: setupDir,
-		}
-		if err := t.Run(ctx, p); err != nil {
-			return "", fmt.Errorf("installing python: %v", err)
-		}
-	}
-
-	return anacondaDir, nil
+func (bt PythonBuildTool) AnacondaInstallDir() string {
+	return filepath.Join(bt.spec.SharedCacheDir, "miniconda3", fmt.Sprintf("miniconda-%s", AnacondaToolVersion))
 }
 
-func (bt PythonBuildTool) DownloadURL(ctx context.Context) (string, error) {
-	opsys := ""
-	arch := ""
+func (bt PythonBuildTool) EnvironmentDir() string {
+	return filepath.Join(bt.spec.PackageCacheDir, "conda-python", bt.Version())
+}
+
+func (bt PythonBuildTool) Install() error {
+	anacondaDir := bt.AnacondaInstallDir()
+	setupDir := bt.spec.PackageDir
+
+	if _, err := os.Stat(anacondaDir); err == nil {
+		log.Infof("anaconda installed in %s", anacondaDir)
+	} else {
+		log.Infof("Installing anaconda")
+
+		downloadUrl := bt.DownloadUrl()
+
+		log.Infof("Downloading Miniconda from URL %s...", downloadUrl)
+		localFile, err := DownloadFileWithCache(downloadUrl)
+		if err != nil {
+			log.Errorf("Unable to download: %v", err)
+			return err
+		}
+
+		// TODO: Windows
+		for _, cmd := range []string{
+			fmt.Sprintf("chmod +x %s", localFile),
+			fmt.Sprintf("bash %s -b -p %s", localFile, anacondaDir),
+		} {
+			log.Infof("Running: '%v' ", cmd)
+			ExecToStdout(cmd, setupDir)
+		}
+
+	}
+
+	return nil
+}
+
+func (bt PythonBuildTool) DownloadUrl() string {
+	opsys := OS()
+	arch := Arch()
 	extension := "sh"
 	version := bt.Version()
 
@@ -86,17 +83,19 @@ func (bt PythonBuildTool) DownloadURL(ctx context.Context) (string, error) {
 		version = "latest"
 	}
 
-	switch bt.spec.InstallTarget.Architecture() {
-	case runtime.Amd64:
+	if arch == "amd64" {
 		arch = "x86_64"
 	}
 
-	switch bt.spec.InstallTarget.OS() {
-	case runtime.Linux:
-		opsys = "Linux"
-	case runtime.Darwin:
+	if opsys == "darwin" {
 		opsys = "MacOSX"
-	case runtime.Windows:
+	}
+
+	if opsys == "linux" {
+		opsys = "Linux"
+	}
+
+	if opsys == "windows" {
 		opsys = "Windows"
 		extension = "exe"
 	}
@@ -111,47 +110,43 @@ func (bt PythonBuildTool) DownloadURL(ctx context.Context) (string, error) {
 		3,
 		opsys,
 		arch,
-		anacondaToolVersion,
+		AnacondaToolVersion,
 		extension,
 	}
 
-	url, err := TemplateToString(anacondaURLTemplate, data)
-	return url, err
+	url, _ := TemplateToString(ANACONDA_URL_TEMPLATE, data)
+
+	return url
 }
 
-func (bt PythonBuildTool) Setup(ctx context.Context, condaDir string) error {
-	t := bt.spec.InstallTarget
+func (bt PythonBuildTool) Setup() error {
+	condaDir := bt.AnacondaInstallDir()
+	envDir := bt.EnvironmentDir()
 
-	envDir := filepath.Join(t.ToolsDir(ctx), "conda-python", bt.Version())
-	t.PrependToPath(ctx, filepath.Join(condaDir, "bin"))
-
-	if t.PathExists(ctx, envDir) {
+	if _, err := os.Stat(envDir); err == nil {
 		log.Infof("environment installed in %s", envDir)
-		return nil
-	}
-	setupDir := bt.spec.PackageDir
-	condaBin := filepath.Join(condaDir, "bin", "conda")
+	} else {
+		currentPath := os.Getenv("PATH")
+		newPath := fmt.Sprintf("PATH=%s:%s", filepath.Join(condaDir, "bin"), currentPath)
+		setupDir := bt.spec.PackageDir
+		condaBin := filepath.Join(condaDir, "bin", "conda")
 
-	for _, cmd := range []string{
-		fmt.Sprintf("%s install -c anaconda setuptools", condaBin),
-		fmt.Sprintf("%s config --set always_yes yes --set changeps1 no", condaBin),
-		fmt.Sprintf("%s update -q conda", condaBin),
-		fmt.Sprintf("%s create --prefix %s python=%s", condaBin, envDir, bt.Version()),
-	} {
-		log.Infof("Running: '%v' ", cmd)
-		p := runtime.Process{
-			Command:   cmd,
-			Directory: setupDir,
-		}
-
-		if err := t.Run(ctx, p); err != nil {
-			log.Errorf("Unable to run setup command: %s", cmd)
-			return fmt.Errorf("running '%s': %v", cmd, err)
+		for _, cmd := range []string{
+			fmt.Sprintf("%s install -c anaconda setuptools", condaBin),
+			fmt.Sprintf("%s config --set always_yes yes --set changeps1 no", condaBin),
+			fmt.Sprintf("%s update -q conda", condaBin),
+			fmt.Sprintf("%s create --prefix %s python=%s", condaBin, envDir, bt.Version()),
+		} {
+			log.Infof("Running: '%v' ", cmd)
+			if err := ExecToStdoutWithEnv(cmd, setupDir, []string{newPath}); err != nil {
+				log.Errorf("Unable to run setup command: %s", cmd)
+				return fmt.Errorf("Unable to run '%s': %v", cmd, err)
+			}
 		}
 	}
 
 	// Add new env to path
-	t.PrependToPath(ctx, filepath.Join(envDir, "bin"))
+	PrependToPath(filepath.Join(envDir, "bin"))
 
 	return nil
 

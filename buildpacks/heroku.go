@@ -1,18 +1,21 @@
 package buildpacks
 
 import (
-	"context"
 	"fmt"
-	"path/filepath"
+	"os"
 	"strings"
 
+	"github.com/johnewart/archiver"
+	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
+	. "github.com/yourbase/yb/types"
 )
 
 //https://archive.apache.org/dist/heroku/heroku-3/3.3.3/binaries/apache-heroku-3.3.3-bin.tar.gz
-const herokuDistMirrorTemplate = "https://cli-assets.heroku.com/heroku-{{.OS}}-{{.Arch}}.tar.gz"
+var HEROKU_DIST_MIRROR = "https://cli-assets.heroku.com/heroku-{{.OS}}-{{.Arch}}.tar.gz"
 
 type HerokuBuildTool struct {
+	BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -30,7 +33,7 @@ func (bt HerokuBuildTool) ArchiveFile() string {
 	return fmt.Sprintf("apache-heroku-%s-bin.tar.gz", bt.Version())
 }
 
-func (bt HerokuBuildTool) DownloadURL(ctx context.Context) (string, error) {
+func (bt HerokuBuildTool) DownloadUrl() string {
 	opsys := OS()
 	arch := Arch()
 
@@ -46,8 +49,9 @@ func (bt HerokuBuildTool) DownloadURL(ctx context.Context) (string, error) {
 		arch,
 	}
 
-	url, err := TemplateToString(herokuDistMirrorTemplate, data)
-	return url, err
+	url, _ := TemplateToString(HEROKU_DIST_MIRROR, data)
+
+	return url
 }
 
 func (bt HerokuBuildTool) MajorVersion() string {
@@ -59,41 +63,44 @@ func (bt HerokuBuildTool) Version() string {
 	return bt.version
 }
 
-func (bt HerokuBuildTool) Setup(ctx context.Context, herokuDir string) error {
-	t := bt.spec.InstallTarget
+func (bt HerokuBuildTool) HerokuDir() string {
+	return fmt.Sprintf("%s/heroku-%s", bt.spec.PackageCacheDir, bt.Version())
+}
 
-	t.PrependToPath(ctx, filepath.Join(herokuDir, "heroku", "bin"))
+func (bt HerokuBuildTool) Setup() error {
+	herokuDir := bt.HerokuDir()
+	cmdPath := fmt.Sprintf("%s/heroku/bin", herokuDir)
+	currentPath := os.Getenv("PATH")
+	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
+	log.Infof("Setting PATH to %s", newPath)
+	os.Setenv("PATH", newPath)
 
 	return nil
 }
 
-func (bt HerokuBuildTool) Install(ctx context.Context) (string, error) {
-	t := bt.spec.InstallTarget
+// TODO, generalize downloader
+func (bt HerokuBuildTool) Install() error {
+	herokuDir := bt.HerokuDir()
 
-	herokuDir := filepath.Join(t.ToolsDir(ctx), "heroku", bt.Version())
-
-	if t.PathExists(ctx, herokuDir) {
+	if _, err := os.Stat(herokuDir); err == nil {
 		log.Infof("Heroku v%s located in %s!", bt.Version(), herokuDir)
-		return herokuDir, nil
-	}
-	log.Infof("Will install Heroku v%s into %s", bt.Version(), herokuDir)
-	downloadURL, err := bt.DownloadURL(ctx)
-	if err != nil {
-		log.Errorf("Unable to generate download URL: %v", err)
-		return "", err
+	} else {
+		log.Infof("Will install Heroku v%s into %s", bt.Version(), herokuDir)
+		downloadUrl := bt.DownloadUrl()
+
+		log.Infof("Downloading Heroku from URL %s...", downloadUrl)
+		localFile, err := DownloadFileWithCache(downloadUrl)
+		if err != nil {
+			log.Errorf("Unable to download: %v", err)
+			return err
+		}
+		err = archiver.Unarchive(localFile, herokuDir)
+		if err != nil {
+			log.Errorf("Unable to decompress: %v", err)
+			return err
+		}
+
 	}
 
-	log.Infof("Downloading Heroku from URL %s...", downloadURL)
-	localFile, err := t.DownloadFile(ctx, downloadURL)
-	if err != nil {
-		log.Errorf("Unable to download: %v", err)
-		return "", err
-	}
-	err = t.Unarchive(ctx, localFile, herokuDir)
-	if err != nil {
-		log.Errorf("Unable to decompress: %v", err)
-		return "", err
-	}
-
-	return herokuDir, err
+	return nil
 }

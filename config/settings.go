@@ -6,22 +6,10 @@ import (
 	"strings"
 )
 
-type IsolationType int
-
-const (
-	IsolationContainers IsolationType = 0
-	IsolationVMs        IsolationType = 1
-)
-
 const (
 	APP_SETTINGS       = "/user/settings"
 	API_TOKEN_VALIDATE = "/apikey/validate/%s"
 )
-
-// TODO per-project?
-func Isolation() IsolationType {
-	return IsolationContainers
-}
 
 func ShouldUploadBuildLogs() bool {
 
@@ -80,10 +68,10 @@ func apiBaseUrl() (string, error) {
 	case "":
 		return "https://api.yourbase.io", nil
 	default:
-		return "", fmt.Errorf("unknown environment (%s) and no override in the config file or environment available", profile)
+		return "", fmt.Errorf("Unknown environment (%s) and no override in the config file or environment available", profile)
 	}
 
-	return "", fmt.Errorf("generating URL")
+	return "", fmt.Errorf("Unable to generate URL")
 }
 
 func ApiUrl(path string) (string, error) {
@@ -92,7 +80,7 @@ func ApiUrl(path string) (string, error) {
 	}
 
 	if baseUrl, err := apiBaseUrl(); err != nil {
-		return "", fmt.Errorf("determining API URL: %v", err)
+		return "", fmt.Errorf("Can't determine API URL: %v", err)
 	} else {
 		return fmt.Sprintf("%s%s", baseUrl, path), nil
 	}
@@ -127,10 +115,10 @@ func managementBaseUrl() (string, error) {
 	case "":
 		return "https://app.yourbase.io", nil
 	default:
-		return "", fmt.Errorf("unknown environment (%s) and no override in the config file or environment available", profile)
+		return "", fmt.Errorf("Unknown environment (%s) and no override in the config file or environment available", profile)
 	}
 
-	return "", fmt.Errorf("generating URL")
+	return "", fmt.Errorf("Unable to generate URL")
 }
 
 func ManagementUrl(path string) (string, error) {
@@ -139,7 +127,7 @@ func ManagementUrl(path string) (string, error) {
 	}
 
 	if baseUrl, err := managementBaseUrl(); err != nil {
-		return "", fmt.Errorf("determining management URL: %v", err)
+		return "", fmt.Errorf("Couldn't determine management URL: %v", err)
 	} else {
 		return fmt.Sprintf("%s%s", baseUrl, path), nil
 	}
@@ -174,7 +162,7 @@ func UserToken() (string, error) {
 		token, err := GetConfigValue("user", "api_key")
 
 		if err != nil {
-			return "", fmt.Errorf("finding YB token in config file or environment.\nUse yb login to fetch one, if you already logged in to https://app.yourbase.io")
+			return "", fmt.Errorf("Unable to find YB token in config file or environment.\nUse yb login to fetch one, if you already logged in to https://app.yourbase.io")
 		}
 
 		return token, nil
@@ -182,5 +170,5 @@ func UserToken() (string, error) {
 		return token, nil
 	}
 
-	return "", fmt.Errorf("determining token - not in the config or environment")
+	return "", fmt.Errorf("Unable to determine token - not in the config or environment")
 }

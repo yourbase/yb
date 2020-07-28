@@ -1,17 +1,19 @@
 package buildpacks
 
 import (
-	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 
+	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	"github.com/yourbase/yb/runtime"
+	. "github.com/yourbase/yb/types"
 )
 
-const rustDistMirrorTemplate = "https://static.rust-lang.org/rustup/dist"
+var RUST_DIST_MIRROR = "https://static.rust-lang.org/rustup/dist"
 
 type RustBuildTool struct {
+	BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -29,78 +31,62 @@ func (bt RustBuildTool) Version() string {
 	return bt.version
 }
 
-func (bt RustBuildTool) Setup(ctx context.Context, rustDir string) error {
-	t := bt.spec.InstallTarget
+func (bt RustBuildTool) RustDir() string {
+	return filepath.Join(bt.InstallDir(), fmt.Sprintf("rust-%s", bt.Version()))
+}
 
-	t.PrependToPath(ctx, filepath.Join(rustDir, "bin"))
+func (bt RustBuildTool) InstallDir() string {
+	return filepath.Join(bt.spec.SharedCacheDir, "rust")
+}
 
-	t.SetEnv("CARGO_HOME", filepath.Join(t.ToolOutputSharedDir(ctx), "rust", bt.Version()))
-	t.SetEnv("RUSTUP_HOME", rustDir)
+func (bt RustBuildTool) Setup() error {
+	rustDir := bt.RustDir()
+	cmdPath := fmt.Sprintf("%s/bin", rustDir)
+	currentPath := os.Getenv("PATH")
+	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
+	log.Infof("Setting PATH to %s", newPath)
+	os.Setenv("PATH", newPath)
+
+	os.Setenv("CARGO_HOME", rustDir)
+	os.Setenv("RUSTUP_HOME", rustDir)
 
 	return nil
 }
 
-func (bt RustBuildTool) installerFile() string {
-	extension := ""
-	return fmt.Sprintf("rustup-init%s", extension)
-}
+func (bt RustBuildTool) Install() error {
 
-func (bt RustBuildTool) DownloadURL(ctx context.Context) (string, error) {
 	arch := "x86_64"
 	operatingSystem := "unknown-linux-gnu"
 
-	return fmt.Sprintf("%s/%s-%s/%s", rustDistMirrorTemplate, arch, operatingSystem, bt.installerFile()), nil
-}
+	rustDir := bt.RustDir()
+	installDir := bt.InstallDir()
+	MkdirAsNeeded(installDir)
 
-func (bt RustBuildTool) Install(ctx context.Context) (string, error) {
-	t := bt.spec.InstallTarget
-
-	installDir := filepath.Join(t.ToolsDir(ctx), "rust")
-	rustDir := filepath.Join(installDir, "rust-"+bt.Version())
-	t.MkdirAsNeeded(ctx, installDir)
-
-	if t.PathExists(ctx, rustDir) {
+	if _, err := os.Stat(rustDir); err == nil {
 		log.Infof("Rust v%s located in %s!", bt.Version(), rustDir)
-		return rustDir, nil
-	}
-	log.Infof("Will install Rust v%s into %s", bt.Version(), rustDir)
-	downloadURL, err := bt.DownloadURL(ctx)
-	if err != nil {
-		log.Errorf("Unable to generate download URL: %v", err)
-		return "", err
-	}
+	} else {
+		log.Infof("Will install Rust v%s into %s", bt.Version(), rustDir)
+		extension := ""
+		installerFile := fmt.Sprintf("rustup-init%s", extension)
+		downloadUrl := fmt.Sprintf("%s/%s-%s/%s", RUST_DIST_MIRROR, arch, operatingSystem, installerFile)
 
-	downloadDir := t.ToolsDir(ctx)
-	localFile := filepath.Join(downloadDir, bt.installerFile())
-	log.Infof("Downloading from URL %s to local file %s", downloadURL, localFile)
-	localFile, err = t.DownloadFile(ctx, downloadURL)
-	if err != nil {
-		log.Errorf("Unable to download: %v", err)
-		return "", err
-	}
-
-	t.SetEnv("CARGO_HOME", rustDir)
-	t.SetEnv("RUSTUP_HOME", rustDir)
-
-	_, newName := filepath.Split(localFile)
-	renamedFilePath := filepath.Join(downloadDir, newName)
-
-	for _, cmd := range []string{
-		"chmod +x " + localFile,
-		"mv " + localFile + " " + renamedFilePath,
-		"./" + newName + " -y",
-	} {
-		log.Infof("Running %v", cmd)
-		p := runtime.Process{
-			Command:   cmd,
-			Directory: downloadDir,
-		}
-		err = t.Run(ctx, p)
+		downloadDir := bt.spec.PackageCacheDir
+		localFile := filepath.Join(downloadDir, installerFile)
+		log.Infof("Downloading from URL %s to local file %s", downloadUrl, localFile)
+		err := DownloadFile(localFile, downloadUrl)
 		if err != nil {
-			return "", err
+			log.Errorf("Unable to download: %v", err)
+			return err
 		}
+
+		os.Chmod(localFile, 0700)
+		os.Setenv("CARGO_HOME", rustDir)
+		os.Setenv("RUSTUP_HOME", rustDir)
+
+		installCmd := fmt.Sprintf("%s -y", localFile)
+		ExecToStdout(installCmd, downloadDir)
 	}
 
-	return rustDir, nil
+	return nil
 
 }

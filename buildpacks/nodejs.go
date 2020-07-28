@@ -1,16 +1,20 @@
 package buildpacks
 
 import (
-	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 
+	"github.com/johnewart/archiver"
+	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
+	. "github.com/yourbase/yb/types"
 )
 
-const nodeDistMirrorTemplate = "https://nodejs.org/dist"
+var NODE_DIST_MIRROR = "https://nodejs.org/dist"
 
 type NodeBuildTool struct {
+	BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -40,62 +44,54 @@ func (bt NodeBuildTool) PackageString() string {
 	return fmt.Sprintf("node-v%s-%s-%s", version, osName, arch)
 }
 
-func (bt NodeBuildTool) ArchiveFile() string {
-	return fmt.Sprintf("%s.tar.gz", bt.PackageString())
+func (bt NodeBuildTool) NodeDir() string {
+	return filepath.Join(bt.InstallDir(), bt.PackageString())
 }
 
-func (bt NodeBuildTool) DownloadURL(ctx context.Context) (string, error) {
-	return fmt.Sprintf("%s/v%s/%s",
-		nodeDistMirrorTemplate,
-		bt.Version(),
-		bt.ArchiveFile()), nil
+func (bt NodeBuildTool) InstallDir() string {
+	return filepath.Join(bt.spec.SharedCacheDir, "nodejs")
 }
 
-func (bt NodeBuildTool) Install(ctx context.Context) (string, error) {
-	t := bt.spec.InstallTarget
+func (bt NodeBuildTool) Install() error {
 
-	installDir := filepath.Join(t.ToolsDir(ctx), "nodejs")
-	nodeDir := filepath.Join(installDir, bt.PackageString())
+	nodeDir := bt.NodeDir()
+	installDir := bt.InstallDir()
+	nodePkgString := bt.PackageString()
 
-	if t.PathExists(ctx, nodeDir) {
+	if _, err := os.Stat(nodeDir); err == nil {
 		log.Infof("Node v%s located in %s!", bt.Version(), nodeDir)
-		return nodeDir, nil
-	}
-	log.Infof("Would install Node v%s into %s", bt.Version(), installDir)
-	downloadURL, err := bt.DownloadURL(ctx)
-	if err != nil {
-		log.Errorf("Unable to generate download URL: %v", err)
-		return "", err
+	} else {
+		log.Infof("Would install Node v%s into %s", bt.Version(), installDir)
+		archiveFile := fmt.Sprintf("%s.tar.gz", nodePkgString)
+		downloadUrl := fmt.Sprintf("%s/v%s/%s", NODE_DIST_MIRROR, bt.Version(), archiveFile)
+		log.Infof("Downloading from URL %s...", downloadUrl)
+		localFile, err := DownloadFileWithCache(downloadUrl)
+		if err != nil {
+			log.Errorf("Unable to download: %v", err)
+			return err
+		}
+
+		err = archiver.Unarchive(localFile, installDir)
+		if err != nil {
+			log.Errorf("Unable to decompress: %v", err)
+			return err
+		}
 	}
 
-	log.Infof("Downloading from URL %s...", downloadURL)
-	localFile, err := t.DownloadFile(ctx, downloadURL)
-	if err != nil {
-		log.Errorf("Unable to download: %v", err)
-		return "", err
-	}
-
-	err = t.Unarchive(ctx, localFile, installDir)
-	if err != nil {
-		log.Errorf("Unable to decompress: %v", err)
-		return "", err
-	}
-
-	return nodeDir, nil
+	return nil
 }
 
-func (bt NodeBuildTool) Setup(ctx context.Context, nodeDir string) error {
-	t := bt.spec.InstallTarget
-
+func (bt NodeBuildTool) Setup() error {
+	nodeDir := bt.NodeDir()
 	cmdPath := filepath.Join(nodeDir, "bin")
-	t.PrependToPath(ctx, cmdPath)
+	PrependToPath(cmdPath)
 	// TODO: Fix this to be the package cache?
 	nodePath := bt.spec.PackageDir
 	log.Infof("Setting NODE_PATH to %s", nodePath)
-	t.SetEnv("NODE_PATH", nodePath)
+	os.Setenv("NODE_PATH", nodePath)
 
 	npmBinPath := filepath.Join(nodePath, "node_modules", ".bin")
-	t.PrependToPath(ctx, npmBinPath)
+	PrependToPath(npmBinPath)
 
 	return nil
 }
