@@ -118,7 +118,7 @@ func (w Workspace) BuildRoot() string {
 	buildRoot := filepath.Join(w.Path, buildDir)
 
 	if _, err := os.Stat(buildRoot); os.IsNotExist(err) {
-		if err := os.MkdirAll(buildRoot, 0700); err != nil {
+		if err := os.Mkdir(buildRoot, 0700); err != nil {
 			log.Warnf("Unable to create build dir in workspace: %v\n", err)
 		}
 	}
