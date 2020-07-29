@@ -104,6 +104,7 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 
 	// Named target, look for that and resolve it
 	buildTargets, err := manifest.ResolveBuildTargets(buildTargetName)
+	targetPackage.BuildTargets = buildTargets
 
 	if err != nil {
 		log.Errorf("Could not compute build target '%s': %v", buildTargetName, err)

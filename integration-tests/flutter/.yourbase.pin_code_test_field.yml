@@ -12,5 +12,8 @@ build_targets:
     dependencies:
       build:
         - flutter:1.17.2
+        - python:3.8
     commands:
       - flutter packages get
+      # Temporary filed that isn't cleaned up after
+      - rm example/ios/Flutter/flutter_export_environment.sh

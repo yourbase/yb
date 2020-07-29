@@ -15,9 +15,10 @@ import (
 )
 
 type Package struct {
-	Name     string
-	Path     string
-	Manifest BuildManifest
+	Name         string
+	Path         string
+	Manifest     BuildManifest
+	BuildTargets []BuildTarget
 }
 
 func LoadPackage(name string, path string) (Package, error) {
@@ -81,11 +82,19 @@ func (p Package) BuildRoot() string {
 }
 
 func (p Package) SetupBuildDependencies() ([]CommandTimer, error) {
-	return LoadBuildPacks(p.Manifest.Dependencies.Build, p.BuildRoot(), p.Path)
+	buildDeps, err := p.Manifest.FinalBuildDependencies(p.BuildTargets)
+	if err != nil {
+		return nil, err
+	}
+	return LoadBuildPacks(buildDeps, p.BuildRoot(), p.Path)
 }
 
 func (p Package) SetupRuntimeDependencies() ([]CommandTimer, error) {
 	deps := p.Manifest.Dependencies.Runtime
-	deps = append(deps, p.Manifest.Dependencies.Build...)
+	buildDeps, err := p.Manifest.FinalBuildDependencies(p.BuildTargets)
+	if err != nil {
+		return nil, err
+	}
+	deps = append(deps, buildDeps...)
 	return LoadBuildPacks(deps, p.BuildRoot(), p.Path)
 }
