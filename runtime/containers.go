@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	slashpath "path"
 	"strings"
 
 	"github.com/yourbase/yb/plumbing/log"
@@ -21,6 +22,7 @@ const (
 	containerDefaultToolsDir            = "/opt/yb/tools"
 	containerDefaultCacheDir            = "/opt/yb/cache"
 	containerDefaultToolOutputSharedDir = "/opt/yb/output"
+	containerDefaultInjectDir           = "/opt/yb/tmp"
 	containerDefaultWorkDir             = "/workspace"
 )
 
@@ -165,7 +167,7 @@ func (t *ContainerTarget) DownloadFile(ctx context.Context, url string) (string,
 	localFile, err := downloadFileWithCache(ctx, url)
 	parts := strings.Split(url, "/")
 	filename := parts[len(parts)-1]
-	outputFilename := fmt.Sprintf("/tmp/%s", filename)
+	outputFilename := slashpath.Join(containerDefaultInjectDir, filename)
 
 	if err == nil {
 		// Downloaded locally, inject
@@ -175,11 +177,11 @@ func (t *ContainerTarget) DownloadFile(ctx context.Context, url string) (string,
 
 	// If download or injection failed, fallback
 	if err != nil {
-		log.Infof("Failed to download and inject file: %v", err)
+		log.Warnf("Failed to download and inject file: %v", err)
 		log.Infof("Will download via curl in container")
 		p := Process{
 			Command:     fmt.Sprintf("curl %s -o %s", url, outputFilename),
-			Directory:   "/tmp",
+			Directory:   containerDefaultInjectDir,
 			Interactive: false,
 		}
 
