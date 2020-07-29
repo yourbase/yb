@@ -25,3 +25,9 @@
 [submodule "integration-tests/go/gg"]
 	path = integration-tests/go/gg
 	url = https://github.com/zombiezen/gg.git
+[submodule "integration-tests/flutter/flutter-examples"]
+	path = integration-tests/flutter/flutter-examples
+	url = https://github.com/nisrulz/flutter-examples.git
+[submodule "integration-tests/flutter/pin_code_test_field"]
+	path = integration-tests/flutter/pin_code_test_field
+	url = https://github.com/LiewJunTung/pin_code_text_field.git

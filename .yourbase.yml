@@ -5,11 +5,15 @@ dependencies:
 
 build_targets:
   - name: default
+    host_only: true
     commands:
       - go test ./...
       - bash -c "go build -ldflags \"-X 'main.date=$(date)'\""
 
   - name: integration
+    build_after:
+      - default
+    host_only: true
     commands:
       - bash -c "cd integration-tests; yb build -no-container"
       - bash -c "cd integration-tests; yb build -no-container python"
@@ -61,6 +65,9 @@ ci:
   builds:
     - name: test_build
       build_target: default
+
+    - name: test_integration
+      build_target: integration
 
     - name: pre_release
       build_target: preview_release
