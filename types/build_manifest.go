@@ -23,7 +23,7 @@ func (b BuildManifest) IsTargetSandboxed(target BuildTarget) bool {
 }
 
 // XXX: Support more than one level? Intuitively that seems like it will breed un-needed complexity
-func (b *BuildManifest) ResolveBuildTargets(targetName string) ([]BuildTarget, error) {
+func (b BuildManifest) ResolveBuildTargets(targetName string) ([]BuildTarget, error) {
 	targetList := make([]BuildTarget, 0)
 
 	target, err := b.BuildTarget(targetName)

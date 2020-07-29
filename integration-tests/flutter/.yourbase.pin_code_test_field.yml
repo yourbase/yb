@@ -15,5 +15,3 @@ build_targets:
         - python:3.8
     commands:
       - flutter packages get
-      # Temporary filed that isn't cleaned up after
-      - rm example/ios/Flutter/flutter_export_environment.sh
