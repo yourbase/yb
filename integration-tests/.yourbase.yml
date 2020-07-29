@@ -1,5 +1,4 @@
 # NOTE first iteration, just testing `yb build`
-# Tries building 3 known-good Python FOSS projects
 # After fixing how the CLI manages workspaces (currently done using config.yml), we could simplify this a bit
 #
 build_targets:
