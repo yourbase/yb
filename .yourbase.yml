@@ -28,6 +28,26 @@ build_targets:
       - pip install awscli
       - bash release.sh 
 
+  - name: local_test_release
+    build_after:
+      - default
+    host_only: true
+    environment:
+      - TEST_RELEASE=test_me
+      - AWS_ACCESS_KEY_ID=only_smeagle_knows
+      - AWS_SECRET_ACCESS_KEY=only_smeagle_knows
+      - RELEASE_KEY=not known
+      - RELEASE_TOKEN=also unknown
+      - YB_GIT_BRANCH=refs/tags/v0.0.0-rc0
+    commands:
+      - pip install awscli
+      - bash release.sh
+      - rm -f yb
+      - tar xf release/yb-linux-amd64-v0.0.0-rc0.tgz
+      - mv yb-linux-amd64 yb
+      - ls -lh yb
+      - ./yb version
+
   - name: linux
     build_after:
       - default

@@ -21,25 +21,23 @@ else
     CHANNEL="stable"
 fi
 
-local_test_release="${2:-}"
+local_test_release="${TEST_RELEASE:-}"
 
-if [ -z "${local_test_release}" ]; then
-    # YourBase S3 artifacts Release
-    # TODO migrate to CATS
-    aws_disabled=true
-    [ -n "${AWS_ACCESS_KEY_ID}" -a -n "${AWS_SECRET_ACCESS_KEY}" ] && aws_disabled=false
-    if $aws_disabled; then
-        echo "No AWS credentials, probably in Staging/Preview, giving up"
-        # Non fatal, we won't get GH status errors when trying to release on Staging/Preview
-        exit 0
-    fi
+# YourBase S3 artifacts Release
+# TODO migrate to CATS
+AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID:-}"
+AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY:-}"
+aws_disabled=true
+[ -n "${AWS_ACCESS_KEY_ID}" -a -n "${AWS_SECRET_ACCESS_KEY}" ] && aws_disabled=false
+if $aws_disabled; then
+    echo "No AWS credentials, probably in Staging/Preview, giving up"
+    # Non fatal, we won't get GH status errors when trying to release on Staging/Preview
+    exit 0
 fi
 
 # Commit info
-COMMIT="-"
-if [ -z "${local_test_release}" ]; then
-    COMMIT="${YB_GIT_COMMIT}"
-else
+COMMIT="${YB_GIT_COMMIT:-}"
+if [ -z "${COMMIT}" ]; then
     # If git is installed
     if hash git; then
         COMMIT="$(git rev-list -n1 HEAD)"
@@ -47,13 +45,13 @@ else
 fi
 
 BUILD_COMMIT_INFO=""
-if [ "${COMMIT}" != "-" ]; then
+if [ -n "${COMMIT}" ]; then
     BUILD_COMMIT_INFO=" -X 'main.commitSHA=$COMMIT'"
 fi
 
 umask 077
 
-echo "Releasing ${CHANNEL} yb version ${VERSION}..."
+echo "Releasing ${CHANNEL} yb version ${VERSION} [${COMMIT}]..."
 
 set -x
 
@@ -67,7 +65,7 @@ for os in "${OSLIST[@]}"
 do
   for arch in "${ARCHLIST[@]}"
   do
-    GOOS=${os} GOARCH=${arch} go build -ldflags "-X 'main.version=$VERSION' -X 'main.date=$(date)' -X 'main.channel=$CHANNEL'${BUILD_COMMIT_INFO}" -o release/yb-${os}-${arch}
+    GOOS=${os} GOARCH=${arch} go build -ldflags "-X 'main.version=$VERSION' -X 'main.date=$(date -u '+%F-%T')' -X 'main.channel=$CHANNEL'${BUILD_COMMIT_INFO}" -o release/yb-${os}-${arch}
   done
 done
 
@@ -80,18 +78,22 @@ done
     rm $i
   done
 
-  if [ -z "${local_test_release}" ]; then
     for i in *.tgz
     do
-      aws s3 ls s3://yourbase-artifacts/yb/${VERSION}/$i
-      if [[ $? -eq 0 ]]; then
-          echo "A version for ${VERSION} already exists! Not releasing this version."
-          exit 1
-      fi
+      if [ -z "${local_test_release}" ]; then
+        aws s3 ls s3://yourbase-artifacts/yb/${VERSION}/$i
+        if [[ $? -eq 0 ]]; then
+            echo "A version for ${VERSION} already exists! Not releasing this version."
+            exit 1
+        fi
 
-      aws s3 cp $i s3://yourbase-artifacts/yb/${VERSION}/
+        aws s3 cp $i s3://yourbase-artifacts/yb/${VERSION}/
+      else
+        echo "Local test, would run:"
+        echo aws s3 ls s3://yourbase-artifacts/yb/${VERSION}/$i
+        echo aws s3 cp $i s3://yourbase-artifacts/yb/${VERSION}/
+      fi
     done
-  fi
 )
 
 # Equinox install procedure
@@ -106,6 +108,7 @@ cleanup() {
     set -x
     rv=$?
     rm -rf "$tmpkeyfile"
+    rm -rf equinox release-tool-stable-linux-amd64.tgz
     exit $rv
 }
 
@@ -115,23 +118,6 @@ trap "cleanup" INT TERM EXIT
 KEY_FILE="${tmpkeyfile}"
 
 equinox_disabled=true
-
-if [ -n "${local_test_release}" ]; then
-    set +x
-    echo -e "Would run:
-./equinox release
-        --version=$VERSION
-        --platforms='darwin_amd64 linux_amd64'
-        --signing-key='${KEY_FILE}'
-        --app='$APP'
-        --token='${TOKEN}'
-        --channel='${CHANNEL}'
-    --
-    -ldflags '-X main.version=$VERSION -X 'main.date=$(date)' -X 'main.channel=$CHANNEL'${BUILD_COMMIT_INFO}'
-    'github.com/yourbase/${PROJECT}'"
-
-    exit 0
-fi
 
 [ -n "${RELEASE_KEY}" -a -n "${TOKEN}" ] && equinox_disabled=false
 if $equinox_disabled; then
@@ -145,6 +131,23 @@ echo "${RELEASE_KEY}" > "${KEY_FILE}"
 wget https://bin.equinox.io/c/mBWdkfai63v/release-tool-stable-linux-amd64.tgz
 tar zxvf release-tool-stable-linux-amd64.tgz
 
+if [ -n "${local_test_release}" ]; then
+    set +x
+    echo -e "Local test, would run:
+./equinox release
+        --version=$VERSION
+        --platforms='darwin_amd64 linux_amd64'
+        --signing-key='${KEY_FILE}'
+        --app='$APP'
+        --token='${TOKEN}'
+        --channel='${CHANNEL}'
+    --
+    -ldflags '-X main.version=$VERSION -X 'main.date=$(date -u '+%F-%T')' -X 'main.channel=$CHANNEL'${BUILD_COMMIT_INFO}'
+    'github.com/yourbase/${PROJECT}'"
+
+    exit 0
+fi
+
 ./equinox release \
         --version=$VERSION \
         --platforms="darwin_amd64 linux_amd64" \
@@ -153,6 +156,6 @@ tar zxvf release-tool-stable-linux-amd64.tgz
         --token="${TOKEN}" \
         --channel="${CHANNEL}" \
     -- \
-    -ldflags "-X main.version=$VERSION -X 'main.date=$(date)' -X 'main.channel=$CHANNEL'${BUILD_COMMIT_INFO}" \
+    -ldflags "-X main.version=$VERSION -X 'main.date=$(date -u '+%F-%T')' -X 'main.channel=$CHANNEL'${BUILD_COMMIT_INFO}" \
     "github.com/yourbase/${PROJECT}"
 
