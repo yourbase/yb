@@ -81,8 +81,7 @@ done
     for i in *.tgz
     do
       if [ -z "${local_test_release}" ]; then
-        aws s3 ls s3://yourbase-artifacts/yb/${VERSION}/$i
-        if [[ $? -eq 0 ]]; then
+        if aws s3 ls s3://yourbase-artifacts/yb/${VERSION}/$i; then
             echo "A version for ${VERSION} already exists! Not releasing this version."
             exit 1
         fi
