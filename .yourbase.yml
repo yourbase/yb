@@ -24,17 +24,6 @@ build_targets:
   - name: release
     build_after:
       - default
-    environment:
-      - CHANNEL=unstable
-    commands:
-      - pip install awscli
-      - bash release.sh 
-
-  - name: preview_release
-    build_after:
-      - default
-    environment:
-      - CHANNEL=preview
     commands:
       - pip install awscli
       - bash release.sh 
@@ -69,11 +58,7 @@ ci:
     - name: test_integration
       build_target: integration
 
-    - name: pre_release
-      build_target: preview_release
-      when: branch CONTAINS '-preview' AND tagged IS true
-
     - name: release
       build_target: release
-      when: branch CONTAINS '-stable' AND tagged IS true
+      when: tagged IS true
 
