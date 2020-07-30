@@ -1,5 +1,4 @@
 # NOTE first iteration, just testing `yb build`
-# Tries building 3 known-good Python FOSS projects
 # After fixing how the CLI manages workspaces (currently done using config.yml), we could simplify this a bit
 #
 build_targets:
@@ -52,5 +51,7 @@ build_targets:
       - cp flutter/.yourbase.pin_code_test_field.yml flutter/pin_code_test_field/.yourbase.yml
       - bash -c "cd flutter/flutter-examples && yb build -no-container default; git restore ."
       - bash -c "cd flutter/pin_code_test_field && yb build -no-container default; git restore ."
+      - bash -c "cd flutter/flutter-examples && yb build -no-container beta; git restore ."
+      - bash -c "cd flutter/pin_code_test_field && yb build -no-container beta; git restore ."
       - rm flutter/flutter-examples/.yourbase.yml
       - rm flutter/pin_code_test_field/.yourbase.yml
