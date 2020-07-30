@@ -65,7 +65,7 @@ for os in "${OSLIST[@]}"
 do
   for arch in "${ARCHLIST[@]}"
   do
-    GOOS=${os} GOARCH=${arch} go build -ldflags "-X 'main.version=$VERSION' -X 'main.date=$(date -u '+%F-%T')' -X 'main.channel=$CHANNEL'${BUILD_COMMIT_INFO}" -o release/yb-${os}-${arch}
+    GOOS=${os} GOARCH=${arch} go build -ldflags "-X 'main.version=$VERSION' -X 'main.date=$(date -u '+%F-%T')' -X 'main.channel=$CHANNEL'${BUILD_COMMIT_INFO} -s -w" -o release/yb-${os}-${arch}
   done
 done
 
@@ -141,7 +141,7 @@ if [ -n "${local_test_release}" ]; then
         --token='${TOKEN}'
         --channel='${CHANNEL}'
     --
-    -ldflags '-X main.version=$VERSION -X 'main.date=$(date -u '+%F-%T')' -X 'main.channel=$CHANNEL'${BUILD_COMMIT_INFO}'
+    -ldflags '-X main.version=$VERSION -X 'main.date=$(date -u '+%F-%T')' -X 'main.channel=$CHANNEL'${BUILD_COMMIT_INFO} -s -w'
     'github.com/yourbase/${PROJECT}'"
 
     exit 0
@@ -155,6 +155,6 @@ fi
         --token="${TOKEN}" \
         --channel="${CHANNEL}" \
     -- \
-    -ldflags "-X main.version=$VERSION -X 'main.date=$(date -u '+%F-%T')' -X 'main.channel=$CHANNEL'${BUILD_COMMIT_INFO}" \
+    -ldflags "-X main.version=$VERSION -X 'main.date=$(date -u '+%F-%T')' -X 'main.channel=$CHANNEL'${BUILD_COMMIT_INFO} -s -w" \
     "github.com/yourbase/${PROJECT}"
 
