@@ -11,9 +11,10 @@ import (
 )
 
 var (
-	version string = "DEVELOPMENT"
-	channel string = "development"
-	date    string
+	version   string = "DEVELOPMENT"
+	channel   string = "development"
+	date      string
+	commitSHA string
 )
 
 func main() {
@@ -21,7 +22,7 @@ func main() {
 	cmdr.Register(cmdr.HelpCommand(), "")
 	cmdr.Register(cmdr.FlagsCommand(), "")
 	cmdr.Register(cmdr.CommandsCommand(), "")
-	cmdr.Register(&BuildCmd{Version: version, Channel: channel, Date: date}, "")
+	cmdr.Register(&BuildCmd{Version: version, Channel: channel, CommitSHA: commitSHA}, "")
 	cmdr.Register(&CheckConfigCmd{}, "")
 	cmdr.Register(&ConfigCmd{}, "")
 	cmdr.Register(&ExecCmd{}, "")
@@ -32,14 +33,9 @@ func main() {
 	cmdr.Register(&RunCmd{}, "")
 	cmdr.Register(&UpdateCmd{}, "")
 	cmdr.Register(&WorkspaceCmd{}, "")
-	cmdr.Register(&VersionCmd{Version: version, Channel: channel, Date: date}, "")
+	cmdr.Register(&VersionCmd{Version: version, Channel: channel, Date: date, CommitSHA: commitSHA}, "")
 
 	flag.Parse()
-	ctx, cancel := context.WithCancel(context.Background())
-	c := make(chan os.Signal, 1)
-	go func() {
-		<-c
-		cancel()
-	}()
+	ctx := context.Background()
 	os.Exit(int(cmdr.Execute(ctx)))
 }
