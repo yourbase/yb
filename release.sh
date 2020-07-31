@@ -24,7 +24,7 @@ fi
 local_test_release="${TEST_RELEASE:-}"
 
 # YourBase S3 artifacts Release
-# TODO migrate to CATS
+# TODO(ch1940): migrate to CATS
 AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID:-}"
 AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY:-}"
 aws_disabled=true
