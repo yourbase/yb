@@ -1,4 +1,4 @@
-package plumbing
+package runtime
 
 /*
 import (
@@ -37,6 +37,7 @@ type SandboxParameters struct {
 	ToolsDir      string
 }
 
+// TODO Implement sandbox
 func ExecInSandbox(command string, workingDir string) error {
 	/* Temporarily disabled
 	workspace := LoadWorkspace()
@@ -59,8 +60,9 @@ func ExecInSandbox(command string, workingDir string) error {
 	}
 	sandboxFile.Close()
 	sandboxedCommand := fmt.Sprintf("sandbox-exec -f %s %s", sandboxFile.Name(), command)
-	return ExecToStdout(sandboxedCommand, workingDir)
+	return runtime.ExecToStdout(sandboxedCommand, workingDir)
 	*/
 
-	return ExecToStdout(command, workingDir)
+	return nil
+	//return ExecToStdout(command, workingDir)
 }

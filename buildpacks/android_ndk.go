@@ -1,20 +1,15 @@
 package buildpacks
 
 import (
-	"fmt"
-	"os"
+	"context"
 	"path/filepath"
 
-	"github.com/johnewart/archiver"
-	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
 )
 
-var ANDROID_NDK_DIST_MIRROR = "https://dl.google.com/android/repository/android-ndk-{{.Version}}-{{.OS}}-{{.Arch}}.zip"
+const androidNDKDistMirrorTemplate = "https://dl.google.com/android/repository/android-ndk-{{.Version}}-{{.OS}}-{{.Arch}}.zip"
 
 type AndroidNdkBuildTool struct {
-	BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -30,7 +25,7 @@ func NewAndroidNdkBuildTool(toolSpec BuildToolSpec) AndroidNdkBuildTool {
 	return tool
 }
 
-func (bt AndroidNdkBuildTool) DownloadUrl() string {
+func (bt AndroidNdkBuildTool) DownloadURL(ctx context.Context) (string, error) {
 	opsys := OS()
 	arch := Arch()
 	extension := "zip"
@@ -53,56 +48,52 @@ func (bt AndroidNdkBuildTool) DownloadUrl() string {
 		extension,
 	}
 
-	url, _ := TemplateToString(ANDROID_NDK_DIST_MIRROR, data)
+	url, err := TemplateToString(androidNDKDistMirrorTemplate, data)
 
-	return url
+	return url, err
 }
 
 func (bt AndroidNdkBuildTool) Version() string {
 	return bt.version
 }
 
-func (bt AndroidNdkBuildTool) InstallDir() string {
-	return filepath.Join(ToolsDir(), "android-ndk")
-}
-
-func (bt AndroidNdkBuildTool) NdkDir() string {
-	return filepath.Join(bt.InstallDir(), fmt.Sprintf("android-ndk-%s", bt.Version()))
-}
-
-func (bt AndroidNdkBuildTool) Setup() error {
-	ndkDir := bt.NdkDir()
+func (bt AndroidNdkBuildTool) Setup(ctx context.Context, ndkDir string) error {
+	t := bt.spec.InstallTarget
 
 	log.Infof("Setting ANDROID_NDK_HOME to %s", ndkDir)
-	os.Setenv("ANDROID_NDK_HOME", ndkDir)
+	t.SetEnv("ANDROID_NDK_HOME", ndkDir)
 
 	return nil
 }
 
-// TODO, generalize downloader
-func (bt AndroidNdkBuildTool) Install() error {
-	ndkDir := bt.NdkDir()
-	installDir := bt.InstallDir()
+func (bt AndroidNdkBuildTool) Install(ctx context.Context) (string, error) {
+	t := bt.spec.InstallTarget
 
-	if _, err := os.Stat(ndkDir); err == nil {
+	installDir := filepath.Join(t.ToolsDir(ctx), "android-ndk")
+	ndkDir := filepath.Join(installDir, "android-ndk-"+bt.Version())
+
+	if t.PathExists(ctx, ndkDir) {
 		log.Infof("Android NDK v%s located in %s!", bt.Version(), ndkDir)
-	} else {
-		log.Infof("Will install Android NDK v%s into %s", bt.Version(), ndkDir)
-		downloadUrl := bt.DownloadUrl()
-
-		log.Infof("Downloading Android NDK v%s from URL %s...", bt.Version(), downloadUrl)
-		localFile, err := DownloadFileWithCache(downloadUrl)
-		if err != nil {
-			log.Errorf("Unable to download: %v", err)
-			return err
-		}
-		err = archiver.Unarchive(localFile, installDir)
-		if err != nil {
-			log.Errorf("Unable to decompress: %v", err)
-			return err
-		}
-
+		return ndkDir, nil
+	}
+	log.Infof("Will install Android NDK v%s into %s", bt.Version(), ndkDir)
+	downloadURL, err := bt.DownloadURL(ctx)
+	if err != nil {
+		log.Errorf("Unable to generate download URL: %v", err)
+		return "", err
 	}
 
-	return nil
+	log.Infof("Downloading Android NDK v%s from URL %s...", bt.Version(), downloadURL)
+	localFile, err := t.DownloadFile(ctx, downloadURL)
+	if err != nil {
+		log.Errorf("Unable to download: %v", err)
+		return "", err
+	}
+	err = t.Unarchive(ctx, localFile, installDir)
+	if err != nil {
+		log.Errorf("Unable to decompress: %v", err)
+		return "", err
+	}
+
+	return ndkDir, nil
 }

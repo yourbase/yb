@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/yourbase/yb/workspace"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -14,7 +15,6 @@ import (
 	"os"
 	"path"
 	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -29,6 +29,7 @@ import (
 
 	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
+	"github.com/yourbase/yb/runtime"
 	. "github.com/yourbase/yb/types"
 
 	ybconfig "github.com/yourbase/yb/config"
@@ -56,6 +57,7 @@ type RemoteCmd struct {
 	publicRepo     bool
 	backupWorktree bool
 	remotes        []GitRemote
+	metalTgt       *runtime.MetalTarget
 }
 
 func (*RemoteCmd) Name() string     { return "remotebuild" }
@@ -78,7 +80,9 @@ func (p *RemoteCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.backupWorktree, "backup-worktree", false, "Saves uncommitted work into a tarball")
 }
 
-func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (p *RemoteCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+	execRuntime := runtime.NewRuntime(ctx, "remotebuild_checks", "./")
+	p.metalTgt = execRuntime.DefaultTarget.(*runtime.MetalTarget)
 
 	// Consistent with how the `build` cmd works
 	p.target = "default"
@@ -94,7 +98,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	manifest := targetPackage.Manifest
 
-	var target BuildTarget
+	var target workspace.BuildTarget
 
 	if len(manifest.BuildTargets) == 0 {
 		target = manifest.Build
@@ -110,7 +114,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 	}
 
-	p.repoDir = targetPackage.Path
+	p.repoDir = targetPackage.Path()
 	workRepo, err := git.PlainOpen(p.repoDir)
 
 	if err != nil {
@@ -120,11 +124,11 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	if !p.goGitStatus && !p.committed {
 		// Need to check if `git` binary exists and works
-		if runtime.GOOS == "windows" {
+		if p.metalTgt.OS() == runtime.Windows {
 			gitExe = "git.exe"
 		}
 		cmdString := fmt.Sprintf("%s --version", gitExe)
-		if err := ExecSilently(cmdString, p.repoDir); err != nil {
+		if err := p.metalTgt.ExecSilently(ctx, cmdString, p.repoDir); err != nil {
 			if strings.Contains(err.Error(), "executable file not found in $PATH") {
 				log.Warnf("The flag -go-git-status wasn't specified and '%s' wasn't found in PATH", gitExe)
 			} else {
@@ -290,7 +294,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 
 		log.Debug("Start backing up the worktree-save")
-		saver, err := NewWorktreeSave(targetPackage.Path, headCommit.Hash.String(), p.backupWorktree)
+		saver, err := NewWorktreeSave(targetPackage.Path(), headCommit.Hash.String(), p.backupWorktree)
 		if err != nil {
 			patchErrored()
 			log.Errorf("%s", err)
@@ -452,6 +456,9 @@ func shouldSkip(file string, worktree *git.Worktree) bool {
 			return true
 		}
 		dir, err := f.Readdir(0)
+		if err != nil {
+			return true
+		}
 		log.Debugf("Ls dir %s", filePath)
 		for _, f := range dir {
 			child := path.Join(file, f.Name())
@@ -479,7 +486,7 @@ func (p *RemoteCmd) commandTraverseChanges(worktree *git.Worktree, saver *Worktr
 	cmdString := fmt.Sprintf(gitStatusCmd, gitExe)
 	buf := bytes.NewBuffer(nil)
 	log.Debugf("Executing '%v'...", cmdString)
-	if err = ExecSilentlyToWriter(cmdString, repoDir, buf); err != nil {
+	if err = p.metalTgt.ExecSilentlyToWriter(context.TODO(), cmdString, repoDir, buf); err != nil {
 		return skipped, fmt.Errorf("When running git status: %v", err)
 	}
 
@@ -728,6 +735,9 @@ func (p *RemoteCmd) fetchProject(urls []string) (*Project, GitRemote, error) {
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, empty, err
+	}
 	var project Project
 	err = json.Unmarshal(body, &project)
 	if err != nil {

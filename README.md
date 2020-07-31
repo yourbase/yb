@@ -47,6 +47,7 @@ The primary features of the YB tooling are:
 1. Clone a package from GitHub 
 1. Write a simple build manifest (more below)
 1. Build awesome things!
+1. Some build packs (Python, Ruby and Homebrew) needs macOS SDK Headers to be installed: `sudo -S installer -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg -target /`
 
 # Getting Started
 
@@ -170,4 +171,3 @@ information.
 
 This project is licensed under the Apache 2.0 license, please see the LICENSE
 file for more information.
-

@@ -71,6 +71,11 @@ func (p *LoginCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Errorf("Couldn't read response body: %s\n", err)
+		return subcommands.ExitFailure
+	}
+
 	var tokenResponse TokenResponse
 	err = json.Unmarshal(body, &tokenResponse)
 

@@ -1,19 +1,15 @@
 dependencies:
   build:
-    - go:1.13.4
-    - python:3.6
+    - go:1.14.4
+    - python:3.7
 
 build_targets:
   - name: default
-    host_only: true
     commands:
       - go test ./...
-      - go build
+      - bash -c "go build -ldflags \"-X 'main.date=$(date)'\""
 
   - name: integration
-    build_after:
-      - default
-    host_only: true
     commands:
       - bash -c "cd integration-tests; yb build -no-container"
       - bash -c "cd integration-tests; yb build -no-container python"

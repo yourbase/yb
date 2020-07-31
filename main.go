@@ -36,6 +36,11 @@ func main() {
 	cmdr.Register(&VersionCmd{Version: version, Channel: channel, Date: date, CommitSHA: commitSHA}, "")
 
 	flag.Parse()
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	c := make(chan os.Signal, 1)
+	go func() {
+		<-c
+		cancel()
+	}()
 	os.Exit(int(cmdr.Execute(ctx)))
 }

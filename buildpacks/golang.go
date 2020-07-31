@@ -1,22 +1,19 @@
 package buildpacks
 
 import (
+	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/johnewart/archiver"
-	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
+	"github.com/yourbase/yb/runtime"
 )
 
 //https://dl.google.com/go/go1.11.5.linux-amd64.tar.gz
-var GOLANG_DIST_MIRROR = "https://dl.google.com/go"
+const golangDistMirrorTemplate = "https://dl.google.com/go"
 
 type GolangBuildTool struct {
-	BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -31,17 +28,30 @@ func NewGolangBuildTool(toolSpec BuildToolSpec) GolangBuildTool {
 }
 
 func (bt GolangBuildTool) ArchiveFile() string {
-	operatingSystem := OS()
-	arch := Arch()
-	return fmt.Sprintf("go%s.%s-%s.tar.gz", bt.Version(), operatingSystem, arch)
+	operatingSystem := bt.spec.InstallTarget.OS()
+	arch := bt.spec.InstallTarget.Architecture()
+	os := "linux"
+	architecture := "amd64"
+
+	if operatingSystem == runtime.Linux {
+		os = "linux"
+	} else {
+		os = "darwin"
+	}
+
+	if arch == runtime.Amd64 {
+		architecture = "amd64"
+	}
+
+	return fmt.Sprintf("go%s.%s-%s.tar.gz", bt.Version(), os, architecture)
 }
 
-func (bt GolangBuildTool) DownloadUrl() string {
+func (bt GolangBuildTool) DownloadURL(ctx context.Context) (string, error) {
 	return fmt.Sprintf(
 		"%s/%s",
-		GOLANG_DIST_MIRROR,
+		golangDistMirrorTemplate,
 		bt.ArchiveFile(),
-	)
+	), nil
 }
 
 func (bt GolangBuildTool) MajorVersion() string {
@@ -53,64 +63,63 @@ func (bt GolangBuildTool) Version() string {
 	return bt.version
 }
 
-func (bt GolangBuildTool) InstallDir() string {
-	return fmt.Sprintf("%s/go/%s", bt.spec.SharedCacheDir, bt.Version())
-}
-
-func (bt GolangBuildTool) GolangDir() string {
-	return filepath.Join(bt.InstallDir(), "go")
-}
-
 // TODO: handle multiple packages, for now this is ok
-func (bt GolangBuildTool) Setup() error {
-	golangDir := bt.GolangDir()
-	goPath := bt.spec.PackageCacheDir
+func (bt GolangBuildTool) Setup(ctx context.Context, golangDir string) error {
+	t := bt.spec.InstallTarget
+
+	goPath := filepath.Join(t.ToolOutputSharedDir(ctx), "go", bt.Version())
 	pkgPath := bt.spec.PackageDir
 
 	var goPathElements = []string{goPath, pkgPath}
 	goPathVar := strings.Join(goPathElements, ":")
 
 	cmdPath := filepath.Join(golangDir, "bin")
-	PrependToPath(cmdPath)
+	t.PrependToPath(ctx, cmdPath)
 	for _, pathElement := range goPathElements {
-		pathBinDir := filepath.Join(pathElement, "bin")
-		PrependToPath(pathBinDir)
+		if pathElement != "" {
+			pathBinDir := filepath.Join(pathElement, "bin")
+			t.PrependToPath(ctx, pathBinDir)
+		}
 	}
 
 	log.Infof("Setting GOROOT to %s", golangDir)
-	os.Setenv("GOROOT", golangDir)
-	log.Infof("Setting GOPATH to %s", goPath)
-	os.Setenv("GOPATH", goPathVar)
+	t.SetEnv("GOROOT", golangDir)
+	log.Infof("Setting GOPATH to %s", goPathVar)
+	t.SetEnv("GOPATH", goPathVar)
 
 	return nil
 }
 
 // TODO, generalize downloader
-func (bt GolangBuildTool) Install() error {
-	installDir := bt.InstallDir()
-	golangDir := bt.GolangDir()
+func (bt GolangBuildTool) Install(ctx context.Context) (string, error) {
+	t := bt.spec.InstallTarget
 
-	if _, err := os.Stat(golangDir); err == nil {
+	installDir := filepath.Join(t.ToolsDir(ctx), "go", bt.Version())
+	golangDir := filepath.Join(installDir, "go")
+
+	if t.PathExists(ctx, golangDir) {
 		log.Infof("Golang v%s located in %s!", bt.Version(), golangDir)
-	} else {
-		log.Infof("Will install Golang v%s into %s", bt.Version(), golangDir)
-		downloadUrl := bt.DownloadUrl()
-
-		log.Infof("Downloading from URL %s ...", downloadUrl)
-		localFile, err := DownloadFileWithCache(downloadUrl)
-		if err != nil {
-			log.Errorf("Unable to download: %v", err)
-			return err
-		}
-		err = archiver.Unarchive(localFile, installDir)
-		if err != nil {
-			log.Errorf("Unable to decompress: %v", err)
-			return err
-		}
-
-		log.Infof("Making go installation in %s read-only", golangDir)
-		RemoveWritePermissionRecursively(golangDir)
+		return golangDir, nil
+	}
+	log.Infof("Will install Golang v%s into %s", bt.Version(), golangDir)
+	downloadURL, err := bt.DownloadURL(ctx)
+	if err != nil {
+		log.Errorf("Unable to generate download URL: %v", err)
+		return "", err
 	}
 
-	return nil
+	log.Infof("Downloading from URL %s ...", downloadURL)
+	localFile, err := t.DownloadFile(ctx, downloadURL)
+	if err != nil {
+		log.Errorf("Unable to download: %v", err)
+		return "", err
+	}
+
+	err = t.Unarchive(ctx, localFile, installDir)
+	if err != nil {
+		log.Errorf("Unable to decompress: %v", err)
+		return "", err
+	}
+
+	return golangDir, nil
 }

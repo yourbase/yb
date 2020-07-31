@@ -1,18 +1,13 @@
 package buildpacks
 
 import (
-	"fmt"
-	"os"
+	"context"
 	"path/filepath"
 
-	"github.com/johnewart/archiver"
-	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
 )
 
 type YarnBuildTool struct {
-	BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -30,15 +25,7 @@ func (bt YarnBuildTool) Version() string {
 	return bt.version
 }
 
-func (bt YarnBuildTool) YarnDir() string {
-	return filepath.Join(bt.InstallDir(), fmt.Sprintf("yarn-v%s", bt.Version()))
-}
-
-func (bt YarnBuildTool) InstallDir() string {
-	return filepath.Join(bt.spec.SharedCacheDir, "yarn")
-}
-
-func (bt YarnBuildTool) DownloadUrl() string {
+func (bt YarnBuildTool) DownloadURL(ctx context.Context) (string, error) {
 	urlTemplate := "https://github.com/yarnpkg/yarn/releases/download/v{{ .Version }}/yarn-v{{ .Version }}.tar.gz"
 	data := struct {
 		Version string
@@ -46,39 +33,46 @@ func (bt YarnBuildTool) DownloadUrl() string {
 		bt.Version(),
 	}
 
-	url, _ := TemplateToString(urlTemplate, data)
-
-	return url
+	url, err := TemplateToString(urlTemplate, data)
+	return url, err
 }
 
-func (bt YarnBuildTool) Install() error {
+func (bt YarnBuildTool) Install(ctx context.Context) (string, error) {
+	t := bt.spec.InstallTarget
 
-	yarnDir := bt.YarnDir()
-	installDir := bt.InstallDir()
+	installDir := filepath.Join(t.ToolsDir(ctx), "yarn")
+	yarnDir := filepath.Join(installDir, "yarn-v"+bt.Version())
 
-	if _, err := os.Stat(yarnDir); err == nil {
+	if t.PathExists(ctx, yarnDir) {
 		log.Infof("Yarn v%s located in %s!", bt.Version(), yarnDir)
-	} else {
-		log.Infof("Will install Yarn v%s into %s", bt.Version(), installDir)
-		downloadUrl := bt.DownloadUrl()
-		log.Infof("Downloading from URL %s...", downloadUrl)
-		localFile, err := DownloadFileWithCache(downloadUrl)
-		if err != nil {
-			return fmt.Errorf("Unable to download %s: %v", downloadUrl, err)
-		}
-
-		if err := archiver.Unarchive(localFile, installDir); err != nil {
-			return fmt.Errorf("Unable to decompress archive: %v", err)
-		}
+		return yarnDir, nil
+	}
+	log.Infof("Will install Yarn v%s into %s", bt.Version(), installDir)
+	downloadURL, err := bt.DownloadURL(ctx)
+	if err != nil {
+		log.Errorf("Unable to generate download URL: %v", err)
+		return "", err
 	}
 
-	return nil
+	log.Infof("Downloading from URL %s...", downloadURL)
+	localFile, err := t.DownloadFile(ctx, downloadURL)
+	if err != nil {
+		log.Errorf("Unable to download: %v", err)
+		return "", err
+	}
+
+	if err := t.Unarchive(ctx, localFile, installDir); err != nil {
+		log.Errorf("Unable to decompress: %v", err)
+		return "", err
+	}
+
+	return yarnDir, nil
 }
 
-func (bt YarnBuildTool) Setup() error {
-	yarnDir := bt.YarnDir()
+func (bt YarnBuildTool) Setup(ctx context.Context, yarnDir string) error {
+	t := bt.spec.InstallTarget
 	cmdPath := filepath.Join(yarnDir, "bin")
-	PrependToPath(cmdPath)
+	t.PrependToPath(ctx, cmdPath)
 
 	return nil
 }

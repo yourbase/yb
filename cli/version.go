@@ -24,7 +24,7 @@ func (*VersionCmd) Usage() string {
 func (p *VersionCmd) SetFlags(f *flag.FlagSet) {
 }
 
-func (p *VersionCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (p *VersionCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	versionString := "Version: " + p.Version + " Channel: " + p.Channel
 	if p.Date != "" {
 		versionString = versionString + " Date: " + p.Date

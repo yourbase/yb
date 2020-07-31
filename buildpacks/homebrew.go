@@ -1,21 +1,21 @@
 package buildpacks
 
 import (
+	"bufio"
+	"bytes"
+	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/matishsiao/goInfo"
-	. "github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
+	"github.com/yourbase/yb/runtime"
 	"gopkg.in/src-d/go-git.v4"
 )
 
 type HomebrewBuildTool struct {
-	BuildTool
 	version   string
 	spec      BuildToolSpec
 	pkgName   string
@@ -54,17 +54,37 @@ func (bt HomebrewBuildTool) IsPackage() bool {
 	return bt.pkgName != ""
 }
 
-func (bt HomebrewBuildTool) PackagePrefix(packageString string) (string, error) {
+func (bt HomebrewBuildTool) PackagePrefix(ctx context.Context, packageString string) (string, error) {
+	t := bt.spec.InstallTarget
+
 	if bt.pkgPrefix != "" {
 		return bt.pkgPrefix, nil
 	}
 
-	output, err := exec.Command("brew", "--prefix", packageString).Output()
-	if err != nil {
-		return "", fmt.Errorf("Couldn't get prefix for package %s: %v", bt.pkgName, err)
+	var buf bytes.Buffer
+	bufWriter := bufio.NewWriter(&buf)
+
+	p := runtime.Process{
+		Command: "brew --prefix " + packageString,
+		Output:  bufWriter,
 	}
 
-	prefixPath := string(output)
+	err := t.Run(ctx, p)
+	if err != nil {
+		return "", fmt.Errorf("getting prefix for package %s: %v", bt.pkgName, err)
+	}
+
+	err = bufWriter.Flush()
+	if err != nil {
+		return "", fmt.Errorf("getting prefix for package %s: %v", bt.pkgName, err)
+	}
+
+	rd := bufio.NewReader(&buf)
+
+	prefixPath, err := rd.ReadString('\n')
+	if err != nil {
+		return "", fmt.Errorf("getting prefix for package %s: %v", bt.pkgName, err)
+	}
 	prefixPath = strings.TrimSuffix(prefixPath, "\n")
 	bt.pkgPrefix = prefixPath
 	log.Debugf("Prefix for homebrew package %s is %s", bt.pkgName, prefixPath)
@@ -72,14 +92,15 @@ func (bt HomebrewBuildTool) PackagePrefix(packageString string) (string, error) 
 	return prefixPath, nil
 }
 
-func (bt HomebrewBuildTool) PackageInstalled() bool {
-	prefix, err := bt.PackagePrefix(bt.PackageVersionString())
+func (bt HomebrewBuildTool) PackageInstalled(ctx context.Context) bool {
+	prefix, err := bt.PackagePrefix(ctx, bt.PackageVersionString())
+	t := bt.spec.InstallTarget
 	if err != nil {
 		return false
 	}
 
 	if prefix != "" {
-		return PathExists(prefix)
+		return t.PathExists(ctx, prefix)
 	}
 
 	return false
@@ -93,59 +114,60 @@ func (bt HomebrewBuildTool) PackageVersionString() string {
 
 	return fmt.Sprintf("%s%s", bt.pkgName, pkgVersion)
 }
+func (bt HomebrewBuildTool) Install(ctx context.Context) (string, error) {
+	t := bt.spec.InstallTarget
 
-// Normally we want to put this in the tools dir; for now we put it in the build dir because I'm not
-// sure how to handle installation of multiple versions of things via Brew so this will allow project-specific
-// versioning
-func (bt HomebrewBuildTool) HomebrewDir() string {
-	return filepath.Join(bt.InstallDir(), "brew")
-}
+	installDir := filepath.Join(t.ToolsDir(ctx), "homebrew")
+	t.MkdirAsNeeded(ctx, installDir)
 
-func (bt HomebrewBuildTool) InstallDir() string {
-	return filepath.Join(bt.spec.PackageCacheDir, "homebrew")
-}
+	// Normally we want to put this in the tools dir; for now we put it in the build dir because I'm not
+	// sure how to handle installation of multiple versions of things via Brew so this will allow project-specific
+	// versioning
+	brewDir := filepath.Join(installDir, "brew")
 
-func (bt HomebrewBuildTool) Install() error {
 	gi := goInfo.GetInfo()
 
 	var err error
 	switch gi.GoOS {
 	case "darwin":
-		err = bt.InstallDarwin()
+		err = bt.installDarwin(ctx, brewDir)
 	case "linux":
-		err = bt.InstallLinux()
+		err = bt.installLinux(ctx, brewDir)
 	default:
-		err = fmt.Errorf("Unsupported platform: %s", gi.GoOS)
+		err = fmt.Errorf("unsupported platform: %s", gi.GoOS)
 	}
 
 	if err != nil {
-		return fmt.Errorf("Unable to install Homebrew: %v", err)
+		return "", fmt.Errorf("installing Homebrew: %v", err)
 	}
 
 	if bt.IsPackage() {
-		if bt.PackageInstalled() {
+		if bt.PackageInstalled(ctx) {
 			log.Infof("Package %s already installed", bt.PackageVersionString())
 		} else {
 			log.Infof("Installing package %s", bt.PackageVersionString())
-			err = bt.InstallPackage()
+			err = bt.InstallPackage(ctx, brewDir)
 			if err != nil {
-				return err
+				return "", err
 			}
 		}
 	}
 
-	return nil
+	return brewDir, nil
 }
 
-func (bt HomebrewBuildTool) InstallPackage() error {
-	bt.Setup()
+func (bt HomebrewBuildTool) InstallPackage(ctx context.Context, brewDir string) error {
+	t := bt.spec.InstallTarget
 
-	brewDir := bt.HomebrewDir()
+	bt.Setup(ctx, brewDir)
 
-	updateCmd := "brew update"
-	err := ExecToStdout(updateCmd, brewDir)
+	p := runtime.Process{
+		Command:   "brew update",
+		Directory: brewDir,
+	}
+	err := t.Run(ctx, p)
 	if err != nil {
-		return fmt.Errorf("Couldn't update brew: %v", err)
+		return fmt.Errorf("updating brew: %v", err)
 	}
 
 	pkgVersion := ""
@@ -154,25 +176,22 @@ func (bt HomebrewBuildTool) InstallPackage() error {
 	}
 
 	log.Infof("Going to install %s%s from Homebrew...", bt.pkgName, pkgVersion)
-	installCmd := fmt.Sprintf("brew install %s%s", bt.pkgName, pkgVersion)
-	err = ExecToStdout(installCmd, brewDir)
+	p.Command = "brew install " + bt.pkgName + pkgVersion
+	err = t.Run(ctx, p)
 
 	if err != nil {
-		return fmt.Errorf("Couldn't intall %s@%s from  Homebrew: %v", bt.pkgName, bt.version, err)
+		return fmt.Errorf("installing %s@%s from Homebrew: %v", bt.pkgName, bt.version, err)
 	}
 
 	return nil
 }
 
-func (bt HomebrewBuildTool) InstallDarwin() error {
-	installDir := bt.InstallDir()
-	brewDir := bt.HomebrewDir()
-
-	MkdirAsNeeded(installDir)
+func (bt HomebrewBuildTool) installDarwin(ctx context.Context, brewDir string) error {
+	t := bt.spec.InstallTarget
 
 	brewGitUrl := "https://github.com/Homebrew/brew.git"
 
-	if _, err := os.Stat(brewDir); err == nil {
+	if t.PathExists(ctx, brewDir) {
 		log.Infof("brew installed in %s", brewDir)
 	} else {
 		log.Infof("Installing brew")
@@ -184,27 +203,28 @@ func (bt HomebrewBuildTool) InstallDarwin() error {
 
 		if err != nil {
 			log.Errorf("Unable to clone brew!")
-			return fmt.Errorf("Couldn't clone brew: %v", err)
+			return fmt.Errorf("trying to clone brew: %v", err)
 		}
 	}
+
 	log.Infof("Updating brew")
-	updateCmd := "brew update"
-	ExecToStdout(updateCmd, brewDir)
+	p := runtime.Process{
+		Command: "brew update",
+	}
+	err := t.Run(ctx, p)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
 
-func (bt HomebrewBuildTool) InstallLinux() error {
-	installDir := bt.InstallDir()
-	brewDir := bt.HomebrewDir()
-
-	MkdirAsNeeded(installDir)
+func (bt HomebrewBuildTool) installLinux(ctx context.Context, brewDir string) error {
+	t := bt.spec.InstallTarget
 
 	brewGitUrl := "https://github.com/Homebrew/brew.git"
 
-	bt.InstallPlatformDependencies()
-
-	if _, err := os.Stat(brewDir); err == nil {
+	if t.PathExists(ctx, brewDir) {
 		log.Infof("brew installed in %s", brewDir)
 	} else {
 		log.Infof("Installing brew")
@@ -216,38 +236,43 @@ func (bt HomebrewBuildTool) InstallLinux() error {
 
 		if err != nil {
 			log.Errorf("Unable to clone brew!")
-			return fmt.Errorf("Couldn't clone brew: %v", err)
+			return fmt.Errorf("trying to clone brew: %v", err)
 		}
 
 		log.Infof("Updating brew")
-		updateCmd := "brew update"
-		ExecToStdout(updateCmd, brewDir)
+		p := runtime.Process{
+			Command: "brew update",
+		}
+		err = t.Run(ctx, p)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func (bt HomebrewBuildTool) Setup() error {
+func (bt HomebrewBuildTool) Setup(ctx context.Context, brewDir string) error {
+	t := bt.spec.InstallTarget
 	if bt.IsPackage() {
-		prefixPath, err := bt.PackagePrefix(bt.PackageVersionString())
+		prefixPath, err := bt.PackagePrefix(ctx, bt.PackageVersionString())
 		if err != nil {
-			return fmt.Errorf("Unable to determine prefix for package %s: %v", bt.PackageVersionString(), err)
+			return fmt.Errorf("determining prefix for package %s: %v", bt.PackageVersionString(), err)
 		}
 		binDir := filepath.Join(prefixPath, "bin")
 		sbinDir := filepath.Join(prefixPath, "sbin")
 
-		PrependToPath(binDir)
-		PrependToPath(sbinDir)
+		t.PrependToPath(ctx, binDir)
+		t.PrependToPath(ctx, sbinDir)
 	} else {
-		brewDir := bt.HomebrewDir()
 		brewBinDir := filepath.Join(brewDir, "bin")
-		PrependToPath(brewBinDir)
+		t.PrependToPath(ctx, brewBinDir)
 		brewLibDir := filepath.Join(brewDir, "lib")
-		os.Setenv("LD_LIBRARY_PATH", brewLibDir)
+		t.SetEnv("LD_LIBRARY_PATH", brewLibDir)
 	}
 	return nil
 }
 
-func (bt HomebrewBuildTool) InstallPlatformDependencies() error {
-	// Currently a no-op
-	return nil
+func (bt HomebrewBuildTool) DownloadURL(ctx context.Context) (string, error) {
+	// No-op
+	return "", nil
 }
