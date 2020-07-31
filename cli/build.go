@@ -34,6 +34,7 @@ const TIME_FORMAT = "15:04:05 MST"
 type BuildCmd struct {
 	Channel          string
 	Version          string
+	CommitSHA        string
 	ExecPrefix       string
 	NoContainer      bool
 	NoSideContainer  bool
