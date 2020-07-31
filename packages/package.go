@@ -15,10 +15,9 @@ import (
 )
 
 type Package struct {
-	Name         string
-	Path         string
-	Manifest     BuildManifest
-	BuildTargets []BuildTarget
+	Name     string
+	Path     string
+	Manifest BuildManifest
 }
 
 func LoadPackage(name string, path string) (Package, error) {
@@ -30,6 +29,10 @@ func LoadPackage(name string, path string) (Package, error) {
 
 	buildyaml, _ := ioutil.ReadFile(buildYaml)
 	err := yaml.Unmarshal([]byte(buildyaml), &manifest)
+	if err != nil {
+		return Package{}, fmt.Errorf("Error loading %s for %s: %v", MANIFEST_FILE, name, err)
+	}
+	err = mergeDeps(&manifest)
 	if err != nil {
 		return Package{}, fmt.Errorf("Error loading %s for %s: %v", MANIFEST_FILE, name, err)
 	}
@@ -81,20 +84,12 @@ func (p Package) BuildRoot() string {
 
 }
 
-func (p Package) SetupBuildDependencies() ([]CommandTimer, error) {
-	buildDeps, err := p.Manifest.FinalBuildDependencies(p.BuildTargets)
-	if err != nil {
-		return nil, err
-	}
-	return LoadBuildPacks(buildDeps, p.BuildRoot(), p.Path)
+func (p Package) SetupBuildDependencies(target BuildTarget) ([]CommandTimer, error) {
+	return LoadBuildPacks(target.Dependencies.Build, p.BuildRoot(), p.Path)
 }
 
 func (p Package) SetupRuntimeDependencies() ([]CommandTimer, error) {
 	deps := p.Manifest.Dependencies.Runtime
-	buildDeps, err := p.Manifest.FinalBuildDependencies(p.BuildTargets)
-	if err != nil {
-		return nil, err
-	}
-	deps = append(deps, buildDeps...)
+	deps = append(deps, p.Manifest.Dependencies.Build...)
 	return LoadBuildPacks(deps, p.BuildRoot(), p.Path)
 }

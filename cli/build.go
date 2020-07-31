@@ -105,7 +105,6 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 
 	// Named target, look for that and resolve it
 	buildTargets, err := manifest.ResolveBuildTargets(buildTargetName)
-	targetPackage.BuildTargets = buildTargets
 
 	if err != nil {
 		log.Errorf("Could not compute build target '%s': %v", buildTargetName, err)
@@ -218,20 +217,8 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 
 	log.EndSection()
 
-	log.StartSection("ENVIRONMENT SETUP", "ENVIRONMENT")
-	setupTimer, err := SetupBuildDependencies(targetPackage)
-
-	if err != nil {
-		log.Infof("Error setting up dependencies: %v", err)
-		return subcommands.ExitFailure
-	}
-
-	if b.DependenciesOnly {
-		log.Infof("Only installing dependencies; done!")
-		return subcommands.ExitSuccess
-	}
-
 	if len(primaryTarget.Dependencies.Containers) > 0 {
+		log.StartSection("CONTAINER SETUP", "CONTAINER")
 		log.Info("")
 		log.Info("")
 		log.Infof("Available side containers:")
@@ -239,14 +226,13 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 			ipv4 := buildData.Containers.IP(label)
 			log.Infof("  * %s (using %s) has IP address %s", label, c.ImageNameWithTag(), ipv4)
 		}
+		log.EndSection()
 	}
-	log.EndSection()
 
 	var targetTimers []TargetTimer
 	var buildError error
 
 	log.StartSection("BUILD", "BUILD")
-	targetTimers = append(targetTimers, setupTimer)
 
 	config := BuildConfiguration{
 		ExecPrefix:       b.ExecPrefix,
@@ -264,7 +250,14 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 
 	var buildStepTimers []CommandTimer
 	for _, target := range buildTargets {
-		if buildError == nil {
+		depsTimer, err := SetupBuildDependencies(targetPackage, target)
+		if err != nil {
+			log.Infof("Error setting up dependencies for target %s: %v", target.Name, err)
+			return subcommands.ExitFailure
+		}
+		targetTimers = append(targetTimers, depsTimer)
+
+		if !b.DependenciesOnly && buildError == nil {
 			log.SubSection(fmt.Sprintf("Build target: %s", target.Name))
 			config.Target = target
 			config.Sandboxed = manifest.IsTargetSandboxed(target)
@@ -272,7 +265,15 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 			log.Infof("Executing build steps...")
 			buildStepTimers, buildError = RunCommands(config)
 			targetTimers = append(targetTimers, TargetTimer{Name: target.Name, Timers: buildStepTimers})
+			buildData.UnexportEnvironmentPublicly()
 		}
+		if buildError != nil {
+			break
+		}
+	}
+	if b.DependenciesOnly {
+		log.Infof("Only installing dependencies; done!")
+		return subcommands.ExitSuccess
 	}
 
 	endTime := time.Now()
@@ -605,16 +606,16 @@ func UploadBuildLogsToAPI(buf *bytes.Buffer) {
 
 }
 
-func SetupBuildDependencies(pkg Package) (TargetTimer, error) {
+func SetupBuildDependencies(pkg Package, target BuildTarget) (TargetTimer, error) {
 
 	startTime := time.Now()
 	// Ensure build deps are :+1:
-	stepTimers, err := pkg.SetupBuildDependencies()
+	stepTimers, err := pkg.SetupBuildDependencies(target)
 
 	endTime := time.Now()
 	elapsedTime := endTime.Sub(startTime)
 
-	log.Infof("Dependency setup happened in %s", elapsedTime)
+	log.Infof("Dependency setup for %s happened in %s", target.Name, elapsedTime)
 
 	setupTimer := TargetTimer{
 		Name:   "dependency_setup",
@@ -664,12 +665,22 @@ func (c ContainerData) Environment() map[string]string {
 type BuildData struct {
 	Containers  ContainerData
 	Environment map[string]string
+	originalEnv map[string]string
 }
 
 func NewBuildData() BuildData {
+	osEnv := os.Environ()
+	originalEnv := make(map[string]string)
+	for _, env := range osEnv {
+		parts := strings.SplitN(env, "=", 2)
+		if len(parts) == 2 {
+			originalEnv[parts[0]] = parts[1]
+		}
+	}
 	return BuildData{
 		Containers:  ContainerData{},
 		Environment: make(map[string]string),
+		originalEnv: originalEnv,
 	}
 }
 
@@ -698,6 +709,18 @@ func (b BuildData) ExportEnvironmentPublicly() {
 	for k, v := range b.mergedEnvironment() {
 		log.Infof(" * %s = %s", k, v)
 		os.Setenv(k, v)
+	}
+}
+
+func (b BuildData) UnexportEnvironmentPublicly() {
+	log.Infof("Unexporting environment")
+	for k := range b.mergedEnvironment() {
+		if _, exists := b.originalEnv[k]; exists {
+			os.Setenv(k, b.originalEnv[k])
+		} else {
+			log.Infof("Unsetting %s", k)
+			os.Unsetenv(k)
+		}
 	}
 }
 
