@@ -40,7 +40,7 @@ COMMIT="${YB_GIT_COMMIT:-}"
 if [ -z "${COMMIT}" ]; then
     # If git is installed
     if hash git; then
-        COMMIT="$(git rev-list -n1 HEAD)"
+        COMMIT="$(git rev-parse HEAD)"
     fi
 fi
 
@@ -157,4 +157,3 @@ fi
     -- \
     -ldflags "-X main.version=$VERSION -X 'main.date=$(date -u '+%F-%T')' -X 'main.channel=$CHANNEL'${BUILD_COMMIT_INFO} -s -w" \
     "github.com/yourbase/${PROJECT}"
-
