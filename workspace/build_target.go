@@ -41,6 +41,7 @@ type BuildTarget struct {
 }
 
 type BuildDependencies struct {
+	Build      []string                               `yam:"build"`
 	Containers map[string]narwhal.ContainerDefinition `yaml:"containers"`
 }
 
@@ -69,7 +70,7 @@ func (bt BuildTarget) EnvironmentVariables(data runtime.RuntimeEnvironmentData) 
 	return result
 }
 
-func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, output io.Writer, flags BuildFlags, packagePath string, buildpacks []string) ([]CommandTimer, error) {
+func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, output io.Writer, flags BuildFlags, packagePath string, globalDeps []string) ([]CommandTimer, error) {
 	var stepTimes []CommandTimer
 
 	containers := bt.Dependencies.ContainerList()
@@ -211,6 +212,12 @@ func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, ou
 		} else {
 			log.Warnf("'%s' doesn't look like an environment variable", envString)
 		}
+	}
+
+	// Merge global deps with build target deps
+	buildpacks, err := bt.mergeDeps(globalDeps)
+	if err != nil {
+		return stepTimes, err
 	}
 
 	buildPackStartTime := time.Now()
