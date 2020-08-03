@@ -9,9 +9,10 @@ import (
 )
 
 type VersionCmd struct {
-	Version string
-	Channel string
-	Date    string
+	Version   string
+	Channel   string
+	Date      string
+	CommitSHA string
 }
 
 func (*VersionCmd) Name() string     { return "version" }
@@ -27,6 +28,9 @@ func (p *VersionCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interfac
 	versionString := "Version: " + p.Version + " Channel: " + p.Channel
 	if p.Date != "" {
 		versionString = versionString + " Date: " + p.Date
+	}
+	if p.CommitSHA != "" {
+		versionString = versionString + " Commit " + p.CommitSHA
 	}
 	fmt.Println(versionString)
 	return subcommands.ExitSuccess
