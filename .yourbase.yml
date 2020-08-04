@@ -5,7 +5,6 @@ dependencies:
 
 build_targets:
   - name: default
-    host_only: true
     commands:
       - go test ./...
       - go build
@@ -13,13 +12,13 @@ build_targets:
   - name: integration
     build_after:
       - default
-    host_only: true
     commands:
-      - bash -c "cd integration-tests; yb build -no-container"
-      - bash -c "cd integration-tests; yb build -no-container python"
-      - bash -c "cd integration-tests; yb build -no-container gopher"
-      - bash -c "cd integration-tests; yb build -no-container ruby"
-      - bash -c "cd integration-tests; yb build -no-container java"
+      - apt-get install -y git
+      - bash -c "cd integration-tests; ../yb build -no-container"
+      - bash -c "cd integration-tests; ../yb build -no-container python"
+      - bash -c "cd integration-tests; ../yb build -no-container gopher"
+      - bash -c "cd integration-tests; ../yb build -no-container ruby"
+      - bash -c "cd integration-tests; ../yb build -no-container java"
 
   - name: release
     build_after:

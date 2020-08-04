@@ -5,5 +5,4 @@ dependencies:
 build_targets:
   - name: default
     commands:
-      - apt-get install -y git
       - go test -mod=readonly ./...
