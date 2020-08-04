@@ -11,46 +11,35 @@ build_targets:
     commands:
       - cp python/.yourbase.flask.yml python/flask/.yourbase.yml
       - cp python/.yourbase.httpie.yml python/httpie/.yourbase.yml
-      - bash -c "cd python/flask && yb build -no-container default; git restore ."
-      - bash -c "cd python/httpie && yb build -no-container default; git restore ."
-      - rm python/flask/.yourbase.yml
-      - rm python/httpie/.yourbase.yml
+      - bash -c "cd python/flask && ../../../yb build -no-container default; git clean -f ."
+      - bash -c "cd python/httpie && ../../../yb build -no-container default; git clean -f ."
 
   - name: java
     commands:
       - cp java/.yourbase.RxJava.yml java/RxJava/.yourbase.yml
       - cp java/.yourbase.guava.yml java/guava/.yourbase.yml
       - cp java/.yourbase.java-design-patterns.yml java/java-design-patterns/.yourbase.yml
-      - bash -c "cd java/RxJava && yb build -no-container default; git restore ."
-      - bash -c "cd java/guava && yb build -no-container default; git restore ."
-      - bash -c "cd java/java-design-patterns && yb build -no-container default; git restore ."
-      - rm java/RxJava/.yourbase.yml
-      - rm java/guava/.yourbase.yml
-      - rm java/java-design-patterns/.yourbase.yml
+      - bash -c "cd java/RxJava && ../../../yb build -no-container default; git clean -f ."
+      - bash -c "cd java/guava && ../../../yb build -no-container default; git clean -f ."
+      - bash -c "cd java/java-design-patterns && ../../../yb build -no-container default; git clean -f ."
 
   - name: gopher
     commands:
       - cp go/.yourbase.gg.yml go/gg/.yourbase.yml
       - cp go/.yourbase.gin.yml go/gin/.yourbase.yml
-      - bash -c "cd go/gg && yb build -no-container default; git restore ."
-      - bash -c "cd go/gin && yb build -no-container default; git restore ."
-      - rm go/gg/.yourbase.yml
-      - rm go/gin/.yourbase.yml
+      - bash -c "cd go/gg && ../../../yb build -no-container default; git clean -f ."
+      - bash -c "cd go/gin && ../../../yb build -no-container default; git clean -f ."
 
   - name: ruby
     commands:
       - cp ruby/.yourbase.capistrano.yml ruby/capistrano/.yourbase.yml
       - cp ruby/.yourbase.devise.yml ruby/devise/.yourbase.yml
-      - bash -c "cd ruby/capistrano && yb build -no-container default; git restore ."
-      - bash -c "cd ruby/devise && yb build -no-container default; git restore ."
-      - rm ruby/capistrano/.yourbase.yml
-      - rm ruby/devise/.yourbase.yml
+      - bash -c "cd ruby/capistrano && ../../../yb build -no-container default; git clean -f ."
+      - bash -c "cd ruby/devise && ../../../yb build -no-container default; git clean -f ."
 
   - name: flutter
     commands:
       - cp flutter/.yourbase.flutter-examples.yml flutter/flutter-examples/.yourbase.yml
       - cp flutter/.yourbase.pin_code_test_field.yml flutter/pin_code_test_field/.yourbase.yml
-      - bash -c "cd flutter/flutter-examples && yb build -no-container default; git restore ."
-      - bash -c "cd flutter/pin_code_test_field && yb build -no-container default; git restore ."
-      - rm flutter/flutter-examples/.yourbase.yml
-      - rm flutter/pin_code_test_field/.yourbase.yml
+      - bash -c "cd flutter/flutter-examples && ../../../yb build -no-container default; git clean -f ."
+      - bash -c "cd flutter/pin_code_test_field && ../../../yb build -no-container default; git clean -f ."
