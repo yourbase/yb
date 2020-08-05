@@ -22,13 +22,9 @@ func LoadBuildPacks(dependencies []string, pkgCacheDir string, pkgDir string) ([
 	setupTimers := make([]CommandTimer, 0)
 
 	for _, toolSpec := range dependencies {
-
-		parts := strings.Split(toolSpec, ":")
-		buildpackName := parts[0]
-		versionString := ""
-
-		if len(parts) > 1 {
-			versionString = parts[1]
+		buildpackName, versionString, err := SplitToolSpec(toolSpec)
+		if err != nil {
+			return nil, fmt.Errorf("load build packs: %w", err)
 		}
 
 		sharedCacheDir := ToolsDir()
@@ -119,4 +115,14 @@ func LoadBuildPacks(dependencies []string, pkgCacheDir string, pkgDir string) ([
 
 	return setupTimers, nil
 
+}
+
+func SplitToolSpec(dep string) (tool, version string, _ error) {
+	parts := strings.SplitN(dep, ":", 2)
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("malformed build pack definition: %s", dep)
+	}
+	tool = parts[0]
+	version = parts[1]
+	return
 }

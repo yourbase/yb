@@ -32,6 +32,10 @@ func LoadPackage(name string, path string) (Package, error) {
 	if err != nil {
 		return Package{}, fmt.Errorf("Error loading %s for %s: %v", MANIFEST_FILE, name, err)
 	}
+	err = mergeDeps(&manifest)
+	if err != nil {
+		return Package{}, fmt.Errorf("Error loading %s for %s: %v", MANIFEST_FILE, name, err)
+	}
 
 	p := Package{
 		Path:     path,
@@ -80,8 +84,8 @@ func (p Package) BuildRoot() string {
 
 }
 
-func (p Package) SetupBuildDependencies() ([]CommandTimer, error) {
-	return LoadBuildPacks(p.Manifest.Dependencies.Build, p.BuildRoot(), p.Path)
+func (p Package) SetupBuildDependencies(target BuildTarget) ([]CommandTimer, error) {
+	return LoadBuildPacks(target.Dependencies.Build, p.BuildRoot(), p.Path)
 }
 
 func (p Package) SetupRuntimeDependencies() ([]CommandTimer, error) {
