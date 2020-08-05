@@ -2,60 +2,43 @@ package packages
 
 import (
 	"fmt"
-	"strings"
 
+	"github.com/yourbase/yb/buildpacks"
 	"github.com/yourbase/yb/types"
 )
 
-// mergeDeps overrides and merge dependencies defined per build target,
-// adding globally defined deps to per-build target defined dependencies,
-// where it wasn't added
+// mergeDeps overrides and merge build dependencies into
+// the BuildTarget.Dependencies.Build field. Adding globally defined deps to
+// per-build target defined dependencies, where it wasn't added.
 func mergeDeps(b *types.BuildManifest) error {
-	splitToolName := func(dep string) (tool, version string, _ error) {
-		parts := strings.SplitN(dep, ":", 2)
-		if len(parts) != 2 {
-			return "", "", fmt.Errorf("merging/overriding build localDeps: malformed build pack definition: %s", dep)
-		}
-		tool = parts[0]
-		version = parts[1]
-		return
-	}
-	globalDepsMap := make(map[string]string)
-	buildTgtsDepMap := make(map[string]map[string]string)
+	globalDepsMap := make(map[string]string) // tool -> version
 	globalDeps := b.Dependencies.Build
 	targetList := b.BuildTargets
 
 	for _, dep := range globalDeps {
-		tool, version, err := splitToolName(dep)
+		tool, version, err := buildpacks.SplitToolSpec(dep)
 		if err != nil {
-			return err
+			return fmt.Errorf("merging/overriding build localDeps: %w", err)
 		}
 		globalDepsMap[tool] = version
 	}
-	for _, tgt := range targetList {
+	for i := range targetList {
+		tgt := &targetList[i]
 		tgtToolMap := make(map[string]string)
+		for tool, version := range globalDepsMap {
+			tgtToolMap[tool] = version
+		}
 		for _, dep := range tgt.Dependencies.Build {
-			tool, version, err := splitToolName(dep)
+			tool, version, err := buildpacks.SplitToolSpec(dep)
 			if err != nil {
-				return err
+				return fmt.Errorf("merging/overriding build localDeps: %w", err)
 			}
 			tgtToolMap[tool] = version
 		}
-		buildTgtsDepMap[tgt.Name] = tgtToolMap
-	}
-	for k, v := range globalDepsMap {
-		for t, m := range buildTgtsDepMap {
-			tgt, err := b.BuildTarget(t)
-			if err != nil {
-				return err
-			}
-			if _, exists := m[k]; !exists {
-				// Add all global build deps that isn't set for each build target
-				deps := tgt.Dependencies.Build
-				deps = append(deps, k+":"+v)
-			}
+		tgt.Dependencies.Build = tgt.Dependencies.Build[:0]
+		for tool, version := range tgtToolMap {
+			tgt.Dependencies.Build = append(tgt.Dependencies.Build, tool+":"+version)
 		}
 	}
-
 	return nil
 }
