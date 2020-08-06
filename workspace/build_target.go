@@ -3,14 +3,15 @@ package workspace
 import (
 	"context"
 	"fmt"
-	"github.com/yourbase/narwhal"
-	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/plumbing/log"
-	"github.com/yourbase/yb/runtime"
 	"io"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/yourbase/narwhal"
+	"github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing/log"
+	"github.com/yourbase/yb/runtime"
 )
 
 type CommandTimer struct {
@@ -41,6 +42,7 @@ type BuildTarget struct {
 }
 
 type BuildDependencies struct {
+	Build      []string                               `yam:"build"`
 	Containers map[string]narwhal.ContainerDefinition `yaml:"containers"`
 }
 
@@ -69,7 +71,7 @@ func (bt BuildTarget) EnvironmentVariables(data runtime.RuntimeEnvironmentData) 
 	return result
 }
 
-func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, output io.Writer, flags BuildFlags, packagePath string, buildpacks []string) ([]CommandTimer, error) {
+func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, output io.Writer, flags BuildFlags, packagePath string, globalDeps []string) ([]CommandTimer, error) {
 	var stepTimes []CommandTimer
 
 	containers := bt.Dependencies.ContainerList()
@@ -212,6 +214,13 @@ func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, ou
 			log.Warnf("'%s' doesn't look like an environment variable", envString)
 		}
 	}
+
+	// Merge global deps with build target deps
+	err := (&bt).mergeDeps(globalDeps)
+	if err != nil {
+		return stepTimes, err
+	}
+	buildpacks := bt.Dependencies.Build
 
 	buildPackStartTime := time.Now()
 	buildPackTimes, err := LoadBuildPacks(ctx, builder, buildpacks)
