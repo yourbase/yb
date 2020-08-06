@@ -13,7 +13,7 @@ import (
 	"github.com/yourbase/yb/plumbing/log"
 )
 
-func fastFindAncestor(r *git.Repository) (h plumbing.Hash, c int, branchName string) {
+func fastFindAncestor(r *git.Repository) (h plumbing.Hash, c int, branchName string, err error) {
 	/*
 		go doc gopkg.in/src-d/go-git.v4/plumbing/object Commit.MergeBase
 
@@ -30,7 +30,11 @@ func fastFindAncestor(r *git.Repository) (h plumbing.Hash, c int, branchName str
 		return
 	}
 
-	remoteBranch := findRemoteBranch(ref, r)
+	remoteBranch, err := findRemoteBranch(ref, r)
+	if err != nil {
+		log.Errorf("Unable to find remote branch %v: %v", ref, err)
+		return
+	}
 	branchName = ref.Name().Short()
 	if remoteBranch == nil {
 		if branchName == "master" {
@@ -44,7 +48,11 @@ func fastFindAncestor(r *git.Repository) (h plumbing.Hash, c int, branchName str
 			log.Errorf("%v", err)
 			return
 		}
-		remoteBranch = findRemoteBranch(ref, r)
+		remoteBranch, err = findRemoteBranch(ref, r)
+		if err != nil {
+			log.Errorf("Unable to find remote branch %v: %v", ref, err)
+			return
+		}
 		branchName = ref.Name().Short() // "master"
 	}
 
@@ -91,7 +99,8 @@ func fastFindAncestor(r *git.Repository) (h plumbing.Hash, c int, branchName str
 	}
 
 	// Count commits between head and 'h'
-	if commitIter, err := r.Log(&git.LogOptions{}); err != nil {
+	commitIter, err := r.Log(&git.LogOptions{})
+	if err != nil {
 		return
 	} else {
 		x := 0
@@ -109,9 +118,26 @@ func fastFindAncestor(r *git.Repository) (h plumbing.Hash, c int, branchName str
 	return
 }
 
-func findRemoteBranch(reference *plumbing.Reference, r *git.Repository) (remoteBranch *plumbing.Reference) {
-	branchIter, _ := r.References()
-	_ = branchIter.ForEach(func(rem *plumbing.Reference) error {
+func findRemoteBranch(reference *plumbing.Reference, r *git.Repository) (remoteBranch *plumbing.Reference, err error) {
+	branchIter, err := r.References()
+	if err != nil {
+		return
+	}
+	// If branch is main, just point to it directly
+	remoteDefault := "refs/remote/origin/main"
+	remoteBranch, err = r.Reference(plumbing.ReferenceName(remoteDefault), false)
+	if err == nil {
+		return
+	}
+	// If branch is master, just point to it directly
+	remoteDefault = "refs/remote/origin/master"
+	remoteBranch, err = r.Reference(plumbing.ReferenceName(remoteDefault), false)
+	if err == nil {
+		return
+	}
+	// We have some issues here
+	// TODO(ch2036): Maybe switch to using `git` utility directly
+	err = branchIter.ForEach(func(rem *plumbing.Reference) error {
 		if rem.Name().IsRemote() {
 			log.Debugf("Branch found: %v, %s ?== %s", rem, rem.Name().Short(), reference.Name().Short())
 			if strings.HasSuffix(rem.Name().Short(), reference.Name().Short()) {

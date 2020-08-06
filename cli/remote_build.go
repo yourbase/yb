@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/yourbase/yb/workspace"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -18,6 +17,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/yourbase/yb/workspace"
 
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
@@ -216,8 +217,8 @@ func (p *RemoteCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface
 	if bootProgress != nil {
 		fmt.Println()
 	}
-	ancestorRef, commitCount, branch := fastFindAncestor(workRepo)
-	if commitCount == -1 { // Error
+	ancestorRef, commitCount, branch, err := fastFindAncestor(workRepo)
+	if err != nil || commitCount == -1 { // Error
 		bootErrored()
 		return subcommands.ExitFailure
 	}
@@ -648,7 +649,7 @@ func postToApi(path string, formData url.Values) (*http.Response, error) {
 }
 
 func managementLogUrl(url, org, label string) string {
-	wsUrlRegexp := regexp.MustCompile(`^wss?://[^/]+/builds/([0-9a-f-]+)/progress$`)
+	wsUrlRegexp := regexp.MustCompile(`^wss?://[^/]+/builds/([0-9a-f-]+)/progress(\?Yb-Api-Token=.*)$`)
 
 	if wsUrlRegexp.MatchString(url) {
 		submatches := wsUrlRegexp.FindStringSubmatch(url)
@@ -857,6 +858,9 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 		return fmt.Errorf("Couldn't read response body: %s", err)
 	}
 	switch resp.StatusCode {
+	case 404:
+		submitErrored()
+		return fmt.Errorf("Build not found. Please try sending it again.")
 	case 401:
 		submitErrored()
 		return fmt.Errorf("Unauthorized, authentication failed.\nPlease `yb login` again.")
@@ -906,12 +910,14 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 		remoteProgress = NewProgressSpinner("Setting up remote build")
 		remoteProgress.Start()
 	}
+	// NOTE Uncomment this to debug sending the build to Dispatcher (the API gives us the right complete URL)
+	//log.Debugf("Connecting to %s, to send the patch to the back end", url)
 
 	if strings.HasPrefix(url, "ws:") || strings.HasPrefix(url, "wss:") {
 		conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), url)
 		if err != nil {
 			remoteErrored()
-			return fmt.Errorf("Cannot connect: %v", err)
+			return fmt.Errorf("cannot connect: %w", err)
 		} else {
 
 			defer func() {
