@@ -3,14 +3,15 @@ package workspace
 import (
 	"context"
 	"fmt"
-	"github.com/yourbase/narwhal"
-	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/plumbing/log"
-	"github.com/yourbase/yb/runtime"
 	"io"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/yourbase/narwhal"
+	"github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing/log"
+	"github.com/yourbase/yb/runtime"
 )
 
 type CommandTimer struct {
@@ -215,10 +216,11 @@ func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, ou
 	}
 
 	// Merge global deps with build target deps
-	buildpacks, err := bt.mergeDeps(globalDeps)
+	err := (&bt).mergeDeps(globalDeps)
 	if err != nil {
 		return stepTimes, err
 	}
+	buildpacks := bt.Dependencies.Build
 
 	buildPackStartTime := time.Now()
 	buildPackTimes, err := LoadBuildPacks(ctx, builder, buildpacks)

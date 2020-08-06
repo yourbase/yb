@@ -3,10 +3,10 @@ package workspace
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/yourbase/yb/buildpacks"
 	"github.com/yourbase/yb/runtime"
-	"strings"
-	"time"
 
 	"github.com/yourbase/yb/plumbing/log"
 	. "github.com/yourbase/yb/types"
@@ -17,12 +17,9 @@ func LoadBuildPacks(ctx context.Context, installTarget runtime.Target, dependenc
 
 	for _, toolSpec := range dependencies {
 
-		parts := strings.Split(toolSpec, ":")
-		buildpackName := parts[0]
-		versionString := ""
-
-		if len(parts) > 1 {
-			versionString = parts[1]
+		buildpackName, versionString, err := SplitToolSpec(toolSpec)
+		if err != nil {
+			return nil, fmt.Errorf("parsing a tool spec: %w", err)
 		}
 
 		spec := buildpacks.BuildToolSpec{

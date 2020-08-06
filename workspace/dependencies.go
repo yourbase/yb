@@ -5,49 +5,43 @@ import (
 	"strings"
 )
 
-func (bt BuildTarget) mergeDeps(globalDepsList []string) ([]string, error) {
-	if len(bt.Dependencies.Build) == 0 {
-		return globalDepsList, nil
-	}
-	splitToolName := func(dep string) (tool, version string, _ error) {
-		parts := strings.SplitN(dep, ":", 2)
-		if len(parts) != 2 {
-			return "", "", fmt.Errorf("merging/overriding build localDeps: malformed build pack definition: %s", dep)
-		}
-		tool = parts[0]
-		version = parts[1]
-		return
-	}
-
-	if len(globalDepsList) == 0 {
-		return bt.Dependencies.Build, nil
-	}
-
+func (bt *BuildTarget) mergeDeps(globalDepsList []string) error {
 	globalDepsMap := make(map[string]string)
 	for _, dep := range globalDepsList {
-		tool, version, err := splitToolName(dep)
+		tool, version, err := SplitToolSpec(dep)
 		if err != nil {
-			return nil, err
+			return fmt.Errorf("merging/overriding build localDeps: %w", err)
 		}
 		globalDepsMap[tool] = version
 	}
 	buildTgtDepsMap := make(map[string]string)
 	for _, dep := range bt.Dependencies.Build {
-		tool, version, err := splitToolName(dep)
+		for tool, version := range globalDepsMap {
+			buildTgtDepsMap[tool] = version
+		}
+		tool, version, err := SplitToolSpec(dep)
 		if err != nil {
-			return nil, err
+			return fmt.Errorf("merging/overriding build localDeps: %w", err)
 		}
 		buildTgtDepsMap[tool] = version
 	}
 
-	finalDepsList := make([]string, 0)
-	finalDepsList = append(finalDepsList, bt.Dependencies.Build...)
+	bt.Dependencies.Build = bt.Dependencies.Build[:0]
 
-	for k, v := range globalDepsMap {
-		if _, exists := buildTgtDepsMap[k]; !exists {
-			finalDepsList = append(finalDepsList, k+":"+v)
-		}
+	for tool, version := range buildTgtDepsMap {
+		bt.Dependencies.Build = append(bt.Dependencies.Build, tool+":"+version)
 	}
 
-	return finalDepsList, nil
+	return nil
+}
+
+// SplitToolSpec gives tool name and version from a dependency spec
+func SplitToolSpec(dep string) (tool, version string, _ error) {
+	parts := strings.SplitN(dep, ":", 2)
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("malformed build pack definition: %s", dep)
+	}
+	tool = parts[0]
+	version = parts[1]
+	return
 }
