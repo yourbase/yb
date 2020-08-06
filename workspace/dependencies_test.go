@@ -102,8 +102,8 @@ func TestMergeDeps(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			bt := &test.b.BuildTargets[0]
-			err := bt.mergeDeps(test.b.Dependencies.Build)
+			tgts := test.b.BuildTargets
+			err := tgts[0].mergeDeps(test.b.Dependencies.Build)
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -7,18 +7,16 @@ import (
 
 func (bt *BuildTarget) mergeDeps(globalDepsList []string) error {
 	globalDepsMap := make(map[string]string)
+	buildTgtDepsMap := make(map[string]string)
 	for _, dep := range globalDepsList {
 		tool, version, err := SplitToolSpec(dep)
 		if err != nil {
 			return fmt.Errorf("merging/overriding build localDeps: %w", err)
 		}
 		globalDepsMap[tool] = version
+		buildTgtDepsMap[tool] = version
 	}
-	buildTgtDepsMap := make(map[string]string)
 	for _, dep := range bt.Dependencies.Build {
-		for tool, version := range globalDepsMap {
-			buildTgtDepsMap[tool] = version
-		}
 		tool, version, err := SplitToolSpec(dep)
 		if err != nil {
 			return fmt.Errorf("merging/overriding build localDeps: %w", err)
@@ -30,6 +28,11 @@ func (bt *BuildTarget) mergeDeps(globalDepsList []string) error {
 
 	for tool, version := range buildTgtDepsMap {
 		bt.Dependencies.Build = append(bt.Dependencies.Build, tool+":"+version)
+	}
+
+	// XXX Debug
+	for _, dep := range bt.Dependencies.Build {
+		fmt.Printf("Build Target dep: %s\n", dep)
 	}
 
 	return nil
