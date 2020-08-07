@@ -23,20 +23,39 @@ build_targets:
   - name: release
     build_after:
       - default
-    environment:
-      - CHANNEL=unstable
     commands:
+      - apt-get update
+      - apt-get install -y --no-install-recommends zip
       - pip install awscli
+      - bash package.sh
       - bash release.sh 
 
-  - name: preview_release
+  - name: local_test_release
+    host_only: true
     build_after:
       - default
     environment:
-      - CHANNEL=preview
+      - TEST_RELEASE=test_me
+      - AWS_ACCESS_KEY_ID=only_smeagle_knows
+      - AWS_SECRET_ACCESS_KEY=only_smeagle_knows
+      - RELEASE_KEY=not known
+      - RELEASE_TOKEN=also unknown
+      - YB_GIT_BRANCH=refs/tags/v0.0.0-rc0
     commands:
       - pip install awscli
-      - bash release.sh 
+      - bash package.sh
+      - bash release.sh
+      - rm -f yb
+      - unzip yb_v0.0.0-rc0_linux_amd64.zip
+      - mv yb_v0.0.0-rc0_linux_amd64/yb yb
+      - rmdir yb_v0.0.0-rc0_linux_amd64/
+      - ls -lh yb
+      - ./yb version
+      - rm -f yb
+      - tar xf yb-linux-amd64-v0.0.0-rc0.tgz
+      - mv yb-linux-amd64 yb
+      - ls -lh yb
+      - ./yb version
 
   - name: linux
     build_after:
@@ -68,11 +87,7 @@ ci:
     - name: test_integration
       build_target: integration
 
-    - name: pre_release
-      build_target: preview_release
-      when: branch CONTAINS '-preview' AND tagged IS true
-
     - name: release
       build_target: release
-      when: branch CONTAINS '-stable' AND tagged IS true
+      when: tagged IS true
 
