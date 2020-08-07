@@ -20,15 +20,24 @@ fi
 echo "Releasing ${CHANNEL} yb version ${VERSION} [${COMMIT}]..."
 
 (
-    for r in yb-*-*-${VERSION}.*; do
-        for bucket in "yourbase-artifacts/yb/${VERSION}/" "yourbase-cats-bundles/"; do
-            if [ -z "${local_test_release}" ]; then
-                aws s3 cp "$r" "s3://$bucket"
-            else
-                echo "Local test, would run:"
-                echo aws s3 cp $r s3://${bucket}
-            fi
-        done
+    for r in yb_${VERSION}_*_*.zip; do
+        bucket="s3://yourbase-cats-bundles/"
+        if [ -z "${local_test_release}" ]; then
+            aws s3 cp "$r" "${bucket}"
+        else
+            echo "Local test, would run:"
+            echo "aws s3 cp $r ${bucket}"
+        fi
+    done
+    # TODO(ch1844): Remove after being sure no build server needs this anymore
+    for r in yb-*-*-${VERSION}.tgz; do
+        bucket="s3://yourbase-artifacts/yb/${VERSION}/"
+        if [ -z "${local_test_release}" ]; then
+            aws s3 cp "$r" "${bucket}"
+        else
+            echo "Local test, would run:"
+            echo "aws s3 cp $r ${bucket}"
+        fi
     done
 )
 
