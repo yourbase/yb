@@ -23,20 +23,29 @@ build_targets:
   - name: release
     build_after:
       - default
-    environment:
-      - CHANNEL=unstable
     commands:
       - pip install awscli
       - bash release.sh 
 
-  - name: preview_release
+  - name: local_test_release
     build_after:
       - default
+    host_only: true
     environment:
-      - CHANNEL=preview
+      - TEST_RELEASE=test_me
+      - AWS_ACCESS_KEY_ID=only_smeagle_knows
+      - AWS_SECRET_ACCESS_KEY=only_smeagle_knows
+      - RELEASE_KEY=not known
+      - RELEASE_TOKEN=also unknown
+      - YB_GIT_BRANCH=refs/tags/v0.0.0-rc0
     commands:
       - pip install awscli
-      - bash release.sh 
+      - bash release.sh
+      - rm -f yb
+      - tar xf release/yb-linux-amd64-v0.0.0-rc0.tgz
+      - mv yb-linux-amd64 yb
+      - ls -lh yb
+      - ./yb version
 
   - name: linux
     build_after:
@@ -68,11 +77,7 @@ ci:
     - name: test_integration
       build_target: integration
 
-    - name: pre_release
-      build_target: preview_release
-      when: branch CONTAINS '-preview' AND tagged IS true
-
     - name: release
       build_target: release
-      when: branch CONTAINS '-stable' AND tagged IS true
+      when: tagged IS true
 
