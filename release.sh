@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-. variables.sh
+source variables.sh
 
 local_test_release="${TEST_RELEASE:-}"
 
@@ -21,9 +21,9 @@ echo "Releasing ${CHANNEL} yb version ${VERSION} [${COMMIT}]..."
 
 (
     for r in yb-*-*-${VERSION}.*; do
-        for bucket in "yourbase-artifacts/yb/${VERSION}/ yourbase-cats-bundles/"; do
+        for bucket in "yourbase-artifacts/yb/${VERSION}/" "yourbase-cats-bundles/"; do
             if [ -z "${local_test_release}" ]; then
-                aws s3 cp $i s3://${bucket}
+                aws s3 cp "$r" "s3://$bucket"
             else
                 echo "Local test, would run:"
                 echo aws s3 cp $r s3://${bucket}

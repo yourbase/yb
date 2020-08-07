@@ -10,12 +10,12 @@ if [ -z "$VERSION" ]; then
   exit 1
 fi
 
-if $(echo $VERSION | grep -vqo '^v'); then
+if echo "$VERSION" | grep -vqo '^v'; then
     echo "Doesn't start with a \"v\" when it should, not releasing"
     exit 1
 fi
 
-if $(echo $VERSION | grep -qo '\-[a-z]\+[0-9]*$'); then
+if echo "$VERSION" | grep -qo '\-[a-z]\+[0-9]*$'; then
     # Release candidate release
     CHANNEL="preview"
 else
