@@ -29,7 +29,7 @@ do
     out="$( pwd )"
     ( cd "$PKG_DIR" && zip -r "$out/$BUNDLE.zip" "$BUNDLE" )
 
-    # TODO(ch1844): Remove after being sure no build server needs this anymore
+    # TODO(ch2141): Remove after being sure no build server needs this anymore
     mv "$PKG_DIR/$BUNDLE/yb" "$PKG_DIR/$BUNDLE/yb-${os}-${arch}"
     tar -C "$PKG_DIR/$BUNDLE" -zcvf "$out/yb-${os}-${arch}-${VERSION}.tgz" "yb-${os}-${arch}"
 

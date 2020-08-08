@@ -29,7 +29,7 @@ echo "Releasing ${CHANNEL} yb version ${VERSION} [${COMMIT}]..."
             echo "aws s3 cp $r ${bucket}"
         fi
     done
-    # TODO(ch1844): Remove after being sure no build server needs this anymore
+    # TODO(ch2141): Remove after being sure no build server needs this anymore
     for r in yb-*-*-${VERSION}.tgz; do
         bucket="s3://yourbase-artifacts/yb/${VERSION}/"
         if [ -z "${local_test_release}" ]; then
