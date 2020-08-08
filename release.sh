@@ -2,29 +2,11 @@
 
 set -euo pipefail
 
-VERSION="${1:-$(echo "${YB_GIT_BRANCH:-}" | sed -e 's:^refs/tags/::')}"
-if [[ -z "$VERSION" ]]; then
-  echo "release.sh: no version provided" 1>&2
-  exit 1
-fi
-
-if $(echo $VERSION | grep -vqo '^v'); then
-    echo "Doesn't start with a \"v\" when it should, not releasing"
-    exit 1
-fi
-
-if $(echo $VERSION | grep -qo '\-[a-z]\+[0-9]*$'); then
-    # Release candidate release
-    CHANNEL="preview"
-else
-    # Stable releases should not have a suffix
-    CHANNEL="stable"
-fi
+source variables.sh
 
 local_test_release="${TEST_RELEASE:-}"
 
 # YourBase S3 artifacts Release
-# TODO(ch1940): migrate to CATS
 AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID:-}"
 AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY:-}"
 aws_disabled=true
@@ -35,68 +17,33 @@ if $aws_disabled; then
     exit 0
 fi
 
-# Commit info
-COMMIT="${YB_GIT_COMMIT:-}"
-if [ -z "${COMMIT}" ]; then
-    # If git is installed
-    if hash git; then
-        COMMIT="$(git rev-parse HEAD)"
-    fi
-fi
-
-BUILD_COMMIT_INFO=""
-if [ -n "${COMMIT}" ]; then
-    BUILD_COMMIT_INFO=" -X 'main.commitSHA=$COMMIT'"
-fi
-
-umask 077
-
 echo "Releasing ${CHANNEL} yb version ${VERSION} [${COMMIT}]..."
 
-set -x
-
-rm -rf release
-mkdir -p release
-
-OSLIST=( linux darwin )
-ARCHLIST=( amd64 )
-
-for os in "${OSLIST[@]}"
-do
-  for arch in "${ARCHLIST[@]}"
-  do
-    GOOS=${os} GOARCH=${arch} go build -ldflags "-X 'main.version=$VERSION' -X 'main.date=$(date -u '+%F-%T')' -X 'main.channel=$CHANNEL'${BUILD_COMMIT_INFO} -s -w" -o release/yb-${os}-${arch}
-  done
-done
-
 (
-  cd release
-
-  for i in *
-  do
-    tar zcvf $i-${VERSION}.tgz $i
-    rm $i
-  done
-
-    for i in *.tgz
-    do
-      if [ -z "${local_test_release}" ]; then
-        if aws s3 ls s3://yourbase-artifacts/yb/${VERSION}/$i; then
-            echo "A version for ${VERSION} already exists! Not releasing this version."
-            exit 1
+    for r in yb_${VERSION}_*_*.zip; do
+        bucket="s3://yourbase-cats-bundles/"
+        if [ -z "${local_test_release}" ]; then
+            aws s3 cp "$r" "${bucket}"
+        else
+            echo "Local test, would run:"
+            echo "aws s3 cp $r ${bucket}"
         fi
-
-        aws s3 cp $i s3://yourbase-artifacts/yb/${VERSION}/
-      else
-        echo "Local test, would run:"
-        echo aws s3 ls s3://yourbase-artifacts/yb/${VERSION}/$i
-        echo aws s3 cp $i s3://yourbase-artifacts/yb/${VERSION}/
-      fi
+    done
+    # TODO(ch2141): Remove after being sure no build server needs this anymore
+    for r in yb-*-*-${VERSION}.tgz; do
+        bucket="s3://yourbase-artifacts/yb/${VERSION}/"
+        if [ -z "${local_test_release}" ]; then
+            aws s3 cp "$r" "${bucket}"
+        else
+            echo "Local test, would run:"
+            echo "aws s3 cp $r ${bucket}"
+        fi
     done
 )
 
 # Equinox install procedure
 # TODO Migrate to GoRelease (for GH Releases and Homebrew tap)
+#      or maybe use CATS to only send it to GH, and keep our home brew tap as is
 
 APP="app_gtQEt1zkGMj"
 PROJECT="yb"
@@ -104,7 +51,6 @@ TOKEN="${RELEASE_TOKEN:-}"
 RELEASE_KEY="${RELEASE_KEY:-}"
 
 cleanup() {
-    set -x
     rv=$?
     rm -rf "$tmpkeyfile"
     rm -rf equinox release-tool-stable-linux-amd64.tgz
@@ -131,7 +77,6 @@ wget https://bin.equinox.io/c/mBWdkfai63v/release-tool-stable-linux-amd64.tgz
 tar zxvf release-tool-stable-linux-amd64.tgz
 
 if [ -n "${local_test_release}" ]; then
-    set +x
     echo -e "Local test, would run:
 ./equinox release
         --version=$VERSION
