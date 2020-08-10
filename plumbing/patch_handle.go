@@ -89,6 +89,10 @@ func UnifiedPatchOnGit(patch string, commit *object.Commit, w, originWorktree *g
 			}
 			newBytes := bytes.NewBuffer(nil)
 			_, err = io.Copy(newBytes, newFile)
+			if err != nil {
+				patchError = fmt.Errorf("Unable to copy %s to a buffer: %v", file.NewName, err)
+				return ""
+			}
 			contents = newBytes.String()
 			_ = newFile.Close()
 		}
