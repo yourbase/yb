@@ -1,7 +1,6 @@
 dependencies:
   build:
     - go:1.14.4
-    - python:3.7
 
 build_targets:
   - name: default
@@ -21,6 +20,9 @@ build_targets:
       - bash -c "cd integration-tests; ../yb build -no-container java"
 
   - name: release
+    dependencies:
+      build:
+        - python:3.7
     build_after:
       - default
     commands:
@@ -32,6 +34,9 @@ build_targets:
 
   - name: local_test_release
     host_only: true
+    dependencies:
+      build:
+        - python:3.7
     build_after:
       - default
     environment:
