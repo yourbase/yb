@@ -33,9 +33,6 @@ build_targets:
       - bash release.sh 
 
   - name: local_test_release
-    dependencies:
-      build:
-        - python:3.7
     host_only: true
     dependencies:
       build:
@@ -94,7 +91,6 @@ ci:
 
     - name: test_integration
       build_target: integration
-      when: branch IS 'main' OR branch IS 'next' OR action IS 'pull-request'
 
     - name: release
       build_target: release

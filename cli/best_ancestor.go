@@ -33,13 +33,17 @@ func (p *RemoteCmd) fastFindAncestor(ctx context.Context, r *git.Repository) (h 
 		log.Errorf("%v", err)
 		return
 	}
+	branchName = ref.Name().Short()
 
 	remoteBranch, err := p.findRemoteBranch(ctx, ref, r)
 	if err != nil {
-		log.Errorf("Unable to find remote branch %v: %v", ref, err)
+		log.Errorf("Unable to find remote branch for %v: %v", branchName, err)
 		return
 	}
-	branchName = ref.Name().Short()
+	if remoteBranch == nil {
+		log.Errorf("Unable to find remote branch for %v", branchName)
+		return
+	}
 
 	headCommit, err := r.CommitObject(ref.Hash())
 	if err != nil {
@@ -87,76 +91,42 @@ func (p *RemoteCmd) fastFindAncestor(ctx context.Context, r *git.Repository) (h 
 	commitIter, err := r.Log(&git.LogOptions{})
 	if err != nil {
 		return
-	} else {
-		x := 0
-		_ = commitIter.ForEach(func(cmt *object.Commit) error {
-			x++
-			if cmt.Hash.String() == h.String() {
-				// Stop here
-				c = x
-				return storer.ErrStop
-			}
-			return nil
-		})
 	}
+	x := 0
+	_ = commitIter.ForEach(func(cmt *object.Commit) error {
+		x++
+		if cmt.Hash.String() == h.String() {
+			// Stop here
+			c = x
+			return storer.ErrStop
+		}
+		return nil
+	})
 
 	return
 }
 
 func (p *RemoteCmd) findRemoteBranch(ctx context.Context, reference *plumbing.Reference, r *git.Repository) (remoteBranch *plumbing.Reference, err error) {
-	branchIter, err := r.References()
-	if err != nil {
+	remotes, err := r.Remotes()
+	if err != nil || len(remotes) == 0 {
 		return
 	}
-	// If branch is main, just point to it directly
-	remoteDefault := "refs/remotes/origin/main"
+	remoteName := remotes[0].Config().Name
+	refName := reference.Name().Short()
+	remoteDefault := "refs/remotes/" + remoteName + "/" + refName
 	remoteBranch, err = r.Reference(plumbing.ReferenceName(remoteDefault), false)
 	if err == nil {
 		return
 	}
-	// If branch is master, just point to it directly
-	remoteDefault = "refs/remotes/origin/master"
-	remoteBranch, err = r.Reference(plumbing.ReferenceName(remoteDefault), false)
-	if err == nil {
-		return
-	}
-	// We have some issues here
-	if p.goGit {
-		log.Warnf("go-git traverse of references can lead to issues...")
-		err = branchIter.ForEach(func(rem *plumbing.Reference) error {
-			if rem.Name().IsRemote() {
-				log.Debugf("Branch found: %v, %s ?== %s", rem, rem.Name().Short(), reference.Name().Short())
-				if strings.HasSuffix(rem.Name().Short(), reference.Name().Short()) {
-					remoteBranch = rem
-					return storer.ErrStop
-				}
-			}
-			return nil
-		})
-	} else {
+	err = nil
+
+	if !p.goGit {
 		const (
-			gitFetchCmd  = " fetch --all"
 			gitBranchCmd = " branch --remote"
 		)
 
-		cmdString := gitExe + gitFetchCmd
 		buf := bytes.NewBuffer(nil)
-		log.Debugf("Executing '%v'...", cmdString)
-		if err = p.metalTgt.ExecSilentlyToWriter(ctx, cmdString, p.repoDir, buf); err != nil {
-			err = fmt.Errorf("git fetch: %w", err)
-			return
-		}
-
-		if buf.Len() == 0 {
-			err = fmt.Errorf("git fetch: empty response")
-			return
-		}
-		branchFetched := strings.Count(buf.String(), "\n")
-		log.Infof("Feched %d branches", branchFetched)
-		buf.Truncate(0)
-
-		// Now check all remote branches names
-		cmdString = gitExe + gitBranchCmd
+		cmdString := gitExe + gitBranchCmd
 		log.Debugf("Executing '%v'...", cmdString)
 		if err = p.metalTgt.ExecSilentlyToWriter(ctx, cmdString, p.repoDir, buf); err != nil {
 			err = fmt.Errorf("git branch: %w", err)
