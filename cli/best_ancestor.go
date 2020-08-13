@@ -148,7 +148,7 @@ func (p *RemoteCmd) findRemoteBranch(ctx context.Context, reference *plumbing.Re
 				return
 			}
 			line = strings.Trim(line, " \n")
-			bName := strings.ReplaceAll(line, "origin/", "")
+			bName := strings.ReplaceAll(line, remoteName+"/", "")
 			log.Debugf("Branch found: %s ?== %s", bName, reference.Name().Short())
 			if strings.HasSuffix(bName, reference.Name().Short()) {
 				remoteBranch, rerr = r.Reference(plumbing.ReferenceName(bName), true)
