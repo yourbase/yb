@@ -202,7 +202,11 @@ func (c ContainerData) Environment(ctx context.Context) map[string]string {
 	result := make(map[string]string)
 	if c.serviceCtx != nil {
 		for _, containerDef := range c.serviceCtx.ContainerDefinitions {
-			if ipv4, err := narwhal.IPv4Address(ctx, narwhal.DockerClient(), containerDef.Label); err == nil {
+			container, err := c.serviceCtx.FindContainer(ctx, &containerDef)
+			if err != nil {
+				return nil
+			}
+			if ipv4, err := narwhal.IPv4Address(ctx, narwhal.DockerClient(), container.Id); err == nil {
 				key := fmt.Sprintf("YB_CONTAINER_%s_IP", strings.ToUpper(containerDef.Label))
 				result[key] = ipv4.String()
 			}
@@ -214,10 +218,20 @@ func (c ContainerData) Environment(ctx context.Context) map[string]string {
 // IP returns an IP adress associated with an container "label"
 func (c ContainerData) IP(label string) string {
 	if c.serviceCtx != nil {
-		for _, containerDef := range c.serviceCtx.ContainerDefinitions {
-			if ipv4, err := narwhal.IPv4Address(context.Background(), narwhal.DockerClient(), containerDef.Label); err == nil {
-				return ipv4.String()
+		var containerDef narwhal.ContainerDefinition
+		for _, c := range c.serviceCtx.ContainerDefinitions {
+			log.Debugf("Container Def label: %s; searching: %s", c.Label, label)
+			if label == c.Label {
+				containerDef = c
+				break
 			}
+		}
+		container, err := c.serviceCtx.FindContainer(context.TODO(), &containerDef)
+		if err != nil {
+			return ""
+		}
+		if ipv4, err := narwhal.IPv4Address(context.TODO(), c.serviceCtx.DockerClient, container.Id); err == nil {
+			return ipv4.String()
 		}
 	}
 	return ""
