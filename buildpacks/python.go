@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	anacondaToolVersion = "4.8.3"
+	// It's not totally needed, but bumping this version string can reduce time spent on conda's auto-update step
+	anacondaToolVersion = "4.8.4"
 	// The version above needs a newer template
 	anacondaURLTemplate = "https://repo.continuum.io/miniconda/Miniconda{{.PyNum}}-py37_{{.Version}}-{{.OS}}-{{.Arch}}.{{.Extension}}"
 )
