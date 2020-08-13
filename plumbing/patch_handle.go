@@ -67,7 +67,7 @@ func UnifiedPatchOnGit(patch string, commit *object.Commit, w, originWorktree *g
 	getCommitFileContents := func(file *diffparser.DiffFile) (contents string) {
 		tree, err := commit.Tree()
 		if err != nil {
-			patchError = fmt.Errorf("resolving commit tree: %v", err)
+			patchError = fmt.Errorf("resolving commit tree: %w", err)
 			return ""
 		}
 		var workFile *object.File
@@ -77,23 +77,27 @@ func UnifiedPatchOnGit(patch string, commit *object.Commit, w, originWorktree *g
 		case diffparser.MODIFIED:
 			workFile, err = tree.File(file.OrigName)
 			if err != nil {
-				patchError = fmt.Errorf("retrieving tree entry %s: %v", file.OrigName, err)
+				patchError = fmt.Errorf("retrieving tree entry %s: %w", file.OrigName, err)
 				return ""
 			}
 			contents, err = workFile.Contents()
 		case diffparser.NEW:
 			newFile, err := originWorktree.Filesystem.Open(file.NewName)
 			if err != nil {
-				patchError = fmt.Errorf("opening %s in the work tree: %v", file.NewName, err)
+				patchError = fmt.Errorf("opening %s in the work tree: %w", file.NewName, err)
 				return ""
 			}
 			newBytes := bytes.NewBuffer(nil)
 			_, err = io.Copy(newBytes, newFile)
+			if err != nil {
+				patchError = fmt.Errorf("copy %s to a buffer: %w", file.NewName, err)
+				return ""
+			}
 			contents = newBytes.String()
 			_ = newFile.Close()
 		}
 		if err != nil {
-			patchError = fmt.Errorf("geting contents of %s: %v", file.OrigName, err)
+			patchError = fmt.Errorf("geting contents of %s: %w", file.OrigName, err)
 			return ""
 		}
 		return
