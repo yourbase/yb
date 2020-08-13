@@ -37,7 +37,10 @@ import (
 )
 
 var (
-	gitExe       string = "git" // UNIX
+	gitExe string = "git" // UNIX
+)
+
+const (
 	gitStatusCmd string = "%s status --porcelain"
 )
 
@@ -49,7 +52,7 @@ type RemoteCmd struct {
 	patchPath      string
 	repoDir        string
 	printStatus    bool
-	goGitStatus    bool
+	goGit          bool
 	noAcceleration bool
 	disableCache   bool
 	disableSkipper bool
@@ -77,7 +80,7 @@ func (p *RemoteCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.dryRun, "dry-run", false, "Pretend to remote build")
 	f.BoolVar(&p.committed, "committed", false, "Only remote build committed changes")
 	f.BoolVar(&p.printStatus, "print-status", false, "Print result of `git status` used to grab untracked/unstaged changes")
-	f.BoolVar(&p.goGitStatus, "go-git-status", false, "Use internal go-git.v4 status instead of calling `git status`, can be slow")
+	f.BoolVar(&p.goGit, "go-git", false, "Use internal go-git.v4 instead of invoking `git ...`, can be slow and has issues")
 	f.BoolVar(&p.backupWorktree, "backup-worktree", false, "Saves uncommitted work into a tarball")
 }
 
@@ -123,7 +126,7 @@ func (p *RemoteCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface
 		return subcommands.ExitFailure
 	}
 
-	if !p.goGitStatus && !p.committed {
+	if !p.goGit && !p.committed {
 		// Need to check if `git` binary exists and works
 		if p.metalTgt.OS() == runtime.Windows {
 			gitExe = "git.exe"
@@ -135,8 +138,8 @@ func (p *RemoteCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface
 			} else {
 				log.Warnf("The flag -go-git-status wasn't specified but calling '%s' gives: %v", cmdString, err)
 			}
-			log.Warn("Switching to using internal go-git status to detect local changes, it can be slower")
-			p.goGitStatus = true
+			log.Warn("Switching to using internal go-git status to detect local changes, it can be slower, and even have issues")
+			p.goGit = true
 		}
 	}
 
@@ -217,7 +220,7 @@ func (p *RemoteCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface
 	if bootProgress != nil {
 		fmt.Println()
 	}
-	ancestorRef, commitCount, branch, err := fastFindAncestor(workRepo)
+	ancestorRef, commitCount, branch, err := p.fastFindAncestor(ctx, workRepo)
 	if err != nil || commitCount == -1 { // Error
 		bootErrored()
 		return subcommands.ExitFailure
@@ -433,7 +436,7 @@ func commitTempChanges(w *git.Worktree, c *object.Commit) (latest plumbing.Hash,
 }
 
 func (p *RemoteCmd) traverseChanges(worktree *git.Worktree, saver *WorktreeSave) (skipped []string, err error) {
-	if p.goGitStatus {
+	if p.goGit {
 		log.Debug("Decided to use Go-Git")
 		skipped, err = p.libTraverseChanges(worktree, saver)
 	} else {

@@ -2,9 +2,9 @@ module github.com/yourbase/yb
 
 require (
 	github.com/beholders-eye/diffparser v0.0.0-20190814025112-fcedf0a097ba
-	github.com/blang/semver v3.1.0+incompatible
-	github.com/containerd/containerd v1.3.6 // indirect
-	github.com/containerd/continuity v0.0.0-20200413184840-d3ef23f19fbb // indirect
+	github.com/blang/semver v3.5.1+incompatible
+	github.com/containerd/containerd v1.3.7 // indirect
+	github.com/containerd/continuity v0.0.0-20200710164510-efbc4488d8fe // indirect
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/equinox-io/equinox v1.2.0
 	github.com/frankban/quicktest v1.5.0 // indirect
@@ -35,15 +35,15 @@ require (
 	github.com/ulikunitz/xz v0.5.7
 	github.com/waigani/diffparser v0.0.0-20190828052634-7391f219313d // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
-	github.com/yourbase/narwhal v0.5.2
+	github.com/yourbase/narwhal v0.5.3
 	go4.org v0.0.0-20200411211856-f5505b9728dd
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
 	golang.org/x/mod v0.3.0
 	golang.org/x/net v0.0.0-20200707034311-ab3426394381 // indirect
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208 // indirect
-	golang.org/x/sys v0.0.0-20200806125547-5acd03effb82 // indirect
-	google.golang.org/genproto v0.0.0-20200701001935-0939c5918c31 // indirect
-	google.golang.org/grpc v1.30.0 // indirect
+	golang.org/x/sys v0.0.0-20200810151505-1b9f1253b3ed // indirect
+	google.golang.org/genproto v0.0.0-20200808173500-a06252235341 // indirect
+	google.golang.org/grpc v1.31.0 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/ini.v1 v1.57.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
