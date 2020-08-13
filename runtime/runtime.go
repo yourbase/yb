@@ -226,11 +226,11 @@ func (c ContainerData) IP(label string) string {
 				break
 			}
 		}
-		container, err := c.serviceCtx.FindContainer(context.Background(), &containerDef)
+		container, err := c.serviceCtx.FindContainer(context.TODO(), &containerDef)
 		if err != nil {
 			return ""
 		}
-		if ipv4, err := narwhal.IPv4Address(context.Background(), c.serviceCtx.DockerClient, container.Id); err == nil {
+		if ipv4, err := narwhal.IPv4Address(context.TODO(), c.serviceCtx.DockerClient, container.Id); err == nil {
 			return ipv4.String()
 		}
 	}
