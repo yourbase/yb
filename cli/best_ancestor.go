@@ -118,6 +118,21 @@ func (p *RemoteCmd) findRemoteBranch(ctx context.Context, reference *plumbing.Re
 	if err == nil {
 		return
 	}
+
+	// Tries out well know branch names too
+	refName = "main"
+	remoteDefault = "refs/remotes/" + remoteName + "/" + refName
+	remoteBranch, err = r.Reference(plumbing.ReferenceName(remoteDefault), false)
+	if err == nil {
+		return
+	}
+
+	refName = "master"
+	remoteDefault = "refs/remotes/" + remoteName + "/" + refName
+	remoteBranch, err = r.Reference(plumbing.ReferenceName(remoteDefault), false)
+	if err == nil {
+		return
+	}
 	err = nil
 
 	if !p.goGit {
