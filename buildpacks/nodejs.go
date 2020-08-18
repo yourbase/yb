@@ -89,12 +89,15 @@ func (bt NodeBuildTool) Setup(ctx context.Context, nodeDir string) error {
 
 	cmdPath := filepath.Join(nodeDir, "bin")
 	t.PrependToPath(ctx, cmdPath)
-	// TODO: Fix this to be the package cache?
-	nodePath := bt.spec.PackageDir
+	log.Debug("PATH for node set to ", cmdPath)
+
+	nodePath := filepath.Join(t.ToolOutputSharedDir(ctx), "node", bt.Version(), "node_modules")
+	nodePath = bt.spec.PackageDir + ":" + nodePath
 	log.Infof("Setting NODE_PATH to %s", nodePath)
 	t.SetEnv("NODE_PATH", nodePath)
 
 	npmBinPath := filepath.Join(nodePath, "node_modules", ".bin")
+	log.Debug("PATH for also node set to ", npmBinPath)
 	t.PrependToPath(ctx, npmBinPath)
 
 	return nil
