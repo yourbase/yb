@@ -13,8 +13,9 @@ build_targets:
     build_after:
       - default
     commands:
-      - apt-get install -y git
+      - apt-get install -y --no-install-recommends git
       - bash -c "cd integration-tests; ../yb build -no-container"
+      - bash -c "cd integration-tests; ../yb build -no-container flutter"
       - bash -c "cd integration-tests; ../yb build -no-container python"
       - bash -c "cd integration-tests; ../yb build -no-container gopher"
       - bash -c "cd integration-tests; ../yb build -no-container ruby"
