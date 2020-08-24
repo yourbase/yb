@@ -5,5 +5,5 @@ dependencies:
 build_targets:
   - name: default
     commands:
-      - apt-get install xvfb
+      - apt-get install -y --no-install-recommends xvfb
       - xvfb-run mvn clean verify
