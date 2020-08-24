@@ -12,6 +12,22 @@ func Test_downloadUrlVersion(t *testing.T) {
 		want string
 	}{
 		{
+			in:   "1.20.2",
+			want: "1.20.2",
+		},
+		{
+			in:   "1.20.0-7.4.pre",
+			want: "1.20.0-7.4.pre",
+		},
+		{
+			in:   "1.17.0-4.1.pre",
+			want: "1.17.0-4.1.pre",
+		},
+		{
+			in:   "1.17.0-dev.3.1",
+			want: "1.17.0-dev.3.1",
+		},
+		{
 			in:   "1.17.0",
 			want: "1.17.0",
 		},
@@ -46,7 +62,7 @@ func Test_downloadUrlVersion(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {
-			if got := downloadUrlVersion(tt.in); got != tt.want {
+			if got := downloadURLVersion(tt.in); got != tt.want {
 				t.Errorf("downloadUrlVersion() = %v, want %v", got, tt.want)
 			}
 		})

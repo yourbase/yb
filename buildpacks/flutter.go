@@ -14,8 +14,11 @@ import (
 	. "github.com/yourbase/yb/types"
 )
 
-// https://archive.apache.org/dist/flutter/flutter-3/3.3.3/binaries/apache-flutter-3.3.3-bin.tar.gz
-var FLUTTER_DIST_MIRROR = "https://storage.googleapis.com/flutter_infra/releases/{{.Channel}}/{{.OS}}/flutter_{{.OS}}_{{.Version}}-{{.Channel}}.{{.Extension}}"
+// Stable channel URL example:
+// https://storage.googleapis.com/flutter_infra/releases/stable/linux/flutter_linux_1.17.5-stable.tar.xz
+// Beta channel URL example:
+// https://storage.googleapis.com/flutter_infra/releases/beta/linux/flutter_linux_1.19.0-4.2.pre-beta.tar.xz
+const flutterDistMirrorTemplate = "https://storage.googleapis.com/flutter_infra/releases/{{.Channel}}/{{.OS}}/flutter_{{.OS}}_{{.Version}}-{{.Channel}}.{{.Extension}}"
 
 type FlutterBuildTool struct {
 	BuildTool
@@ -67,10 +70,10 @@ func (bt FlutterBuildTool) DownloadUrl() string {
 		channel,
 		opsys,
 		arch,
-		downloadUrlVersion(version),
+		downloadURLVersion(version),
 		extension,
 	}
-	url, _ := TemplateToString(FLUTTER_DIST_MIRROR, data)
+	url, _ := TemplateToString(flutterDistMirrorTemplate, data)
 
 	return url
 }
@@ -112,9 +115,9 @@ func (bt FlutterBuildTool) Install() error {
 	installDir := bt.InstallDir()
 
 	if _, err := os.Stat(flutterDir); err == nil {
-		log.Infof("Flutter %s located in %s!", downloadUrlVersion(bt.Version()), flutterDir)
+		log.Infof("Flutter %s located in %s!", downloadURLVersion(bt.Version()), flutterDir)
 	} else {
-		log.Infof("Will install Flutter %s into %s", downloadUrlVersion(bt.Version()), flutterDir)
+		log.Infof("Will install Flutter %s into %s", downloadURLVersion(bt.Version()), flutterDir)
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading Flutter from URL %s...", downloadUrl)
@@ -149,8 +152,8 @@ func (bt FlutterBuildTool) Install() error {
 // Note: We are predicting the future since they could require a "v" again if 1.17.0
 // was a mistake
 //
-func downloadUrlVersion(version string) string {
-	version_1_17_0 := "v1.17.0"
+func downloadURLVersion(version string) string {
+	version1170 := "v1.17.0"
 	compVersion := version
 
 	// Semver package requires the version to start with "v"
@@ -159,9 +162,14 @@ func downloadUrlVersion(version string) string {
 	}
 
 	// Below 1.17.0 need the "v", >= to 1.17.0, remove the "v"
-	if semver.Compare(compVersion, version_1_17_0) < 0 {
+	if semver.Compare(compVersion, version1170) < 0 {
 		version = compVersion // Need the "v"
 	} else {
+		version = strings.TrimLeft(compVersion, "v")
+	}
+	if strings.Count(version, "pre") > 0 || strings.Count(version, "dev") > 0 {
+		// Beta/dev versions are considered to be newer, even if semver sees it differently
+		// Those versions started to pop up after v1.17.0: https://medium.com/flutter/flutter-spring-2020-update-f723d898d7af
 		version = strings.TrimLeft(compVersion, "v")
 	}
 
