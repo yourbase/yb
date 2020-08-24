@@ -12,6 +12,22 @@ func Test_downloadURLVersion(t *testing.T) {
 		want string
 	}{
 		{
+			in:   "1.20.2",
+			want: "1.20.2",
+		},
+		{
+			in:   "1.20.0-7.4.pre",
+			want: "1.20.0-7.4.pre",
+		},
+		{
+			in:   "1.17.0-4.1.pre",
+			want: "1.17.0-4.1.pre",
+		},
+		{
+			in:   "1.17.0-dev.3.1",
+			want: "1.17.0-dev.3.1",
+		},
+		{
 			in:   "1.17.0",
 			want: "1.17.0",
 		},
