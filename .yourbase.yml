@@ -92,7 +92,7 @@ ci:
 
     - name: test_integration
       build_target: integration
-      when: branch IS 'main' OR branch IS 'next' OR action IS 'pull-request'
+      when: branch IS 'main' OR branch IS 'next' OR action IS 'pull_request'
 
     - name: release
       build_target: release
