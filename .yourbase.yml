@@ -89,6 +89,7 @@ ci:
   builds:
     - name: test_build
       build_target: default
+      when: branch IS 'main' OR branch IS 'next' OR action IS 'pull_request'
 
     - name: test_integration
       build_target: integration
