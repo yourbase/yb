@@ -119,19 +119,14 @@ func (p *RemoteCmd) findRemoteBranch(ctx context.Context, reference *plumbing.Re
 		return
 	}
 
-	// Tries out well know branch names too
-	refName = "main"
-	remoteDefault = "refs/remotes/" + remoteName + "/" + refName
-	remoteBranch, err = r.Reference(plumbing.ReferenceName(remoteDefault), false)
+	remoteHEAD := plumbing.NewRemoteHEADReferenceName(remoteName)
+	remoteHEADReference, err := r.Reference(remoteHEAD, true)
 	if err == nil {
-		return
-	}
-
-	refName = "master"
-	remoteDefault = "refs/remotes/" + remoteName + "/" + refName
-	remoteBranch, err = r.Reference(plumbing.ReferenceName(remoteDefault), false)
-	if err == nil {
-		return
+		remoteDefault = "refs/remotes/" + remoteHEADReference.Name().Short() // Should be "origin/main", but can be other names defined by the user as well
+		remoteBranch, err = r.Reference(plumbing.ReferenceName(remoteDefault), false)
+		if err == nil {
+			return
+		}
 	}
 	err = nil
 
