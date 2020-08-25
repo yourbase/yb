@@ -819,13 +819,14 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 	patchEncoded := base64.StdEncoding.EncodeToString(patchBuffer.Bytes())
 
 	formData := url.Values{
-		"project_id": {strconv.Itoa(project.Id)},
-		"repository": {project.Repository},
-		"api_key":    {userToken},
-		"target":     {cmd.target},
-		"patch_data": {patchEncoded},
-		"commit":     {cmd.baseCommit},
-		"branch":     {cmd.branch},
+		"project_id":  {strconv.Itoa(project.Id)},
+		"repository":  {project.Repository},
+		"api_key":     {userToken},
+		"target":      {cmd.target},
+		"patch_data":  {patchEncoded},
+		"commit":      {cmd.baseCommit},
+		"commit_hash": {cmd.baseCommit},
+		"branch":      {cmd.branch},
 	}
 
 	tags := make([]string, 0)
