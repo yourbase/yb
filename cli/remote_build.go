@@ -446,16 +446,20 @@ func shouldSkip(file string, worktree *git.Worktree) bool {
 	}
 
 	if fi.IsDir() {
-		log.Debugf("Added a dir, checking it's contents: %s", file)
+		log.Debugf("Added a dir, checking its contents: %s", file)
 		f, err := os.Open(filePath)
 		if err != nil {
 			return true
 		}
 		dir, err := f.Readdir(0)
+		if err != nil {
+			log.Debugf("should skip directory %q on error:%s", filePath, err)
+			return true
+		}
 		log.Debugf("Ls dir %s", filePath)
 		for _, f := range dir {
 			child := path.Join(file, f.Name())
-			log.Debugf("Shoud skip child '%s'?", child)
+			log.Debugf("should skip child '%s'?", child)
 			if shouldSkip(child, worktree) {
 				continue
 			} else {
@@ -728,6 +732,9 @@ func (p *RemoteCmd) fetchProject(urls []string) (*Project, GitRemote, error) {
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, empty, err
+	}
 	var project Project
 	err = json.Unmarshal(body, &project)
 	if err != nil {
