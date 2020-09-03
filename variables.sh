@@ -1,3 +1,4 @@
+#!/bin/bash
 # This should be included in both scripts, not invoked directly
 
 if [ -z "${VERSION:-}" ]; then

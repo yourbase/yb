@@ -10,7 +10,7 @@ local_test_release="${TEST_RELEASE:-}"
 AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID:-}"
 AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY:-}"
 aws_disabled=true
-[ -n "${AWS_ACCESS_KEY_ID}" -a -n "${AWS_SECRET_ACCESS_KEY}" ] && aws_disabled=false
+[ -n "${AWS_ACCESS_KEY_ID}" ] && [ -n "${AWS_SECRET_ACCESS_KEY}" ] && aws_disabled=false
 if $aws_disabled; then
     echo "No AWS credentials, probably in Staging/Preview, giving up"
     # Non fatal, we won't get GH status errors when trying to release on Staging/Preview
@@ -20,7 +20,7 @@ fi
 echo "Releasing ${CHANNEL} yb version ${VERSION} [${COMMIT}]..."
 
 (
-    for r in yb_${VERSION}_*_*.zip; do
+    for r in yb_"${VERSION}"_*_*.zip; do
         bucket="s3://yourbase-cats-bundles/"
         if [ -z "${local_test_release}" ]; then
             aws s3 cp "$r" "${bucket}"
@@ -30,7 +30,7 @@ echo "Releasing ${CHANNEL} yb version ${VERSION} [${COMMIT}]..."
         fi
     done
     # TODO(ch2141): Remove after being sure no build server needs this anymore
-    for r in yb-*-*-${VERSION}.tgz; do
+    for r in yb-*-*-"${VERSION}".tgz; do
         bucket="s3://yourbase-artifacts/yb/${VERSION}/"
         if [ -z "${local_test_release}" ]; then
             aws s3 cp "$r" "${bucket}"
@@ -64,7 +64,7 @@ KEY_FILE="${tmpkeyfile}"
 
 equinox_disabled=true
 
-[ -n "${RELEASE_KEY}" -a -n "${TOKEN}" ] && equinox_disabled=false
+[ -n "${RELEASE_KEY}" ] && [ -n "${TOKEN}" ] && equinox_disabled=false
 if $equinox_disabled; then
     echo "No Equinox credentials, probably in Staging/Preview, giving up"
     # Non fatal, we won't get GH status errors when trying to release on Staging/Preview
@@ -93,7 +93,7 @@ if [ -n "${local_test_release}" ]; then
 fi
 
 ./equinox release \
-        --version=$VERSION \
+        --version="$VERSION" \
         --platforms="darwin_amd64 linux_amd64" \
         --signing-key="${KEY_FILE}"  \
         --app="$APP" \
