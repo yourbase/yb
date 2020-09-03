@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
-	"strings"
 	"text/template"
 
 	"github.com/joho/godotenv"
@@ -59,39 +58,51 @@ type ExecPhase struct {
 
 func (e *ExecPhase) EnvironmentVariables(ctx context.Context, envName string, data runtime.RuntimeEnvironmentData) []string {
 
-	result := make([]string, 0)
+	envMap := make(map[string]string)
 
 	for _, property := range e.Environment["default"] {
 
 		if _, _, ok := plumbing.SaneEnvironmentVar(property); ok {
 			interpolated, err := TemplateToString(property, data)
 			if err == nil {
-				result = append(result, interpolated)
-			} else {
-				result = append(result, property)
+				if key, value, ok := plumbing.SaneEnvironmentVar(interpolated); ok {
+					envMap[key] = value
+				}
+			} else if key, value, ok := plumbing.SaneEnvironmentVar(property); ok {
+				envMap[key] = value
 			}
 		}
 	}
 
 	for k, v := range data.Containers.Environment(ctx) {
-		result = append(result, k, v)
+		envMap[k] = v
 	}
 
 	if envName != "default" {
 		for _, property := range e.Environment[envName] {
 			if _, _, ok := plumbing.SaneEnvironmentVar(property); ok {
-				result = append(result, property)
+				if key, value, ok := plumbing.SaneEnvironmentVar(property); ok {
+					envMap[key] = value
+				}
 			}
 		}
 	}
 
 	// Check for local .env file
-	err := godotenv.Load()
-	if err == nil {
-		localEnv, _ := godotenv.Read()
-		for k, v := range localEnv {
-			result = append(result, strings.Join([]string{k, v}, "="))
+	if err := godotenv.Load(); err == nil {
+		localEnv, err := godotenv.Read()
+		if err == nil {
+			for k, v := range localEnv {
+				envMap[k] = v
+			}
+		} else {
+			log.Errorf("Can't process local .env: %v", err)
 		}
+	}
+
+	result := make([]string, 0)
+	for k, v := range envMap {
+		result = append(result, k+"="+v)
 	}
 
 	return result

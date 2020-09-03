@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/yourbase/narwhal"
 	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
@@ -56,16 +57,35 @@ func (b BuildDependencies) ContainerList() []narwhal.ContainerDefinition {
 }
 
 func (bt BuildTarget) EnvironmentVariables(data runtime.RuntimeEnvironmentData) []string {
-	result := make([]string, 0)
+	envMap := make(map[string]string)
+
 	for _, property := range bt.Environment {
-		if _, _, ok := plumbing.SaneEnvironmentVar(property); ok {
-			interpolated, err := TemplateToString(property, data)
-			if err == nil {
-				result = append(result, interpolated)
-			} else {
-				result = append(result, property)
+		interpolated, err := TemplateToString(property, data)
+		if err == nil {
+			if k, v, ok := plumbing.SaneEnvironmentVar(interpolated); ok {
+				envMap[k] = v
+			}
+		} else {
+			if k, v, ok := plumbing.SaneEnvironmentVar(property); ok {
+				envMap[k] = v
 			}
 		}
+	}
+
+	// Check for local .env file
+	if err := godotenv.Load(); err == nil {
+		localEnv, err := godotenv.Read()
+		if err == nil {
+			for k, v := range localEnv {
+				envMap[k] = v
+			}
+		} else {
+			log.Errorf("Can't process local .env: %v", err)
+		}
+	}
+	result := make([]string, 0)
+	for k, v := range envMap {
+		result = append(result, k+"="+v)
 	}
 
 	return result
