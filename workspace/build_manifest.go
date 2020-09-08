@@ -5,12 +5,8 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
-	"text/template"
 
-	"github.com/joho/godotenv"
 	"github.com/yourbase/narwhal"
-	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/plumbing/log"
 	"github.com/yourbase/yb/runtime"
 )
 
@@ -56,56 +52,22 @@ type ExecPhase struct {
 	BuildFirst   []string                    `yaml:"build_first"`
 }
 
-func (e *ExecPhase) EnvironmentVariables(ctx context.Context, envName string, data runtime.RuntimeEnvironmentData) []string {
+// environmentVariables returns a slice of parsed environment variables for this ExecPhase
+func (e *ExecPhase) environmentVariables(ctx context.Context, envName string, data runtime.RuntimeEnvironmentData) ([]string, error) {
+	packs := make([][]string, 0)
+	packs = append(packs, e.Environment["default"])
 
-	envMap := make(map[string]string)
-
-	for _, property := range e.Environment["default"] {
-
-		if _, _, ok := plumbing.SaneEnvironmentVar(property); ok {
-			interpolated, err := TemplateToString(property, data)
-			if err == nil {
-				if key, value, ok := plumbing.SaneEnvironmentVar(interpolated); ok {
-					envMap[key] = value
-				}
-			} else if key, value, ok := plumbing.SaneEnvironmentVar(property); ok {
-				envMap[key] = value
-			}
-		}
-	}
-
+	fromContainers := make([]string, 0)
 	for k, v := range data.Containers.Environment(ctx) {
-		envMap[k] = v
+		fromContainers = append(fromContainers, k+"="+v)
 	}
+	packs = append(packs, fromContainers)
 
 	if envName != "default" {
-		for _, property := range e.Environment[envName] {
-			if _, _, ok := plumbing.SaneEnvironmentVar(property); ok {
-				if key, value, ok := plumbing.SaneEnvironmentVar(property); ok {
-					envMap[key] = value
-				}
-			}
-		}
+		packs = append(packs, e.Environment[envName])
 	}
 
-	// Check for local .env file
-	if err := godotenv.Load(); err == nil {
-		localEnv, err := godotenv.Read()
-		if err == nil {
-			for k, v := range localEnv {
-				envMap[k] = v
-			}
-		} else {
-			log.Errorf("Can't process local .env: %v", err)
-		}
-	}
-
-	result := make([]string, 0)
-	for k, v := range envMap {
-		result = append(result, k+"="+v)
-	}
-
-	return result
+	return parseEnvironment(ctx, ".env", data, packs...)
 }
 
 type ExecDependencies struct {
@@ -195,19 +157,4 @@ func (b BuildManifest) BuildTargetList() []string {
 	}
 
 	return targets
-}
-
-func TemplateToString(templateText string, data interface{}) (string, error) {
-	t, err := template.New("generic").Parse(templateText)
-	if err != nil {
-		return "", err
-	}
-	var tpl bytes.Buffer
-	if err := t.Execute(&tpl, data); err != nil {
-		log.Errorf("Can't render template:: %v", err)
-		return "", err
-	}
-
-	result := tpl.String()
-	return result, nil
 }
