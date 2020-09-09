@@ -58,7 +58,7 @@ enough information to build your project:
 ```
 dependencies:
    build:
-     - python:3.6.3
+     - python:3.7
 
 build_targets:
    - name: default
@@ -159,12 +159,33 @@ You can change yb to other channels by using `-channel`:
 
 `yb update -channel=preview`
 
-Currently, the _inner_ yb that runs inside the build container will use the stable channel by default. To change that, set the environment variable `YB_UPDATE_CHANNEL=unstable` before running yb.
+Currently, the _inner_ yb that runs inside the build container will use the stable channel by default. To change that, set the environment variable `YB_UPDATE_CHANNEL=preview` before running yb.
 
 # Contributing 
 
 We welcome contributions to this CLI, please see the CONTRIBUTING file for more
 information. 
+
+# Two channels
+
+Currently the Preview channel has all the release candidates for what we call "Runtime Context" yb, where the main subcommands run in a Docker container:
+
+`yb exec`
+Will prepare and execute a long running container with runtime dependencies, startup commands and environment.
+
+`yb run`
+It will reuse the same container as the one created from the build target definition (i.e. with its dependencies and so forth).
+
+Current stable only runs in a container when building, but it can be turned off by:
+
+`yb build -no-container [build-target]`
+
+We're not updating the `unstable` channel anymore, we only have `stable` and `preview` right now.
+
+# Runtime-Context
+
+What we mean by "runtime-context" is that this branch and versions (v0.1.x and v0.2.x) doesn't inject yb in the container, we send commands directly to the docker daemon (`docker exec ...`) and set them up as defined in the YAML.
+
 
 # License 
 
