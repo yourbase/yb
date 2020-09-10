@@ -101,8 +101,8 @@ func LoadPackage(name string, path string) (Package, error) {
 	return p, nil
 }
 
-func (p Package) environmentVariables(ctx context.Context, data runtime.RuntimeEnvironmentData, env string) []string {
-	return p.Manifest.Exec.EnvironmentVariables(ctx, env, data)
+func (p Package) environmentVariables(ctx context.Context, data runtime.RuntimeEnvironmentData, env string) ([]string, error) {
+	return p.Manifest.Exec.environmentVariables(ctx, env, data)
 }
 
 func (p Package) Execute(ctx context.Context, runtimeCtx *runtime.Runtime) error {
@@ -118,13 +118,18 @@ func (p Package) ExecuteToWriter(ctx context.Context, runtimeCtx *runtime.Runtim
 
 	log.Infof("Executing package '%s'...\n", p.Name)
 
+	env, err := p.environmentVariables(ctx, runtimeCtx.EnvironmentData(), "default")
+	if err != nil {
+		return err
+	}
+
 	for _, cmdString := range p.Manifest.Exec.Commands {
 		proc := runtime.Process{
 			Command:     cmdString,
 			Directory:   "/workspace",
 			Interactive: false,
 			Output:      output,
-			Environment: p.environmentVariables(ctx, runtimeCtx.EnvironmentData(), "default"),
+			Environment: env,
 		}
 
 		if err := target.Run(ctx, proc); err != nil {
@@ -212,8 +217,13 @@ func (p Package) createExecutionTarget(ctx context.Context, runtimeCtx *runtime.
 		log.Infof("Mapping container port %s to %s on the local machine", remotePort, localPort)
 	}
 
+	env, err := manifest.Exec.environmentVariables(ctx, "default", runtimeCtx.EnvironmentData())
+	if err != nil {
+		return nil, err
+	}
+
 	execContainer := manifest.Exec.Container
-	execContainer.Environment = manifest.Exec.EnvironmentVariables(ctx, "default", runtimeCtx.EnvironmentData())
+	execContainer.Environment = env
 	execContainer.Command = "/usr/bin/tail -f /dev/null"
 	execContainer.Label = p.Name
 	execContainer.Ports = portMappings

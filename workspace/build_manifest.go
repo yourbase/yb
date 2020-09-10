@@ -5,13 +5,8 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
-	"strings"
-	"text/template"
 
-	"github.com/joho/godotenv"
 	"github.com/yourbase/narwhal"
-	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/plumbing/log"
 	"github.com/yourbase/yb/runtime"
 )
 
@@ -57,44 +52,22 @@ type ExecPhase struct {
 	BuildFirst   []string                    `yaml:"build_first"`
 }
 
-func (e *ExecPhase) EnvironmentVariables(ctx context.Context, envName string, data runtime.RuntimeEnvironmentData) []string {
+// environmentVariables returns a slice of parsed environment variables for this ExecPhase
+func (e *ExecPhase) environmentVariables(ctx context.Context, envName string, data runtime.RuntimeEnvironmentData) ([]string, error) {
+	packs := make([][]string, 0)
+	packs = append(packs, e.Environment["default"])
 
-	result := make([]string, 0)
-
-	for _, property := range e.Environment["default"] {
-
-		if _, _, ok := plumbing.SaneEnvironmentVar(property); ok {
-			interpolated, err := TemplateToString(property, data)
-			if err == nil {
-				result = append(result, interpolated)
-			} else {
-				result = append(result, property)
-			}
-		}
-	}
-
+	fromContainers := make([]string, 0)
 	for k, v := range data.Containers.Environment(ctx) {
-		result = append(result, k, v)
+		fromContainers = append(fromContainers, k+"="+v)
 	}
+	packs = append(packs, fromContainers)
 
 	if envName != "default" {
-		for _, property := range e.Environment[envName] {
-			if _, _, ok := plumbing.SaneEnvironmentVar(property); ok {
-				result = append(result, property)
-			}
-		}
+		packs = append(packs, e.Environment[envName])
 	}
 
-	// Check for local .env file
-	err := godotenv.Load()
-	if err == nil {
-		localEnv, _ := godotenv.Read()
-		for k, v := range localEnv {
-			result = append(result, strings.Join([]string{k, v}, "="))
-		}
-	}
-
-	return result
+	return parseEnvironment(ctx, ".env", data, packs...)
 }
 
 type ExecDependencies struct {
@@ -184,19 +157,4 @@ func (b BuildManifest) BuildTargetList() []string {
 	}
 
 	return targets
-}
-
-func TemplateToString(templateText string, data interface{}) (string, error) {
-	t, err := template.New("generic").Parse(templateText)
-	if err != nil {
-		return "", err
-	}
-	var tpl bytes.Buffer
-	if err := t.Execute(&tpl, data); err != nil {
-		log.Errorf("Can't render template:: %v", err)
-		return "", err
-	}
-
-	result := tpl.String()
-	return result, nil
 }

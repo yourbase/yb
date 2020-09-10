@@ -15,7 +15,7 @@ require (
 	github.com/gobwas/pool v0.2.1 // indirect
 	github.com/gobwas/ws v1.0.3
 	github.com/golang/snappy v0.0.1 // indirect
-	github.com/google/go-cmp v0.5.0
+	github.com/google/go-cmp v0.5.2
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/gopherjs/gopherjs v0.0.0-20190915194858-d3ddacdb130f // indirect
 	github.com/johnewart/archiver v3.1.4+incompatible
@@ -44,6 +44,7 @@ require (
 	golang.org/x/net v0.0.0-20200822124328-c89045814202 // indirect
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208 // indirect
 	golang.org/x/sys v0.0.0-20200831180312-196b9ba8737a // indirect
+	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/genproto v0.0.0-20200831141814-d751682dd103 // indirect
 	google.golang.org/grpc v1.31.1 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect

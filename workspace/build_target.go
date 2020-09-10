@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/yourbase/narwhal"
-	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	"github.com/yourbase/yb/runtime"
 )
@@ -55,20 +54,9 @@ func (b BuildDependencies) ContainerList() []narwhal.ContainerDefinition {
 	return containers
 }
 
-func (bt BuildTarget) EnvironmentVariables(data runtime.RuntimeEnvironmentData) []string {
-	result := make([]string, 0)
-	for _, property := range bt.Environment {
-		if _, _, ok := plumbing.SaneEnvironmentVar(property); ok {
-			interpolated, err := TemplateToString(property, data)
-			if err == nil {
-				result = append(result, interpolated)
-			} else {
-				result = append(result, property)
-			}
-		}
-	}
-
-	return result
+// environmentVariables returns a slice of parsed environment variables for this BuildTarget
+func (bt BuildTarget) environmentVariables(data runtime.RuntimeEnvironmentData) ([]string, error) {
+	return parseEnvironment(context.TODO(), ".env", data, bt.Environment)
 }
 
 func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, output io.Writer, flags BuildFlags, packagePath string, globalDeps []string) ([]CommandTimer, error) {
@@ -206,9 +194,14 @@ func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, ou
 		}
 	}
 
+	envVars, err := bt.environmentVariables(runtimeCtx.EnvironmentData())
+	if err != nil {
+		return nil, err
+	}
+
 	// Do this after the containers are up
-	for _, envString := range bt.EnvironmentVariables(runtimeCtx.EnvironmentData()) {
-		if n, v, ok := plumbing.SaneEnvironmentVar(envString); ok {
+	for _, envString := range envVars {
+		if n, v, ok := checkAndSplitEnvVar(envString); ok {
 			builder.SetEnv(n, v)
 		} else {
 			log.Warnf("'%s' doesn't look like an environment variable", envString)
@@ -216,7 +209,7 @@ func (bt BuildTarget) Build(ctx context.Context, runtimeCtx *runtime.Runtime, ou
 	}
 
 	// Merge global deps with build target deps
-	err := (&bt).mergeDeps(globalDeps)
+	err = (&bt).mergeDeps(globalDeps)
 	if err != nil {
 		return stepTimes, err
 	}
