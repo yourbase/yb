@@ -25,7 +25,7 @@ func checkAndSplitEnvVar(env string) (name, value string, sane bool) {
 	return
 }
 
-// parseEnvironment sanely checks and process an arbitrary number of
+// parseEnvironment checks and process an arbitrary number of
 //  environment vars lists, trying to not duplicate anything
 func parseEnvironment(ctx context.Context, envPath string, runtimeData runtime.RuntimeEnvironmentData, envPacks ...[]string) ([]string, error) {
 	envMap := make(map[string]string)
