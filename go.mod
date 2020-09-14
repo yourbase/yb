@@ -5,6 +5,7 @@ go 1.15
 require (
 	github.com/Microsoft/hcsshim v0.8.9 // indirect
 	github.com/beholders-eye/diffparser v0.0.0-20190814025112-fcedf0a097ba
+	github.com/blang/semver v3.5.1+incompatible
 	github.com/containerd/containerd v1.4.0 // indirect
 	github.com/containerd/continuity v0.0.0-20190827140505-75bee3e2ccb6 // indirect
 	github.com/dsnet/compress v0.0.1 // indirect
