@@ -180,7 +180,7 @@ func (t *ContainerTarget) DownloadFile(ctx context.Context, url string) (string,
 		log.Warnf("Failed to download and inject file: %v", err)
 		log.Infof("Will download via curl in container")
 		p := Process{
-			Command:     fmt.Sprintf("curl %s -o %s", url, outputFilename),
+			Command:     fmt.Sprintf("curl --fail-early -L %s -o %s", url, outputFilename),
 			Directory:   containerDefaultInjectDir,
 			Interactive: false,
 		}
