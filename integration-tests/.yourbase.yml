@@ -44,5 +44,3 @@ build_targets:
       - bash -c "cd flutter/pin_code_test_field && ../../../yb build -no-container default; git clean -f ."
       - bash -c "cd flutter/flutter-examples && ../../../yb build -no-container beta; git clean -f ."
       - bash -c "cd flutter/pin_code_test_field && ../../../yb build -no-container beta; git clean -f ."
-      - rm flutter/flutter-examples/.yourbase.yml
-      - rm flutter/pin_code_test_field/.yourbase.yml
