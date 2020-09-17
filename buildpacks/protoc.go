@@ -6,10 +6,11 @@ import (
 	"strings"
 
 	"github.com/yourbase/yb/plumbing/log"
+	"github.com/yourbase/yb/runtime"
 )
 
 // https://github.com/google/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip
-const protocDistMirror = "https://github.com/google/protobuf/releases/download/v{{.Version}}/protoc-{{.Version}}-{{.OS}}-x86_64.{{.Extension}}"
+const protocDistMirror = "https://github.com/google/protobuf/releases/download/v{{.Version}}/protoc-{{.Version}}-{{.OS}}-{{.Arch}}.{{.Extension}}"
 
 type ProtocBuildTool struct {
 	version string
@@ -27,15 +28,19 @@ func NewProtocBuildTool(spec BuildToolSpec) ProtocBuildTool {
 }
 
 func (bt ProtocBuildTool) DownloadURL(ctx context.Context) (string, error) {
-	opsys := OS()
-	arch := Arch()
+	t := bt.spec.InstallTarget
+	os := t.OS()
+	arch := t.Architecture()
+
+	opsys := "linux"
+	archLabel := "x86_64"
 	extension := "zip"
 
-	if arch == "amd64" {
-		arch = "x64"
+	if arch == runtime.I386 {
+		archLabel = "x86_32"
 	}
 
-	if opsys == "darwin" {
+	if os == runtime.Darwin {
 		opsys = "osx"
 	}
 
@@ -48,7 +53,7 @@ func (bt ProtocBuildTool) DownloadURL(ctx context.Context) (string, error) {
 		Extension string
 	}{
 		opsys,
-		arch,
+		archLabel,
 		version,
 		extension,
 	}

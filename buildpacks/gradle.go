@@ -32,13 +32,9 @@ func (bt GradleBuildTool) ArchiveFile() string {
 
 func (bt GradleBuildTool) DownloadURL(ctx context.Context) (string, error) {
 	data := struct {
-		OS        string
-		Arch      string
 		Version   string
 		Extension string
 	}{
-		OS(),
-		Arch(),
 		bt.Version(),
 		"zip",
 	}

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/yourbase/yb/plumbing/log"
+	"github.com/yourbase/yb/runtime"
 )
 
 const nodeDistMirrorTemplate = "https://nodejs.org/dist"
@@ -28,16 +29,22 @@ func (bt NodeBuildTool) Version() string {
 	return bt.version
 }
 func (bt NodeBuildTool) PackageString() string {
-	version := bt.Version()
-	arch := Arch()
+	t := bt.spec.InstallTarget
 
-	if arch == "amd64" {
-		arch = "x64"
+	version := bt.Version()
+	arch := t.Architecture()
+	archLabel := "x64"
+
+	if arch == runtime.I386 {
+		archLabel = "x86"
 	}
 
-	osName := OS()
+	osName := "linux"
+	if t.OS() == runtime.Darwin {
+		osName = "darwin"
+	}
 
-	return fmt.Sprintf("node-v%s-%s-%s", version, osName, arch)
+	return fmt.Sprintf("node-v%s-%s-%s", version, osName, archLabel)
 }
 
 func (bt NodeBuildTool) ArchiveFile() string {

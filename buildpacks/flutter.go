@@ -9,6 +9,7 @@ import (
 	"golang.org/x/mod/semver"
 
 	"github.com/yourbase/yb/plumbing/log"
+	"github.com/yourbase/yb/runtime"
 )
 
 // Stable channel URL example:
@@ -33,16 +34,20 @@ func NewFlutterBuildTool(spec BuildToolSpec) FlutterBuildTool {
 }
 
 func (bt FlutterBuildTool) DownloadURL(ctx context.Context) (string, error) {
-	opsys := OS()
-	arch := Arch()
+	t := bt.spec.InstallTarget
+
+	os := t.OS()
+	opsys := "linux"
+	arch := "x64"
+	architecture := t.Architecture()
 	extension := "tar.xz"
 	channel := "stable"
 
-	if arch == "amd64" {
-		arch = "x64"
+	if architecture == runtime.I386 {
+		arch = "x32"
 	}
 
-	if opsys == "darwin" {
+	if os == runtime.Darwin {
 		opsys = "macos"
 		extension = "zip"
 	}

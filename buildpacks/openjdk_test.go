@@ -3,6 +3,8 @@ package buildpacks
 import (
 	"context"
 	"testing"
+
+	"github.com/yourbase/yb/runtime"
 )
 
 func TestOpenJDKUrlGeneration(t *testing.T) {
@@ -80,9 +82,12 @@ func TestOpenJDKUrlGeneration(t *testing.T) {
 			url:     "https://github.com/AdoptOpenJDK/openjdk14-binaries/releases/download/jdk-14%2B36/OpenJDK14U-jdk_x64_linux_hotspot_14_36.tar.gz",
 		},
 	} {
-		bt := NewJavaBuildTool(BuildToolSpec{Tool: "java", Version: data.version, PackageDir: "/opt/tools/java"})
+		spec := BuildToolSpec{Tool: "java", Version: data.version, PackageDir: "/opt/tools/java"}
+		spec.InstallTarget = &runtime.ContainerTarget{}
 
-		url, err := bt.DownloadURL(context.Background())
+		bt := NewJavaBuildTool(spec)
+
+		url, err := bt.DownloadURL(context.TODO())
 		if err != nil {
 			t.Fatalf("Unable to generate download URL: %v", err)
 		}

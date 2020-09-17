@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/yourbase/yb/plumbing/log"
+	"github.com/yourbase/yb/runtime"
 )
 
 const glideDistMirrorTemplate = "https://github.com/Masterminds/glide/releases/download/v{{.Version}}/glide-v{{.Version}}-{{.OS}}-{{.Arch}}.tar.gz"
@@ -36,8 +37,20 @@ func (bt GlideBuildTool) Version() string {
 
 func (bt GlideBuildTool) Setup(ctx context.Context, glideDir string) error {
 	t := bt.spec.InstallTarget
+	os := t.OS()
+	arch := t.Architecture()
+	a := "amd64"
+	o := "linux"
 
-	cmdPath := filepath.Join(glideDir, fmt.Sprintf("%s-%s", OS(), Arch()))
+	if arch == runtime.I386 {
+		a = "386"
+	}
+
+	if os == runtime.Darwin {
+		o = "darwin"
+	}
+
+	cmdPath := filepath.Join(glideDir, fmt.Sprintf("%s-%s", o, a))
 
 	t.PrependToPath(ctx, cmdPath)
 
@@ -45,13 +58,28 @@ func (bt GlideBuildTool) Setup(ctx context.Context, glideDir string) error {
 }
 
 func (bt GlideBuildTool) DownloadURL(ctx context.Context) (string, error) {
+	t := bt.spec.InstallTarget
+	osName := "linux"
+	archLabel := "amd64"
+
+	os := t.OS()
+	arch := t.Architecture()
+
+	if os == runtime.Darwin {
+		osName = "darwin"
+	}
+
+	if arch == runtime.I386 {
+		archLabel = "386"
+	}
+
 	params := struct {
 		OS      string
 		Arch    string
 		Version string
 	}{
-		OS:      OS(),
-		Arch:    Arch(),
+		OS:      osName,
+		Arch:    archLabel,
 		Version: bt.Version(),
 	}
 

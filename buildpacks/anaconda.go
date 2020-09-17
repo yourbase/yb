@@ -83,11 +83,14 @@ func (bt AnacondaBuildTool) Install(ctx context.Context) (string, error) {
 }
 
 func (bt AnacondaBuildTool) DownloadURL(ctx context.Context) (string, error) {
+	t := bt.spec.InstallTarget
 	var v semver.Version
 
-	opsys := OS()
-	arch := Arch()
+	opsys := "linux"
+	arch := "x86_64"
 	extension := "sh"
+	os := t.OS()
+	architecture := t.Architecture()
 	version := bt.Version()
 
 	if version == "" {
@@ -100,19 +103,19 @@ func (bt AnacondaBuildTool) DownloadURL(ctx context.Context) (string, error) {
 		}
 	}
 
-	if arch == "amd64" {
+	if architecture == runtime.Amd64 {
 		arch = "x86_64"
 	}
 
-	if opsys == "darwin" {
+	if os == runtime.Darwin {
 		opsys = "MacOSX"
 	}
 
-	if opsys == "linux" {
+	if os == runtime.Linux {
 		opsys = "Linux"
 	}
 
-	if opsys == "windows" {
+	if os == runtime.Windows {
 		opsys = "Windows"
 		extension = "exe"
 	}

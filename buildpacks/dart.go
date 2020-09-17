@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/yourbase/yb/plumbing/log"
+	"github.com/yourbase/yb/runtime"
 )
 
 //https://archive.apache.org/dist/dart/dart-3/3.3.3/binaries/apache-dart-3.3.3-bin.tar.gz
@@ -26,15 +27,19 @@ func NewDartBuildTool(toolSpec BuildToolSpec) DartBuildTool {
 }
 
 func (bt DartBuildTool) DownloadURL(ctx context.Context) (string, error) {
-	opsys := OS()
-	arch := Arch()
+	t := bt.spec.InstallTarget
+
+	os := t.OS()
+	opsys := "linux"
+	architecture := t.Architecture()
+	arch := "x64"
 	extension := "zip"
 
-	if arch == "amd64" {
-		arch = "x64"
+	if architecture == runtime.I386 {
+		arch = "x32"
 	}
 
-	if opsys == "darwin" {
+	if os == runtime.Darwin {
 		opsys = "macos"
 	}
 

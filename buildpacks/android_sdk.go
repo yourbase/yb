@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/yourbase/yb/plumbing/log"
+	"github.com/yourbase/yb/runtime"
 )
 
 const (
@@ -35,12 +36,20 @@ func NewAndroidBuildTool(toolSpec BuildToolSpec) AndroidBuildTool {
 }
 
 func (bt AndroidBuildTool) DownloadURL(ctx context.Context) (string, error) {
-	opsys := OS()
-	arch := Arch()
+	t := bt.spec.InstallTarget
+
+	os := t.OS()
+	opsys := "linux"
+	arch := "x64"
+	architecture := t.Architecture()
 	extension := "zip"
 
-	if arch == "amd64" {
-		arch = "x64"
+	if architecture == runtime.I386 {
+		arch = "x32"
+	}
+
+	if os == runtime.Darwin {
+		opsys = "darwin"
 	}
 
 	version := bt.Version()

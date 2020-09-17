@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	"github.com/yourbase/yb/plumbing/log"
+	"github.com/yourbase/yb/runtime"
 )
 
-//https://archive.apache.org/dist/heroku/heroku-3/3.3.3/binaries/apache-heroku-3.3.3-bin.tar.gz
 const herokuDistMirrorTemplate = "https://cli-assets.heroku.com/heroku-{{.OS}}-{{.Arch}}.tar.gz"
 
 type HerokuBuildTool struct {
@@ -31,11 +31,19 @@ func (bt HerokuBuildTool) ArchiveFile() string {
 }
 
 func (bt HerokuBuildTool) DownloadURL(ctx context.Context) (string, error) {
-	opsys := OS()
-	arch := Arch()
+	t := bt.spec.InstallTarget
+	os := t.OS()
+	arch := t.Architecture()
 
-	if arch == "amd64" {
-		arch = "x64"
+	opsys := "linux"
+	archLabel := "x64"
+
+	if arch == runtime.I386 {
+		archLabel = "x86"
+	}
+
+	if os == runtime.Darwin {
+		opsys = "darwin"
 	}
 
 	data := struct {
@@ -43,7 +51,7 @@ func (bt HerokuBuildTool) DownloadURL(ctx context.Context) (string, error) {
 		Arch string
 	}{
 		opsys,
-		arch,
+		archLabel,
 	}
 
 	url, err := TemplateToString(herokuDistMirrorTemplate, data)

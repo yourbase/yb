@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/yourbase/yb/plumbing/log"
+	"github.com/yourbase/yb/runtime"
 )
 
 const androidNDKDistMirrorTemplate = "https://dl.google.com/android/repository/android-ndk-{{.Version}}-{{.OS}}-{{.Arch}}.zip"
@@ -26,12 +27,20 @@ func NewAndroidNdkBuildTool(toolSpec BuildToolSpec) AndroidNdkBuildTool {
 }
 
 func (bt AndroidNdkBuildTool) DownloadURL(ctx context.Context) (string, error) {
-	opsys := OS()
-	arch := Arch()
+	t := bt.spec.InstallTarget
+
+	os := t.OS()
+	opsys := "linux"
+	architecture := t.Architecture()
+	arch := "x86_64"
 	extension := "zip"
 
-	if arch == "amd64" {
-		arch = "x86_64"
+	if architecture == runtime.I386 {
+		arch = "i386"
+	}
+
+	if os == runtime.Darwin {
+		opsys = "darwin"
 	}
 
 	version := bt.Version()

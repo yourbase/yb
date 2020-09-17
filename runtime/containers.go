@@ -67,8 +67,6 @@ func (t *ContainerTarget) OSVersion(ctx context.Context) string {
 			}
 		}
 	}
-	return ""
-
 }
 
 func (t *ContainerTarget) Architecture() Architecture {

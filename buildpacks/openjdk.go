@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/yourbase/yb/plumbing/log"
+	"github.com/yourbase/yb/runtime"
 )
 
 type JavaBuildTool struct {
@@ -115,6 +116,8 @@ func (bt JavaBuildTool) Setup(ctx context.Context, installDir string) error {
 }
 
 func (bt JavaBuildTool) DownloadURL(ctx context.Context) (string, error) {
+	t := bt.spec.InstallTarget
+	os := t.OS()
 
 	// This changes pretty dramatically depending on major version :~(
 	// Using HotSpot version, we should consider an OpenJ9 option
@@ -139,12 +142,13 @@ func (bt JavaBuildTool) DownloadURL(ctx context.Context) (string, error) {
 	arch := "x64"
 	extension := "tar.gz"
 
-	operatingSystem := OS()
-	if operatingSystem == "darwin" {
+	operatingSystem := "linux"
+	if os == runtime.Darwin {
 		operatingSystem = "mac"
 	}
 
-	if operatingSystem == "windows" {
+	if os == runtime.Windows {
+		operatingSystem = "windows"
 		extension = "zip"
 	}
 
@@ -173,7 +177,6 @@ func (bt JavaBuildTool) DownloadURL(ctx context.Context) (string, error) {
 }
 
 func (bt JavaBuildTool) JavaDir(installDir string) string {
-	opsys := OS()
 	// Versions..
 	archiveDir := ""
 	if bt.majorVersion == 8 {
@@ -184,7 +187,7 @@ func (bt JavaBuildTool) JavaDir(installDir string) string {
 
 	basePath := filepath.Join(installDir, archiveDir)
 
-	if opsys == "darwin" {
+	if bt.spec.InstallTarget.OS() == runtime.Darwin {
 		basePath = filepath.Join(basePath, "Contents", "Home")
 	}
 

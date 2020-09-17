@@ -16,16 +16,15 @@ import (
 const rubyDownloadTemplate = "https://yourbase-build-tools.s3-us-west-2.amazonaws.com/ruby/ruby-{{ .Version }}-{{ .OS }}-{{ .Arch }}-{{ .OsVersion }}.{{ .Extension }}"
 
 func (bt RubyBuildTool) DownloadURL(ctx context.Context) (string, error) {
+	t := bt.spec.InstallTarget
+	os := t.OS()
+
 	extension := "tar.bz2"
 	operatingSystem := "unknown"
-	osVersion := bt.spec.InstallTarget.OSVersion(ctx)
-	arch := Arch()
+	osVersion := t.OSVersion(ctx)
+	archLabel := "x86_64"
 
-	if arch == "amd64" {
-		arch = "x86_64"
-	}
-
-	switch bt.spec.InstallTarget.OS() {
+	switch os {
 	case runtime.Linux:
 		operatingSystem = "Linux"
 	case runtime.Darwin:
@@ -44,7 +43,7 @@ func (bt RubyBuildTool) DownloadURL(ctx context.Context) (string, error) {
 	}{
 		operatingSystem,
 		osVersion,
-		arch,
+		archLabel,
 		bt.Version(),
 		extension,
 	}

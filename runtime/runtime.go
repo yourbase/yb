@@ -26,7 +26,7 @@ type Architecture int
 
 const (
 	Amd64 Architecture = iota
-	i386
+	I386
 )
 
 type TargetRunError struct {
