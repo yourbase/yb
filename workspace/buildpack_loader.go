@@ -39,6 +39,8 @@ func LoadBuildPacks(ctx context.Context, installTarget runtime.Target, dependenc
 			bt = buildpacks.NewAnaconda3BuildTool(spec)
 		case "ant":
 			bt = buildpacks.NewAntBuildTool(spec)
+		case "awscli":
+			bt = buildpacks.NewAWSCLIBuildTool(spec)
 		case "r":
 			bt = buildpacks.NewRLangBuildTool(spec)
 		case "heroku":
