@@ -109,9 +109,31 @@ func (bt AWSCLIBuildTool) Install(ctx context.Context) (string, error) {
 		return "", err
 	}
 
+	var updateString string
+	if bt.Version() == "latest" {
+		updateString = "--update "
+	}
+
+	// Linux installation
+	// NOTE Needs to be run as root (sudo)
+	for _, cmd := range []string{
+		"mkdir -p bin",
+		"./aws/install " + updateString + "--install-dir " + installDir + " --bin-dir ./bin",
+	} {
+		err = t.Run(ctx, runtime.Process{
+			Command:   cmd,
+			Directory: installDir,
+		})
+		if err != nil {
+			return "", err
+		}
+	}
+
 	return installDir, nil
 }
 
+// darwinInstall is a branch from Install, that will do rootless AWSCLIv2 install on a Mac OS X
+// NOTE: this needs the equivalent of Travis's Matrix support for our YAML, to be tested on the CI
 func (bt AWSCLIBuildTool) darwinInstall(ctx context.Context, installDir string) (string, error) {
 	log.Warnf("Installing AWSCLI on Darwin is only supported in Metal")
 
