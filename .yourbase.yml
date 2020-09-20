@@ -12,6 +12,7 @@ build_targets:
     build_after:
       - default
     commands:
+      - bash -c "cd integration-tests; ../yb build -no-container awscli"
       - apt-get install -y git
       - bash -c "cd integration-tests; ../yb build -no-container"
       - bash -c "cd integration-tests; ../yb build -no-container python"
@@ -28,6 +29,7 @@ build_targets:
     commands:
       - apt-get update
       - apt-get install -y --no-install-recommends zip
+      # TODO(ch2493): Use the awscli build pack instead of Python
       - pip install awscli
       - bash package.sh
       - bash release.sh 
