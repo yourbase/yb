@@ -88,6 +88,10 @@ func (bt AWSCLIBuildTool) Install() error {
 		return nil
 	}
 
+	if OS() == "darwin" {
+		return fmt.Errorf("Work in progress, please try v0.2.x")
+	}
+
 	log.Infof("Will install AWSCLI v%s into %s", bt.Version(), installDir)
 	downloadURL := bt.DownloadURL()
 	log.Infof("Downloading from URL %s ...", downloadURL)
@@ -97,13 +101,26 @@ func (bt AWSCLIBuildTool) Install() error {
 		return err
 	}
 
-	if OS() == "darwin" {
-		return fmt.Errorf("Work in progress, please try v0.2.x")
-	}
-
 	err = archiver.Unarchive(localFile, installDir)
 	if err != nil {
 		return err
+	}
+
+	var updateString string
+	if bt.Version() == "latest" {
+		updateString = "--update "
+	}
+
+	// Linux installation
+	// NOTE Needs to be run as root (sudo)
+	for _, cmd := range []string{
+		"mkdir -p bin",
+		"./aws/install " + updateString + "--install-dir " + installDir + " --bin-dir ./bin",
+	} {
+		err = plumbing.ExecToStdout(cmd, installDir)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
