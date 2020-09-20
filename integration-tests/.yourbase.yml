@@ -3,10 +3,12 @@
 #
 build_targets:
   - name: default
+    host_only: true
     commands:
       - git submodule update --checkout --depth 2
 
   - name: python
+    host_only: true
     commands:
       - cp python/.yourbase.flask.yml python/flask/.yourbase.yml
       - cp python/.yourbase.httpie.yml python/httpie/.yourbase.yml
@@ -14,6 +16,7 @@ build_targets:
       - bash -c "cd python/httpie && ../../../yb build -no-container default; git clean -f ."
 
   - name: java
+    host_only: true
     commands:
       - cp java/.yourbase.RxJava.yml java/RxJava/.yourbase.yml
       - cp java/.yourbase.guava.yml java/guava/.yourbase.yml
@@ -23,6 +26,7 @@ build_targets:
       - bash -c "cd java/java-design-patterns && ../../../yb build -no-container default; git clean -f ."
 
   - name: gopher
+    host_only: true
     commands:
       - cp go/.yourbase.gg.yml go/gg/.yourbase.yml
       - cp go/.yourbase.gin.yml go/gin/.yourbase.yml
@@ -30,6 +34,7 @@ build_targets:
       - bash -c "cd go/gin && ../../../yb build -no-container default; git clean -f ."
 
   - name: ruby
+    host_only: true
     commands:
       - cp ruby/.yourbase.capistrano.yml ruby/capistrano/.yourbase.yml
       - cp ruby/.yourbase.devise.yml ruby/devise/.yourbase.yml
@@ -37,6 +42,7 @@ build_targets:
       - bash -c "cd ruby/devise && ../../../yb build -no-container default; git clean -f ."
 
   - name: flutter
+    host_only: true
     commands:
       - cp flutter/.yourbase.flutter-examples.yml flutter/flutter-examples/.yourbase.yml
       - cp flutter/.yourbase.pin_code_test_field.yml flutter/pin_code_test_field/.yourbase.yml
@@ -44,3 +50,9 @@ build_targets:
       - bash -c "cd flutter/pin_code_test_field && ../../../yb build -no-container default; git clean -f ."
       - bash -c "cd flutter/flutter-examples && ../../../yb build -no-container beta; git clean -f ."
       - bash -c "cd flutter/pin_code_test_field && ../../../yb build -no-container beta; git clean -f ."
+
+  - name: awscli
+    host_only: true
+    commands:
+      - bash -c "cd awscli-testground && ../../yb build -no-container default"
+      - bash -c "cd awscli-testground && ../../yb build -no-container v2.x"

@@ -112,7 +112,6 @@ func (bt AWSCLIBuildTool) Install() error {
 	}
 
 	// Linux installation
-	// NOTE Needs to be run as root (sudo)
 	for _, cmd := range []string{
 		"mkdir -p bin",
 		"./aws/install " + updateString + "--install-dir " + installDir + " --bin-dir ./bin",

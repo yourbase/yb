@@ -1,0 +1,16 @@
+build_targets:
+  - name: default
+    host_only: true
+    dependencies:
+      build:
+        - awscli:latest
+    commands:
+    - aws --version
+
+  - name: v2.x
+    host_only: true
+    dependencies:
+      build:
+        - awscli:2.0.49
+    commands:
+    - aws --version
