@@ -149,8 +149,8 @@ func (bt AnacondaBuildTool) Setup() error {
 	setupDir := bt.spec.PackageDir
 
 	for _, cmd := range []string{
-		fmt.Sprintf("conda config --set always_yes yes --set changeps1 no"),
-		fmt.Sprintf("conda update -q conda"),
+		"conda config --set always_yes yes --set changeps1 no",
+		"conda update -q conda",
 	} {
 		log.Infof("Running: '%v' ", cmd)
 		plumbing.ExecToStdout(cmd, setupDir)

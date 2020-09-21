@@ -42,5 +42,4 @@ func getDebianOrUbuntuVersion() string {
 			}
 		}
 	}
-	return ""
 }

@@ -13,7 +13,7 @@ import (
 const (
 	anacondaToolVersion = "4.8.3"
 	// The version above needs a newer template
-	anacondaURLTemplate = "https://repo.continuum.io/miniconda/Miniconda{{.PyNum}}-py37_{{.Version}}-{{.OS}}-{{.Arch}}.{{.Extension}}"
+	anacondaURLTemplate = "https://repo.continuum.io/miniconda/Miniconda{{.PyNum}}-{{.Version}}-{{.OS}}-{{.Arch}}.{{.Extension}}"
 )
 
 type PythonBuildTool struct {
@@ -21,8 +21,6 @@ type PythonBuildTool struct {
 	version string
 	spec    BuildToolSpec
 }
-
-var ANACONDA_URL_TEMPLATE = "https://repo.continuum.io/miniconda/Miniconda{{.PyNum}}-{{.Version}}-{{.OS}}-{{.Arch}}.{{.Extension}}"
 
 func NewPythonBuildTool(toolSpec BuildToolSpec) PythonBuildTool {
 	tool := PythonBuildTool{
@@ -118,7 +116,7 @@ func (bt PythonBuildTool) DownloadUrl() string {
 		extension,
 	}
 
-	url, _ := plumbing.TemplateToString(ANACONDA_URL_TEMPLATE, data)
+	url, _ := plumbing.TemplateToString(anacondaURLTemplate, data)
 
 	return url
 }

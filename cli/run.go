@@ -13,7 +13,6 @@ import (
 )
 
 type RunCmd struct {
-	target      string
 	environment string
 }
 

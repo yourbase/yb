@@ -14,7 +14,6 @@ import (
 	"regexp"
 	"strings"
 	"text/template"
-	"time"
 
 	"github.com/google/shlex"
 	"github.com/ulikunitz/xz"
@@ -113,39 +112,6 @@ func ExecSilentlyToWriter(cmdString string, targetDir string, writer io.Writer) 
 
 	return nil
 
-}
-
-func ExecToLogWithProgressDots(cmdString string, targetDir string, logPath string) error {
-	stoppedchan := make(chan struct{})
-	dotchan := make(chan int)
-	defer close(stoppedchan)
-
-	go func() {
-		for {
-			select {
-			default:
-				dotchan <- 1
-				time.Sleep(3 * time.Second)
-			case <-stoppedchan:
-				return
-			}
-		}
-	}()
-
-	go func() {
-		for {
-			select {
-			default:
-			case <-dotchan:
-				fmt.Printf(".")
-			case <-stoppedchan:
-				fmt.Printf(" done!\n")
-				return
-			}
-		}
-	}()
-
-	return ExecToLog(cmdString, targetDir, logPath)
 }
 
 func PrependToPath(dir string) {
