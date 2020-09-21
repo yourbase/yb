@@ -18,10 +18,6 @@ func (b BuildManifest) BuildDependenciesChecksum() string {
 	return fmt.Sprintf("%x", sum[:DependencyChecksumLength])
 }
 
-func (b BuildManifest) IsTargetSandboxed(target BuildTarget) bool {
-	return b.Sandbox || target.Sandbox
-}
-
 // XXX: Support more than one level? Intuitively that seems like it will breed un-needed complexity
 func (b BuildManifest) ResolveBuildTargets(targetName string) ([]BuildTarget, error) {
 	targetList := make([]BuildTarget, 0)
