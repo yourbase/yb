@@ -45,7 +45,6 @@ type BuildCmd struct {
 type BuildConfiguration struct {
 	Target           BuildTarget
 	TargetDir        string
-	Sandboxed        bool
 	ExecPrefix       string
 	ForceNoContainer bool
 	TargetPackage    Package
@@ -260,7 +259,6 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		if !b.DependenciesOnly && buildError == nil {
 			log.SubSection(fmt.Sprintf("Build target: %s", target.Name))
 			config.Target = target
-			config.Sandboxed = manifest.IsTargetSandboxed(target)
 			buildData.ExportEnvironmentPublicly()
 			log.Infof("Executing build steps...")
 			buildStepTimers, buildError = RunCommands(config)
@@ -505,7 +503,6 @@ func RunCommands(config BuildConfiguration) ([]CommandTimer, error) {
 	stepTimes := make([]CommandTimer, 0)
 
 	target := config.Target
-	sandboxed := config.Sandboxed
 	targetDir := config.TargetDir
 	if target.Root != "" {
 		log.Infof("Build root is %s", target.Root)
@@ -527,17 +524,9 @@ func RunCommands(config BuildConfiguration) ([]CommandTimer, error) {
 				cmdString = fmt.Sprintf("%s %s", config.ExecPrefix, cmdString)
 			}
 
-			if sandboxed {
-				log.Infoln("Running build in a sandbox!")
-				if err := ExecInSandbox(cmdString, targetDir); err != nil {
-					log.Errorf("Failed to run %s: %v", cmdString, err)
-					stepError = err
-				}
-			} else {
-				if err := ExecToStdout(cmdString, targetDir); err != nil {
-					log.Errorf("Failed to run %s: %v", cmdString, err)
-					stepError = err
-				}
+			if err := ExecToStdout(cmdString, targetDir); err != nil {
+				log.Errorf("Failed to run %s: %v", cmdString, err)
+				stepError = err
 			}
 		}
 
