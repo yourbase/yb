@@ -19,6 +19,7 @@ import (
 	"strings"
 	"time"
 
+	ggit "gg-scm.io/pkg/git"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	"github.com/johnewart/subcommands"
@@ -52,7 +53,7 @@ type RemoteCmd struct {
 	committed      bool
 	publicRepo     bool
 	backupWorktree bool
-	remotes        []types.GitRemote
+	remotes        []*url.URL
 }
 
 func (*RemoteCmd) Name() string     { return "remotebuild" }
@@ -162,17 +163,10 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		repoUrls = append(repoUrls, c.URLs...)
 	}
 
-	project, remote, err := p.fetchProject(repoUrls)
-
+	project, err := p.fetchProject(repoUrls)
 	if err != nil {
 		bootErrored()
 		log.Error(err)
-		return subcommands.ExitFailure
-	}
-
-	if !remote.Validate() {
-		bootErrored()
-		log.Errorf("Unable to pick the correct remote")
 		return subcommands.ExitFailure
 	}
 
@@ -197,13 +191,6 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	//    3.3. Save the patch and compress it
 	// 4. Submit build!
 
-	remote.Branch, err = defineBranch(workRepo, p.branch)
-	if err != nil {
-		bootErrored()
-		log.Errorf("Unable to define a branch: %v", err)
-		return subcommands.ExitFailure
-	}
-
 	if bootProgress != nil {
 		fmt.Println()
 	}
@@ -215,7 +202,12 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	p.branch = branch
 	p.baseCommit = ancestorRef.String()
 
-	head, _ := workRepo.Head()
+	head, err := workRepo.Head()
+	if err != nil {
+		bootErrored()
+		log.Errorf("Couldn't find HEAD commit: %v", err)
+		return subcommands.ExitFailure
+	}
 	headCommit, err := workRepo.CommitObject(head.Hash())
 	if err != nil {
 		bootErrored()
@@ -658,105 +650,52 @@ func managementLogUrl(url, org, label string) string {
 	return ""
 }
 
-func defineBranch(r *git.Repository, hintBranch string) (string, error) {
-
-	ref, err := r.Head()
-	if err != nil {
-		return "", fmt.Errorf("No Head: %v", err)
-	}
-
-	if ref.Name().IsBranch() {
-		if hintBranch != "" {
-			if hintBranch == ref.Name().Short() {
-				log.Infof("Informed branch is the one used locally")
-
-				return hintBranch, nil
-
-			} else {
-				return hintBranch, fmt.Errorf("Informed branch (%v) isn't the same as the one used locally (%v)", hintBranch, ref.Name().String())
-			}
-		} else {
-			log.Debugf("Found branch reference name is %v", ref.Name().Short())
-			return ref.Name().Short(), nil
-		}
-
-	} else {
-		return "", fmt.Errorf("No branch set?")
-	}
-}
-
-func (p *RemoteCmd) fetchProject(urls []string) (*types.Project, types.GitRemote, error) {
-	var empty types.GitRemote
+func (p *RemoteCmd) fetchProject(urls []string) (*types.Project, error) {
 	v := url.Values{}
 	fmt.Println()
 	log.Infof("URLs used to search: %s", urls)
 
 	for _, u := range urls {
-		rem := types.NewGitRemote(u)
+		rem, err := ggit.ParseURL(u)
 		// We only support GitHub by now
 		// TODO create something more generic
-		if rem.Validate() && strings.Contains(rem.String(), "github.com") {
-			p.remotes = append(p.remotes, rem)
-			v.Add("urls[]", u)
-		} else {
+		if err != nil || rem.Host != "github.com" {
 			log.Warnf("Invalid remote: '%s', ignoring", u)
+			continue
 		}
+		p.remotes = append(p.remotes, rem)
+		v.Add("urls[]", u)
 	}
 	resp, err := postToApi("search/projects", v)
-
 	if err != nil {
-		return nil, empty, fmt.Errorf("Couldn't lookup project on api server: %v", err)
+		return nil, fmt.Errorf("Couldn't lookup project on api server: %v", err)
 	}
+	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		log.Debugf("Build server returned HTTP Status %d", resp.StatusCode)
-		if resp.StatusCode == 203 {
+		switch resp.StatusCode {
+		case http.StatusNonAuthoritativeInfo:
 			p.publicRepo = true
-		} else if resp.StatusCode == 401 {
-			return nil, empty, fmt.Errorf("Unauthorized, authentication failed.\nPlease `yb login` again.")
-		} else if resp.StatusCode == 412 || resp.StatusCode == 404 {
-			return nil, empty, fmt.Errorf("Please verify if this private repository has %s installed.", ybconfig.CurrentGHAppUrl())
-		} else {
-			return nil, empty, fmt.Errorf("This is us, not you, please try again in a few minutes.")
+		case http.StatusUnauthorized:
+			return nil, fmt.Errorf("Unauthorized, authentication failed.\nPlease `yb login` again.")
+		case http.StatusPreconditionFailed, http.StatusNotFound:
+			return nil, fmt.Errorf("Please verify if this private repository has %s installed.", ybconfig.CurrentGHAppUrl())
+		default:
+			return nil, fmt.Errorf("This is us, not you, please try again in a few minutes.")
 		}
 	}
 
-	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
 	var project types.Project
 	err = json.Unmarshal(body, &project)
 	if err != nil {
-		return nil, empty, err
+		return nil, err
 	}
-
-	remote := p.pickRemote(project.Repository)
-	if !remote.Validate() {
-		return nil, empty, fmt.Errorf("Can't pick a good remote to clone upstream.")
-	}
-
-	return &project, remote, nil
-}
-
-func (p *RemoteCmd) pickRemote(url string) (remote types.GitRemote) {
-
-	for _, r := range p.remotes {
-		if strings.Contains(url, r.Url) || strings.Contains(r.Url, url) {
-			// If it matches the Url received from the API somehow:
-			return r
-		}
-	}
-	if len(p.remotes) > 0 {
-		// We only support GitHub by now
-		// TODO create something more generic
-		for _, rem := range p.remotes {
-			if strings.Contains(rem.Domain, "github.com") {
-				remote = rem
-				return
-			}
-		}
-	}
-
-	return
+	return &project, nil
 }
 
 func (cmd *RemoteCmd) savePatch() error {
@@ -800,7 +739,7 @@ func (cmd *RemoteCmd) submitBuild(project *types.Project, tagMap map[string]stri
 	patchEncoded := base64.StdEncoding.EncodeToString(patchBuffer.Bytes())
 
 	formData := url.Values{
-		"project_id": {strconv.Itoa(project.Id)},
+		"project_id": {strconv.Itoa(project.ID)},
 		"repository": {project.Repository},
 		"api_key":    {userToken},
 		"target":     {cmd.target},
