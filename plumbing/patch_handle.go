@@ -6,11 +6,10 @@ import (
 	"io"
 	"strings"
 
-	"gopkg.in/src-d/go-git.v4"
-	"gopkg.in/src-d/go-git.v4/plumbing/object"
-
 	"github.com/beholders-eye/diffparser"
 	"github.com/yourbase/yb/plumbing/log"
+	"gopkg.in/src-d/go-git.v4"
+	"gopkg.in/src-d/go-git.v4/plumbing/object"
 )
 
 func applyPatch(file *diffparser.DiffFile, from string) (to string, err error) {

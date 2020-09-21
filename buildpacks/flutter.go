@@ -9,9 +9,9 @@ import (
 	"github.com/johnewart/archiver"
 	"golang.org/x/mod/semver"
 
-	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
+	"github.com/yourbase/yb/types"
 )
 
 // Stable channel URL example:
@@ -21,7 +21,7 @@ import (
 const flutterDistMirrorTemplate = "https://storage.googleapis.com/flutter_infra/releases/{{.Channel}}/{{.OS}}/flutter_{{.OS}}_{{.Version}}-{{.Channel}}.{{.Extension}}"
 
 type FlutterBuildTool struct {
-	BuildTool
+	types.BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -73,7 +73,7 @@ func (bt FlutterBuildTool) DownloadUrl() string {
 		downloadURLVersion(version),
 		extension,
 	}
-	url, _ := TemplateToString(flutterDistMirrorTemplate, data)
+	url, _ := plumbing.TemplateToString(flutterDistMirrorTemplate, data)
 
 	return url
 }
@@ -121,7 +121,7 @@ func (bt FlutterBuildTool) Install() error {
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading Flutter from URL %s...", downloadUrl)
-		localFile, err := DownloadFileWithCache(downloadUrl)
+		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
 			return err

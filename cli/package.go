@@ -4,14 +4,14 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/johnewart/archiver"
-	"github.com/johnewart/subcommands"
 	"os"
 	"path/filepath"
 
-	. "github.com/yourbase/yb/plumbing"
+	"github.com/johnewart/archiver"
+	"github.com/johnewart/subcommands"
+	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/workspace"
+	"github.com/yourbase/yb/workspace"
 )
 
 type PackageCmd struct {
@@ -39,7 +39,7 @@ func (b *PackageCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 }
 
 func (b *PackageCmd) ArchiveWorkspace() subcommands.ExitStatus {
-	workspace, err := LoadWorkspace()
+	workspace, err := workspace.LoadWorkspace()
 
 	if err != nil {
 		return subcommands.ExitFailure
@@ -55,11 +55,11 @@ func (b *PackageCmd) ArchiveWorkspace() subcommands.ExitStatus {
 
 	buildDir := workspace.BuildRoot()
 	outputDir := filepath.Join(buildDir, "output")
-	MkdirAsNeeded(outputDir)
+	plumbing.MkdirAsNeeded(outputDir)
 	archiveFile := fmt.Sprintf("%s-package.tar", targetPackage.Name)
 	pkgFile := filepath.Join(outputDir, archiveFile)
 
-	if PathExists(pkgFile) {
+	if plumbing.PathExists(pkgFile) {
 		os.Remove(pkgFile)
 	}
 

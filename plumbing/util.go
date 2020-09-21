@@ -16,12 +16,10 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
-
 	"github.com/google/shlex"
 	"github.com/ulikunitz/xz"
-
+	"github.com/yourbase/yb/plumbing/log"
+	"github.com/yourbase/yb/types"
 	"gopkg.in/src-d/go-billy.v4/memfs"
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing"
@@ -43,7 +41,7 @@ func ExecToStdoutWithEnv(cmdString string, targetDir string, env []string) error
 		return fmt.Errorf("Can't parse command string '%s': %v", cmdString, err)
 	}
 
-	cmd := exec.Command(cmdArgs[0], cmdArgs[1:len(cmdArgs)]...)
+	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
 	cmd.Dir = targetDir
 	cmd.Stdout = os.Stdout
 	cmd.Stdin = os.Stdin
@@ -76,7 +74,7 @@ func ExecToLog(cmdString string, targetDir string, logPath string) error {
 
 	defer logfile.Close()
 
-	cmd := exec.Command(cmdArgs[0], cmdArgs[1:len(cmdArgs)]...)
+	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
 	cmd.Dir = targetDir
 	cmd.Stdout = logfile
 	cmd.Stdin = os.Stdin
@@ -101,7 +99,7 @@ func ExecSilentlyToWriter(cmdString string, targetDir string, writer io.Writer) 
 		return fmt.Errorf("Can't parse command string '%s': %v", cmdString, err)
 	}
 
-	cmd := exec.Command(cmdArgs[0], cmdArgs[1:len(cmdArgs)]...)
+	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
 	cmd.Dir = targetDir
 	cmd.Stdout = writer
 	cmd.Stdin = os.Stdin
@@ -400,7 +398,7 @@ func FindFileUpTree(filename string) (string, error) {
 }
 
 func FindNearestManifestFile() (string, error) {
-	return FindFileUpTree(MANIFEST_FILE)
+	return FindFileUpTree(types.MANIFEST_FILE)
 }
 
 // Because, why not?
@@ -455,7 +453,7 @@ func DecompressBuffer(b *bytes.Buffer) error {
 	return nil
 }
 
-func CloneRepository(remote GitRemote, inMem bool, basePath string) (rep *git.Repository, err error) {
+func CloneRepository(remote types.GitRemote, inMem bool, basePath string) (rep *git.Repository, err error) {
 	if remote.Branch == "" {
 		return nil, fmt.Errorf("No branch defined to clone repo %v", remote.Url)
 	}

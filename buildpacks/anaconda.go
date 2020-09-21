@@ -6,14 +6,13 @@ import (
 	"path/filepath"
 
 	"github.com/blang/semver"
-	. "github.com/yourbase/yb/plumbing"
-
+	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
+	"github.com/yourbase/yb/types"
 )
 
 type AnacondaBuildTool struct {
-	BuildTool
+	types.BuildTool
 	version         string
 	spec            BuildToolSpec
 	pyCompatibleNum int
@@ -62,7 +61,7 @@ func (bt AnacondaBuildTool) Install() error {
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading Miniconda from URL %s...", downloadUrl)
-		localFile, err := DownloadFileWithCache(downloadUrl)
+		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v\n", err)
 			return err
@@ -72,7 +71,7 @@ func (bt AnacondaBuildTool) Install() error {
 			fmt.Sprintf("bash %s -b -p %s", localFile, anacondaDir),
 		} {
 			log.Infof("Running: '%v' ", cmd)
-			ExecToStdout(cmd, setupDir)
+			plumbing.ExecToStdout(cmd, setupDir)
 		}
 
 	}
@@ -134,11 +133,11 @@ func (bt AnacondaBuildTool) DownloadUrl() string {
 	// Newest Miniconda installs has different installers for Python 3.7 and Python 3.8
 	// We'll stick to Python 3.7, the stable version right now
 	if v.Major == 4 && v.Minor == 8 {
-		url, err := TemplateToString(anacondaNewerDistMirrorTemplate, data)
+		url, err := plumbing.TemplateToString(anacondaNewerDistMirrorTemplate, data)
 		log.Errorf("Unable to apply template: %v", err)
 		return url
 	}
-	url, err := TemplateToString(anacondaDistMirrorTemplate, data)
+	url, err := plumbing.TemplateToString(anacondaDistMirrorTemplate, data)
 	log.Errorf("Unable to apply template: %v", err)
 
 	return url
@@ -146,7 +145,7 @@ func (bt AnacondaBuildTool) DownloadUrl() string {
 
 func (bt AnacondaBuildTool) Setup() error {
 	installDir := bt.InstallDir()
-	PrependToPath(filepath.Join(installDir, "bin"))
+	plumbing.PrependToPath(filepath.Join(installDir, "bin"))
 	setupDir := bt.spec.PackageDir
 
 	for _, cmd := range []string{
@@ -154,7 +153,7 @@ func (bt AnacondaBuildTool) Setup() error {
 		fmt.Sprintf("conda update -q conda"),
 	} {
 		log.Infof("Running: '%v' ", cmd)
-		ExecToStdout(cmd, setupDir)
+		plumbing.ExecToStdout(cmd, setupDir)
 	}
 
 	return nil

@@ -5,12 +5,11 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/yourbase/yb/plumbing/log"
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
 	"gopkg.in/src-d/go-git.v4/plumbing/storer"
-
-	"github.com/yourbase/yb/plumbing/log"
 )
 
 func fastFindAncestor(r *git.Repository) (h plumbing.Hash, c int, branchName string) {

@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
+	"github.com/yourbase/yb/types"
 )
 
 type BuildToolSpec struct {
@@ -18,8 +18,8 @@ type BuildToolSpec struct {
 	PackageDir      string
 }
 
-func LoadBuildPacks(dependencies []string, pkgCacheDir string, pkgDir string) ([]CommandTimer, error) {
-	setupTimers := make([]CommandTimer, 0)
+func LoadBuildPacks(dependencies []string, pkgCacheDir string, pkgDir string) ([]types.CommandTimer, error) {
+	setupTimers := make([]types.CommandTimer, 0)
 
 	for _, toolSpec := range dependencies {
 		buildpackName, versionString, err := SplitToolSpec(toolSpec)
@@ -27,7 +27,7 @@ func LoadBuildPacks(dependencies []string, pkgCacheDir string, pkgDir string) ([
 			return nil, fmt.Errorf("load build packs: %w", err)
 		}
 
-		sharedCacheDir := ToolsDir()
+		sharedCacheDir := plumbing.ToolsDir()
 
 		spec := BuildToolSpec{
 			Tool:            buildpackName,
@@ -37,7 +37,7 @@ func LoadBuildPacks(dependencies []string, pkgCacheDir string, pkgDir string) ([
 			PackageDir:      pkgDir,
 		}
 
-		var bt BuildTool
+		var bt types.BuildTool
 		log.Infof("Configuring build tool: %s", toolSpec)
 
 		switch buildpackName {
@@ -93,7 +93,7 @@ func LoadBuildPacks(dependencies []string, pkgCacheDir string, pkgDir string) ([
 			return setupTimers, fmt.Errorf("Unable to install tool %s: %v", toolSpec, err)
 		}
 		endTime := time.Now()
-		setupTimers = append(setupTimers, CommandTimer{
+		setupTimers = append(setupTimers, types.CommandTimer{
 			Command:   fmt.Sprintf("%s [install]", toolSpec),
 			StartTime: startTime,
 			EndTime:   endTime,
@@ -105,7 +105,7 @@ func LoadBuildPacks(dependencies []string, pkgCacheDir string, pkgDir string) ([
 			return setupTimers, fmt.Errorf("Unable to setup tool %s: %v", toolSpec, err)
 		}
 		endTime = time.Now()
-		setupTimers = append(setupTimers, CommandTimer{
+		setupTimers = append(setupTimers, types.CommandTimer{
 			Command:   fmt.Sprintf("%s [setup]", toolSpec),
 			StartTime: startTime,
 			EndTime:   endTime,

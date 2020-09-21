@@ -8,8 +8,7 @@ import (
 
 	"github.com/johnewart/narwhal"
 	"github.com/johnewart/subcommands"
-
-	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 )
 
@@ -57,7 +56,7 @@ func (b *ExecCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	if len(containers) > 0 {
 		log.ActiveSection("Containers")
 		localContainerWorkDir := filepath.Join(targetPackage.BuildRoot(), "containers")
-		MkdirAsNeeded(localContainerWorkDir)
+		plumbing.MkdirAsNeeded(localContainerWorkDir)
 
 		log.Infof("Will use %s as the dependency work dir", localContainerWorkDir)
 		log.Infof("Starting %d dependencies...", len(containers))
@@ -110,7 +109,7 @@ func (b *ExecCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 
 	for _, cmdString := range instructions.Exec.Commands {
-		if err := ExecToStdout(cmdString, execDir); err != nil {
+		if err := plumbing.ExecToStdout(cmdString, execDir); err != nil {
 			log.Errorf("Failed to run %s: %v", cmdString, err)
 			return subcommands.ExitFailure
 		}

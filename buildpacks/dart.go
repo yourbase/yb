@@ -6,16 +6,16 @@ import (
 	"strings"
 
 	"github.com/johnewart/archiver"
-	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
+	"github.com/yourbase/yb/types"
 )
 
 //https://archive.apache.org/dist/dart/dart-3/3.3.3/binaries/apache-dart-3.3.3-bin.tar.gz
 var DART_DIST_MIRROR = "https://storage.googleapis.com/dart-archive/channels/stable/release/{{.Version}}/sdk/dartsdk-{{.OS}}-{{.Arch}}-release.zip"
 
 type DartBuildTool struct {
-	BuildTool
+	types.BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -56,7 +56,7 @@ func (bt DartBuildTool) DownloadUrl() string {
 		extension,
 	}
 
-	url, _ := TemplateToString(DART_DIST_MIRROR, data)
+	url, _ := plumbing.TemplateToString(DART_DIST_MIRROR, data)
 
 	return url
 }
@@ -81,7 +81,7 @@ func (bt DartBuildTool) DartDir() string {
 func (bt DartBuildTool) Setup() error {
 	dartDir := bt.DartDir()
 	cmdPath := filepath.Join(dartDir, "bin")
-	PrependToPath(cmdPath)
+	plumbing.PrependToPath(cmdPath)
 
 	return nil
 }
@@ -98,7 +98,7 @@ func (bt DartBuildTool) Install() error {
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading Dart from URL %s...", downloadUrl)
-		localFile, err := DownloadFileWithCache(downloadUrl)
+		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
 			return err

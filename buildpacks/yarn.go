@@ -6,13 +6,13 @@ import (
 	"path/filepath"
 
 	"github.com/johnewart/archiver"
-	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
+	"github.com/yourbase/yb/types"
 )
 
 type YarnBuildTool struct {
-	BuildTool
+	types.BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -46,7 +46,7 @@ func (bt YarnBuildTool) DownloadUrl() string {
 		bt.Version(),
 	}
 
-	url, _ := TemplateToString(urlTemplate, data)
+	url, _ := plumbing.TemplateToString(urlTemplate, data)
 
 	return url
 }
@@ -62,7 +62,7 @@ func (bt YarnBuildTool) Install() error {
 		log.Infof("Will install Yarn v%s into %s", bt.Version(), installDir)
 		downloadUrl := bt.DownloadUrl()
 		log.Infof("Downloading from URL %s...", downloadUrl)
-		localFile, err := DownloadFileWithCache(downloadUrl)
+		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 		if err != nil {
 			return fmt.Errorf("Unable to download %s: %v", downloadUrl, err)
 		}
@@ -78,7 +78,7 @@ func (bt YarnBuildTool) Install() error {
 func (bt YarnBuildTool) Setup() error {
 	yarnDir := bt.YarnDir()
 	cmdPath := filepath.Join(yarnDir, "bin")
-	PrependToPath(cmdPath)
+	plumbing.PrependToPath(cmdPath)
 
 	return nil
 }

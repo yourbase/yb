@@ -5,9 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
-	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
+	"github.com/yourbase/yb/types"
 )
 
 const (
@@ -17,7 +17,7 @@ const (
 )
 
 type PythonBuildTool struct {
-	BuildTool
+	types.BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -57,7 +57,7 @@ func (bt PythonBuildTool) Install() error {
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading Miniconda from URL %s...", downloadUrl)
-		localFile, err := DownloadFileWithCache(downloadUrl)
+		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
 			return err
@@ -69,7 +69,7 @@ func (bt PythonBuildTool) Install() error {
 			fmt.Sprintf("bash %s -b -p %s", localFile, anacondaDir),
 		} {
 			log.Infof("Running: '%v' ", cmd)
-			ExecToStdout(cmd, setupDir)
+			plumbing.ExecToStdout(cmd, setupDir)
 		}
 
 	}
@@ -118,7 +118,7 @@ func (bt PythonBuildTool) DownloadUrl() string {
 		extension,
 	}
 
-	url, _ := TemplateToString(ANACONDA_URL_TEMPLATE, data)
+	url, _ := plumbing.TemplateToString(ANACONDA_URL_TEMPLATE, data)
 
 	return url
 }
@@ -142,7 +142,7 @@ func (bt PythonBuildTool) Setup() error {
 			fmt.Sprintf("%s create --prefix %s python=%s", condaBin, envDir, bt.Version()),
 		} {
 			log.Infof("Running: '%v' ", cmd)
-			if err := ExecToStdoutWithEnv(cmd, setupDir, []string{newPath}); err != nil {
+			if err := plumbing.ExecToStdoutWithEnv(cmd, setupDir, []string{newPath}); err != nil {
 				log.Errorf("Unable to run setup command: %s", cmd)
 				return fmt.Errorf("Unable to run '%s': %v", cmd, err)
 			}
@@ -150,7 +150,7 @@ func (bt PythonBuildTool) Setup() error {
 	}
 
 	// Add new env to path
-	PrependToPath(filepath.Join(envDir, "bin"))
+	plumbing.PrependToPath(filepath.Join(envDir, "bin"))
 
 	return nil
 

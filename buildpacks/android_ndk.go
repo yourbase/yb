@@ -6,15 +6,15 @@ import (
 	"path/filepath"
 
 	"github.com/johnewart/archiver"
-	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
+	"github.com/yourbase/yb/types"
 )
 
 var ANDROID_NDK_DIST_MIRROR = "https://dl.google.com/android/repository/android-ndk-{{.Version}}-{{.OS}}-{{.Arch}}.zip"
 
 type AndroidNdkBuildTool struct {
-	BuildTool
+	types.BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -53,7 +53,7 @@ func (bt AndroidNdkBuildTool) DownloadUrl() string {
 		extension,
 	}
 
-	url, _ := TemplateToString(ANDROID_NDK_DIST_MIRROR, data)
+	url, _ := plumbing.TemplateToString(ANDROID_NDK_DIST_MIRROR, data)
 
 	return url
 }
@@ -63,7 +63,7 @@ func (bt AndroidNdkBuildTool) Version() string {
 }
 
 func (bt AndroidNdkBuildTool) InstallDir() string {
-	return filepath.Join(ToolsDir(), "android-ndk")
+	return filepath.Join(plumbing.ToolsDir(), "android-ndk")
 }
 
 func (bt AndroidNdkBuildTool) NdkDir() string {
@@ -91,7 +91,7 @@ func (bt AndroidNdkBuildTool) Install() error {
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading Android NDK v%s from URL %s...", bt.Version(), downloadUrl)
-		localFile, err := DownloadFileWithCache(downloadUrl)
+		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
 			return err

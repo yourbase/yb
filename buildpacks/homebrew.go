@@ -8,14 +8,14 @@ import (
 	"strings"
 
 	"github.com/matishsiao/goInfo"
-	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
+	"github.com/yourbase/yb/types"
 	"gopkg.in/src-d/go-git.v4"
 )
 
 type HomebrewBuildTool struct {
-	BuildTool
+	types.BuildTool
 	version   string
 	spec      BuildToolSpec
 	pkgName   string
@@ -79,7 +79,7 @@ func (bt HomebrewBuildTool) PackageInstalled() bool {
 	}
 
 	if prefix != "" {
-		return PathExists(prefix)
+		return plumbing.PathExists(prefix)
 	}
 
 	return false
@@ -143,7 +143,7 @@ func (bt HomebrewBuildTool) InstallPackage() error {
 	brewDir := bt.HomebrewDir()
 
 	updateCmd := "brew update"
-	err := ExecToStdout(updateCmd, brewDir)
+	err := plumbing.ExecToStdout(updateCmd, brewDir)
 	if err != nil {
 		return fmt.Errorf("Couldn't update brew: %v", err)
 	}
@@ -155,7 +155,7 @@ func (bt HomebrewBuildTool) InstallPackage() error {
 
 	log.Infof("Going to install %s%s from Homebrew...", bt.pkgName, pkgVersion)
 	installCmd := fmt.Sprintf("brew install %s%s", bt.pkgName, pkgVersion)
-	err = ExecToStdout(installCmd, brewDir)
+	err = plumbing.ExecToStdout(installCmd, brewDir)
 
 	if err != nil {
 		return fmt.Errorf("Couldn't intall %s@%s from  Homebrew: %v", bt.pkgName, bt.version, err)
@@ -168,7 +168,7 @@ func (bt HomebrewBuildTool) InstallDarwin() error {
 	installDir := bt.InstallDir()
 	brewDir := bt.HomebrewDir()
 
-	MkdirAsNeeded(installDir)
+	plumbing.MkdirAsNeeded(installDir)
 
 	brewGitUrl := "https://github.com/Homebrew/brew.git"
 
@@ -189,7 +189,7 @@ func (bt HomebrewBuildTool) InstallDarwin() error {
 	}
 	log.Infof("Updating brew")
 	updateCmd := "brew update"
-	ExecToStdout(updateCmd, brewDir)
+	plumbing.ExecToStdout(updateCmd, brewDir)
 
 	return nil
 }
@@ -198,7 +198,7 @@ func (bt HomebrewBuildTool) InstallLinux() error {
 	installDir := bt.InstallDir()
 	brewDir := bt.HomebrewDir()
 
-	MkdirAsNeeded(installDir)
+	plumbing.MkdirAsNeeded(installDir)
 
 	brewGitUrl := "https://github.com/Homebrew/brew.git"
 
@@ -221,7 +221,7 @@ func (bt HomebrewBuildTool) InstallLinux() error {
 
 		log.Infof("Updating brew")
 		updateCmd := "brew update"
-		ExecToStdout(updateCmd, brewDir)
+		plumbing.ExecToStdout(updateCmd, brewDir)
 	}
 	return nil
 }
@@ -235,12 +235,12 @@ func (bt HomebrewBuildTool) Setup() error {
 		binDir := filepath.Join(prefixPath, "bin")
 		sbinDir := filepath.Join(prefixPath, "sbin")
 
-		PrependToPath(binDir)
-		PrependToPath(sbinDir)
+		plumbing.PrependToPath(binDir)
+		plumbing.PrependToPath(sbinDir)
 	} else {
 		brewDir := bt.HomebrewDir()
 		brewBinDir := filepath.Join(brewDir, "bin")
-		PrependToPath(brewBinDir)
+		plumbing.PrependToPath(brewBinDir)
 		brewLibDir := filepath.Join(brewDir, "lib")
 		os.Setenv("LD_LIBRARY_PATH", brewLibDir)
 	}

@@ -11,9 +11,9 @@ import (
 	"github.com/johnewart/archiver"
 	"github.com/matishsiao/goInfo"
 
-	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
+	"github.com/yourbase/yb/types"
 	"gopkg.in/src-d/go-git.v4"
 )
 
@@ -55,7 +55,7 @@ func (bt RubyBuildTool) DownloadUrl() string {
 		extension,
 	}
 
-	url, err := TemplateToString(YBRubyDownloadTemplate, data)
+	url, err := plumbing.TemplateToString(YBRubyDownloadTemplate, data)
 
 	if err != nil {
 		log.Infof("Error generating download URL: %v", err)
@@ -65,7 +65,7 @@ func (bt RubyBuildTool) DownloadUrl() string {
 }
 
 type RubyBuildTool struct {
-	BuildTool
+	types.BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -126,7 +126,7 @@ func (bt RubyBuildTool) Install() error {
 			downloadUrl := bt.DownloadUrl()
 			log.Infof("Will download pre-built Ruby from %s", downloadUrl)
 
-			localFile, err := DownloadFileWithCache(downloadUrl)
+			localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 			if err != nil {
 				log.Errorf("Unable to download: %v", err)
 				return err
@@ -164,12 +164,12 @@ func (bt RubyBuildTool) Install() error {
 		}
 
 		pluginsDir := filepath.Join(rbenvDir, "plugins")
-		MkdirAsNeeded(pluginsDir)
+		plumbing.MkdirAsNeeded(pluginsDir)
 
 		rubyBuildGitUrl := "https://github.com/rbenv/ruby-build.git"
 		rubyBuildDir := filepath.Join(pluginsDir, "ruby-build")
 
-		if PathExists(rubyBuildDir) {
+		if plumbing.PathExists(rubyBuildDir) {
 			log.Infof("ruby-build installed in %s", rubyBuildDir)
 		} else {
 			log.Infof("Installing ruby-build")
@@ -186,10 +186,10 @@ func (bt RubyBuildTool) Install() error {
 		}
 
 		os.Setenv("RBENV_ROOT", rbenvDir)
-		PrependToPath(filepath.Join(rbenvDir, "bin"))
+		plumbing.PrependToPath(filepath.Join(rbenvDir, "bin"))
 
 		installCmd := fmt.Sprintf("rbenv install %s", bt.Version())
-		ExecToStdout(installCmd, rbenvDir)
+		plumbing.ExecToStdout(installCmd, rbenvDir)
 	}
 
 	return nil
@@ -197,7 +197,7 @@ func (bt RubyBuildTool) Install() error {
 
 func (bt RubyBuildTool) Setup() error {
 	gemsDir := filepath.Join(bt.spec.PackageCacheDir, "rubygems")
-	MkdirAsNeeded(gemsDir)
+	plumbing.MkdirAsNeeded(gemsDir)
 
 	log.Infof("Setting GEM_HOME to %s", gemsDir)
 	os.Setenv("GEM_HOME", gemsDir)
@@ -205,8 +205,8 @@ func (bt RubyBuildTool) Setup() error {
 	gemBinDir := filepath.Join(gemsDir, "bin")
 
 	rubyDir := bt.RubyDir()
-	PrependToPath(filepath.Join(rubyDir, "bin"))
-	PrependToPath(gemBinDir)
+	plumbing.PrependToPath(filepath.Join(rubyDir, "bin"))
+	plumbing.PrependToPath(gemBinDir)
 
 	return nil
 }
@@ -216,7 +216,7 @@ func (bt RubyBuildTool) InstallPlatformDependencies() error {
 	if gi.GoOS == "darwin" {
 		if strings.HasPrefix(gi.Core, "18.") {
 			// Need to install the headers on Mojave
-			if !PathExists("/usr/include/zlib.h") {
+			if !plumbing.PathExists("/usr/include/zlib.h") {
 				installCmd := "sudo -S installer -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg -target /"
 				log.Infof("Going to run: %s", installCmd)
 				cmdArgs := strings.Split(installCmd, " ")
