@@ -1,8 +1,8 @@
 package plumbing
 
 import (
-	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -25,8 +25,6 @@ import (
 	githttp "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 	"gopkg.in/src-d/go-git.v4/storage/memory"
 )
-
-const SNIFFLEN = 8000
 
 func ExecToStdoutWithExtraEnv(cmdString string, targetDir string, env []string) error {
 	env = append(os.Environ(), env...)
@@ -459,8 +457,7 @@ func CloneRepository(remote types.GitRemote, inMem bool, basePath string) (rep *
 	return
 }
 
-// IsBinary detects if data is a binary value based on:
-// http://git.kernel.org/cgit/git/git.git/tree/xdiff-interface.c?id=HEAD#n198
+// IsBinary returns whether a file contains a NUL byte near the beginning of the file.
 func IsBinary(filePath string) (bool, error) {
 	r, err := os.Open(filePath)
 	if err != nil {
@@ -468,27 +465,19 @@ func IsBinary(filePath string) (bool, error) {
 	}
 	defer r.Close()
 
-	reader := bufio.NewReader(r)
-	c := 0
-	for {
-		if c == SNIFFLEN {
-			break
+	buf := make([]byte, 8000)
+	n, err := io.ReadFull(r, buf)
+	if err != nil {
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+			err = nil
+		} else {
+			err = fmt.Errorf("check for binary: %w", err)
 		}
-
-		b, err := reader.ReadByte()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return false, err
-		}
-
-		if b == byte(0) {
-			return true, nil
-		}
-
-		c++
 	}
-
-	return false, nil
+	for _, b := range buf[:n] {
+		if b == 0 {
+			return true, err
+		}
+	}
+	return false, err
 }
