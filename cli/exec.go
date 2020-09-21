@@ -34,7 +34,7 @@ Executing the target involves:
 2. Run any dependent components
 3. Start target
 */
-func (b *ExecCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (b *ExecCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 
 	targetPackage, err := GetTargetPackage()
 	if err != nil {
@@ -43,7 +43,7 @@ func (b *ExecCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 
 	log.ActiveSection("Dependencies")
-	if _, err := targetPackage.SetupRuntimeDependencies(); err != nil {
+	if err := targetPackage.SetupRuntimeDependencies(ctx); err != nil {
 		log.Infof("Couldn't configure dependencies: %v\n", err)
 		return subcommands.ExitFailure
 	}

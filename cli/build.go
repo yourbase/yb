@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/johnewart/archiver"
@@ -26,6 +27,12 @@ import (
 	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	"github.com/yourbase/yb/types"
+	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/label"
+	exporttrace "go.opentelemetry.io/otel/sdk/export/trace"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 const TIME_FORMAT = "15:04:05 MST"
@@ -70,8 +77,18 @@ func (b *BuildCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&b.NoSideContainer, "no-side-container", false, "Don't run/create any side container")
 }
 
-func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+	buildTraces := new(traceSink)
+	tp, err := sdktrace.NewProvider(sdktrace.WithSyncer(buildTraces))
+	if err != nil {
+		log.Errorf("%v", err)
+		return subcommands.ExitFailure
+	}
+	global.SetTraceProvider(tp)
+
 	startTime := time.Now()
+	ctx, span := tracer().Start(ctx, "Build", trace.WithNewRoot())
+	defer span.End()
 
 	if plumbing.InsideTheMatrix() {
 		log.StartSection("BUILD CONTAINER", "CONTAINER")
@@ -227,7 +244,6 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		log.EndSection()
 	}
 
-	var targetTimers []types.TargetTimer
 	var buildError error
 
 	log.StartSection("BUILD", "BUILD")
@@ -246,24 +262,31 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		log.Infof("   - %s", target.Name)
 	}
 
-	var buildStepTimers []types.CommandTimer
 	for _, target := range buildTargets {
-		depsTimer, err := SetupBuildDependencies(targetPackage, target)
+		targetCtx, targetSpan := tracer().Start(ctx, target.Name, trace.WithAttributes(
+			label.String("target", target.Name),
+		))
+		err := targetPackage.SetupBuildDependencies(targetCtx, target)
 		if err != nil {
+			targetSpan.SetStatus(codes.Internal, err.Error())
+			targetSpan.End()
 			log.Infof("Error setting up dependencies for target %s: %v", target.Name, err)
 			return subcommands.ExitFailure
 		}
-		targetTimers = append(targetTimers, depsTimer)
 
-		if !b.DependenciesOnly && buildError == nil {
-			log.SubSection(fmt.Sprintf("Build target: %s", target.Name))
-			config.Target = target
-			buildData.ExportEnvironmentPublicly()
-			log.Infof("Executing build steps...")
-			buildStepTimers, buildError = RunCommands(config)
-			targetTimers = append(targetTimers, types.TargetTimer{Name: target.Name, Timers: buildStepTimers})
-			buildData.UnexportEnvironmentPublicly()
+		if b.DependenciesOnly {
+			continue
 		}
+		log.SubSection(fmt.Sprintf("Build target: %s", target.Name))
+		config.Target = target
+		buildData.ExportEnvironmentPublicly()
+		log.Infof("Executing build steps...")
+		err = RunCommands(targetCtx, config)
+		if err != nil {
+			targetSpan.SetStatus(codes.Unknown, err.Error())
+		}
+		targetSpan.End()
+		buildData.UnexportEnvironmentPublicly()
 		if buildError != nil {
 			break
 		}
@@ -273,26 +296,19 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		return subcommands.ExitSuccess
 	}
 
+	if buildError != nil {
+		span.SetStatus(codes.Unknown, buildError.Error())
+	}
 	endTime := time.Now()
+	span.End()
 	buildTime := endTime.Sub(startTime)
 	time.Sleep(100 * time.Millisecond)
 
 	log.Info("")
 	log.Infof("Build finished at %s, taking %s", endTime.Format(TIME_FORMAT), buildTime)
 	log.Info("")
-	log.Infof("%15s%15s%15s%24s   %s", "Start", "End", "Elapsed", "Target", "Command")
-	for _, timer := range targetTimers {
-		for _, step := range timer.Timers {
-			elapsed := step.EndTime.Sub(step.StartTime).Truncate(time.Microsecond)
-			log.Infof("%15s%15s%15s%24s   %s",
-				step.StartTime.Format(TIME_FORMAT),
-				step.EndTime.Format(TIME_FORMAT),
-				elapsed,
-				timer.Name,
-				step.Command)
-		}
-	}
-	log.Infof("%15s%15s%15s   %s", "", "", buildTime.Truncate(time.Millisecond), "TOTAL")
+
+	log.Infof("%s", buildTraces.dump())
 
 	if buildError != nil {
 		log.SubSection("BUILD FAILED")
@@ -497,10 +513,7 @@ func (b *BuildCmd) BuildInsideContainer(target types.BuildTarget, containerDef n
 	return nil
 }
 
-func RunCommands(config BuildConfiguration) ([]types.CommandTimer, error) {
-
-	stepTimes := make([]types.CommandTimer, 0)
-
+func RunCommands(ctx context.Context, config BuildConfiguration) error {
 	target := config.Target
 	targetDir := config.TargetDir
 	if target.Root != "" {
@@ -511,7 +524,9 @@ func RunCommands(config BuildConfiguration) ([]types.CommandTimer, error) {
 	for _, cmdString := range target.Commands {
 		var stepError error
 
-		stepStartTime := time.Now()
+		_, cmdSpan := tracer().Start(ctx, cmdString, trace.WithAttributes(
+			label.String("command", cmdString),
+		))
 		if strings.HasPrefix(cmdString, "cd ") {
 			parts := strings.SplitN(cmdString, " ", 2)
 			dir := filepath.Join(targetDir, parts[1])
@@ -526,30 +541,20 @@ func RunCommands(config BuildConfiguration) ([]types.CommandTimer, error) {
 			if err := plumbing.ExecToStdout(cmdString, targetDir); err != nil {
 				log.Errorf("Failed to run %s: %v", cmdString, err)
 				stepError = err
+				cmdSpan.SetStatus(codes.Unknown, err.Error())
 			}
 		}
+		cmdSpan.End()
 
-		stepEndTime := time.Now()
-		stepTotalTime := stepEndTime.Sub(stepStartTime)
-
-		log.Infof("Completed '%s' in %s", cmdString, stepTotalTime)
-
-		cmdTimer := types.CommandTimer{
-			Command:   cmdString,
-			StartTime: stepStartTime,
-			EndTime:   stepEndTime,
-		}
-
-		stepTimes = append(stepTimes, cmdTimer)
 		// Make sure our goroutine gets this from stdout
 		// TODO: There must be a better way...
 		time.Sleep(10 * time.Millisecond)
 		if stepError != nil {
-			return stepTimes, stepError
+			return stepError
 		}
 	}
 
-	return stepTimes, nil
+	return nil
 }
 
 func UploadBuildLogsToAPI(buf *bytes.Buffer) {
@@ -592,25 +597,6 @@ func UploadBuildLogsToAPI(buf *bytes.Buffer) {
 		log.Infof("View your build log here: %s", buildLogUrl)
 	}
 
-}
-
-func SetupBuildDependencies(pkg packages.Package, target types.BuildTarget) (types.TargetTimer, error) {
-
-	startTime := time.Now()
-	// Ensure build deps are :+1:
-	stepTimers, err := pkg.SetupBuildDependencies(target)
-
-	endTime := time.Now()
-	elapsedTime := endTime.Sub(startTime)
-
-	log.Infof("Dependency setup for %s happened in %s", target.Name, elapsedTime)
-
-	setupTimer := types.TargetTimer{
-		Name:   "dependency_setup",
-		Timers: stepTimers,
-	}
-
-	return setupTimer, err
 }
 
 // Build metadata; used for things like interpolation in environment variables
@@ -769,4 +755,80 @@ func DownloadYB() (string, error) {
 	}
 
 	return ybPath, nil
+}
+
+// A traceSink records spans in memory. The zero value is an empty sink.
+type traceSink struct {
+	mu        sync.Mutex
+	rootSpans []*exporttrace.SpanData
+	children  map[trace.SpanID][]*exporttrace.SpanData
+}
+
+// ExportSpan saves the trace span. It is safe to be called concurrently.
+func (sink *traceSink) ExportSpan(_ context.Context, span *exporttrace.SpanData) {
+	sink.mu.Lock()
+	defer sink.mu.Unlock()
+	if !span.ParentSpanID.IsValid() {
+		sink.rootSpans = append(sink.rootSpans, span)
+		return
+	}
+	if sink.children == nil {
+		sink.children = make(map[trace.SpanID][]*exporttrace.SpanData)
+	}
+	sink.children[span.ParentSpanID] = append(sink.children[span.ParentSpanID], span)
+}
+
+const (
+	traceDumpStartWidth   = 14
+	traceDumpEndWidth     = 14
+	traceDumpElapsedWidth = 14
+)
+
+// dump formats the recorded traces as a hierarchial table of spans in the order
+// received. It is safe to call concurrently, including with ExportSpan.
+func (sink *traceSink) dump() string {
+	sb := new(strings.Builder)
+	fmt.Fprintf(sb, "%-*s %-*s %-*s\n",
+		traceDumpStartWidth, "Start",
+		traceDumpEndWidth, "End",
+		traceDumpElapsedWidth, "Elapsed",
+	)
+	sink.mu.Lock()
+	sink.dumpLocked(sb, trace.SpanID{}, 0)
+	sink.mu.Unlock()
+	return sb.String()
+}
+
+func (sink *traceSink) dumpLocked(sb *strings.Builder, parent trace.SpanID, depth int) {
+	const indent = "  "
+	list := sink.rootSpans
+	if parent.IsValid() {
+		list = sink.children[parent]
+	}
+	if depth >= 3 {
+		if len(list) > 0 {
+			writeSpaces(sb, traceDumpStartWidth+traceDumpEndWidth+traceDumpElapsedWidth+3)
+			for i := 0; i < depth; i++ {
+				sb.WriteString(indent)
+			}
+			sb.WriteString("...\n")
+		}
+		return
+	}
+	for _, span := range list {
+		elapsed := span.EndTime.Sub(span.StartTime)
+		fmt.Fprintf(sb, "%-*s %-*s %*.3fs %s\n",
+			traceDumpStartWidth, span.StartTime.Format(TIME_FORMAT),
+			traceDumpEndWidth, span.EndTime.Format(TIME_FORMAT),
+			traceDumpElapsedWidth-1, elapsed.Seconds(),
+			strings.Repeat(indent, depth)+span.Name,
+		)
+		sink.dumpLocked(sb, span.SpanContext.SpanID, depth+1)
+	}
+}
+
+func writeSpaces(w io.ByteWriter, n int) {
+	for i := 0; i < n; i++ {
+		w.WriteByte(' ')
+	}
 }

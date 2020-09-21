@@ -17,7 +17,7 @@ require (
 	github.com/gobwas/ws v1.0.3
 	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
-	github.com/google/go-cmp v0.5.0
+	github.com/google/go-cmp v0.5.1
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/gopherjs/gopherjs v0.0.0-20190915194858-d3ddacdb130f // indirect
 	github.com/johnewart/archiver v3.1.4+incompatible
@@ -42,6 +42,8 @@ require (
 	github.com/ulikunitz/xz v0.5.8
 	github.com/waigani/diffparser v0.0.0-20190828052634-7391f219313d // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
+	go.opentelemetry.io/otel v0.11.0
+	go.opentelemetry.io/otel/sdk v0.11.0
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a
 	golang.org/x/mod v0.3.0
 	golang.org/x/net v0.0.0-20200822124328-c89045814202 // indirect
