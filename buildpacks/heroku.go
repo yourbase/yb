@@ -6,16 +6,16 @@ import (
 	"strings"
 
 	"github.com/johnewart/archiver"
-	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
+	"github.com/yourbase/yb/types"
 )
 
 //https://archive.apache.org/dist/heroku/heroku-3/3.3.3/binaries/apache-heroku-3.3.3-bin.tar.gz
 var HEROKU_DIST_MIRROR = "https://cli-assets.heroku.com/heroku-{{.OS}}-{{.Arch}}.tar.gz"
 
 type HerokuBuildTool struct {
-	BuildTool
+	types.BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -49,7 +49,7 @@ func (bt HerokuBuildTool) DownloadUrl() string {
 		arch,
 	}
 
-	url, _ := TemplateToString(HEROKU_DIST_MIRROR, data)
+	url, _ := plumbing.TemplateToString(HEROKU_DIST_MIRROR, data)
 
 	return url
 }
@@ -89,7 +89,7 @@ func (bt HerokuBuildTool) Install() error {
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading Heroku from URL %s...", downloadUrl)
-		localFile, err := DownloadFileWithCache(downloadUrl)
+		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
 			return err

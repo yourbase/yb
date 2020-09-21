@@ -6,10 +6,9 @@ import (
 	"os"
 	"strings"
 
-	"golang.org/x/crypto/ssh/terminal"
-
 	"github.com/sirupsen/logrus"
 	ybconfig "github.com/yourbase/yb/config"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 var (
@@ -137,7 +136,10 @@ func Warningf(format string, args ...interface{}) { Warnf(format, args...) }
 
 func Errorf(format string, args ...interface{}) { Logf(logrus.ErrorLevel, format, args...) }
 
-func Fatalf(format string, args ...interface{}) { Logf(logrus.FatalLevel, format, args...); log.Exit(1) }
+func Fatalf(format string, args ...interface{}) {
+	Logf(logrus.FatalLevel, format, args...)
+	log.Exit(1)
+}
 
 func Panicf(format string, args ...interface{}) { Logf(logrus.PanicLevel, format, args...) }
 

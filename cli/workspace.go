@@ -5,20 +5,20 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/johnewart/subcommands"
-	"gopkg.in/src-d/go-git.v4"
-	"gopkg.in/src-d/go-git.v4/plumbing"
-	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/johnewart/subcommands"
 	pkg "github.com/yourbase/yb/packages"
-	util "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	ybtypes "github.com/yourbase/yb/types"
-	. "github.com/yourbase/yb/workspace"
+	"github.com/yourbase/yb/workspace"
+	"gopkg.in/src-d/go-git.v4"
+	gitplumbing "gopkg.in/src-d/go-git.v4/plumbing"
+	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 )
 
 type WorkspaceCmd struct {
@@ -56,7 +56,7 @@ func (w *workspaceLocationCmd) SetFlags(f *flag.FlagSet) {
 
 func (w *workspaceLocationCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	// check if we're just a package
-	if util.PathExists(ybtypes.MANIFEST_FILE) {
+	if plumbing.PathExists(ybtypes.MANIFEST_FILE) {
 		currentPath, _ := filepath.Abs(".")
 		_, pkgName := filepath.Split(currentPath)
 		pkg, err := pkg.LoadPackage(pkgName, currentPath)
@@ -68,7 +68,7 @@ func (w *workspaceLocationCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...
 		log.Infoln(pkg.BuildRoot())
 		return subcommands.ExitSuccess
 	} else {
-		ws, err := LoadWorkspace()
+		ws, err := workspace.LoadWorkspace()
 
 		if err != nil {
 			log.Errorf("No package here, and no workspace, nothing to do!")
@@ -173,7 +173,7 @@ func (w *workspaceAddCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...int
 	cloneOpts := git.CloneOptions{
 		URL:           repositoryURL,
 		Progress:      nil,
-		ReferenceName: plumbing.ReferenceName(refName),
+		ReferenceName: gitplumbing.ReferenceName(refName),
 		SingleBranch:  w.OneBranch,
 		Depth:         w.Depth,
 	}
@@ -239,7 +239,7 @@ func (w *workspaceTargetCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...
 
 	log.Infof("Setting %s as target", packageName)
 
-	workspace, err := LoadWorkspace()
+	workspace, err := workspace.LoadWorkspace()
 	if err != nil {
 		log.Errorf("Can't load workspace: %v", err)
 		return subcommands.ExitFailure

@@ -10,7 +10,6 @@ import (
 
 	"github.com/johnewart/subcommands"
 	"github.com/yourbase/yb/plumbing/log"
-	//"path/filepath"
 )
 
 type RunCmd struct {

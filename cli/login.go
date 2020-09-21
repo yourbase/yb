@@ -6,16 +6,15 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/johnewart/subcommands"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
 
-	. "github.com/yourbase/yb/types"
-
+	"github.com/johnewart/subcommands"
 	ybconfig "github.com/yourbase/yb/config"
 	"github.com/yourbase/yb/plumbing/log"
+	"github.com/yourbase/yb/types"
 )
 
 type LoginCmd struct {
@@ -71,7 +70,7 @@ func (p *LoginCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
-	var tokenResponse TokenResponse
+	var tokenResponse types.TokenResponse
 	err = json.Unmarshal(body, &tokenResponse)
 
 	if err != nil {

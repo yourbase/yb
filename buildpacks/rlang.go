@@ -7,15 +7,15 @@ import (
 	"strings"
 
 	"github.com/johnewart/archiver"
-	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
+	"github.com/yourbase/yb/types"
 )
 
 var RLANG_DIST_MIRROR = "https://cloud.r-project.org/src/base"
 
 type RLangBuildTool struct {
-	BuildTool
+	types.BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -83,7 +83,7 @@ func (bt RLangBuildTool) Install() error {
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading from URL %s ...", downloadUrl)
-		localFile, err := DownloadFileWithCache(downloadUrl)
+		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
 			return err
@@ -92,7 +92,7 @@ func (bt RLangBuildTool) Install() error {
 		tmpDir := filepath.Join(installDir, "src")
 		srcDir := filepath.Join(tmpDir, fmt.Sprintf("R-%s", bt.Version()))
 
-		if !DirectoryExists(srcDir) {
+		if !plumbing.DirectoryExists(srcDir) {
 			err = archiver.Unarchive(localFile, tmpDir)
 			if err != nil {
 				log.Errorf("Unable to decompress: %v", err)
@@ -100,12 +100,12 @@ func (bt RLangBuildTool) Install() error {
 			}
 		}
 
-		MkdirAsNeeded(rlangDir)
+		plumbing.MkdirAsNeeded(rlangDir)
 		configCmd := fmt.Sprintf("./configure --with-x=no --prefix=%s", rlangDir)
-		ExecToStdout(configCmd, srcDir)
+		plumbing.ExecToStdout(configCmd, srcDir)
 
-		ExecToStdout("make", srcDir)
-		ExecToStdout("make install", srcDir)
+		plumbing.ExecToStdout("make", srcDir)
+		plumbing.ExecToStdout("make install", srcDir)
 	}
 
 	return nil

@@ -7,16 +7,16 @@ import (
 	"strings"
 
 	"github.com/johnewart/archiver"
-	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
+	"github.com/yourbase/yb/types"
 )
 
 //http://apache.mirrors.lucidnetworks.net//ant/binaries/apache-ant-1.10.6-bin.tar.gz
 var ANT_DIST_MIRROR = "http://apache.mirrors.lucidnetworks.net/ant/binaries/apache-ant-{{.Version}}-bin.zip"
 
 type AntBuildTool struct {
-	BuildTool
+	types.BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -42,7 +42,7 @@ func (bt AntBuildTool) DownloadUrl() string {
 		bt.Version(),
 	}
 
-	url, _ := TemplateToString(ANT_DIST_MIRROR, data)
+	url, _ := plumbing.TemplateToString(ANT_DIST_MIRROR, data)
 
 	return url
 }
@@ -88,7 +88,7 @@ func (bt AntBuildTool) Install() error {
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading Ant from URL %s...", downloadUrl)
-		localFile, err := DownloadFileWithCache(downloadUrl)
+		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
 			return err

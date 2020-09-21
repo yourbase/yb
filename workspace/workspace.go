@@ -2,15 +2,15 @@ package workspace
 
 import (
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
-	. "github.com/yourbase/yb/packages"
-	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/packages"
+	"github.com/yourbase/yb/plumbing"
+	"gopkg.in/yaml.v2"
 )
 
 type Workspace struct {
@@ -23,19 +23,19 @@ func (w Workspace) Root() string {
 	return w.Path
 }
 
-func (w Workspace) TargetPackage() (Package, error) {
+func (w Workspace) TargetPackage() (packages.Package, error) {
 	if w.Target != "" {
 		return w.PackageByName(w.Target)
 	} else {
-		return Package{}, fmt.Errorf("No default package specified for the workspace")
+		return packages.Package{}, fmt.Errorf("No default package specified for the workspace")
 	}
 }
 
-func (w Workspace) PackageByName(name string) (Package, error) {
+func (w Workspace) PackageByName(name string) (packages.Package, error) {
 	pkgList, err := w.PackageList()
 
 	if err != nil {
-		return Package{}, err
+		return packages.Package{}, err
 	}
 
 	for _, pkg := range pkgList {
@@ -44,11 +44,11 @@ func (w Workspace) PackageByName(name string) (Package, error) {
 		}
 	}
 
-	return Package{}, fmt.Errorf("No package with name %s found in the workspace", name)
+	return packages.Package{}, fmt.Errorf("No package with name %s found in the workspace", name)
 }
 
-func (w Workspace) PackageList() ([]Package, error) {
-	var packages []Package
+func (w Workspace) PackageList() ([]packages.Package, error) {
+	var packagesList []packages.Package
 
 	globStr := filepath.Join(w.Path, "*")
 	files, err := filepath.Glob(globStr)
@@ -65,16 +65,16 @@ func (w Workspace) PackageList() ([]Package, error) {
 			_, pkgName := filepath.Split(f)
 			pkgPath := f
 			if !strings.HasPrefix(pkgName, ".") {
-				pkg, err := LoadPackage(pkgName, pkgPath)
+				pkg, err := packages.LoadPackage(pkgName, pkgPath)
 				if err != nil {
-					return packages, err
+					return packagesList, err
 				}
-				packages = append(packages, pkg)
+				packagesList = append(packagesList, pkg)
 			}
 		}
 	}
 
-	return packages, nil
+	return packagesList, nil
 
 }
 
@@ -92,7 +92,7 @@ func (w Workspace) SetupEnv() error {
 
 	os.Clearenv()
 	tmpDir := filepath.Join(w.BuildRoot(), "tmp")
-	MkdirAsNeeded(tmpDir)
+	plumbing.MkdirAsNeeded(tmpDir)
 	os.Setenv("HOME", w.BuildRoot())
 	os.Setenv("TMPDIR", tmpDir)
 
@@ -120,7 +120,7 @@ func (w Workspace) Save() error {
 
 func LoadWorkspace() (Workspace, error) {
 
-	workspacePath, err := FindWorkspaceRoot()
+	workspacePath, err := plumbing.FindWorkspaceRoot()
 
 	if err != nil {
 		return Workspace{}, fmt.Errorf("Error getting workspace path: %v", err)

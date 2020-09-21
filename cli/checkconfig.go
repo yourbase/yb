@@ -5,7 +5,6 @@ import (
 	"flag"
 
 	"github.com/johnewart/subcommands"
-
 	"github.com/yourbase/yb/plumbing/log"
 )
 

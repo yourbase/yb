@@ -7,15 +7,15 @@ import (
 	"strings"
 
 	"github.com/johnewart/archiver"
-	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
+	"github.com/yourbase/yb/types"
 )
 
 var GRADLE_DIST_MIRROR = "https://services.gradle.org/distributions/gradle-{{.Version}}-bin.zip"
 
 type GradleBuildTool struct {
-	BuildTool
+	types.BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -47,7 +47,7 @@ func (bt GradleBuildTool) DownloadUrl() string {
 		"zip",
 	}
 
-	url, _ := TemplateToString(GRADLE_DIST_MIRROR, data)
+	url, _ := plumbing.TemplateToString(GRADLE_DIST_MIRROR, data)
 
 	return url
 }
@@ -97,7 +97,7 @@ func (bt GradleBuildTool) Install() error {
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading Gradle from URL %s...", downloadUrl)
-		localFile, err := DownloadFileWithCache(downloadUrl)
+		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
 			return err

@@ -5,15 +5,15 @@ import (
 	"os"
 	"path/filepath"
 
-	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
+	"github.com/yourbase/yb/types"
 )
 
 var RUST_DIST_MIRROR = "https://static.rust-lang.org/rustup/dist"
 
 type RustBuildTool struct {
-	BuildTool
+	types.BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -60,7 +60,7 @@ func (bt RustBuildTool) Install() error {
 
 	rustDir := bt.RustDir()
 	installDir := bt.InstallDir()
-	MkdirAsNeeded(installDir)
+	plumbing.MkdirAsNeeded(installDir)
 
 	if _, err := os.Stat(rustDir); err == nil {
 		log.Infof("Rust v%s located in %s!", bt.Version(), rustDir)
@@ -73,7 +73,7 @@ func (bt RustBuildTool) Install() error {
 		downloadDir := bt.spec.PackageCacheDir
 		localFile := filepath.Join(downloadDir, installerFile)
 		log.Infof("Downloading from URL %s to local file %s", downloadUrl, localFile)
-		err := DownloadFile(localFile, downloadUrl)
+		err := plumbing.DownloadFile(localFile, downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
 			return err
@@ -84,7 +84,7 @@ func (bt RustBuildTool) Install() error {
 		os.Setenv("RUSTUP_HOME", rustDir)
 
 		installCmd := fmt.Sprintf("%s -y", localFile)
-		ExecToStdout(installCmd, downloadDir)
+		plumbing.ExecToStdout(installCmd, downloadDir)
 	}
 
 	return nil

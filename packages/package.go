@@ -3,38 +3,38 @@ package packages
 import (
 	"crypto/sha256"
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
 	"os/user"
 	"path/filepath"
 
-	. "github.com/yourbase/yb/buildpacks"
-	. "github.com/yourbase/yb/plumbing"
-	. "github.com/yourbase/yb/types"
+	"github.com/yourbase/yb/buildpacks"
+	"github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/types"
+	"gopkg.in/yaml.v2"
 )
 
 type Package struct {
 	Name     string
 	Path     string
-	Manifest BuildManifest
+	Manifest types.BuildManifest
 }
 
 func LoadPackage(name string, path string) (Package, error) {
-	manifest := BuildManifest{}
-	buildYaml := filepath.Join(path, MANIFEST_FILE)
+	manifest := types.BuildManifest{}
+	buildYaml := filepath.Join(path, types.MANIFEST_FILE)
 	if _, err := os.Stat(buildYaml); os.IsNotExist(err) {
-		return Package{}, fmt.Errorf("Can't load %s: %v", MANIFEST_FILE, err)
+		return Package{}, fmt.Errorf("Can't load %s: %v", types.MANIFEST_FILE, err)
 	}
 
 	buildyaml, _ := ioutil.ReadFile(buildYaml)
 	err := yaml.Unmarshal([]byte(buildyaml), &manifest)
 	if err != nil {
-		return Package{}, fmt.Errorf("Error loading %s for %s: %v", MANIFEST_FILE, name, err)
+		return Package{}, fmt.Errorf("Error loading %s for %s: %v", types.MANIFEST_FILE, name, err)
 	}
 	err = mergeDeps(&manifest)
 	if err != nil {
-		return Package{}, fmt.Errorf("Error loading %s for %s: %v", MANIFEST_FILE, name, err)
+		return Package{}, fmt.Errorf("Error loading %s for %s: %v", types.MANIFEST_FILE, name, err)
 	}
 
 	p := Package{
@@ -48,7 +48,7 @@ func LoadPackage(name string, path string) (Package, error) {
 
 func (p Package) BuildRoot() string {
 	// Are we a part of a workspace?
-	workspaceDir, err := FindWorkspaceRoot()
+	workspaceDir, err := plumbing.FindWorkspaceRoot()
 
 	if err != nil {
 		// Nope, just ourselves...
@@ -69,7 +69,7 @@ func (p Package) BuildRoot() string {
 		workspaceDir = filepath.Join(workspacesRoot, workspaceHash[0:12])
 	}
 
-	MkdirAsNeeded(workspaceDir)
+	plumbing.MkdirAsNeeded(workspaceDir)
 
 	buildDir := "build"
 	buildRoot := filepath.Join(workspaceDir, buildDir)
@@ -84,12 +84,12 @@ func (p Package) BuildRoot() string {
 
 }
 
-func (p Package) SetupBuildDependencies(target BuildTarget) ([]CommandTimer, error) {
-	return LoadBuildPacks(target.Dependencies.Build, p.BuildRoot(), p.Path)
+func (p Package) SetupBuildDependencies(target types.BuildTarget) ([]types.CommandTimer, error) {
+	return buildpacks.LoadBuildPacks(target.Dependencies.Build, p.BuildRoot(), p.Path)
 }
 
-func (p Package) SetupRuntimeDependencies() ([]CommandTimer, error) {
+func (p Package) SetupRuntimeDependencies() ([]types.CommandTimer, error) {
 	deps := p.Manifest.Dependencies.Runtime
 	deps = append(deps, p.Manifest.Dependencies.Build...)
-	return LoadBuildPacks(deps, p.BuildRoot(), p.Path)
+	return buildpacks.LoadBuildPacks(deps, p.BuildRoot(), p.Path)
 }

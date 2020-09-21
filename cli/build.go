@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/matishsiao/goInfo"
 	"io"
 	"io/ioutil"
 	"os"
@@ -21,12 +20,12 @@ import (
 	"github.com/johnewart/archiver"
 	"github.com/johnewart/narwhal"
 	"github.com/johnewart/subcommands"
-
+	"github.com/matishsiao/goInfo"
 	ybconfig "github.com/yourbase/yb/config"
-	. "github.com/yourbase/yb/packages"
-	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/packages"
+	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
+	"github.com/yourbase/yb/types"
 )
 
 const TIME_FORMAT = "15:04:05 MST"
@@ -43,11 +42,11 @@ type BuildCmd struct {
 }
 
 type BuildConfiguration struct {
-	Target           BuildTarget
+	Target           types.BuildTarget
 	TargetDir        string
 	ExecPrefix       string
 	ForceNoContainer bool
-	TargetPackage    Package
+	TargetPackage    packages.Package
 	BuildData        BuildData
 	ReuseContainers  bool
 }
@@ -74,7 +73,7 @@ func (b *BuildCmd) SetFlags(f *flag.FlagSet) {
 func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	startTime := time.Now()
 
-	if InsideTheMatrix() {
+	if plumbing.InsideTheMatrix() {
 		log.StartSection("BUILD CONTAINER", "CONTAINER")
 	} else {
 		log.StartSection("BUILD HOST", "HOST")
@@ -228,7 +227,7 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		log.EndSection()
 	}
 
-	var targetTimers []TargetTimer
+	var targetTimers []types.TargetTimer
 	var buildError error
 
 	log.StartSection("BUILD", "BUILD")
@@ -247,7 +246,7 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		log.Infof("   - %s", target.Name)
 	}
 
-	var buildStepTimers []CommandTimer
+	var buildStepTimers []types.CommandTimer
 	for _, target := range buildTargets {
 		depsTimer, err := SetupBuildDependencies(targetPackage, target)
 		if err != nil {
@@ -262,7 +261,7 @@ func (b *BuildCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 			buildData.ExportEnvironmentPublicly()
 			log.Infof("Executing build steps...")
 			buildStepTimers, buildError = RunCommands(config)
-			targetTimers = append(targetTimers, TargetTimer{Name: target.Name, Timers: buildStepTimers})
+			targetTimers = append(targetTimers, types.TargetTimer{Name: target.Name, Timers: buildStepTimers})
 			buildData.UnexportEnvironmentPublicly()
 		}
 		if buildError != nil {
@@ -361,7 +360,7 @@ func Cleanup(b BuildData) {
 	}
 }
 
-func (b *BuildCmd) BuildInsideContainer(target BuildTarget, containerDef narwhal.ContainerDefinition, buildData BuildData, execPrefix string, reuseOldContainer bool) error {
+func (b *BuildCmd) BuildInsideContainer(target types.BuildTarget, containerDef narwhal.ContainerDefinition, buildData BuildData, execPrefix string, reuseOldContainer bool) error {
 	// Perform build inside a container
 	image := target.Container.Image
 	log.Infof("Using container image: %s", image)
@@ -498,9 +497,9 @@ func (b *BuildCmd) BuildInsideContainer(target BuildTarget, containerDef narwhal
 	return nil
 }
 
-func RunCommands(config BuildConfiguration) ([]CommandTimer, error) {
+func RunCommands(config BuildConfiguration) ([]types.CommandTimer, error) {
 
-	stepTimes := make([]CommandTimer, 0)
+	stepTimes := make([]types.CommandTimer, 0)
 
 	target := config.Target
 	targetDir := config.TargetDir
@@ -524,7 +523,7 @@ func RunCommands(config BuildConfiguration) ([]CommandTimer, error) {
 				cmdString = fmt.Sprintf("%s %s", config.ExecPrefix, cmdString)
 			}
 
-			if err := ExecToStdout(cmdString, targetDir); err != nil {
+			if err := plumbing.ExecToStdout(cmdString, targetDir); err != nil {
 				log.Errorf("Failed to run %s: %v", cmdString, err)
 				stepError = err
 			}
@@ -535,7 +534,7 @@ func RunCommands(config BuildConfiguration) ([]CommandTimer, error) {
 
 		log.Infof("Completed '%s' in %s", cmdString, stepTotalTime)
 
-		cmdTimer := CommandTimer{
+		cmdTimer := types.CommandTimer{
 			Command:   cmdString,
 			StartTime: stepStartTime,
 			EndTime:   stepEndTime,
@@ -595,7 +594,7 @@ func UploadBuildLogsToAPI(buf *bytes.Buffer) {
 
 }
 
-func SetupBuildDependencies(pkg Package, target BuildTarget) (TargetTimer, error) {
+func SetupBuildDependencies(pkg packages.Package, target types.BuildTarget) (types.TargetTimer, error) {
 
 	startTime := time.Now()
 	// Ensure build deps are :+1:
@@ -606,7 +605,7 @@ func SetupBuildDependencies(pkg Package, target BuildTarget) (TargetTimer, error
 
 	log.Infof("Dependency setup for %s happened in %s", target.Name, elapsedTime)
 
-	setupTimer := TargetTimer{
+	setupTimer := types.TargetTimer{
 		Name:   "dependency_setup",
 		Timers: stepTimers,
 	}
@@ -674,7 +673,7 @@ func NewBuildData() BuildData {
 }
 
 func (b BuildData) SetEnv(key string, value string) {
-	interpolated, err := TemplateToString(value, b)
+	interpolated, err := plumbing.TemplateToString(value, b)
 	if err != nil {
 		b.Environment[key] = value
 	} else {
@@ -743,12 +742,12 @@ func DownloadYB() (string, error) {
 	// we will just update anyway so it doesn't need to be super-new unless we broke something
 	downloadUrl := "https://bin.equinox.io/a/7G9uDXWDjh8/yb-0.0.39-linux-amd64.tar.gz"
 	binarySha256 := "3e21a9c98daa168ea95a5be45d14408c18688b5eea211d7936f6cd013bd23210"
-	cachePath := CacheDir()
+	cachePath := plumbing.CacheDir()
 	tmpPath := filepath.Join(cachePath, ".yb-tmp")
 	ybPath := filepath.Join(tmpPath, "yb")
-	MkdirAsNeeded(tmpPath)
+	plumbing.MkdirAsNeeded(tmpPath)
 
-	if PathExists(ybPath) {
+	if plumbing.PathExists(ybPath) {
 		checksum, err := sha256File(ybPath)
 		// Checksum match? We're good to go
 		if err == nil && checksum == binarySha256 {
@@ -759,7 +758,7 @@ func DownloadYB() (string, error) {
 	}
 
 	// Couldn't tell, check if we need to and download the archive
-	localFile, err := DownloadFileWithCache(downloadUrl)
+	localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 	if err != nil {
 		return "", err
 	}

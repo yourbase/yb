@@ -8,14 +8,13 @@ import (
 	"strings"
 
 	"github.com/johnewart/archiver"
-
-	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
+	"github.com/yourbase/yb/types"
 )
 
 type JavaBuildTool struct {
-	BuildTool
+	types.BuildTool
 	version      string
 	spec         BuildToolSpec
 	majorVersion int64
@@ -199,7 +198,7 @@ func (bt JavaBuildTool) DownloadUrl() string {
 
 	log.Debugf("URL params: %#v", data)
 
-	url, err := TemplateToString(urlPattern, data)
+	url, err := plumbing.TemplateToString(urlPattern, data)
 
 	if err != nil {
 		log.Errorf("Error generating download URL: %v", err)
@@ -212,7 +211,7 @@ func (bt JavaBuildTool) Install() error {
 	javaInstallDir := bt.InstallDir()
 	javaPath := bt.JavaDir()
 
-	MkdirAsNeeded(javaInstallDir)
+	plumbing.MkdirAsNeeded(javaInstallDir)
 
 	if _, err := os.Stat(javaPath); err == nil {
 		log.Infof("Java v%s located in %s!", bt.Version(), javaPath)
@@ -221,7 +220,7 @@ func (bt JavaBuildTool) Install() error {
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading from URL %s ", downloadUrl)
-		localFile, err := DownloadFileWithCache(downloadUrl)
+		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
 			return err

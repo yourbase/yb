@@ -6,15 +6,15 @@ import (
 	"path/filepath"
 
 	"github.com/johnewart/archiver"
-	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
+	"github.com/yourbase/yb/types"
 )
 
 var NODE_DIST_MIRROR = "https://nodejs.org/dist"
 
 type NodeBuildTool struct {
-	BuildTool
+	types.BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -65,7 +65,7 @@ func (bt NodeBuildTool) Install() error {
 		archiveFile := fmt.Sprintf("%s.tar.gz", nodePkgString)
 		downloadUrl := fmt.Sprintf("%s/v%s/%s", NODE_DIST_MIRROR, bt.Version(), archiveFile)
 		log.Infof("Downloading from URL %s...", downloadUrl)
-		localFile, err := DownloadFileWithCache(downloadUrl)
+		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
 			return err
@@ -84,14 +84,14 @@ func (bt NodeBuildTool) Install() error {
 func (bt NodeBuildTool) Setup() error {
 	nodeDir := bt.NodeDir()
 	cmdPath := filepath.Join(nodeDir, "bin")
-	PrependToPath(cmdPath)
+	plumbing.PrependToPath(cmdPath)
 	// TODO: Fix this to be the package cache?
 	nodePath := bt.spec.PackageDir
 	log.Infof("Setting NODE_PATH to %s", nodePath)
 	os.Setenv("NODE_PATH", nodePath)
 
 	npmBinPath := filepath.Join(nodePath, "node_modules", ".bin")
-	PrependToPath(npmBinPath)
+	plumbing.PrependToPath(npmBinPath)
 
 	return nil
 }

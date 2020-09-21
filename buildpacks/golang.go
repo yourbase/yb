@@ -7,16 +7,16 @@ import (
 	"strings"
 
 	"github.com/johnewart/archiver"
-	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
+	"github.com/yourbase/yb/types"
 )
 
 //https://dl.google.com/go/go1.11.5.linux-amd64.tar.gz
 var GOLANG_DIST_MIRROR = "https://dl.google.com/go"
 
 type GolangBuildTool struct {
-	BuildTool
+	types.BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -71,10 +71,10 @@ func (bt GolangBuildTool) Setup() error {
 	goPathVar := strings.Join(goPathElements, ":")
 
 	cmdPath := filepath.Join(golangDir, "bin")
-	PrependToPath(cmdPath)
+	plumbing.PrependToPath(cmdPath)
 	for _, pathElement := range goPathElements {
 		pathBinDir := filepath.Join(pathElement, "bin")
-		PrependToPath(pathBinDir)
+		plumbing.PrependToPath(pathBinDir)
 	}
 
 	log.Infof("Setting GOROOT to %s", golangDir)
@@ -97,7 +97,7 @@ func (bt GolangBuildTool) Install() error {
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading from URL %s ...", downloadUrl)
-		localFile, err := DownloadFileWithCache(downloadUrl)
+		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
 			return err
@@ -109,7 +109,7 @@ func (bt GolangBuildTool) Install() error {
 		}
 
 		log.Infof("Making go installation in %s read-only", golangDir)
-		RemoveWritePermissionRecursively(golangDir)
+		plumbing.RemoveWritePermissionRecursively(golangDir)
 	}
 
 	return nil

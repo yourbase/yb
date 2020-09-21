@@ -2,10 +2,11 @@ package config
 
 import (
 	"fmt"
-	"gopkg.in/ini.v1"
 	"os"
 	"os/user"
 	"path/filepath"
+
+	"gopkg.in/ini.v1"
 )
 
 func configFilePath() (string, error) {

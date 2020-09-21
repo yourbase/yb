@@ -6,15 +6,15 @@ import (
 	"path/filepath"
 
 	"github.com/johnewart/archiver"
-	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
+	"github.com/yourbase/yb/types"
 )
 
 var GLIDE_DIST_MIRROR = "https://github.com/Masterminds/glide/releases/download/v{{.Version}}/glide-v{{.Version}}-{{.OS}}-{{.Arch}}.tar.gz"
 
 type GlideBuildTool struct {
-	BuildTool
+	types.BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -67,21 +67,21 @@ func (bt GlideBuildTool) Install() error {
 			Version: bt.Version(),
 		}
 
-		downloadUrl, err := TemplateToString(GLIDE_DIST_MIRROR, params)
+		downloadUrl, err := plumbing.TemplateToString(GLIDE_DIST_MIRROR, params)
 		if err != nil {
 			log.Errorf("Unable to generate download URL: %v", err)
 			return err
 		}
 
 		log.Infof("Downloading from URL %s ...", downloadUrl)
-		localFile, err := DownloadFileWithCache(downloadUrl)
+		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
 			return err
 		}
 
 		extractDir := bt.GlideDir()
-		MkdirAsNeeded(extractDir)
+		plumbing.MkdirAsNeeded(extractDir)
 		log.Infof("Extracting glide %s to %s...", bt.Version(), extractDir)
 		err = archiver.Unarchive(localFile, extractDir)
 		if err != nil {

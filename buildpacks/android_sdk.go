@@ -7,16 +7,16 @@ import (
 	"strings"
 
 	"github.com/johnewart/archiver"
-	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
+	"github.com/yourbase/yb/types"
 )
 
 var LATEST_VERSION = "4333796"
 var ANDROID_DIST_MIRROR = "https://dl.google.com/android/repository/sdk-tools-{{.OS}}-{{.Version}}.zip"
 
 type AndroidBuildTool struct {
-	BuildTool
+	types.BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -59,7 +59,7 @@ func (bt AndroidBuildTool) DownloadUrl() string {
 		extension,
 	}
 
-	url, _ := TemplateToString(ANDROID_DIST_MIRROR, data)
+	url, _ := plumbing.TemplateToString(ANDROID_DIST_MIRROR, data)
 
 	return url
 }
@@ -74,7 +74,7 @@ func (bt AndroidBuildTool) Version() string {
 }
 
 func (bt AndroidBuildTool) InstallDir() string {
-	return filepath.Join(ToolsDir(), "android", fmt.Sprintf("android-%s", bt.Version()))
+	return filepath.Join(plumbing.ToolsDir(), "android", fmt.Sprintf("android-%s", bt.Version()))
 }
 
 func (bt AndroidBuildTool) AndroidDir() string {
@@ -92,7 +92,7 @@ func (bt AndroidBuildTool) WriteAgreements() bool {
 	}
 
 	licensesDir := filepath.Join(bt.AndroidDir(), "licenses")
-	MkdirAsNeeded(licensesDir)
+	plumbing.MkdirAsNeeded(licensesDir)
 
 	for filename, hash := range agreements {
 		agreementFile := filepath.Join(licensesDir, filename)
@@ -155,7 +155,7 @@ func (bt AndroidBuildTool) Install() error {
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading Android from URL %s...", downloadUrl)
-		localFile, err := DownloadFileWithCache(downloadUrl)
+		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
 			return err

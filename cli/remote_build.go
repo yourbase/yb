@@ -22,16 +22,13 @@ import (
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	"github.com/johnewart/subcommands"
-
-	"gopkg.in/src-d/go-git.v4"
-	"gopkg.in/src-d/go-git.v4/plumbing"
-	"gopkg.in/src-d/go-git.v4/plumbing/object"
-
-	. "github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
-
 	ybconfig "github.com/yourbase/yb/config"
+	"github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing/log"
+	"github.com/yourbase/yb/types"
+	"gopkg.in/src-d/go-git.v4"
+	gitplumbing "gopkg.in/src-d/go-git.v4/plumbing"
+	"gopkg.in/src-d/go-git.v4/plumbing/object"
 )
 
 var (
@@ -55,7 +52,7 @@ type RemoteCmd struct {
 	committed      bool
 	publicRepo     bool
 	backupWorktree bool
-	remotes        []GitRemote
+	remotes        []types.GitRemote
 }
 
 func (*RemoteCmd) Name() string     { return "remotebuild" }
@@ -94,7 +91,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	manifest := targetPackage.Manifest
 
-	var target BuildTarget
+	var target types.BuildTarget
 
 	if len(manifest.BuildTargets) == 0 {
 		target = manifest.Build
@@ -124,7 +121,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			gitExe = "git.exe"
 		}
 		cmdString := fmt.Sprintf("%s --version", gitExe)
-		if err := ExecSilently(cmdString, p.repoDir); err != nil {
+		if err := plumbing.ExecSilently(cmdString, p.repoDir); err != nil {
 			if strings.Contains(err.Error(), "executable file not found in $PATH") {
 				log.Warnf("The flag -go-git-status wasn't specified and '%s' wasn't found in PATH", gitExe)
 			} else {
@@ -137,7 +134,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	// Show timing feedback and start tracking spent time
 	startTime := time.Now()
-	var bootProgress *Progress
+	var bootProgress *plumbing.Progress
 	bootErrored := func() {
 		if bootProgress != nil {
 			bootProgress.Fail()
@@ -145,7 +142,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	if log.CheckIfTerminal() {
-		bootProgress = NewProgressSpinner("Bootstrapping")
+		bootProgress = plumbing.NewProgressSpinner("Bootstrapping")
 		bootProgress.Start()
 	} else {
 		log.Info("Bootstrapping...")
@@ -244,7 +241,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	// Process patches
 	startTime = time.Now()
-	var patchProgress *Progress
+	var patchProgress *plumbing.Progress
 	patchErrored := func() {
 		if patchProgress != nil {
 			patchProgress.Fail()
@@ -254,7 +251,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	pGenerationChan := make(chan bool)
 	if p.committed && headCommit.Hash.String() != p.baseCommit {
 		if log.CheckIfTerminal() {
-			patchProgress = NewProgressSpinner("Generating patch for %d commits", commitCount)
+			patchProgress = plumbing.NewProgressSpinner("Generating patch for %d commits", commitCount)
 			patchProgress.Start()
 		} else {
 			log.Infof("Generating patch for %d commits...", commitCount)
@@ -283,14 +280,14 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 
 		if log.CheckIfTerminal() {
-			patchProgress = NewProgressSpinner("Generating patch for local changes")
+			patchProgress = plumbing.NewProgressSpinner("Generating patch for local changes")
 			patchProgress.Start()
 		} else {
 			log.Info("Generating patch for local changes")
 		}
 
 		log.Debug("Start backing up the worktree-save")
-		saver, err := NewWorktreeSave(targetPackage.Path, headCommit.Hash.String(), p.backupWorktree)
+		saver, err := types.NewWorktreeSave(targetPackage.Path, headCommit.Hash.String(), p.backupWorktree)
 		if err != nil {
 			patchErrored()
 			log.Errorf("%s", err)
@@ -409,7 +406,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	return subcommands.ExitSuccess
 }
 
-func commitTempChanges(w *git.Worktree, c *object.Commit) (latest plumbing.Hash, err error) {
+func commitTempChanges(w *git.Worktree, c *object.Commit) (latest gitplumbing.Hash, err error) {
 	if w == nil || c == nil {
 		err = fmt.Errorf("Needs a worktree and a commit object")
 		return
@@ -427,7 +424,7 @@ func commitTempChanges(w *git.Worktree, c *object.Commit) (latest plumbing.Hash,
 	return
 }
 
-func (p *RemoteCmd) traverseChanges(worktree *git.Worktree, saver *WorktreeSave) (skipped []string, err error) {
+func (p *RemoteCmd) traverseChanges(worktree *git.Worktree, saver *types.WorktreeSave) (skipped []string, err error) {
 	if p.goGitStatus {
 		log.Debug("Decided to use Go-Git")
 		skipped, err = p.libTraverseChanges(worktree, saver)
@@ -465,21 +462,21 @@ func shouldSkip(file string, worktree *git.Worktree) bool {
 		return true
 	} else {
 		log.Debugf("Should skip '%s'?", filePath)
-		if is, _ := IsBinary(filePath); is {
+		if is, _ := plumbing.IsBinary(filePath); is {
 			return true
 		}
 	}
 	return false
 }
 
-func (p *RemoteCmd) commandTraverseChanges(worktree *git.Worktree, saver *WorktreeSave) (skipped []string, err error) {
+func (p *RemoteCmd) commandTraverseChanges(worktree *git.Worktree, saver *types.WorktreeSave) (skipped []string, err error) {
 	// TODO When go-git worktree.Status() works faster, we'll disable this
 	// Get worktree path
 	repoDir := worktree.Filesystem.Root()
 	cmdString := fmt.Sprintf(gitStatusCmd, gitExe)
 	buf := bytes.NewBuffer(nil)
 	log.Debugf("Executing '%v'...", cmdString)
-	if err = ExecSilentlyToWriter(cmdString, repoDir, buf); err != nil {
+	if err = plumbing.ExecSilentlyToWriter(cmdString, repoDir, buf); err != nil {
 		return skipped, fmt.Errorf("When running git status: %v", err)
 	}
 
@@ -530,7 +527,7 @@ func (p *RemoteCmd) commandTraverseChanges(worktree *git.Worktree, saver *Worktr
 	}
 	return
 }
-func (p *RemoteCmd) libTraverseChanges(worktree *git.Worktree, saver *WorktreeSave) (skipped []string, err error) {
+func (p *RemoteCmd) libTraverseChanges(worktree *git.Worktree, saver *types.WorktreeSave) (skipped []string, err error) {
 	// This could get real slow, check https://github.com/src-d/go-git/issues/844
 	status, err := worktree.Status()
 	if err != nil {
@@ -690,14 +687,14 @@ func defineBranch(r *git.Repository, hintBranch string) (string, error) {
 	}
 }
 
-func (p *RemoteCmd) fetchProject(urls []string) (*Project, GitRemote, error) {
-	var empty GitRemote
+func (p *RemoteCmd) fetchProject(urls []string) (*types.Project, types.GitRemote, error) {
+	var empty types.GitRemote
 	v := url.Values{}
 	fmt.Println()
 	log.Infof("URLs used to search: %s", urls)
 
 	for _, u := range urls {
-		rem := NewGitRemote(u)
+		rem := types.NewGitRemote(u)
 		// We only support GitHub by now
 		// TODO create something more generic
 		if rem.Validate() && strings.Contains(rem.String(), "github.com") {
@@ -728,7 +725,7 @@ func (p *RemoteCmd) fetchProject(urls []string) (*Project, GitRemote, error) {
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
-	var project Project
+	var project types.Project
 	err = json.Unmarshal(body, &project)
 	if err != nil {
 		return nil, empty, err
@@ -742,7 +739,7 @@ func (p *RemoteCmd) fetchProject(urls []string) (*Project, GitRemote, error) {
 	return &project, remote, nil
 }
 
-func (p *RemoteCmd) pickRemote(url string) (remote GitRemote) {
+func (p *RemoteCmd) pickRemote(url string) (remote types.GitRemote) {
 
 	for _, r := range p.remotes {
 		if strings.Contains(url, r.Url) || strings.Contains(r.Url, url) {
@@ -775,17 +772,17 @@ func (cmd *RemoteCmd) savePatch() error {
 	return nil
 }
 
-func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) error {
+func (cmd *RemoteCmd) submitBuild(project *types.Project, tagMap map[string]string) error {
 
 	startTime := time.Now()
-	var submitProgress *Progress
+	var submitProgress *plumbing.Progress
 	submitErrored := func() {
 		if submitProgress != nil {
 			submitProgress.Fail()
 		}
 	}
 	if log.CheckIfTerminal() {
-		submitProgress = NewProgressSpinner("Submitting remote build")
+		submitProgress = plumbing.NewProgressSpinner("Submitting remote build")
 		submitProgress.Start()
 	}
 
@@ -797,7 +794,7 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 
 	patchBuffer := bytes.NewBuffer(cmd.patchData)
 
-	if err = CompressBuffer(patchBuffer); err != nil {
+	if err = plumbing.CompressBuffer(patchBuffer); err != nil {
 		submitErrored()
 		return fmt.Errorf("Couldn't compress the patch file: %s", err)
 	}
@@ -886,14 +883,14 @@ func (cmd *RemoteCmd) submitBuild(project *Project, tagMap map[string]string) er
 	log.Infof("Submission finished at %s, taking %s", endTime.Format(TIME_FORMAT), submitTime.Truncate(time.Millisecond))
 
 	startTime = time.Now()
-	var remoteProgress *Progress
+	var remoteProgress *plumbing.Progress
 	remoteErrored := func() {
 		if remoteProgress != nil {
 			remoteProgress.Fail()
 		}
 	}
 	if log.CheckIfTerminal() {
-		remoteProgress = NewProgressSpinner("Setting up remote build")
+		remoteProgress = plumbing.NewProgressSpinner("Setting up remote build")
 		remoteProgress.Start()
 	}
 

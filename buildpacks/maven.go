@@ -7,16 +7,16 @@ import (
 	"strings"
 
 	"github.com/johnewart/archiver"
-	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
+	"github.com/yourbase/yb/types"
 )
 
 //https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apache-maven-3.3.3-bin.tar.gz
 var MAVEN_DIST_MIRROR = "https://archive.apache.org/dist/maven/"
 
 type MavenBuildTool struct {
-	BuildTool
+	types.BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -54,7 +54,7 @@ func (bt MavenBuildTool) Version() string {
 }
 
 func (bt MavenBuildTool) InstallDir() string {
-	return filepath.Join(ToolsDir(), "maven")
+	return filepath.Join(plumbing.ToolsDir(), "maven")
 }
 
 func (bt MavenBuildTool) MavenDir() string {
@@ -83,7 +83,7 @@ func (bt MavenBuildTool) Install() error {
 		downloadUrl := bt.DownloadUrl()
 
 		log.Infof("Downloading Maven from URL %s...", downloadUrl)
-		localFile, err := DownloadFileWithCache(downloadUrl)
+		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 		if err != nil {
 			log.Errorf("Unable to download: %v", err)
 			return err

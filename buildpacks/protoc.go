@@ -7,17 +7,16 @@ import (
 	"strings"
 
 	"github.com/johnewart/archiver"
-
-	. "github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	. "github.com/yourbase/yb/types"
+	"github.com/yourbase/yb/types"
 )
 
 // https://github.com/google/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip
 const ProtocDistMirror = "https://github.com/google/protobuf/releases/download/v{{.Version}}/protoc-{{.Version}}-{{.OS}}-x86_64.{{.Extension}}"
 
 type ProtocBuildTool struct {
-	BuildTool
+	types.BuildTool
 	version string
 	spec    BuildToolSpec
 }
@@ -59,7 +58,7 @@ func (bt ProtocBuildTool) DownloadUrl() string {
 		extension,
 	}
 
-	url, _ := TemplateToString(ProtocDistMirror, data)
+	url, _ := plumbing.TemplateToString(ProtocDistMirror, data)
 
 	return url
 }
@@ -85,7 +84,7 @@ func (bt ProtocBuildTool) Setup() error {
 	protocDir := bt.ProtocDir()
 
 	cmdPath := filepath.Join(protocDir, "bin")
-	PrependToPath(cmdPath)
+	plumbing.PrependToPath(cmdPath)
 	return nil
 }
 
@@ -102,7 +101,7 @@ func (bt ProtocBuildTool) Install() error {
 	downloadUrl := bt.DownloadUrl()
 
 	log.Infof("Downloading Protoc from URL %s...", downloadUrl)
-	localFile, err := DownloadFileWithCache(downloadUrl)
+	localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 	if err != nil {
 		log.Errorf("Unable to download: %v", err)
 		return err
