@@ -47,6 +47,8 @@ func LoadBuildPacks(dependencies []string, pkgCacheDir string, pkgDir string) ([
 			bt = NewAnaconda3BuildTool(spec)
 		case "ant":
 			bt = NewAntBuildTool(spec)
+		case "awscli":
+			bt = NewAWSCLIBuildTool(spec)
 		case "r":
 			bt = NewRLangBuildTool(spec)
 		case "heroku":
