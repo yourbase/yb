@@ -121,7 +121,9 @@ func PrependToPath(dir string) {
 func ConfigFilePath(filename string) string {
 	u, _ := user.Current()
 	configDir := filepath.Join(u.HomeDir, ".config", "yb")
-	MkdirAsNeeded(configDir)
+	if err := os.MkdirAll(configDir, 0777); err != nil {
+		log.Errorf("%v", err)
+	}
 	filePath := filepath.Join(configDir, filename)
 	return filePath
 }
@@ -140,18 +142,6 @@ func DirectoryExists(dir string) bool {
 	}
 
 	return true
-}
-
-func MkdirAsNeeded(dir string) error {
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		log.Infof("Making dir: %s", dir)
-		if err := os.MkdirAll(dir, 0700); err != nil {
-			log.Errorf("Unable to create dir: %v", err)
-			return err
-		}
-	}
-
-	return nil
 }
 
 func TemplateToString(templateText string, data interface{}) (string, error) {
@@ -214,7 +204,9 @@ func ToolsDir() string {
 		}
 	}
 
-	MkdirAsNeeded(toolsDir)
+	if err := os.MkdirAll(toolsDir, 0777); err != nil {
+		log.Errorf("%v", err)
+	}
 
 	return toolsDir
 }
@@ -230,7 +222,9 @@ func CacheDir() string {
 		}
 	}
 
-	MkdirAsNeeded(cacheDir)
+	if err := os.MkdirAll(cacheDir, 0777); err != nil {
+		log.Errorf("%v", err)
+	}
 
 	return cacheDir
 }

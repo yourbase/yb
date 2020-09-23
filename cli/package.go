@@ -55,7 +55,8 @@ func (b *PackageCmd) ArchiveWorkspace() subcommands.ExitStatus {
 
 	buildDir := workspace.BuildRoot()
 	outputDir := filepath.Join(buildDir, "output")
-	plumbing.MkdirAsNeeded(outputDir)
+	// TODO(light): This is being removed in https://github.com/yourbase/yb/pull/182
+	os.MkdirAll(outputDir, 0777)
 	archiveFile := fmt.Sprintf("%s-package.tar", targetPackage.Name)
 	pkgFile := filepath.Join(outputDir, archiveFile)
 

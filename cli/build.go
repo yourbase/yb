@@ -745,7 +745,9 @@ func DownloadYB() (string, error) {
 	cachePath := plumbing.CacheDir()
 	tmpPath := filepath.Join(cachePath, ".yb-tmp")
 	ybPath := filepath.Join(tmpPath, "yb")
-	plumbing.MkdirAsNeeded(tmpPath)
+	if err := os.MkdirAll(tmpPath, 0777); err != nil {
+		return "", fmt.Errorf("download yb: %w", err)
+	}
 
 	if plumbing.PathExists(ybPath) {
 		checksum, err := sha256File(ybPath)
@@ -760,12 +762,12 @@ func DownloadYB() (string, error) {
 	// Couldn't tell, check if we need to and download the archive
 	localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("download yb: %w", err)
 	}
 
 	err = archiver.Unarchive(localFile, tmpPath)
 	if err != nil {
-		return "", fmt.Errorf("Couldn't decompress: %v", err)
+		return "", fmt.Errorf("download yb: decompress: %v", err)
 	}
 
 	return ybPath, nil

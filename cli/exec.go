@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"flag"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -56,7 +57,10 @@ func (b *ExecCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	if len(containers) > 0 {
 		log.ActiveSection("Containers")
 		localContainerWorkDir := filepath.Join(targetPackage.BuildRoot(), "containers")
-		plumbing.MkdirAsNeeded(localContainerWorkDir)
+		if err := os.MkdirAll(localContainerWorkDir, 0777); err != nil {
+			log.Errorf("Couldn't create directory: %v", err)
+			return subcommands.ExitFailure
+		}
 
 		log.Infof("Will use %s as the dependency work dir", localContainerWorkDir)
 		log.Infof("Starting %d dependencies...", len(containers))
