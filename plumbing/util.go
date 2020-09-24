@@ -468,6 +468,9 @@ func IsBinary(filePath string) (bool, error) {
 	buf := make([]byte, 8000)
 	n, err := io.ReadFull(r, buf)
 	if err != nil {
+		// Ignore EOF, since it's fine for the file to be shorter than the buffer size.
+		// Otherwise, wrap the error. We don't fully stop the control flow here because
+		// we may still have read enough data to make a determination.
 		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 			err = nil
 		} else {
