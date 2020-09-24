@@ -1,8 +1,8 @@
 package plumbing
 
 import (
-	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -20,8 +20,6 @@ import (
 	"github.com/yourbase/yb/plumbing/log"
 	"github.com/yourbase/yb/types"
 )
-
-const SNIFFLEN = 8000
 
 func ExecToStdoutWithExtraEnv(cmdString string, targetDir string, env []string) error {
 	env = append(os.Environ(), env...)
@@ -414,8 +412,7 @@ func DecompressBuffer(b *bytes.Buffer) error {
 	return nil
 }
 
-// IsBinary detects if data is a binary value based on:
-// http://git.kernel.org/cgit/git/git.git/tree/xdiff-interface.c?id=HEAD#n198
+// IsBinary returns whether a file contains a NUL byte near the beginning of the file.
 func IsBinary(filePath string) (bool, error) {
 	r, err := os.Open(filePath)
 	if err != nil {
@@ -423,27 +420,22 @@ func IsBinary(filePath string) (bool, error) {
 	}
 	defer r.Close()
 
-	reader := bufio.NewReader(r)
-	c := 0
-	for {
-		if c == SNIFFLEN {
-			break
+	buf := make([]byte, 8000)
+	n, err := io.ReadFull(r, buf)
+	if err != nil {
+		// Ignore EOF, since it's fine for the file to be shorter than the buffer size.
+		// Otherwise, wrap the error. We don't fully stop the control flow here because
+		// we may still have read enough data to make a determination.
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+			err = nil
+		} else {
+			err = fmt.Errorf("check for binary: %w", err)
 		}
-
-		b, err := reader.ReadByte()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return false, err
-		}
-
-		if b == byte(0) {
-			return true, nil
-		}
-
-		c++
 	}
-
-	return false, nil
+	for _, b := range buf[:n] {
+		if b == 0 {
+			return true, err
+		}
+	}
+	return false, err
 }
