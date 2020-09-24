@@ -657,10 +657,14 @@ func (p *RemoteCmd) fetchProject(urls []string) (*types.Project, error) {
 
 	for _, u := range urls {
 		rem, err := ggit.ParseURL(u)
+		if err != nil {
+			log.Warnf("Invalid remote %s (%v), ignoring", u, err)
+			continue
+		}
 		// We only support GitHub by now
 		// TODO create something more generic
-		if err != nil || rem.Host != "github.com" {
-			log.Warnf("Invalid remote: '%s', ignoring", u)
+		if rem.Host != "github.com" {
+			log.Warnf("Ignoring remote %s (only github.com supported)", u)
 			continue
 		}
 		p.remotes = append(p.remotes, rem)
