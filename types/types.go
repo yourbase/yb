@@ -97,9 +97,9 @@ type BuildTarget struct {
 	Dependencies BuildDependencies           `yaml:"dependencies"`
 }
 
-// API Responses -- TODO use Swagger instead, this is silly
+// A Project is a YourBase project as returned by the API.
 type Project struct {
-	Id          int    `json:"id"`
+	ID          int    `json:"id"`
 	Label       string `json:"label"`
 	Description string `json:"description"`
 	Repository  string `json:"repository"`

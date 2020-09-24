@@ -3,6 +3,7 @@ module github.com/yourbase/yb
 go 1.15
 
 require (
+	gg-scm.io/pkg/git v0.5.0
 	github.com/Microsoft/hcsshim v0.8.9 // indirect
 	github.com/beholders-eye/diffparser v0.0.0-20190814025112-fcedf0a097ba
 	github.com/blang/semver v3.5.1+incompatible
@@ -52,7 +53,6 @@ require (
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/ini.v1 v1.60.2
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
-	gopkg.in/src-d/go-billy.v4 v4.3.2
 	gopkg.in/src-d/go-git.v4 v4.13.1
 	gopkg.in/yaml.v2 v2.3.0
 )

@@ -19,11 +19,6 @@ import (
 	"github.com/ulikunitz/xz"
 	"github.com/yourbase/yb/plumbing/log"
 	"github.com/yourbase/yb/types"
-	"gopkg.in/src-d/go-billy.v4/memfs"
-	"gopkg.in/src-d/go-git.v4"
-	"gopkg.in/src-d/go-git.v4/plumbing"
-	githttp "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
-	"gopkg.in/src-d/go-git.v4/storage/memory"
 )
 
 func ExecToStdoutWithExtraEnv(cmdString string, targetDir string, env []string) error {
@@ -415,46 +410,6 @@ func DecompressBuffer(b *bytes.Buffer) error {
 	b.Write(buf.Bytes())
 
 	return nil
-}
-
-func CloneRepository(remote types.GitRemote, inMem bool, basePath string) (rep *git.Repository, err error) {
-	if remote.Branch == "" {
-		return nil, fmt.Errorf("No branch defined to clone repo %v", remote.Url)
-	}
-
-	cloneOpts := &git.CloneOptions{
-		URL:           remote.String(),
-		ReferenceName: plumbing.NewBranchReferenceName(remote.Branch),
-		SingleBranch:  true,
-		Depth:         50,
-		Tags:          git.NoTags,
-	}
-
-	if remote.Token != "" {
-		cloneOpts.Auth = &githttp.BasicAuth{
-			Username: remote.User,
-			Password: remote.Token,
-		}
-	} else if remote.Password != "" || remote.User != "" {
-		cloneOpts.Auth = &githttp.BasicAuth{
-			Username: remote.User,
-			Password: remote.Password,
-		}
-	}
-
-	if inMem {
-		fs := memfs.New()
-		storer := memory.NewStorage()
-
-		rep, err = git.Clone(storer, fs, cloneOpts)
-	} else {
-		rep, err = git.PlainClone(basePath, false, cloneOpts)
-	}
-	if err != nil && strings.Count(err.Error(), "SSH") > 0 {
-		err = fmt.Errorf("Please check your SSH agent/key configuration")
-	}
-
-	return
 }
 
 // IsBinary returns whether a file contains a NUL byte near the beginning of the file.
