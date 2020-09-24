@@ -33,7 +33,6 @@ func (w *ConfigCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface
 }
 
 type configSetCmd struct {
-	vars []string
 }
 
 func (*configSetCmd) Name() string     { return "set" }

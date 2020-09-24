@@ -159,9 +159,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	for _, r := range list {
 		c := r.Config()
-		for _, u := range c.URLs {
-			repoUrls = append(repoUrls, u)
-		}
+		repoUrls = append(repoUrls, c.URLs...)
 	}
 
 	project, remote, err := p.fetchProject(repoUrls)

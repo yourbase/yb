@@ -13,7 +13,6 @@ import (
 
 var (
 	log       *logrus.Logger
-	level     logrus.Level
 	Formatter = NewYbFormatter()
 )
 
@@ -119,8 +118,6 @@ func checkIfTerminal(w io.Writer) bool {
 		return false
 	}
 }
-
-func SetLevel(l logrus.Level) { level = l }
 
 func Logf(level logrus.Level, format string, args ...interface{}) { log.Logf(level, format, args...) }
 

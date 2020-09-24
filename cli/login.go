@@ -70,6 +70,10 @@ func (p *LoginCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Errorf("Couldn't parse response body: %s\n", err)
+		return subcommands.ExitFailure
+	}
 	var tokenResponse types.TokenResponse
 	err = json.Unmarshal(body, &tokenResponse)
 
