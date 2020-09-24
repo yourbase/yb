@@ -187,7 +187,6 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	head, err := workRepo.Head()
 	if err != nil {
-		bootErrored()
 		log.Errorf("Couldn't find HEAD commit: %v", err)
 		return subcommands.ExitFailure
 	}
