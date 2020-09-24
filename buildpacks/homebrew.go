@@ -7,15 +7,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/matishsiao/goInfo"
 	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	"github.com/yourbase/yb/types"
 	"gopkg.in/src-d/go-git.v4"
 )
 
 type HomebrewBuildTool struct {
-	types.BuildTool
 	version   string
 	spec      BuildToolSpec
 	pkgName   string
@@ -106,38 +103,53 @@ func (bt HomebrewBuildTool) InstallDir() string {
 }
 
 func (bt HomebrewBuildTool) Install() error {
-	gi := goInfo.GetInfo()
-
-	var err error
-	switch gi.GoOS {
-	case "darwin":
-		err = bt.InstallDarwin()
-	case "linux":
-		err = bt.InstallLinux()
-	default:
-		err = fmt.Errorf("Unsupported platform: %s", gi.GoOS)
+	if err := bt.installBrew(); err != nil {
+		return err
 	}
-
+	if !bt.IsPackage() {
+		return nil
+	}
+	if bt.PackageInstalled() {
+		log.Infof("Package %s already installed", bt.PackageVersionString())
+		return nil
+	}
+	log.Infof("Installing package %s", bt.PackageVersionString())
+	err := bt.installPackage()
 	if err != nil {
-		return fmt.Errorf("Unable to install Homebrew: %v", err)
+		return fmt.Errorf("install homebrew: %w", err)
 	}
-
-	if bt.IsPackage() {
-		if bt.PackageInstalled() {
-			log.Infof("Package %s already installed", bt.PackageVersionString())
-		} else {
-			log.Infof("Installing package %s", bt.PackageVersionString())
-			err = bt.InstallPackage()
-			if err != nil {
-				return err
-			}
-		}
-	}
-
 	return nil
 }
 
-func (bt HomebrewBuildTool) InstallPackage() error {
+func (bt HomebrewBuildTool) installBrew() error {
+	// If directory already exists, skip the install.
+	brewDir := bt.HomebrewDir()
+	if _, err := os.Stat(brewDir); err == nil {
+		log.Infof("brew installed in %s", brewDir)
+		return nil
+	}
+
+	log.Infof("Installing brew")
+	installDir := bt.InstallDir()
+	if err := os.MkdirAll(installDir, 0777); err != nil {
+		return fmt.Errorf("install homebrew: %w", err)
+	}
+	_, err := git.PlainClone(brewDir, false, &git.CloneOptions{
+		URL:      "https://github.com/Homebrew/brew.git",
+		Progress: os.Stdout,
+	})
+	if err != nil {
+		return fmt.Errorf("install homebrew: %w", err)
+	}
+
+	log.Infof("Updating brew")
+	if err := plumbing.ExecToStdout("brew update", brewDir); err != nil {
+		return fmt.Errorf("install homebrew: brew update: %w", err)
+	}
+	return nil
+}
+
+func (bt HomebrewBuildTool) installPackage() error {
 	bt.Setup()
 
 	brewDir := bt.HomebrewDir()
@@ -164,68 +176,6 @@ func (bt HomebrewBuildTool) InstallPackage() error {
 	return nil
 }
 
-func (bt HomebrewBuildTool) InstallDarwin() error {
-	installDir := bt.InstallDir()
-	brewDir := bt.HomebrewDir()
-
-	plumbing.MkdirAsNeeded(installDir)
-
-	brewGitUrl := "https://github.com/Homebrew/brew.git"
-
-	if _, err := os.Stat(brewDir); err == nil {
-		log.Infof("brew installed in %s", brewDir)
-	} else {
-		log.Infof("Installing brew")
-
-		_, err := git.PlainClone(brewDir, false, &git.CloneOptions{
-			URL:      brewGitUrl,
-			Progress: os.Stdout,
-		})
-
-		if err != nil {
-			log.Errorf("Unable to clone brew!")
-			return fmt.Errorf("Couldn't clone brew: %v", err)
-		}
-	}
-	log.Infof("Updating brew")
-	updateCmd := "brew update"
-	plumbing.ExecToStdout(updateCmd, brewDir)
-
-	return nil
-}
-
-func (bt HomebrewBuildTool) InstallLinux() error {
-	installDir := bt.InstallDir()
-	brewDir := bt.HomebrewDir()
-
-	plumbing.MkdirAsNeeded(installDir)
-
-	brewGitUrl := "https://github.com/Homebrew/brew.git"
-
-	bt.InstallPlatformDependencies()
-
-	if _, err := os.Stat(brewDir); err == nil {
-		log.Infof("brew installed in %s", brewDir)
-	} else {
-		log.Infof("Installing brew")
-
-		_, err := git.PlainClone(brewDir, false, &git.CloneOptions{
-			URL:      brewGitUrl,
-			Progress: os.Stdout,
-		})
-
-		if err != nil {
-			log.Errorf("Unable to clone brew!")
-			return fmt.Errorf("Couldn't clone brew: %v", err)
-		}
-
-		log.Infof("Updating brew")
-		updateCmd := "brew update"
-		plumbing.ExecToStdout(updateCmd, brewDir)
-	}
-	return nil
-}
-
 func (bt HomebrewBuildTool) Setup() error {
 	if bt.IsPackage() {
 		prefixPath, err := bt.PackagePrefix(bt.PackageVersionString())
@@ -244,10 +194,5 @@ func (bt HomebrewBuildTool) Setup() error {
 		brewLibDir := filepath.Join(brewDir, "lib")
 		os.Setenv("LD_LIBRARY_PATH", brewLibDir)
 	}
-	return nil
-}
-
-func (bt HomebrewBuildTool) InstallPlatformDependencies() error {
-	// Currently a no-op
 	return nil
 }
