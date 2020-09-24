@@ -239,7 +239,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			return subcommands.ExitFailure
 		}
 
-		log.Info("Generating patch for local changes")
+		log.Info("Generating patch for local changes...")
 
 		log.Debug("Start backing up the worktree-save")
 		saver, err := types.NewWorktreeSave(targetPackage.Path, headCommit.Hash.String(), p.backupWorktree)
