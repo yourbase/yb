@@ -144,7 +144,7 @@ func (bt HomebrewBuildTool) installBrew() error {
 
 	log.Infof("Updating brew")
 	if err := plumbing.ExecToStdout("brew update", brewDir); err != nil {
-		return fmt.Errorf("install homebrew: %w", err)
+		return fmt.Errorf("install homebrew: brew update: %w", err)
 	}
 	return nil
 }
