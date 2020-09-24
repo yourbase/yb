@@ -1,6 +1,7 @@
 package buildpacks
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	"github.com/yourbase/yb/types"
 )
 
 // Stable channel URL example:
@@ -20,23 +20,22 @@ import (
 // https://storage.googleapis.com/flutter_infra/releases/beta/linux/flutter_linux_1.19.0-4.2.pre-beta.tar.xz
 const flutterDistMirrorTemplate = "https://storage.googleapis.com/flutter_infra/releases/{{.Channel}}/{{.OS}}/flutter_{{.OS}}_{{.Version}}-{{.Channel}}.{{.Extension}}"
 
-type FlutterBuildTool struct {
-	types.BuildTool
+type flutterBuildTool struct {
 	version string
-	spec    BuildToolSpec
+	spec    buildToolSpec
 }
 
-func NewFlutterBuildTool(spec BuildToolSpec) FlutterBuildTool {
+func newFlutterBuildTool(spec buildToolSpec) flutterBuildTool {
 
-	tool := FlutterBuildTool{
-		version: spec.Version,
+	tool := flutterBuildTool{
+		version: spec.version,
 		spec:    spec,
 	}
 
 	return tool
 }
 
-func (bt FlutterBuildTool) DownloadUrl() string {
+func (bt flutterBuildTool) downloadURL() string {
 	opsys := OS()
 	arch := Arch()
 	extension := "tar.xz"
@@ -51,7 +50,7 @@ func (bt FlutterBuildTool) DownloadUrl() string {
 		extension = "zip"
 	}
 
-	version := bt.Version()
+	version := bt.version
 	parts := strings.Split(version, "_")
 	if len(parts) > 2 {
 		version = parts[0]
@@ -80,25 +79,21 @@ func (bt FlutterBuildTool) DownloadUrl() string {
 
 // TODO: Add Channel method?
 
-func (bt FlutterBuildTool) MajorVersion() string {
+func (bt flutterBuildTool) majorVersion() string {
 	parts := strings.Split(bt.version, ".")
 	return parts[0]
 }
 
-func (bt FlutterBuildTool) Version() string {
-	return bt.version
+func (bt flutterBuildTool) installDir() string {
+	return filepath.Join(bt.spec.packageCacheDir, "flutter", fmt.Sprintf("flutter-%s", bt.version))
 }
 
-func (bt FlutterBuildTool) InstallDir() string {
-	return filepath.Join(bt.spec.PackageCacheDir, "flutter", fmt.Sprintf("flutter-%s", bt.Version()))
+func (bt flutterBuildTool) flutterDir() string {
+	return filepath.Join(bt.installDir(), "flutter")
 }
 
-func (bt FlutterBuildTool) FlutterDir() string {
-	return filepath.Join(bt.InstallDir(), "flutter")
-}
-
-func (bt FlutterBuildTool) Setup() error {
-	flutterDir := bt.FlutterDir()
+func (bt flutterBuildTool) setup(ctx context.Context) error {
+	flutterDir := bt.flutterDir()
 
 	cmdPath := filepath.Join(flutterDir, "bin")
 	currentPath := os.Getenv("PATH")
@@ -110,15 +105,15 @@ func (bt FlutterBuildTool) Setup() error {
 }
 
 // TODO, generalize downloader
-func (bt FlutterBuildTool) Install() error {
-	flutterDir := bt.FlutterDir()
-	installDir := bt.InstallDir()
+func (bt flutterBuildTool) install(ctx context.Context) error {
+	flutterDir := bt.flutterDir()
+	installDir := bt.installDir()
 
 	if _, err := os.Stat(flutterDir); err == nil {
-		log.Infof("Flutter %s located in %s!", downloadURLVersion(bt.Version()), flutterDir)
+		log.Infof("Flutter %s located in %s!", downloadURLVersion(bt.version), flutterDir)
 	} else {
-		log.Infof("Will install Flutter %s into %s", downloadURLVersion(bt.Version()), flutterDir)
-		downloadUrl := bt.DownloadUrl()
+		log.Infof("Will install Flutter %s into %s", downloadURLVersion(bt.version), flutterDir)
+		downloadUrl := bt.downloadURL()
 
 		log.Infof("Downloading Flutter from URL %s...", downloadUrl)
 		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)

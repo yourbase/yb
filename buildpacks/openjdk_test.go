@@ -77,9 +77,9 @@ func TestOpenJDKUrlGeneration(t *testing.T) {
 			url:     "https://github.com/AdoptOpenJDK/openjdk14-binaries/releases/download/jdk-14%2B36/OpenJDK14U-jdk_x64_linux_hotspot_14_36.tar.gz",
 		},
 	} {
-		bt := NewJavaBuildTool(BuildToolSpec{Tool: "java", Version: data.version, SharedCacheDir: "/tmp/ybcache", PackageCacheDir: "/tmp/pkgcache", PackageDir: "/opt/tools/java"})
+		bt := newJavaBuildTool(buildToolSpec{tool: "java", version: data.version, sharedCacheDir: "/tmp/ybcache", packageCacheDir: "/tmp/pkgcache", packageDir: "/opt/tools/java"})
 
-		url := bt.DownloadUrl()
+		url := bt.downloadURL()
 		wanted := data.url
 
 		if url != wanted {

@@ -1,13 +1,13 @@
 package buildpacks
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	"github.com/yourbase/yb/types"
 )
 
 const (
@@ -16,43 +16,38 @@ const (
 	anacondaURLTemplate = "https://repo.continuum.io/miniconda/Miniconda{{.PyNum}}-{{.Version}}-{{.OS}}-{{.Arch}}.{{.Extension}}"
 )
 
-type PythonBuildTool struct {
-	types.BuildTool
+type pythonBuildTool struct {
 	version string
-	spec    BuildToolSpec
+	spec    buildToolSpec
 }
 
-func NewPythonBuildTool(toolSpec BuildToolSpec) PythonBuildTool {
-	tool := PythonBuildTool{
-		version: toolSpec.Version,
+func newPythonBuildTool(toolSpec buildToolSpec) pythonBuildTool {
+	tool := pythonBuildTool{
+		version: toolSpec.version,
 		spec:    toolSpec,
 	}
 
 	return tool
 }
 
-func (bt PythonBuildTool) Version() string {
-	return bt.version
+func (bt pythonBuildTool) anacondaInstallDir() string {
+	return filepath.Join(bt.spec.sharedCacheDir, "miniconda3", fmt.Sprintf("miniconda-%s", anacondaToolVersion))
 }
 
-func (bt PythonBuildTool) AnacondaInstallDir() string {
-	return filepath.Join(bt.spec.SharedCacheDir, "miniconda3", fmt.Sprintf("miniconda-%s", anacondaToolVersion))
+func (bt pythonBuildTool) environmentDir() string {
+	return filepath.Join(bt.spec.packageCacheDir, "conda-python", bt.version)
 }
 
-func (bt PythonBuildTool) EnvironmentDir() string {
-	return filepath.Join(bt.spec.PackageCacheDir, "conda-python", bt.Version())
-}
-
-func (bt PythonBuildTool) Install() error {
-	anacondaDir := bt.AnacondaInstallDir()
-	setupDir := bt.spec.PackageDir
+func (bt pythonBuildTool) install(ctx context.Context) error {
+	anacondaDir := bt.anacondaInstallDir()
+	setupDir := bt.spec.packageDir
 
 	if _, err := os.Stat(anacondaDir); err == nil {
 		log.Infof("anaconda installed in %s", anacondaDir)
 	} else {
 		log.Infof("Installing anaconda")
 
-		downloadUrl := bt.DownloadUrl()
+		downloadUrl := bt.downloadURL()
 
 		log.Infof("Downloading Miniconda from URL %s...", downloadUrl)
 		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
@@ -75,11 +70,11 @@ func (bt PythonBuildTool) Install() error {
 	return nil
 }
 
-func (bt PythonBuildTool) DownloadUrl() string {
+func (bt pythonBuildTool) downloadURL() string {
 	opsys := OS()
 	arch := Arch()
 	extension := "sh"
-	version := bt.Version()
+	version := bt.version
 
 	if version == "" {
 		version = "latest"
@@ -121,23 +116,23 @@ func (bt PythonBuildTool) DownloadUrl() string {
 	return url
 }
 
-func (bt PythonBuildTool) Setup() error {
-	condaDir := bt.AnacondaInstallDir()
-	envDir := bt.EnvironmentDir()
+func (bt pythonBuildTool) setup(ctx context.Context) error {
+	condaDir := bt.anacondaInstallDir()
+	envDir := bt.environmentDir()
 
 	if _, err := os.Stat(envDir); err == nil {
 		log.Infof("environment installed in %s", envDir)
 	} else {
 		currentPath := os.Getenv("PATH")
 		newPath := fmt.Sprintf("PATH=%s:%s", filepath.Join(condaDir, "bin"), currentPath)
-		setupDir := bt.spec.PackageDir
+		setupDir := bt.spec.packageDir
 		condaBin := filepath.Join(condaDir, "bin", "conda")
 
 		for _, cmd := range []string{
 			fmt.Sprintf("%s install -c anaconda setuptools", condaBin),
 			fmt.Sprintf("%s config --set always_yes yes --set changeps1 no", condaBin),
 			fmt.Sprintf("%s update -q conda", condaBin),
-			fmt.Sprintf("%s create --prefix %s python=%s", condaBin, envDir, bt.Version()),
+			fmt.Sprintf("%s create --prefix %s python=%s", condaBin, envDir, bt.version),
 		} {
 			log.Infof("Running: '%v' ", cmd)
 			if err := plumbing.ExecToStdoutWithEnv(cmd, setupDir, []string{newPath}); err != nil {

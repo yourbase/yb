@@ -1,6 +1,7 @@
 package buildpacks
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -8,32 +9,30 @@ import (
 	"github.com/johnewart/archiver"
 	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	"github.com/yourbase/yb/types"
 )
 
 //https://archive.apache.org/dist/heroku/heroku-3/3.3.3/binaries/apache-heroku-3.3.3-bin.tar.gz
-var HEROKU_DIST_MIRROR = "https://cli-assets.heroku.com/heroku-{{.OS}}-{{.Arch}}.tar.gz"
+const herokuDistMirror = "https://cli-assets.heroku.com/heroku-{{.OS}}-{{.Arch}}.tar.gz"
 
-type HerokuBuildTool struct {
-	types.BuildTool
+type herokuBuildTool struct {
 	version string
-	spec    BuildToolSpec
+	spec    buildToolSpec
 }
 
-func NewHerokuBuildTool(toolSpec BuildToolSpec) HerokuBuildTool {
-	tool := HerokuBuildTool{
-		version: toolSpec.Version,
+func newHerokuBuildTool(toolSpec buildToolSpec) herokuBuildTool {
+	tool := herokuBuildTool{
+		version: toolSpec.version,
 		spec:    toolSpec,
 	}
 
 	return tool
 }
 
-func (bt HerokuBuildTool) ArchiveFile() string {
-	return fmt.Sprintf("apache-heroku-%s-bin.tar.gz", bt.Version())
+func (bt herokuBuildTool) archiveFile() string {
+	return fmt.Sprintf("apache-heroku-%s-bin.tar.gz", bt.version)
 }
 
-func (bt HerokuBuildTool) DownloadUrl() string {
+func (bt herokuBuildTool) downloadURL() string {
 	opsys := OS()
 	arch := Arch()
 
@@ -49,26 +48,22 @@ func (bt HerokuBuildTool) DownloadUrl() string {
 		arch,
 	}
 
-	url, _ := plumbing.TemplateToString(HEROKU_DIST_MIRROR, data)
+	url, _ := plumbing.TemplateToString(herokuDistMirror, data)
 
 	return url
 }
 
-func (bt HerokuBuildTool) MajorVersion() string {
+func (bt herokuBuildTool) majorVersion() string {
 	parts := strings.Split(bt.version, ".")
 	return parts[0]
 }
 
-func (bt HerokuBuildTool) Version() string {
-	return bt.version
+func (bt herokuBuildTool) herokuDir() string {
+	return fmt.Sprintf("%s/heroku-%s", bt.spec.packageCacheDir, bt.version)
 }
 
-func (bt HerokuBuildTool) HerokuDir() string {
-	return fmt.Sprintf("%s/heroku-%s", bt.spec.PackageCacheDir, bt.Version())
-}
-
-func (bt HerokuBuildTool) Setup() error {
-	herokuDir := bt.HerokuDir()
+func (bt herokuBuildTool) setup(ctx context.Context) error {
+	herokuDir := bt.herokuDir()
 	cmdPath := fmt.Sprintf("%s/heroku/bin", herokuDir)
 	currentPath := os.Getenv("PATH")
 	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
@@ -79,14 +74,14 @@ func (bt HerokuBuildTool) Setup() error {
 }
 
 // TODO, generalize downloader
-func (bt HerokuBuildTool) Install() error {
-	herokuDir := bt.HerokuDir()
+func (bt herokuBuildTool) install(ctx context.Context) error {
+	herokuDir := bt.herokuDir()
 
 	if _, err := os.Stat(herokuDir); err == nil {
-		log.Infof("Heroku v%s located in %s!", bt.Version(), herokuDir)
+		log.Infof("Heroku v%s located in %s!", bt.version, herokuDir)
 	} else {
-		log.Infof("Will install Heroku v%s into %s", bt.Version(), herokuDir)
-		downloadUrl := bt.DownloadUrl()
+		log.Infof("Will install Heroku v%s into %s", bt.version, herokuDir)
+		downloadUrl := bt.downloadURL()
 
 		log.Infof("Downloading Heroku from URL %s...", downloadUrl)
 		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)

@@ -1,6 +1,7 @@
 package buildpacks
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -8,22 +9,20 @@ import (
 	"github.com/blang/semver"
 	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	"github.com/yourbase/yb/types"
 )
 
-type AnacondaBuildTool struct {
-	types.BuildTool
+type anacondaBuildTool struct {
 	version         string
-	spec            BuildToolSpec
+	spec            buildToolSpec
 	pyCompatibleNum int
 }
 
 const anacondaDistMirrorTemplate = "https://repo.continuum.io/miniconda/Miniconda{{.PyNum}}-{{.Version}}-{{.OS}}-{{.Arch}}.{{.Extension}}"
 const anacondaNewerDistMirrorTemplate = "https://repo.continuum.io/miniconda/Miniconda{{.PyNum}}-{{.PyMajorVersion}}_{{.Version}}-{{.OS}}-{{.Arch}}.{{.Extension}}"
 
-func NewAnaconda2BuildTool(toolSpec BuildToolSpec) AnacondaBuildTool {
-	tool := AnacondaBuildTool{
-		version:         toolSpec.Version,
+func newAnaconda2BuildTool(toolSpec buildToolSpec) anacondaBuildTool {
+	tool := anacondaBuildTool{
+		version:         toolSpec.version,
 		spec:            toolSpec,
 		pyCompatibleNum: 2,
 	}
@@ -31,9 +30,9 @@ func NewAnaconda2BuildTool(toolSpec BuildToolSpec) AnacondaBuildTool {
 	return tool
 }
 
-func NewAnaconda3BuildTool(toolSpec BuildToolSpec) AnacondaBuildTool {
-	tool := AnacondaBuildTool{
-		version:         toolSpec.Version,
+func newAnaconda3BuildTool(toolSpec buildToolSpec) anacondaBuildTool {
+	tool := anacondaBuildTool{
+		version:         toolSpec.version,
 		spec:            toolSpec,
 		pyCompatibleNum: 3,
 	}
@@ -41,24 +40,20 @@ func NewAnaconda3BuildTool(toolSpec BuildToolSpec) AnacondaBuildTool {
 	return tool
 }
 
-func (bt AnacondaBuildTool) Version() string {
-	return bt.version
+func (bt anacondaBuildTool) installDir() string {
+	return filepath.Join(bt.spec.packageCacheDir, "miniconda", fmt.Sprintf("miniconda-%s", bt.version))
 }
 
-func (bt AnacondaBuildTool) InstallDir() string {
-	return filepath.Join(bt.spec.PackageCacheDir, "miniconda", fmt.Sprintf("miniconda-%s", bt.Version()))
-}
-
-func (bt AnacondaBuildTool) Install() error {
-	anacondaDir := bt.InstallDir()
-	setupDir := bt.spec.PackageDir
+func (bt anacondaBuildTool) install(ctx context.Context) error {
+	anacondaDir := bt.installDir()
+	setupDir := bt.spec.packageDir
 
 	if _, err := os.Stat(anacondaDir); err == nil {
 		log.Infof("anaconda installed in %s", anacondaDir)
 	} else {
 		log.Infof("Installing anaconda")
 
-		downloadUrl := bt.DownloadUrl()
+		downloadUrl := bt.downloadURL()
 
 		log.Infof("Downloading Miniconda from URL %s...", downloadUrl)
 		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
@@ -79,13 +74,13 @@ func (bt AnacondaBuildTool) Install() error {
 	return nil
 }
 
-func (bt AnacondaBuildTool) DownloadUrl() string {
+func (bt anacondaBuildTool) downloadURL() string {
 	var v semver.Version
 
 	opsys := OS()
 	arch := Arch()
 	extension := "sh"
-	version := bt.Version()
+	version := bt.version
 
 	if version == "" {
 		version = "latest"
@@ -143,10 +138,10 @@ func (bt AnacondaBuildTool) DownloadUrl() string {
 	return url
 }
 
-func (bt AnacondaBuildTool) Setup() error {
-	installDir := bt.InstallDir()
+func (bt anacondaBuildTool) setup(ctx context.Context) error {
+	installDir := bt.installDir()
 	plumbing.PrependToPath(filepath.Join(installDir, "bin"))
-	setupDir := bt.spec.PackageDir
+	setupDir := bt.spec.packageDir
 
 	for _, cmd := range []string{
 		"conda config --set always_yes yes --set changeps1 no",

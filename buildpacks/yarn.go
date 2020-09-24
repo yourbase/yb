@@ -1,6 +1,7 @@
 package buildpacks
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -8,42 +9,36 @@ import (
 	"github.com/johnewart/archiver"
 	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	"github.com/yourbase/yb/types"
 )
 
-type YarnBuildTool struct {
-	types.BuildTool
+type yarnBuildTool struct {
 	version string
-	spec    BuildToolSpec
+	spec    buildToolSpec
 }
 
-func NewYarnBuildTool(toolSpec BuildToolSpec) YarnBuildTool {
-	tool := YarnBuildTool{
-		version: toolSpec.Version,
+func newYarnBuildTool(toolSpec buildToolSpec) yarnBuildTool {
+	tool := yarnBuildTool{
+		version: toolSpec.version,
 		spec:    toolSpec,
 	}
 
 	return tool
 }
 
-func (bt YarnBuildTool) Version() string {
-	return bt.version
+func (bt yarnBuildTool) yarnDir() string {
+	return filepath.Join(bt.installDir(), fmt.Sprintf("yarn-v%s", bt.version))
 }
 
-func (bt YarnBuildTool) YarnDir() string {
-	return filepath.Join(bt.InstallDir(), fmt.Sprintf("yarn-v%s", bt.Version()))
+func (bt yarnBuildTool) installDir() string {
+	return filepath.Join(bt.spec.sharedCacheDir, "yarn")
 }
 
-func (bt YarnBuildTool) InstallDir() string {
-	return filepath.Join(bt.spec.SharedCacheDir, "yarn")
-}
-
-func (bt YarnBuildTool) DownloadUrl() string {
+func (bt yarnBuildTool) downloadURL() string {
 	urlTemplate := "https://github.com/yarnpkg/yarn/releases/download/v{{ .Version }}/yarn-v{{ .Version }}.tar.gz"
 	data := struct {
 		Version string
 	}{
-		bt.Version(),
+		bt.version,
 	}
 
 	url, _ := plumbing.TemplateToString(urlTemplate, data)
@@ -51,16 +46,16 @@ func (bt YarnBuildTool) DownloadUrl() string {
 	return url
 }
 
-func (bt YarnBuildTool) Install() error {
+func (bt yarnBuildTool) install(ctx context.Context) error {
 
-	yarnDir := bt.YarnDir()
-	installDir := bt.InstallDir()
+	yarnDir := bt.yarnDir()
+	installDir := bt.installDir()
 
 	if _, err := os.Stat(yarnDir); err == nil {
-		log.Infof("Yarn v%s located in %s!", bt.Version(), yarnDir)
+		log.Infof("Yarn v%s located in %s!", bt.version, yarnDir)
 	} else {
-		log.Infof("Will install Yarn v%s into %s", bt.Version(), installDir)
-		downloadUrl := bt.DownloadUrl()
+		log.Infof("Will install Yarn v%s into %s", bt.version, installDir)
+		downloadUrl := bt.downloadURL()
 		log.Infof("Downloading from URL %s...", downloadUrl)
 		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 		if err != nil {
@@ -75,8 +70,8 @@ func (bt YarnBuildTool) Install() error {
 	return nil
 }
 
-func (bt YarnBuildTool) Setup() error {
-	yarnDir := bt.YarnDir()
+func (bt yarnBuildTool) setup(ctx context.Context) error {
+	yarnDir := bt.yarnDir()
 	cmdPath := filepath.Join(yarnDir, "bin")
 	plumbing.PrependToPath(cmdPath)
 

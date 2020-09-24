@@ -1,6 +1,7 @@
 package buildpacks
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -8,31 +9,26 @@ import (
 	"github.com/johnewart/archiver"
 	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	"github.com/yourbase/yb/types"
 )
 
-var NODE_DIST_MIRROR = "https://nodejs.org/dist"
+const nodeDistMirror = "https://nodejs.org/dist"
 
-type NodeBuildTool struct {
-	types.BuildTool
+type nodeBuildTool struct {
 	version string
-	spec    BuildToolSpec
+	spec    buildToolSpec
 }
 
-func NewNodeBuildTool(toolSpec BuildToolSpec) NodeBuildTool {
-	tool := NodeBuildTool{
-		version: toolSpec.Version,
+func newNodeBuildTool(toolSpec buildToolSpec) nodeBuildTool {
+	tool := nodeBuildTool{
+		version: toolSpec.version,
 		spec:    toolSpec,
 	}
 
 	return tool
 }
 
-func (bt NodeBuildTool) Version() string {
-	return bt.version
-}
-func (bt NodeBuildTool) PackageString() string {
-	version := bt.Version()
+func (bt nodeBuildTool) packageString() string {
+	version := bt.version
 	arch := Arch()
 
 	if arch == "amd64" {
@@ -44,26 +40,26 @@ func (bt NodeBuildTool) PackageString() string {
 	return fmt.Sprintf("node-v%s-%s-%s", version, osName, arch)
 }
 
-func (bt NodeBuildTool) NodeDir() string {
-	return filepath.Join(bt.InstallDir(), bt.PackageString())
+func (bt nodeBuildTool) nodeDir() string {
+	return filepath.Join(bt.installDir(), bt.packageString())
 }
 
-func (bt NodeBuildTool) InstallDir() string {
-	return filepath.Join(bt.spec.SharedCacheDir, "nodejs")
+func (bt nodeBuildTool) installDir() string {
+	return filepath.Join(bt.spec.sharedCacheDir, "nodejs")
 }
 
-func (bt NodeBuildTool) Install() error {
+func (bt nodeBuildTool) install(ctx context.Context) error {
 
-	nodeDir := bt.NodeDir()
-	installDir := bt.InstallDir()
-	nodePkgString := bt.PackageString()
+	nodeDir := bt.nodeDir()
+	installDir := bt.installDir()
+	nodePkgString := bt.packageString()
 
 	if _, err := os.Stat(nodeDir); err == nil {
-		log.Infof("Node v%s located in %s!", bt.Version(), nodeDir)
+		log.Infof("Node v%s located in %s!", bt.version, nodeDir)
 	} else {
-		log.Infof("Would install Node v%s into %s", bt.Version(), installDir)
+		log.Infof("Would install Node v%s into %s", bt.version, installDir)
 		archiveFile := fmt.Sprintf("%s.tar.gz", nodePkgString)
-		downloadUrl := fmt.Sprintf("%s/v%s/%s", NODE_DIST_MIRROR, bt.Version(), archiveFile)
+		downloadUrl := fmt.Sprintf("%s/v%s/%s", nodeDistMirror, bt.version, archiveFile)
 		log.Infof("Downloading from URL %s...", downloadUrl)
 		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 		if err != nil {
@@ -81,12 +77,12 @@ func (bt NodeBuildTool) Install() error {
 	return nil
 }
 
-func (bt NodeBuildTool) Setup() error {
-	nodeDir := bt.NodeDir()
+func (bt nodeBuildTool) setup(ctx context.Context) error {
+	nodeDir := bt.nodeDir()
 	cmdPath := filepath.Join(nodeDir, "bin")
 	plumbing.PrependToPath(cmdPath)
 	// TODO: Fix this to be the package cache?
-	nodePath := bt.spec.PackageDir
+	nodePath := bt.spec.packageDir
 	log.Infof("Setting NODE_PATH to %s", nodePath)
 	os.Setenv("NODE_PATH", nodePath)
 

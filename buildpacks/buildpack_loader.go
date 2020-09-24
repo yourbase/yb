@@ -7,7 +7,6 @@ import (
 
 	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	"github.com/yourbase/yb/types"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/codes"
@@ -18,104 +17,113 @@ func tracer() trace.Tracer {
 	return global.Tracer("github.com/yourbase/yb/buildpacks")
 }
 
-type BuildToolSpec struct {
-	Tool            string
-	Version         string
-	SharedCacheDir  string
-	PackageCacheDir string
-	PackageDir      string
+type buildToolSpec struct {
+	tool            string
+	version         string
+	sharedCacheDir  string
+	packageCacheDir string
+	packageDir      string
 }
 
-func LoadBuildPacks(ctx context.Context, dependencies []string, pkgCacheDir string, pkgDir string) error {
-	for _, toolSpec := range dependencies {
-		buildpackName, versionString, err := SplitToolSpec(toolSpec)
-		if err != nil {
-			return fmt.Errorf("load build packs: %w", err)
-		}
+// Install installs the buildpack given by spec.
+func Install(ctx context.Context, pkgCacheDir string, pkgDir string, spec string) error {
+	buildpackName, versionString, err := SplitToolSpec(spec)
+	if err != nil {
+		return fmt.Errorf("load build packs: %w", err)
+	}
 
-		sharedCacheDir := plumbing.ToolsDir()
+	sharedCacheDir := plumbing.ToolsDir()
 
-		spec := BuildToolSpec{
-			Tool:            buildpackName,
-			Version:         versionString,
-			SharedCacheDir:  sharedCacheDir,
-			PackageCacheDir: pkgCacheDir,
-			PackageDir:      pkgDir,
-		}
+	parsed := buildToolSpec{
+		tool:            buildpackName,
+		version:         versionString,
+		sharedCacheDir:  sharedCacheDir,
+		packageCacheDir: pkgCacheDir,
+		packageDir:      pkgDir,
+	}
 
-		var bt types.BuildTool
-		log.Infof("Configuring build tool: %s", toolSpec)
+	var bt interface {
+		// install downloads the tool into the build environment.
+		install(ctx context.Context) error
 
-		switch buildpackName {
-		case "anaconda2":
-			bt = NewAnaconda2BuildTool(spec)
-		case "anaconda3":
-			bt = NewAnaconda3BuildTool(spec)
-		case "ant":
-			bt = NewAntBuildTool(spec)
-		case "r":
-			bt = NewRLangBuildTool(spec)
-		case "heroku":
-			bt = NewHerokuBuildTool(spec)
-		case "node":
-			bt = NewNodeBuildTool(spec)
-		case "yarn":
-			bt = NewYarnBuildTool(spec)
-		case "glide":
-			bt = NewGlideBuildTool(spec)
-		case "androidndk":
-			bt = NewAndroidNdkBuildTool(spec)
-		case "android":
-			bt = NewAndroidBuildTool(spec)
-		case "gradle":
-			bt = NewGradleBuildTool(spec)
-		case "flutter":
-			bt = NewFlutterBuildTool(spec)
-		case "dart":
-			bt = NewDartBuildTool(spec)
-		case "rust":
-			bt = NewRustBuildTool(spec)
-		case "java":
-			bt = NewJavaBuildTool(spec)
-		case "maven":
-			bt = NewMavenBuildTool(spec)
-		case "go":
-			bt = NewGolangBuildTool(spec)
-		case "python":
-			bt = NewPythonBuildTool(spec)
-		case "ruby":
-			bt = NewRubyBuildTool(spec)
-		case "homebrew":
-			bt = NewHomebrewBuildTool(spec)
-		case "protoc":
-			bt = NewProtocBuildTool(spec)
-		default:
-			return fmt.Errorf("Unknown build tool: %s\n", toolSpec)
-		}
+		// Setup sets environment variables in the current process (to be inherited by
+		// subprocesses) from the build tool.
+		//
+		// TODO(light): This should return environment variables from Install rather
+		// than modify global state.
+		setup(ctx context.Context) error
+	}
+	log.Infof("Configuring build tool: %s", spec)
 
-		// Install if needed
-		_, installSpan := tracer().Start(ctx, toolSpec+" [install]", trace.WithAttributes(
-			label.String("buildpack", buildpackName),
-			label.String("tool", toolSpec),
-		))
-		err = bt.Install()
-		installSpan.End()
-		if err != nil {
-			installSpan.SetStatus(codes.Unknown, err.Error())
-			return fmt.Errorf("Unable to install tool %s: %v", toolSpec, err)
-		}
+	switch buildpackName {
+	case "anaconda2":
+		bt = newAnaconda2BuildTool(parsed)
+	case "anaconda3":
+		bt = newAnaconda3BuildTool(parsed)
+	case "ant":
+		bt = newAntBuildTool(parsed)
+	case "r":
+		bt = newRLangBuildTool(parsed)
+	case "heroku":
+		bt = newHerokuBuildTool(parsed)
+	case "node":
+		bt = newNodeBuildTool(parsed)
+	case "yarn":
+		bt = newYarnBuildTool(parsed)
+	case "glide":
+		bt = newGlideBuildTool(parsed)
+	case "androidndk":
+		bt = newAndroidNDKBuildTool(parsed)
+	case "android":
+		bt = newAndroidBuildTool(parsed)
+	case "gradle":
+		bt = newGradleBuildTool(parsed)
+	case "flutter":
+		bt = newFlutterBuildTool(parsed)
+	case "dart":
+		bt = newDartBuildTool(parsed)
+	case "rust":
+		bt = newRustBuildTool(parsed)
+	case "java":
+		bt = newJavaBuildTool(parsed)
+	case "maven":
+		bt = newMavenBuildTool(parsed)
+	case "go":
+		bt = newGolangBuildTool(parsed)
+	case "python":
+		bt = newPythonBuildTool(parsed)
+	case "ruby":
+		bt = newRubyBuildTool(parsed)
+	case "homebrew":
+		bt = newHomebrewBuildTool(parsed)
+	case "protoc":
+		bt = newProtocBuildTool(parsed)
+	default:
+		return fmt.Errorf("Unknown build tool: %s\n", spec)
+	}
 
-		// Setup build tool (paths, env, etc)
-		_, setupSpan := tracer().Start(ctx, toolSpec+" [setup]", trace.WithAttributes(
-			label.String("buildpack", buildpackName),
-			label.String("tool", toolSpec),
-		))
-		err = bt.Setup()
-		setupSpan.End()
-		if err != nil {
-			setupSpan.SetStatus(codes.Unknown, err.Error())
-			return fmt.Errorf("Unable to setup tool %s: %v", toolSpec, err)
-		}
+	// Install if needed
+	_, installSpan := tracer().Start(ctx, spec+" [install]", trace.WithAttributes(
+		label.String("buildpack", buildpackName),
+		label.String("tool", spec),
+	))
+	err = bt.install(ctx)
+	installSpan.End()
+	if err != nil {
+		installSpan.SetStatus(codes.Unknown, err.Error())
+		return fmt.Errorf("Unable to install tool %s: %v", spec, err)
+	}
+
+	// Setup build tool (paths, env, etc)
+	_, setupSpan := tracer().Start(ctx, spec+" [setup]", trace.WithAttributes(
+		label.String("buildpack", buildpackName),
+		label.String("tool", spec),
+	))
+	err = bt.setup(ctx)
+	setupSpan.End()
+	if err != nil {
+		setupSpan.SetStatus(codes.Unknown, err.Error())
+		return fmt.Errorf("Unable to setup tool %s: %v", spec, err)
 	}
 
 	return nil

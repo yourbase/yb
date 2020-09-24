@@ -86,11 +86,24 @@ func (p Package) BuildRoot() string {
 }
 
 func (p Package) SetupBuildDependencies(ctx context.Context, target types.BuildTarget) error {
-	return buildpacks.LoadBuildPacks(ctx, target.Dependencies.Build, p.BuildRoot(), p.Path)
+	for _, dep := range target.Dependencies.Build {
+		if err := buildpacks.Install(ctx, p.BuildRoot(), p.Path, dep); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (p Package) SetupRuntimeDependencies(ctx context.Context) error {
-	deps := p.Manifest.Dependencies.Runtime
-	deps = append(deps[:len(deps):len(deps)], p.Manifest.Dependencies.Build...)
-	return buildpacks.LoadBuildPacks(ctx, deps, p.BuildRoot(), p.Path)
+	for _, dep := range p.Manifest.Dependencies.Runtime {
+		if err := buildpacks.Install(ctx, p.BuildRoot(), p.Path, dep); err != nil {
+			return err
+		}
+	}
+	for _, dep := range p.Manifest.Dependencies.Build {
+		if err := buildpacks.Install(ctx, p.BuildRoot(), p.Path, dep); err != nil {
+			return err
+		}
+	}
+	return nil
 }

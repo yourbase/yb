@@ -1,6 +1,7 @@
 package buildpacks
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -10,26 +11,26 @@ import (
 	"github.com/johnewart/archiver"
 	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	"github.com/yourbase/yb/types"
 )
 
-var LATEST_VERSION = "4333796"
-var ANDROID_DIST_MIRROR = "https://dl.google.com/android/repository/sdk-tools-{{.OS}}-{{.Version}}.zip"
+const (
+	latestAndroidVersion = "4333796"
+	androidDistMirror    = "https://dl.google.com/android/repository/sdk-tools-{{.OS}}-{{.Version}}.zip"
+)
 
-type AndroidBuildTool struct {
-	types.BuildTool
+type androidBuildTool struct {
 	version string
-	spec    BuildToolSpec
+	spec    buildToolSpec
 }
 
-func NewAndroidBuildTool(toolSpec BuildToolSpec) AndroidBuildTool {
-	version := toolSpec.Version
+func newAndroidBuildTool(toolSpec buildToolSpec) androidBuildTool {
+	version := toolSpec.version
 
 	if version == "latest" {
-		version = LATEST_VERSION
+		version = latestAndroidVersion
 	}
 
-	tool := AndroidBuildTool{
+	tool := androidBuildTool{
 		version: version,
 		spec:    toolSpec,
 	}
@@ -37,7 +38,7 @@ func NewAndroidBuildTool(toolSpec BuildToolSpec) AndroidBuildTool {
 	return tool
 }
 
-func (bt AndroidBuildTool) DownloadUrl() string {
+func (bt androidBuildTool) downloadURL() string {
 	opsys := OS()
 	arch := Arch()
 	extension := "zip"
@@ -46,7 +47,7 @@ func (bt AndroidBuildTool) DownloadUrl() string {
 		arch = "x64"
 	}
 
-	version := bt.Version()
+	version := bt.version
 
 	data := struct {
 		OS        string
@@ -60,30 +61,26 @@ func (bt AndroidBuildTool) DownloadUrl() string {
 		extension,
 	}
 
-	url, _ := plumbing.TemplateToString(ANDROID_DIST_MIRROR, data)
+	url, _ := plumbing.TemplateToString(androidDistMirror, data)
 
 	return url
 }
 
-func (bt AndroidBuildTool) MajorVersion() string {
+func (bt androidBuildTool) majorVersion() string {
 	parts := strings.Split(bt.version, ".")
 	return parts[0]
 }
 
-func (bt AndroidBuildTool) Version() string {
-	return bt.version
+func (bt androidBuildTool) installDir() string {
+	return filepath.Join(plumbing.ToolsDir(), "android", fmt.Sprintf("android-%s", bt.version))
 }
 
-func (bt AndroidBuildTool) InstallDir() string {
-	return filepath.Join(plumbing.ToolsDir(), "android", fmt.Sprintf("android-%s", bt.Version()))
+func (bt androidBuildTool) androidDir() string {
+	return filepath.Join(bt.installDir())
 }
 
-func (bt AndroidBuildTool) AndroidDir() string {
-	return filepath.Join(bt.InstallDir())
-}
-
-func (bt AndroidBuildTool) writeAgreements() error {
-	licensesDir := filepath.Join(bt.AndroidDir(), "licenses")
+func (bt androidBuildTool) writeAgreements() error {
+	licensesDir := filepath.Join(bt.androidDir(), "licenses")
 	if err := os.MkdirAll(licensesDir, 0777); err != nil {
 		return fmt.Errorf("create agreement files: %w", err)
 	}
@@ -106,8 +103,8 @@ func (bt AndroidBuildTool) writeAgreements() error {
 	return nil
 }
 
-func (bt AndroidBuildTool) Setup() error {
-	androidDir := bt.AndroidDir()
+func (bt androidBuildTool) setup(ctx context.Context) error {
+	androidDir := bt.androidDir()
 
 	binPath := fmt.Sprintf("%s/tools/bin", androidDir)
 	toolsPath := fmt.Sprintf("%s/tools", androidDir)
@@ -133,15 +130,15 @@ func (bt AndroidBuildTool) Setup() error {
 }
 
 // TODO, generalize downloader
-func (bt AndroidBuildTool) Install() error {
-	androidDir := bt.AndroidDir()
-	installDir := bt.InstallDir()
+func (bt androidBuildTool) install(ctx context.Context) error {
+	androidDir := bt.androidDir()
+	installDir := bt.installDir()
 
 	if _, err := os.Stat(androidDir); err == nil {
-		log.Infof("Android v%s located in %s!", bt.Version(), androidDir)
+		log.Infof("Android v%s located in %s!", bt.version, androidDir)
 	} else {
-		log.Infof("Will install Android v%s into %s", bt.Version(), androidDir)
-		downloadUrl := bt.DownloadUrl()
+		log.Infof("Will install Android v%s into %s", bt.version, androidDir)
+		downloadUrl := bt.downloadURL()
 
 		log.Infof("Downloading Android from URL %s...", downloadUrl)
 		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)

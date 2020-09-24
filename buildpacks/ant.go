@@ -1,6 +1,7 @@
 package buildpacks
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,63 +10,57 @@ import (
 	"github.com/johnewart/archiver"
 	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	"github.com/yourbase/yb/types"
 )
 
 //http://apache.mirrors.lucidnetworks.net//ant/binaries/apache-ant-1.10.6-bin.tar.gz
-var ANT_DIST_MIRROR = "http://apache.mirrors.lucidnetworks.net/ant/binaries/apache-ant-{{.Version}}-bin.zip"
+const antDistMirror = "http://apache.mirrors.lucidnetworks.net/ant/binaries/apache-ant-{{.Version}}-bin.zip"
 
-type AntBuildTool struct {
-	types.BuildTool
+type antBuildTool struct {
 	version string
-	spec    BuildToolSpec
+	spec    buildToolSpec
 }
 
-func NewAntBuildTool(toolSpec BuildToolSpec) AntBuildTool {
+func newAntBuildTool(toolSpec buildToolSpec) antBuildTool {
 
-	tool := AntBuildTool{
-		version: toolSpec.Version,
+	tool := antBuildTool{
+		version: toolSpec.version,
 		spec:    toolSpec,
 	}
 
 	return tool
 }
 
-func (bt AntBuildTool) ArchiveFile() string {
-	return fmt.Sprintf("apache-ant-%s-bin.zip", bt.Version())
+func (bt antBuildTool) archiveFile() string {
+	return fmt.Sprintf("apache-ant-%s-bin.zip", bt.version)
 }
 
-func (bt AntBuildTool) DownloadUrl() string {
+func (bt antBuildTool) downloadURL() string {
 	data := struct {
 		Version string
 	}{
-		bt.Version(),
+		bt.version,
 	}
 
-	url, _ := plumbing.TemplateToString(ANT_DIST_MIRROR, data)
+	url, _ := plumbing.TemplateToString(antDistMirror, data)
 
 	return url
 }
 
-func (bt AntBuildTool) MajorVersion() string {
+func (bt antBuildTool) majorVersion() string {
 	parts := strings.Split(bt.version, ".")
 	return parts[0]
 }
 
-func (bt AntBuildTool) Version() string {
-	return bt.version
+func (bt antBuildTool) antDir() string {
+	return filepath.Join(bt.installDir(), fmt.Sprintf("apache-ant-%s", bt.version))
 }
 
-func (bt AntBuildTool) AntDir() string {
-	return filepath.Join(bt.InstallDir(), fmt.Sprintf("apache-ant-%s", bt.Version()))
+func (bt antBuildTool) installDir() string {
+	return filepath.Join(bt.spec.sharedCacheDir, "ant")
 }
 
-func (bt AntBuildTool) InstallDir() string {
-	return filepath.Join(bt.spec.SharedCacheDir, "ant")
-}
-
-func (bt AntBuildTool) Setup() error {
-	antDir := bt.AntDir()
+func (bt antBuildTool) setup(ctx context.Context) error {
+	antDir := bt.antDir()
 
 	cmdPath := filepath.Join(antDir, "bin")
 	currentPath := os.Getenv("PATH")
@@ -77,15 +72,15 @@ func (bt AntBuildTool) Setup() error {
 }
 
 // TODO, generalize downloader
-func (bt AntBuildTool) Install() error {
-	antDir := bt.AntDir()
-	installDir := bt.InstallDir()
+func (bt antBuildTool) install(ctx context.Context) error {
+	antDir := bt.antDir()
+	installDir := bt.installDir()
 
 	if _, err := os.Stat(antDir); err == nil {
-		log.Infof("Ant v%s located in %s!", bt.Version(), antDir)
+		log.Infof("Ant v%s located in %s!", bt.version, antDir)
 	} else {
-		log.Infof("Will install Ant v%s into %s", bt.Version(), antDir)
-		downloadUrl := bt.DownloadUrl()
+		log.Infof("Will install Ant v%s into %s", bt.version, antDir)
+		downloadUrl := bt.downloadURL()
 
 		log.Infof("Downloading Ant from URL %s...", downloadUrl)
 		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
