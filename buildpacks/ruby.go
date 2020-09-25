@@ -1,6 +1,7 @@
 package buildpacks
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -13,13 +14,12 @@ import (
 
 	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	"github.com/yourbase/yb/types"
 	"gopkg.in/src-d/go-git.v4"
 )
 
-const YBRubyDownloadTemplate = "https://yourbase-build-tools.s3-us-west-2.amazonaws.com/ruby/ruby-{{ .Version }}-{{ .OS }}-{{ .Arch }}-{{ .OsVersion }}.{{ .Extension }}"
+const rubyDownloadTemplate = "https://yourbase-build-tools.s3-us-west-2.amazonaws.com/ruby/ruby-{{ .Version }}-{{ .OS }}-{{ .Arch }}-{{ .OsVersion }}.{{ .Extension }}"
 
-func (bt RubyBuildTool) DownloadUrl() string {
+func (bt rubyBuildTool) downloadURL() string {
 	extension := "tar.bz2"
 	osVersion := OSVersion()
 	arch := Arch()
@@ -51,11 +51,11 @@ func (bt RubyBuildTool) DownloadUrl() string {
 		operatingSystem,
 		osVersion,
 		arch,
-		bt.Version(),
+		bt.version,
 		extension,
 	}
 
-	url, err := plumbing.TemplateToString(YBRubyDownloadTemplate, data)
+	url, err := plumbing.TemplateToString(rubyDownloadTemplate, data)
 
 	if err != nil {
 		log.Infof("Error generating download URL: %v", err)
@@ -64,39 +64,34 @@ func (bt RubyBuildTool) DownloadUrl() string {
 	return url
 }
 
-type RubyBuildTool struct {
-	types.BuildTool
+type rubyBuildTool struct {
 	version string
-	spec    BuildToolSpec
+	spec    buildToolSpec
 }
 
-func NewRubyBuildTool(toolSpec BuildToolSpec) RubyBuildTool {
-	tool := RubyBuildTool{
-		version: toolSpec.Version,
+func newRubyBuildTool(toolSpec buildToolSpec) rubyBuildTool {
+	tool := rubyBuildTool{
+		version: toolSpec.version,
 		spec:    toolSpec,
 	}
 
 	return tool
 }
 
-func (bt RubyBuildTool) Version() string {
-	return bt.version
-}
-
-func (bt RubyBuildTool) versionsDir() string {
+func (bt rubyBuildTool) versionsDir() string {
 	return filepath.Join(bt.rbenvDir(), "versions")
 }
 
-func (bt RubyBuildTool) RubyDir() string {
-	return filepath.Join(bt.rbenvDir(), "versions", bt.Version())
+func (bt rubyBuildTool) rubyDir() string {
+	return filepath.Join(bt.rbenvDir(), "versions", bt.version)
 }
 
-func (bt RubyBuildTool) rbenvDir() string {
-	return filepath.Join(bt.spec.SharedCacheDir, "rbenv")
+func (bt rubyBuildTool) rbenvDir() string {
+	return filepath.Join(bt.spec.sharedCacheDir, "rbenv")
 }
 
-func (bt RubyBuildTool) binaryExists() bool {
-	downloadUrl := bt.DownloadUrl()
+func (bt rubyBuildTool) binaryExists() bool {
+	downloadUrl := bt.downloadURL()
 	resp, err := http.Head(downloadUrl)
 
 	if err != nil {
@@ -113,17 +108,17 @@ func (bt RubyBuildTool) binaryExists() bool {
 /*
 TODO: Install libssl-dev (or equivalent / warn) and zlib-dev based on platform
 */
-func (bt RubyBuildTool) Install() error {
+func (bt rubyBuildTool) install(ctx context.Context) error {
 
-	rubyVersionDir := bt.RubyDir()
+	rubyVersionDir := bt.rubyDir()
 
 	if _, err := os.Stat(rubyVersionDir); err == nil {
-		log.Infof("Ruby %s installed in %s", bt.Version(), rubyVersionDir)
+		log.Infof("Ruby %s installed in %s", bt.version, rubyVersionDir)
 	} else {
 
 		if bt.binaryExists() {
 			rubyVersionsDir := bt.versionsDir()
-			downloadUrl := bt.DownloadUrl()
+			downloadUrl := bt.downloadURL()
 			log.Infof("Will download pre-built Ruby from %s", downloadUrl)
 
 			localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
@@ -139,13 +134,13 @@ func (bt RubyBuildTool) Install() error {
 
 			return nil
 		} else {
-			log.Infof("Couldn't find a file at %s...", bt.DownloadUrl())
+			log.Infof("Couldn't find a file at %s...", bt.downloadURL())
 		}
 
 		rbenvGitUrl := "https://github.com/rbenv/rbenv.git"
 		rbenvDir := bt.rbenvDir()
 
-		bt.InstallPlatformDependencies()
+		bt.installPlatformDependencies()
 
 		if _, err := os.Stat(rbenvDir); err == nil {
 			log.Infof("rbenv installed in %s", rbenvDir)
@@ -190,15 +185,15 @@ func (bt RubyBuildTool) Install() error {
 		os.Setenv("RBENV_ROOT", rbenvDir)
 		plumbing.PrependToPath(filepath.Join(rbenvDir, "bin"))
 
-		installCmd := fmt.Sprintf("rbenv install %s", bt.Version())
+		installCmd := fmt.Sprintf("rbenv install %s", bt.version)
 		plumbing.ExecToStdout(installCmd, rbenvDir)
 	}
 
 	return nil
 }
 
-func (bt RubyBuildTool) Setup() error {
-	gemsDir := filepath.Join(bt.spec.PackageCacheDir, "rubygems")
+func (bt rubyBuildTool) setup(ctx context.Context) error {
+	gemsDir := filepath.Join(bt.spec.packageCacheDir, "rubygems")
 	if err := os.MkdirAll(gemsDir, 0777); err != nil {
 		return fmt.Errorf("install Ruby: %w", err)
 	}
@@ -208,14 +203,14 @@ func (bt RubyBuildTool) Setup() error {
 
 	gemBinDir := filepath.Join(gemsDir, "bin")
 
-	rubyDir := bt.RubyDir()
+	rubyDir := bt.rubyDir()
 	plumbing.PrependToPath(filepath.Join(rubyDir, "bin"))
 	plumbing.PrependToPath(gemBinDir)
 
 	return nil
 }
 
-func (bt RubyBuildTool) InstallPlatformDependencies() error {
+func (bt rubyBuildTool) installPlatformDependencies() error {
 	gi := goInfo.GetInfo()
 	if gi.GoOS == "darwin" {
 		if strings.HasPrefix(gi.Core, "18.") {

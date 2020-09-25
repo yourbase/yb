@@ -114,9 +114,3 @@ type WorktreeSave struct {
 	Files   []string
 	Enabled bool
 }
-
-type BuildTool interface {
-	Install() error
-	Setup() error
-	Version() string
-}

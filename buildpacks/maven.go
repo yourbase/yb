@@ -1,6 +1,7 @@
 package buildpacks
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,60 +10,54 @@ import (
 	"github.com/johnewart/archiver"
 	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	"github.com/yourbase/yb/types"
 )
 
 //https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apache-maven-3.3.3-bin.tar.gz
-var MAVEN_DIST_MIRROR = "https://archive.apache.org/dist/maven/"
+const mavenDistMirror = "https://archive.apache.org/dist/maven/"
 
-type MavenBuildTool struct {
-	types.BuildTool
+type mavenBuildTool struct {
 	version string
-	spec    BuildToolSpec
+	spec    buildToolSpec
 }
 
-func NewMavenBuildTool(toolSpec BuildToolSpec) MavenBuildTool {
-	tool := MavenBuildTool{
-		version: toolSpec.Version,
+func newMavenBuildTool(toolSpec buildToolSpec) mavenBuildTool {
+	tool := mavenBuildTool{
+		version: toolSpec.version,
 		spec:    toolSpec,
 	}
 
 	return tool
 }
 
-func (bt MavenBuildTool) ArchiveFile() string {
-	return fmt.Sprintf("apache-maven-%s-bin.tar.gz", bt.Version())
+func (bt mavenBuildTool) archiveFile() string {
+	return fmt.Sprintf("apache-maven-%s-bin.tar.gz", bt.version)
 }
 
-func (bt MavenBuildTool) DownloadUrl() string {
+func (bt mavenBuildTool) downloadURL() string {
 	return fmt.Sprintf(
 		"%s/maven-%s/%s/binaries/%s",
-		MAVEN_DIST_MIRROR,
-		bt.MajorVersion(),
-		bt.Version(),
-		bt.ArchiveFile(),
+		mavenDistMirror,
+		bt.majorVersion(),
+		bt.version,
+		bt.archiveFile(),
 	)
 }
 
-func (bt MavenBuildTool) MajorVersion() string {
+func (bt mavenBuildTool) majorVersion() string {
 	parts := strings.Split(bt.version, ".")
 	return parts[0]
 }
 
-func (bt MavenBuildTool) Version() string {
-	return bt.version
-}
-
-func (bt MavenBuildTool) InstallDir() string {
+func (bt mavenBuildTool) installDir() string {
 	return filepath.Join(plumbing.ToolsDir(), "maven")
 }
 
-func (bt MavenBuildTool) MavenDir() string {
-	return filepath.Join(bt.InstallDir(), fmt.Sprintf("apache-maven-%s", bt.Version()))
+func (bt mavenBuildTool) mavenDir() string {
+	return filepath.Join(bt.installDir(), fmt.Sprintf("apache-maven-%s", bt.version))
 }
 
-func (bt MavenBuildTool) Setup() error {
-	mavenDir := bt.MavenDir()
+func (bt mavenBuildTool) setup(ctx context.Context) error {
+	mavenDir := bt.mavenDir()
 	cmdPath := fmt.Sprintf("%s/bin", mavenDir)
 	currentPath := os.Getenv("PATH")
 	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
@@ -73,14 +68,14 @@ func (bt MavenBuildTool) Setup() error {
 }
 
 // TODO, generalize downloader
-func (bt MavenBuildTool) Install() error {
-	mavenDir := bt.MavenDir()
+func (bt mavenBuildTool) install(ctx context.Context) error {
+	mavenDir := bt.mavenDir()
 
 	if _, err := os.Stat(mavenDir); err == nil {
-		log.Infof("Maven v%s located in %s!", bt.Version(), mavenDir)
+		log.Infof("Maven v%s located in %s!", bt.version, mavenDir)
 	} else {
-		log.Infof("Will install Maven v%s into %s", bt.Version(), bt.InstallDir())
-		downloadUrl := bt.DownloadUrl()
+		log.Infof("Will install Maven v%s into %s", bt.version, bt.installDir())
+		downloadUrl := bt.downloadURL()
 
 		log.Infof("Downloading Maven from URL %s...", downloadUrl)
 		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
@@ -88,7 +83,7 @@ func (bt MavenBuildTool) Install() error {
 			log.Errorf("Unable to download: %v", err)
 			return err
 		}
-		err = archiver.Unarchive(localFile, bt.InstallDir())
+		err = archiver.Unarchive(localFile, bt.installDir())
 		if err != nil {
 			log.Errorf("Unable to decompress: %v", err)
 			return err
