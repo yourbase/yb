@@ -1,6 +1,7 @@
 package buildpacks
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,29 +10,27 @@ import (
 	"github.com/johnewart/archiver"
 	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	"github.com/yourbase/yb/types"
 )
 
 // https://github.com/google/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip
-const ProtocDistMirror = "https://github.com/google/protobuf/releases/download/v{{.Version}}/protoc-{{.Version}}-{{.OS}}-x86_64.{{.Extension}}"
+const protocDistMirror = "https://github.com/google/protobuf/releases/download/v{{.Version}}/protoc-{{.Version}}-{{.OS}}-x86_64.{{.Extension}}"
 
-type ProtocBuildTool struct {
-	types.BuildTool
+type protocBuildTool struct {
 	version string
-	spec    BuildToolSpec
+	spec    buildToolSpec
 }
 
-func NewProtocBuildTool(spec BuildToolSpec) ProtocBuildTool {
+func newProtocBuildTool(spec buildToolSpec) protocBuildTool {
 
-	tool := ProtocBuildTool{
-		version: spec.Version,
+	tool := protocBuildTool{
+		version: spec.version,
 		spec:    spec,
 	}
 
 	return tool
 }
 
-func (bt ProtocBuildTool) DownloadUrl() string {
+func (bt protocBuildTool) downloadURL() string {
 	opsys := OS()
 	arch := Arch()
 	extension := "zip"
@@ -44,7 +43,7 @@ func (bt ProtocBuildTool) DownloadUrl() string {
 		opsys = "osx"
 	}
 
-	version := bt.Version()
+	version := bt.version
 
 	data := struct {
 		OS        string
@@ -58,30 +57,26 @@ func (bt ProtocBuildTool) DownloadUrl() string {
 		extension,
 	}
 
-	url, _ := plumbing.TemplateToString(ProtocDistMirror, data)
+	url, _ := plumbing.TemplateToString(protocDistMirror, data)
 
 	return url
 }
 
-func (bt ProtocBuildTool) MajorVersion() string {
+func (bt protocBuildTool) majorVersion() string {
 	parts := strings.Split(bt.version, ".")
 	return parts[0]
 }
 
-func (bt ProtocBuildTool) Version() string {
-	return bt.version
+func (bt protocBuildTool) installDir() string {
+	return filepath.Join(bt.spec.packageCacheDir, "protoc", fmt.Sprintf("protoc-%s", bt.version))
 }
 
-func (bt ProtocBuildTool) InstallDir() string {
-	return filepath.Join(bt.spec.PackageCacheDir, "protoc", fmt.Sprintf("protoc-%s", bt.Version()))
+func (bt protocBuildTool) protocDir() string {
+	return filepath.Join(bt.installDir())
 }
 
-func (bt ProtocBuildTool) ProtocDir() string {
-	return filepath.Join(bt.InstallDir())
-}
-
-func (bt ProtocBuildTool) Setup() error {
-	protocDir := bt.ProtocDir()
+func (bt protocBuildTool) setup(ctx context.Context) error {
+	protocDir := bt.protocDir()
 
 	cmdPath := filepath.Join(protocDir, "bin")
 	plumbing.PrependToPath(cmdPath)
@@ -89,16 +84,16 @@ func (bt ProtocBuildTool) Setup() error {
 }
 
 // TODO, generalize downloader
-func (bt ProtocBuildTool) Install() error {
-	protocDir := bt.ProtocDir()
-	installDir := bt.InstallDir()
+func (bt protocBuildTool) install(ctx context.Context) error {
+	protocDir := bt.protocDir()
+	installDir := bt.installDir()
 
 	if _, err := os.Stat(protocDir); err == nil {
-		log.Infof("Protoc v%s located in %s!", bt.Version(), protocDir)
+		log.Infof("Protoc v%s located in %s!", bt.version, protocDir)
 		return nil
 	}
-	log.Infof("Will install Protoc v%s into %s", bt.Version(), protocDir)
-	downloadUrl := bt.DownloadUrl()
+	log.Infof("Will install Protoc v%s into %s", bt.version, protocDir)
+	downloadUrl := bt.downloadURL()
 
 	log.Infof("Downloading Protoc from URL %s...", downloadUrl)
 	localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
@@ -111,8 +106,6 @@ func (bt ProtocBuildTool) Install() error {
 		log.Errorf("Unable to decompress: %v", err)
 		return err
 	}
-
-	//RemoveWritePermissionRecursively(installDir)
 
 	return nil
 }

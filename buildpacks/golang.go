@@ -1,6 +1,7 @@
 package buildpacks
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,63 +10,57 @@ import (
 	"github.com/johnewart/archiver"
 	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	"github.com/yourbase/yb/types"
 )
 
 //https://dl.google.com/go/go1.11.5.linux-amd64.tar.gz
-var GOLANG_DIST_MIRROR = "https://dl.google.com/go"
+const golangDistMirror = "https://dl.google.com/go"
 
-type GolangBuildTool struct {
-	types.BuildTool
+type golangBuildTool struct {
 	version string
-	spec    BuildToolSpec
+	spec    buildToolSpec
 }
 
-func NewGolangBuildTool(toolSpec BuildToolSpec) GolangBuildTool {
-	tool := GolangBuildTool{
-		version: toolSpec.Version,
+func newGolangBuildTool(toolSpec buildToolSpec) golangBuildTool {
+	tool := golangBuildTool{
+		version: toolSpec.version,
 		spec:    toolSpec,
 	}
 
 	return tool
 }
 
-func (bt GolangBuildTool) ArchiveFile() string {
+func (bt golangBuildTool) archiveFile() string {
 	operatingSystem := OS()
 	arch := Arch()
-	return fmt.Sprintf("go%s.%s-%s.tar.gz", bt.Version(), operatingSystem, arch)
+	return fmt.Sprintf("go%s.%s-%s.tar.gz", bt.version, operatingSystem, arch)
 }
 
-func (bt GolangBuildTool) DownloadUrl() string {
+func (bt golangBuildTool) downloadURL() string {
 	return fmt.Sprintf(
 		"%s/%s",
-		GOLANG_DIST_MIRROR,
-		bt.ArchiveFile(),
+		golangDistMirror,
+		bt.archiveFile(),
 	)
 }
 
-func (bt GolangBuildTool) MajorVersion() string {
+func (bt golangBuildTool) majorVersion() string {
 	parts := strings.Split(bt.version, ".")
 	return parts[0]
 }
 
-func (bt GolangBuildTool) Version() string {
-	return bt.version
+func (bt golangBuildTool) installDir() string {
+	return fmt.Sprintf("%s/go/%s", bt.spec.sharedCacheDir, bt.version)
 }
 
-func (bt GolangBuildTool) InstallDir() string {
-	return fmt.Sprintf("%s/go/%s", bt.spec.SharedCacheDir, bt.Version())
-}
-
-func (bt GolangBuildTool) GolangDir() string {
-	return filepath.Join(bt.InstallDir(), "go")
+func (bt golangBuildTool) golangDir() string {
+	return filepath.Join(bt.installDir(), "go")
 }
 
 // TODO: handle multiple packages, for now this is ok
-func (bt GolangBuildTool) Setup() error {
-	golangDir := bt.GolangDir()
-	goPath := bt.spec.PackageCacheDir
-	pkgPath := bt.spec.PackageDir
+func (bt golangBuildTool) setup(ctx context.Context) error {
+	golangDir := bt.golangDir()
+	goPath := bt.spec.packageCacheDir
+	pkgPath := bt.spec.packageDir
 
 	var goPathElements = []string{goPath, pkgPath}
 	goPathVar := strings.Join(goPathElements, ":")
@@ -86,15 +81,15 @@ func (bt GolangBuildTool) Setup() error {
 }
 
 // TODO, generalize downloader
-func (bt GolangBuildTool) Install() error {
-	installDir := bt.InstallDir()
-	golangDir := bt.GolangDir()
+func (bt golangBuildTool) install(ctx context.Context) error {
+	installDir := bt.installDir()
+	golangDir := bt.golangDir()
 
 	if _, err := os.Stat(golangDir); err == nil {
-		log.Infof("Golang v%s located in %s!", bt.Version(), golangDir)
+		log.Infof("Golang v%s located in %s!", bt.version, golangDir)
 	} else {
-		log.Infof("Will install Golang v%s into %s", bt.Version(), golangDir)
-		downloadUrl := bt.DownloadUrl()
+		log.Infof("Will install Golang v%s into %s", bt.version, golangDir)
+		downloadUrl := bt.downloadURL()
 
 		log.Infof("Downloading from URL %s ...", downloadUrl)
 		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)

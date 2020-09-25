@@ -12,10 +12,7 @@ import (
 
 // TokenCmd represents an invocation of `yb token`, which outputs the saved
 // token from `yb login` to stdout. This can be used
-type TokenCmd struct {
-	Version string
-	Channel string
-}
+type TokenCmd struct{}
 
 // Name returns the literal text of the token command.
 func (*TokenCmd) Name() string { return "token" }

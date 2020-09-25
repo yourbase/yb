@@ -1,6 +1,7 @@
 package buildpacks
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -8,42 +9,36 @@ import (
 	"github.com/johnewart/archiver"
 	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	"github.com/yourbase/yb/types"
 )
 
-var GLIDE_DIST_MIRROR = "https://github.com/Masterminds/glide/releases/download/v{{.Version}}/glide-v{{.Version}}-{{.OS}}-{{.Arch}}.tar.gz"
+const glideDistMirror = "https://github.com/Masterminds/glide/releases/download/v{{.Version}}/glide-v{{.Version}}-{{.OS}}-{{.Arch}}.tar.gz"
 
-type GlideBuildTool struct {
-	types.BuildTool
+type glideBuildTool struct {
 	version string
-	spec    BuildToolSpec
+	spec    buildToolSpec
 }
 
-type DownloadParameters struct {
+type downloadParameters struct {
 	Version string
 	OS      string
 	Arch    string
 }
 
-func NewGlideBuildTool(toolSpec BuildToolSpec) GlideBuildTool {
-	tool := GlideBuildTool{
-		version: toolSpec.Version,
+func newGlideBuildTool(toolSpec buildToolSpec) glideBuildTool {
+	tool := glideBuildTool{
+		version: toolSpec.version,
 		spec:    toolSpec,
 	}
 
 	return tool
 }
 
-func (bt GlideBuildTool) Version() string {
-	return bt.version
+func (bt glideBuildTool) glideDir() string {
+	return filepath.Join(bt.spec.sharedCacheDir, fmt.Sprintf("glide-%v", bt.version))
 }
 
-func (bt GlideBuildTool) GlideDir() string {
-	return filepath.Join(bt.spec.SharedCacheDir, fmt.Sprintf("glide-%v", bt.Version()))
-}
-
-func (bt GlideBuildTool) Setup() error {
-	glideDir := bt.GlideDir()
+func (bt glideBuildTool) setup(ctx context.Context) error {
+	glideDir := bt.glideDir()
 	cmdPath := fmt.Sprintf("%s/%s-%s", glideDir, OS(), Arch())
 	currentPath := os.Getenv("PATH")
 	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
@@ -53,21 +48,21 @@ func (bt GlideBuildTool) Setup() error {
 	return nil
 }
 
-func (bt GlideBuildTool) Install() error {
+func (bt glideBuildTool) install(ctx context.Context) error {
 
-	glidePath := bt.GlideDir()
+	glidePath := bt.glideDir()
 
 	if _, err := os.Stat(glidePath); err == nil {
-		log.Infof("Glide v%s located in %s!", bt.Version(), glidePath)
+		log.Infof("Glide v%s located in %s!", bt.version, glidePath)
 	} else {
-		log.Infof("Will install Glide v%s into %s", bt.Version(), glidePath)
-		params := DownloadParameters{
+		log.Infof("Will install Glide v%s into %s", bt.version, glidePath)
+		params := downloadParameters{
 			OS:      OS(),
 			Arch:    Arch(),
-			Version: bt.Version(),
+			Version: bt.version,
 		}
 
-		downloadUrl, err := plumbing.TemplateToString(GLIDE_DIST_MIRROR, params)
+		downloadUrl, err := plumbing.TemplateToString(glideDistMirror, params)
 		if err != nil {
 			log.Errorf("Unable to generate download URL: %v", err)
 			return err
@@ -80,11 +75,11 @@ func (bt GlideBuildTool) Install() error {
 			return err
 		}
 
-		extractDir := bt.GlideDir()
+		extractDir := bt.glideDir()
 		if err := os.MkdirAll(extractDir, 0777); err != nil {
 			return err
 		}
-		log.Infof("Extracting glide %s to %s...", bt.Version(), extractDir)
+		log.Infof("Extracting glide %s to %s...", bt.version, extractDir)
 		err = archiver.Unarchive(localFile, extractDir)
 		if err != nil {
 			log.Errorf("Unable to decompress: %v", err)

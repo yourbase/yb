@@ -1,46 +1,41 @@
 package buildpacks
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	"github.com/yourbase/yb/types"
 )
 
-var RUST_DIST_MIRROR = "https://static.rust-lang.org/rustup/dist"
+const rustDistMirror = "https://static.rust-lang.org/rustup/dist"
 
-type RustBuildTool struct {
-	types.BuildTool
+type rustBuildTool struct {
 	version string
-	spec    BuildToolSpec
+	spec    buildToolSpec
 }
 
-func NewRustBuildTool(toolSpec BuildToolSpec) RustBuildTool {
-	tool := RustBuildTool{
-		version: toolSpec.Version,
+func newRustBuildTool(toolSpec buildToolSpec) rustBuildTool {
+	tool := rustBuildTool{
+		version: toolSpec.version,
 		spec:    toolSpec,
 	}
 
 	return tool
 }
 
-func (bt RustBuildTool) Version() string {
-	return bt.version
+func (bt rustBuildTool) rustDir() string {
+	return filepath.Join(bt.installDir(), fmt.Sprintf("rust-%s", bt.version))
 }
 
-func (bt RustBuildTool) RustDir() string {
-	return filepath.Join(bt.InstallDir(), fmt.Sprintf("rust-%s", bt.Version()))
+func (bt rustBuildTool) installDir() string {
+	return filepath.Join(bt.spec.sharedCacheDir, "rust")
 }
 
-func (bt RustBuildTool) InstallDir() string {
-	return filepath.Join(bt.spec.SharedCacheDir, "rust")
-}
-
-func (bt RustBuildTool) Setup() error {
-	rustDir := bt.RustDir()
+func (bt rustBuildTool) setup(ctx context.Context) error {
+	rustDir := bt.rustDir()
 	cmdPath := fmt.Sprintf("%s/bin", rustDir)
 	currentPath := os.Getenv("PATH")
 	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
@@ -53,26 +48,26 @@ func (bt RustBuildTool) Setup() error {
 	return nil
 }
 
-func (bt RustBuildTool) Install() error {
+func (bt rustBuildTool) install(ctx context.Context) error {
 
 	arch := "x86_64"
 	operatingSystem := "unknown-linux-gnu"
 
-	rustDir := bt.RustDir()
-	installDir := bt.InstallDir()
+	rustDir := bt.rustDir()
+	installDir := bt.installDir()
 	if err := os.MkdirAll(installDir, 0777); err != nil {
 		return fmt.Errorf("install Rust: %w", err)
 	}
 
 	if _, err := os.Stat(rustDir); err == nil {
-		log.Infof("Rust v%s located in %s!", bt.Version(), rustDir)
+		log.Infof("Rust v%s located in %s!", bt.version, rustDir)
 	} else {
-		log.Infof("Will install Rust v%s into %s", bt.Version(), rustDir)
+		log.Infof("Will install Rust v%s into %s", bt.version, rustDir)
 		extension := ""
 		installerFile := fmt.Sprintf("rustup-init%s", extension)
-		downloadUrl := fmt.Sprintf("%s/%s-%s/%s", RUST_DIST_MIRROR, arch, operatingSystem, installerFile)
+		downloadUrl := fmt.Sprintf("%s/%s-%s/%s", rustDistMirror, arch, operatingSystem, installerFile)
 
-		downloadDir := bt.spec.PackageCacheDir
+		downloadDir := bt.spec.packageCacheDir
 		localFile := filepath.Join(downloadDir, installerFile)
 		log.Infof("Downloading from URL %s to local file %s", downloadUrl, localFile)
 		err := plumbing.DownloadFile(localFile, downloadUrl)

@@ -1,6 +1,7 @@
 package buildpacks
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,58 +10,52 @@ import (
 	"github.com/johnewart/archiver"
 	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
-	"github.com/yourbase/yb/types"
 )
 
-var RLANG_DIST_MIRROR = "https://cloud.r-project.org/src/base"
+const rLangDistMirror = "https://cloud.r-project.org/src/base"
 
-type RLangBuildTool struct {
-	types.BuildTool
+type rLangBuildTool struct {
 	version string
-	spec    BuildToolSpec
+	spec    buildToolSpec
 }
 
-func NewRLangBuildTool(toolSpec BuildToolSpec) RLangBuildTool {
-	tool := RLangBuildTool{
-		version: toolSpec.Version,
+func newRLangBuildTool(toolSpec buildToolSpec) rLangBuildTool {
+	tool := rLangBuildTool{
+		version: toolSpec.version,
 		spec:    toolSpec,
 	}
 
 	return tool
 }
 
-func (bt RLangBuildTool) ArchiveFile() string {
-	return fmt.Sprintf("R-%s.tar.gz", bt.Version())
+func (bt rLangBuildTool) archiveFile() string {
+	return fmt.Sprintf("R-%s.tar.gz", bt.version)
 }
 
-func (bt RLangBuildTool) DownloadUrl() string {
+func (bt rLangBuildTool) downloadURL() string {
 	return fmt.Sprintf(
 		"%s/R-%s/%s",
-		RLANG_DIST_MIRROR,
-		bt.MajorVersion(),
-		bt.ArchiveFile(),
+		rLangDistMirror,
+		bt.majorVersion(),
+		bt.archiveFile(),
 	)
 }
 
-func (bt RLangBuildTool) MajorVersion() string {
+func (bt rLangBuildTool) majorVersion() string {
 	parts := strings.Split(bt.version, ".")
 	return parts[0]
 }
 
-func (bt RLangBuildTool) Version() string {
-	return bt.version
+func (bt rLangBuildTool) installDir() string {
+	return filepath.Join(bt.spec.sharedCacheDir, "R")
 }
 
-func (bt RLangBuildTool) InstallDir() string {
-	return filepath.Join(bt.spec.SharedCacheDir, "R")
+func (bt rLangBuildTool) rLangDir() string {
+	return filepath.Join(bt.installDir(), fmt.Sprintf("R-%s", bt.version))
 }
 
-func (bt RLangBuildTool) RLangDir() string {
-	return filepath.Join(bt.InstallDir(), fmt.Sprintf("R-%s", bt.Version()))
-}
-
-func (bt RLangBuildTool) Setup() error {
-	rlangDir := bt.RLangDir()
+func (bt rLangBuildTool) setup(ctx context.Context) error {
+	rlangDir := bt.rLangDir()
 
 	cmdPath := fmt.Sprintf("%s/bin", rlangDir)
 	currentPath := os.Getenv("PATH")
@@ -72,15 +67,15 @@ func (bt RLangBuildTool) Setup() error {
 }
 
 // TODO, generalize downloader
-func (bt RLangBuildTool) Install() error {
-	installDir := bt.InstallDir()
-	rlangDir := bt.RLangDir()
+func (bt rLangBuildTool) install(ctx context.Context) error {
+	installDir := bt.installDir()
+	rlangDir := bt.rLangDir()
 
 	if _, err := os.Stat(rlangDir); err == nil {
-		log.Infof("R v%s located in %s!", bt.Version(), rlangDir)
+		log.Infof("R v%s located in %s!", bt.version, rlangDir)
 	} else {
-		log.Infof("Will install R v%s into %s", bt.Version(), installDir)
-		downloadUrl := bt.DownloadUrl()
+		log.Infof("Will install R v%s into %s", bt.version, installDir)
+		downloadUrl := bt.downloadURL()
 
 		log.Infof("Downloading from URL %s ...", downloadUrl)
 		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
@@ -90,7 +85,7 @@ func (bt RLangBuildTool) Install() error {
 		}
 
 		tmpDir := filepath.Join(installDir, "src")
-		srcDir := filepath.Join(tmpDir, fmt.Sprintf("R-%s", bt.Version()))
+		srcDir := filepath.Join(tmpDir, fmt.Sprintf("R-%s", bt.version))
 
 		if !plumbing.DirectoryExists(srcDir) {
 			err = archiver.Unarchive(localFile, tmpDir)
