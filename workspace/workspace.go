@@ -92,7 +92,9 @@ func (w Workspace) SetupEnv() error {
 
 	os.Clearenv()
 	tmpDir := filepath.Join(w.BuildRoot(), "tmp")
-	plumbing.MkdirAsNeeded(tmpDir)
+	if err := os.MkdirAll(tmpDir, 0777); err != nil {
+		return err
+	}
 	os.Setenv("HOME", w.BuildRoot())
 	os.Setenv("TMPDIR", tmpDir)
 

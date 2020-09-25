@@ -1,8 +1,6 @@
 package types
 
 import (
-	"time"
-
 	"github.com/johnewart/narwhal"
 )
 
@@ -97,9 +95,9 @@ type BuildTarget struct {
 	Dependencies BuildDependencies           `yaml:"dependencies"`
 }
 
-// API Responses -- TODO use Swagger instead, this is silly
+// A Project is a YourBase project as returned by the API.
 type Project struct {
-	Id          int    `json:"id"`
+	ID          int    `json:"id"`
 	Label       string `json:"label"`
 	Description string `json:"description"`
 	Repository  string `json:"repository"`
@@ -115,17 +113,6 @@ type WorktreeSave struct {
 	Path    string
 	Files   []string
 	Enabled bool
-}
-
-type CommandTimer struct {
-	Command   string
-	StartTime time.Time
-	EndTime   time.Time
-}
-
-type TargetTimer struct {
-	Name   string
-	Timers []CommandTimer
 }
 
 type BuildTool interface {

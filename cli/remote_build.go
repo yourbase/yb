@@ -19,6 +19,7 @@ import (
 	"strings"
 	"time"
 
+	ggit "gg-scm.io/pkg/git"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	"github.com/johnewart/subcommands"
@@ -52,7 +53,7 @@ type RemoteCmd struct {
 	committed      bool
 	publicRepo     bool
 	backupWorktree bool
-	remotes        []types.GitRemote
+	remotes        []*url.URL
 }
 
 func (*RemoteCmd) Name() string     { return "remotebuild" }
@@ -134,19 +135,8 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	// Show timing feedback and start tracking spent time
 	startTime := time.Now()
-	var bootProgress *plumbing.Progress
-	bootErrored := func() {
-		if bootProgress != nil {
-			bootProgress.Fail()
-		}
-	}
 
-	if log.CheckIfTerminal() {
-		bootProgress = plumbing.NewProgressSpinner("Bootstrapping")
-		bootProgress.Start()
-	} else {
-		log.Info("Bootstrapping...")
-	}
+	log.Info("Bootstrapping...")
 
 	list, err := workRepo.Remotes()
 
@@ -162,23 +152,14 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		repoUrls = append(repoUrls, c.URLs...)
 	}
 
-	project, remote, err := p.fetchProject(repoUrls)
-
+	project, err := p.fetchProject(repoUrls)
 	if err != nil {
-		bootErrored()
 		log.Error(err)
-		return subcommands.ExitFailure
-	}
-
-	if !remote.Validate() {
-		bootErrored()
-		log.Errorf("Unable to pick the correct remote")
 		return subcommands.ExitFailure
 	}
 
 	if project.Repository == "" {
 		projectUrl, err := ybconfig.ManagementUrl(fmt.Sprintf("%s/%s", project.OrgSlug, project.Label))
-		bootErrored()
 		if err != nil {
 			log.Errorf("Unable to generate project URL: %v", err)
 			return subcommands.ExitFailure
@@ -197,34 +178,25 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	//    3.3. Save the patch and compress it
 	// 4. Submit build!
 
-	remote.Branch, err = defineBranch(workRepo, p.branch)
-	if err != nil {
-		bootErrored()
-		log.Errorf("Unable to define a branch: %v", err)
-		return subcommands.ExitFailure
-	}
-
-	if bootProgress != nil {
-		fmt.Println()
-	}
 	ancestorRef, commitCount, branch := fastFindAncestor(workRepo)
 	if commitCount == -1 { // Error
-		bootErrored()
 		return subcommands.ExitFailure
 	}
 	p.branch = branch
 	p.baseCommit = ancestorRef.String()
 
-	head, _ := workRepo.Head()
+	head, err := workRepo.Head()
+	if err != nil {
+		log.Errorf("Couldn't find HEAD commit: %v", err)
+		return subcommands.ExitFailure
+	}
 	headCommit, err := workRepo.CommitObject(head.Hash())
 	if err != nil {
-		bootErrored()
 		log.Errorf("Couldn't find HEAD commit: %v", err)
 		return subcommands.ExitFailure
 	}
 	ancestorCommit, err := workRepo.CommitObject(ancestorRef)
 	if err != nil {
-		bootErrored()
 		log.Errorf("Couldn't find merge-base commit: %v", err)
 		return subcommands.ExitFailure
 	}
@@ -232,32 +204,16 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	// Show feedback: end of bootstrap
 	endTime := time.Now()
 	bootTime := endTime.Sub(startTime)
-	if bootProgress != nil {
-		bootProgress.Success()
-	}
 	log.Infof("Bootstrap finished at %s, taking %s", endTime.Format(TIME_FORMAT), bootTime.Truncate(time.Millisecond))
 
 	// Process patches
 	startTime = time.Now()
-	var patchProgress *plumbing.Progress
-	patchErrored := func() {
-		if patchProgress != nil {
-			patchProgress.Fail()
-		}
-	}
-
 	pGenerationChan := make(chan bool)
 	if p.committed && headCommit.Hash.String() != p.baseCommit {
-		if log.CheckIfTerminal() {
-			patchProgress = plumbing.NewProgressSpinner("Generating patch for %d commits", commitCount)
-			patchProgress.Start()
-		} else {
-			log.Infof("Generating patch for %d commits...", commitCount)
-		}
+		log.Infof("Generating patch for %d commits...", commitCount)
 
 		patch, err := ancestorCommit.Patch(headCommit)
 		if err != nil {
-			patchErrored()
 			log.Errorf("Patch generation failed: %v", err)
 			return subcommands.ExitFailure
 		}
@@ -272,22 +228,15 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		// Apply changes that weren't committed yet
 		worktree, err := workRepo.Worktree() // current worktree
 		if err != nil {
-			patchErrored()
 			log.Errorf("Couldn't get current worktree: %v", err)
 			return subcommands.ExitFailure
 		}
 
-		if log.CheckIfTerminal() {
-			patchProgress = plumbing.NewProgressSpinner("Generating patch for local changes")
-			patchProgress.Start()
-		} else {
-			log.Info("Generating patch for local changes")
-		}
+		log.Info("Generating patch for local changes...")
 
 		log.Debug("Start backing up the worktree-save")
 		saver, err := types.NewWorktreeSave(targetPackage.Path, headCommit.Hash.String(), p.backupWorktree)
 		if err != nil {
-			patchErrored()
 			log.Errorf("%s", err)
 		}
 
@@ -296,13 +245,9 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		//if err = worktree.AddGlob("."); err != nil {
 		if skippedBinaries, err := p.traverseChanges(worktree, saver); err != nil {
 			log.Error(err)
-			patchErrored()
 			return subcommands.ExitFailure
 		} else {
 			if len(skippedBinaries) > 0 {
-				if patchProgress != nil {
-					fmt.Println()
-				}
 				log.Infoln("Skipped binaries:")
 				for _, n := range skippedBinaries {
 					fmt.Printf("   '%s'\n", n)
@@ -315,7 +260,6 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			log.Debug("Saving a tarball  with all the worktree changes made")
 			// Save them before committing
 			if saveFile, err := saver.Save(); err != nil {
-				patchErrored()
 				log.Errorf("Unable to keep worktree changes, won't commit: %v", err)
 				return subcommands.ExitFailure
 			} else {
@@ -338,14 +282,12 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		latest, err := commitTempChanges(worktree, headCommit)
 		if err != nil {
 			log.Errorf("Commit to temporary cloned repository failed: %v", err)
-			patchErrored()
 			return subcommands.ExitFailure
 		}
 
 		tempCommit, err := workRepo.CommitObject(latest)
 		if err != nil {
 			log.Errorf("Can't find commit '%v': %v", latest, err)
-			patchErrored()
 			return subcommands.ExitFailure
 		}
 
@@ -353,7 +295,6 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		patch, err := ancestorCommit.Patch(tempCommit)
 		if err != nil {
 			log.Errorf("Patch generation failed: %v", err)
-			patchErrored()
 			return subcommands.ExitFailure
 		}
 
@@ -377,15 +318,9 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	// Show feedback: end of patch generation
 	endTime = time.Now()
 	patchTime := endTime.Sub(startTime)
-	if patchProgress != nil {
-		patchProgress.Success()
-	}
 	log.Infof("Patch finished at %s, taking %s", endTime.Format(TIME_FORMAT), patchTime.Truncate(time.Millisecond))
 	if len(p.patchPath) > 0 && len(p.patchData) > 0 {
 		if err := p.savePatch(); err != nil {
-			if patchProgress != nil {
-				fmt.Println()
-			}
 			log.Warningf("Unable to save copy of generated patch: %v", err)
 		}
 	}
@@ -658,105 +593,56 @@ func managementLogUrl(url, org, label string) string {
 	return ""
 }
 
-func defineBranch(r *git.Repository, hintBranch string) (string, error) {
-
-	ref, err := r.Head()
-	if err != nil {
-		return "", fmt.Errorf("No Head: %v", err)
-	}
-
-	if ref.Name().IsBranch() {
-		if hintBranch != "" {
-			if hintBranch == ref.Name().Short() {
-				log.Infof("Informed branch is the one used locally")
-
-				return hintBranch, nil
-
-			} else {
-				return hintBranch, fmt.Errorf("Informed branch (%v) isn't the same as the one used locally (%v)", hintBranch, ref.Name().String())
-			}
-		} else {
-			log.Debugf("Found branch reference name is %v", ref.Name().Short())
-			return ref.Name().Short(), nil
-		}
-
-	} else {
-		return "", fmt.Errorf("No branch set?")
-	}
-}
-
-func (p *RemoteCmd) fetchProject(urls []string) (*types.Project, types.GitRemote, error) {
-	var empty types.GitRemote
+func (p *RemoteCmd) fetchProject(urls []string) (*types.Project, error) {
 	v := url.Values{}
 	fmt.Println()
 	log.Infof("URLs used to search: %s", urls)
 
 	for _, u := range urls {
-		rem := types.NewGitRemote(u)
+		rem, err := ggit.ParseURL(u)
+		if err != nil {
+			log.Warnf("Invalid remote %s (%v), ignoring", u, err)
+			continue
+		}
 		// We only support GitHub by now
 		// TODO create something more generic
-		if rem.Validate() && strings.Contains(rem.String(), "github.com") {
-			p.remotes = append(p.remotes, rem)
-			v.Add("urls[]", u)
-		} else {
-			log.Warnf("Invalid remote: '%s', ignoring", u)
+		if rem.Host != "github.com" {
+			log.Warnf("Ignoring remote %s (only github.com supported)", u)
+			continue
 		}
+		p.remotes = append(p.remotes, rem)
+		v.Add("urls[]", u)
 	}
 	resp, err := postToApi("search/projects", v)
-
 	if err != nil {
-		return nil, empty, fmt.Errorf("Couldn't lookup project on api server: %v", err)
+		return nil, fmt.Errorf("Couldn't lookup project on api server: %v", err)
 	}
+	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		log.Debugf("Build server returned HTTP Status %d", resp.StatusCode)
-		if resp.StatusCode == 203 {
+		switch resp.StatusCode {
+		case http.StatusNonAuthoritativeInfo:
 			p.publicRepo = true
-		} else if resp.StatusCode == 401 {
-			return nil, empty, fmt.Errorf("Unauthorized, authentication failed.\nPlease `yb login` again.")
-		} else if resp.StatusCode == 412 || resp.StatusCode == 404 {
-			return nil, empty, fmt.Errorf("Please verify if this private repository has %s installed.", ybconfig.CurrentGHAppUrl())
-		} else {
-			return nil, empty, fmt.Errorf("This is us, not you, please try again in a few minutes.")
+		case http.StatusUnauthorized:
+			return nil, fmt.Errorf("Unauthorized, authentication failed.\nPlease `yb login` again.")
+		case http.StatusPreconditionFailed, http.StatusNotFound:
+			return nil, fmt.Errorf("Please verify if this private repository has %s installed.", ybconfig.CurrentGHAppUrl())
+		default:
+			return nil, fmt.Errorf("This is us, not you, please try again in a few minutes.")
 		}
 	}
 
-	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
 	var project types.Project
 	err = json.Unmarshal(body, &project)
 	if err != nil {
-		return nil, empty, err
+		return nil, err
 	}
-
-	remote := p.pickRemote(project.Repository)
-	if !remote.Validate() {
-		return nil, empty, fmt.Errorf("Can't pick a good remote to clone upstream.")
-	}
-
-	return &project, remote, nil
-}
-
-func (p *RemoteCmd) pickRemote(url string) (remote types.GitRemote) {
-
-	for _, r := range p.remotes {
-		if strings.Contains(url, r.Url) || strings.Contains(r.Url, url) {
-			// If it matches the Url received from the API somehow:
-			return r
-		}
-	}
-	if len(p.remotes) > 0 {
-		// We only support GitHub by now
-		// TODO create something more generic
-		for _, rem := range p.remotes {
-			if strings.Contains(rem.Domain, "github.com") {
-				remote = rem
-				return
-			}
-		}
-	}
-
-	return
+	return &project, nil
 }
 
 func (cmd *RemoteCmd) savePatch() error {
@@ -773,34 +659,22 @@ func (cmd *RemoteCmd) savePatch() error {
 func (cmd *RemoteCmd) submitBuild(project *types.Project, tagMap map[string]string) error {
 
 	startTime := time.Now()
-	var submitProgress *plumbing.Progress
-	submitErrored := func() {
-		if submitProgress != nil {
-			submitProgress.Fail()
-		}
-	}
-	if log.CheckIfTerminal() {
-		submitProgress = plumbing.NewProgressSpinner("Submitting remote build")
-		submitProgress.Start()
-	}
 
 	userToken, err := ybconfig.UserToken()
 	if err != nil {
-		submitErrored()
 		return err
 	}
 
 	patchBuffer := bytes.NewBuffer(cmd.patchData)
 
 	if err = plumbing.CompressBuffer(patchBuffer); err != nil {
-		submitErrored()
 		return fmt.Errorf("Couldn't compress the patch file: %s", err)
 	}
 
 	patchEncoded := base64.StdEncoding.EncodeToString(patchBuffer.Bytes())
 
 	formData := url.Values{
-		"project_id": {strconv.Itoa(project.Id)},
+		"project_id": {strconv.Itoa(project.ID)},
 		"repository": {project.Repository},
 		"api_key":    {userToken},
 		"target":     {cmd.target},
@@ -838,26 +712,21 @@ func (cmd *RemoteCmd) submitBuild(project *types.Project, tagMap map[string]stri
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		submitErrored()
 		return fmt.Errorf("Couldn't read response body: %s", err)
 	}
 	switch resp.StatusCode {
 	case 401:
-		submitErrored()
 		return fmt.Errorf("Unauthorized, authentication failed.\nPlease `yb login` again.")
 	case 403:
-		submitErrored()
 		if cmd.publicRepo {
 			return fmt.Errorf("This should not happen, please open a support inquery with YB")
 		} else {
 			return fmt.Errorf("Tried to build a private repository of a organization of which you're not part of.")
 		}
 	case 412:
-		// TODO Show helpfull message with App URL to fix GH App installation issue
-		submitErrored()
+		// TODO Show helpful message with App URL to fix GH App installation issue
 		return fmt.Errorf("Please verify if this specific repo has %s installed", ybconfig.CurrentGHAppUrl())
 	case 500:
-		submitErrored()
 		return fmt.Errorf("Internal server error")
 	}
 
@@ -873,29 +742,15 @@ func (cmd *RemoteCmd) submitBuild(project *types.Project, tagMap map[string]stri
 		url = response
 	}
 
-	if submitProgress != nil {
-		submitProgress.Success()
-	}
 	endTime := time.Now()
 	submitTime := endTime.Sub(startTime)
 	log.Infof("Submission finished at %s, taking %s", endTime.Format(TIME_FORMAT), submitTime.Truncate(time.Millisecond))
 
 	startTime = time.Now()
-	var remoteProgress *plumbing.Progress
-	remoteErrored := func() {
-		if remoteProgress != nil {
-			remoteProgress.Fail()
-		}
-	}
-	if log.CheckIfTerminal() {
-		remoteProgress = plumbing.NewProgressSpinner("Setting up remote build")
-		remoteProgress.Start()
-	}
 
 	if strings.HasPrefix(url, "ws:") || strings.HasPrefix(url, "wss:") {
 		conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), url)
 		if err != nil {
-			remoteErrored()
 			return fmt.Errorf("Cannot connect: %v", err)
 		} else {
 
@@ -927,9 +782,6 @@ func (cmd *RemoteCmd) submitBuild(project *types.Project, tagMap map[string]stri
 						fmt.Println()
 					} else if control.IsData() && !buildSetupFinished && len(msg) > 0 {
 						buildSetupFinished = true
-						if remoteProgress != nil {
-							remoteProgress.Success()
-						}
 						endTime := time.Now()
 						setupTime := endTime.Sub(startTime)
 						log.Infof("Set up finished at %s, taking %s", endTime.Format(TIME_FORMAT), setupTime.Truncate(time.Millisecond))

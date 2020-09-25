@@ -1,6 +1,7 @@
 package packages
 
 import (
+	"context"
 	"crypto/sha256"
 	"fmt"
 	"io/ioutil"
@@ -10,9 +11,16 @@ import (
 
 	"github.com/yourbase/yb/buildpacks"
 	"github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing/log"
 	"github.com/yourbase/yb/types"
+	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/api/trace"
 	"gopkg.in/yaml.v2"
 )
+
+func tracer() trace.Tracer {
+	return global.Tracer("github.com/yourbase/yb/packages")
+}
 
 type Package struct {
 	Name     string
@@ -69,27 +77,20 @@ func (p Package) BuildRoot() string {
 		workspaceDir = filepath.Join(workspacesRoot, workspaceHash[0:12])
 	}
 
-	plumbing.MkdirAsNeeded(workspaceDir)
-
-	buildDir := "build"
-	buildRoot := filepath.Join(workspaceDir, buildDir)
-
-	if _, err := os.Stat(buildRoot); os.IsNotExist(err) {
-		if err := os.Mkdir(buildRoot, 0700); err != nil {
-			fmt.Printf("Unable to create build dir in workspace: %v\n", err)
-		}
+	buildRoot := filepath.Join(workspaceDir, "build")
+	if err := os.MkdirAll(buildRoot, 0777); err != nil {
+		log.Errorf("Unable to create build dir in workspace: %v\n", err)
 	}
 
 	return buildRoot
-
 }
 
-func (p Package) SetupBuildDependencies(target types.BuildTarget) ([]types.CommandTimer, error) {
-	return buildpacks.LoadBuildPacks(target.Dependencies.Build, p.BuildRoot(), p.Path)
+func (p Package) SetupBuildDependencies(ctx context.Context, target types.BuildTarget) error {
+	return buildpacks.LoadBuildPacks(ctx, target.Dependencies.Build, p.BuildRoot(), p.Path)
 }
 
-func (p Package) SetupRuntimeDependencies() ([]types.CommandTimer, error) {
+func (p Package) SetupRuntimeDependencies(ctx context.Context) error {
 	deps := p.Manifest.Dependencies.Runtime
-	deps = append(deps, p.Manifest.Dependencies.Build...)
-	return buildpacks.LoadBuildPacks(deps, p.BuildRoot(), p.Path)
+	deps = append(deps[:len(deps):len(deps)], p.Manifest.Dependencies.Build...)
+	return buildpacks.LoadBuildPacks(ctx, deps, p.BuildRoot(), p.Path)
 }

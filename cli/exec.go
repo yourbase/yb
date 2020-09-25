@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"flag"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -34,7 +35,7 @@ Executing the target involves:
 2. Run any dependent components
 3. Start target
 */
-func (b *ExecCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (b *ExecCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 
 	targetPackage, err := GetTargetPackage()
 	if err != nil {
@@ -43,7 +44,7 @@ func (b *ExecCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	}
 
 	log.ActiveSection("Dependencies")
-	if _, err := targetPackage.SetupRuntimeDependencies(); err != nil {
+	if err := targetPackage.SetupRuntimeDependencies(ctx); err != nil {
 		log.Infof("Couldn't configure dependencies: %v\n", err)
 		return subcommands.ExitFailure
 	}
@@ -56,7 +57,10 @@ func (b *ExecCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	if len(containers) > 0 {
 		log.ActiveSection("Containers")
 		localContainerWorkDir := filepath.Join(targetPackage.BuildRoot(), "containers")
-		plumbing.MkdirAsNeeded(localContainerWorkDir)
+		if err := os.MkdirAll(localContainerWorkDir, 0777); err != nil {
+			log.Errorf("Couldn't create directory: %v", err)
+			return subcommands.ExitFailure
+		}
 
 		log.Infof("Will use %s as the dependency work dir", localContainerWorkDir)
 		log.Infof("Starting %d dependencies...", len(containers))

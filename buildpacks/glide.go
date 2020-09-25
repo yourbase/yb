@@ -81,7 +81,9 @@ func (bt GlideBuildTool) Install() error {
 		}
 
 		extractDir := bt.GlideDir()
-		plumbing.MkdirAsNeeded(extractDir)
+		if err := os.MkdirAll(extractDir, 0777); err != nil {
+			return err
+		}
 		log.Infof("Extracting glide %s to %s...", bt.Version(), extractDir)
 		err = archiver.Unarchive(localFile, extractDir)
 		if err != nil {

@@ -1,8 +1,8 @@
 package plumbing
 
 import (
-	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -19,14 +19,7 @@ import (
 	"github.com/ulikunitz/xz"
 	"github.com/yourbase/yb/plumbing/log"
 	"github.com/yourbase/yb/types"
-	"gopkg.in/src-d/go-billy.v4/memfs"
-	"gopkg.in/src-d/go-git.v4"
-	"gopkg.in/src-d/go-git.v4/plumbing"
-	githttp "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
-	"gopkg.in/src-d/go-git.v4/storage/memory"
 )
-
-const SNIFFLEN = 8000
 
 func ExecToStdoutWithExtraEnv(cmdString string, targetDir string, env []string) error {
 	env = append(os.Environ(), env...)
@@ -128,7 +121,9 @@ func PrependToPath(dir string) {
 func ConfigFilePath(filename string) string {
 	u, _ := user.Current()
 	configDir := filepath.Join(u.HomeDir, ".config", "yb")
-	MkdirAsNeeded(configDir)
+	if err := os.MkdirAll(configDir, 0777); err != nil {
+		log.Errorf("%v", err)
+	}
 	filePath := filepath.Join(configDir, filename)
 	return filePath
 }
@@ -147,18 +142,6 @@ func DirectoryExists(dir string) bool {
 	}
 
 	return true
-}
-
-func MkdirAsNeeded(dir string) error {
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		log.Infof("Making dir: %s", dir)
-		if err := os.MkdirAll(dir, 0700); err != nil {
-			log.Errorf("Unable to create dir: %v", err)
-			return err
-		}
-	}
-
-	return nil
 }
 
 func TemplateToString(templateText string, data interface{}) (string, error) {
@@ -221,7 +204,9 @@ func ToolsDir() string {
 		}
 	}
 
-	MkdirAsNeeded(toolsDir)
+	if err := os.MkdirAll(toolsDir, 0777); err != nil {
+		log.Errorf("%v", err)
+	}
 
 	return toolsDir
 }
@@ -237,7 +222,9 @@ func CacheDir() string {
 		}
 	}
 
-	MkdirAsNeeded(cacheDir)
+	if err := os.MkdirAll(cacheDir, 0777); err != nil {
+		log.Errorf("%v", err)
+	}
 
 	return cacheDir
 }
@@ -419,48 +406,7 @@ func DecompressBuffer(b *bytes.Buffer) error {
 	return nil
 }
 
-func CloneRepository(remote types.GitRemote, inMem bool, basePath string) (rep *git.Repository, err error) {
-	if remote.Branch == "" {
-		return nil, fmt.Errorf("No branch defined to clone repo %v", remote.Url)
-	}
-
-	cloneOpts := &git.CloneOptions{
-		URL:           remote.String(),
-		ReferenceName: plumbing.NewBranchReferenceName(remote.Branch),
-		SingleBranch:  true,
-		Depth:         50,
-		Tags:          git.NoTags,
-	}
-
-	if remote.Token != "" {
-		cloneOpts.Auth = &githttp.BasicAuth{
-			Username: remote.User,
-			Password: remote.Token,
-		}
-	} else if remote.Password != "" || remote.User != "" {
-		cloneOpts.Auth = &githttp.BasicAuth{
-			Username: remote.User,
-			Password: remote.Password,
-		}
-	}
-
-	if inMem {
-		fs := memfs.New()
-		storer := memory.NewStorage()
-
-		rep, err = git.Clone(storer, fs, cloneOpts)
-	} else {
-		rep, err = git.PlainClone(basePath, false, cloneOpts)
-	}
-	if err != nil && strings.Count(err.Error(), "SSH") > 0 {
-		err = fmt.Errorf("Please check your SSH agent/key configuration")
-	}
-
-	return
-}
-
-// IsBinary detects if data is a binary value based on:
-// http://git.kernel.org/cgit/git/git.git/tree/xdiff-interface.c?id=HEAD#n198
+// IsBinary returns whether a file contains a NUL byte near the beginning of the file.
 func IsBinary(filePath string) (bool, error) {
 	r, err := os.Open(filePath)
 	if err != nil {
@@ -468,27 +414,22 @@ func IsBinary(filePath string) (bool, error) {
 	}
 	defer r.Close()
 
-	reader := bufio.NewReader(r)
-	c := 0
-	for {
-		if c == SNIFFLEN {
-			break
+	buf := make([]byte, 8000)
+	n, err := io.ReadFull(r, buf)
+	if err != nil {
+		// Ignore EOF, since it's fine for the file to be shorter than the buffer size.
+		// Otherwise, wrap the error. We don't fully stop the control flow here because
+		// we may still have read enough data to make a determination.
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+			err = nil
+		} else {
+			err = fmt.Errorf("check for binary: %w", err)
 		}
-
-		b, err := reader.ReadByte()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return false, err
-		}
-
-		if b == byte(0) {
-			return true, nil
-		}
-
-		c++
 	}
-
-	return false, nil
+	for _, b := range buf[:n] {
+		if b == 0 {
+			return true, err
+		}
+	}
+	return false, err
 }

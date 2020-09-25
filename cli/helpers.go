@@ -8,7 +8,13 @@ import (
 	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/types"
 	"github.com/yourbase/yb/workspace"
+	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/api/trace"
 )
+
+func tracer() trace.Tracer {
+	return global.Tracer("github.com/yourbase/yb/cli")
+}
 
 func GetTargetPackageNamed(file string) (packages.Package, error) {
 	var targetPackage packages.Package

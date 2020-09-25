@@ -60,7 +60,9 @@ func (bt RustBuildTool) Install() error {
 
 	rustDir := bt.RustDir()
 	installDir := bt.InstallDir()
-	plumbing.MkdirAsNeeded(installDir)
+	if err := os.MkdirAll(installDir, 0777); err != nil {
+		return fmt.Errorf("install Rust: %w", err)
+	}
 
 	if _, err := os.Stat(rustDir); err == nil {
 		log.Infof("Rust v%s located in %s!", bt.Version(), rustDir)
