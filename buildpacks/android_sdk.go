@@ -2,6 +2,7 @@ package buildpacks
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -81,7 +82,12 @@ func (bt AndroidBuildTool) AndroidDir() string {
 	return filepath.Join(bt.InstallDir())
 }
 
-func (bt AndroidBuildTool) WriteAgreements() bool {
+func (bt AndroidBuildTool) writeAgreements() error {
+	licensesDir := filepath.Join(bt.AndroidDir(), "licenses")
+	if err := os.MkdirAll(licensesDir, 0777); err != nil {
+		return fmt.Errorf("create agreement files: %w", err)
+	}
+
 	agreements := map[string]string{
 		"android-googletv-license":      "601085b94cd77f0b54ff86406957099ebe79c4d6",
 		"android-sdk-license":           "24333f8a63b6825ea9c5514f83c2829b004d1fee",
@@ -90,33 +96,14 @@ func (bt AndroidBuildTool) WriteAgreements() bool {
 		"intel-android-extra-license":   "d975f751698a77b662f1254ddbeed3901e976f5a",
 		"mips-android-sysimage-license": "e9acab5b5fbb560a72cfaecce8946896ff6aab9d",
 	}
-
-	licensesDir := filepath.Join(bt.AndroidDir(), "licenses")
-	plumbing.MkdirAsNeeded(licensesDir)
-
 	for filename, hash := range agreements {
 		agreementFile := filepath.Join(licensesDir, filename)
-		f, err := os.Create(agreementFile)
-		if err != nil {
-			log.Errorf("Can't create agreement file %s: %v", agreementFile, err)
-			return false
+		if err := ioutil.WriteFile(agreementFile, []byte(hash), 0666); err != nil {
+			return fmt.Errorf("create agreement file %s: %w", filename, err)
 		}
-
-		defer f.Close()
-		_, err = f.WriteString(hash)
-
-		if err != nil {
-			log.Errorf("Can't write agreement file %s: %v", agreementFile, err)
-			return false
-		}
-
-		f.Sync()
-
 		log.Infof("Wrote hash for agreement: %s", agreementFile)
 	}
-
-	return true
-
+	return nil
 }
 
 func (bt AndroidBuildTool) Setup() error {
@@ -138,7 +125,9 @@ func (bt AndroidBuildTool) Setup() error {
 	os.Setenv("ANDROID_HOME", androidDir)
 
 	log.Infof("Writing agreement hashes...")
-	bt.WriteAgreements()
+	if err := bt.writeAgreements(); err != nil {
+		return err
+	}
 
 	return nil
 }

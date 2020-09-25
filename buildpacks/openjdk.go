@@ -211,7 +211,9 @@ func (bt JavaBuildTool) Install() error {
 	javaInstallDir := bt.InstallDir()
 	javaPath := bt.JavaDir()
 
-	plumbing.MkdirAsNeeded(javaInstallDir)
+	if err := os.MkdirAll(javaInstallDir, 0777); err != nil {
+		return fmt.Errorf("install Java: %w", err)
+	}
 
 	if _, err := os.Stat(javaPath); err == nil {
 		log.Infof("Java v%s located in %s!", bt.Version(), javaPath)

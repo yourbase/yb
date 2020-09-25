@@ -164,7 +164,9 @@ func (bt RubyBuildTool) Install() error {
 		}
 
 		pluginsDir := filepath.Join(rbenvDir, "plugins")
-		plumbing.MkdirAsNeeded(pluginsDir)
+		if err := os.MkdirAll(pluginsDir, 0777); err != nil {
+			return fmt.Errorf("install Ruby: %w", err)
+		}
 
 		rubyBuildGitUrl := "https://github.com/rbenv/ruby-build.git"
 		rubyBuildDir := filepath.Join(pluginsDir, "ruby-build")
@@ -197,7 +199,9 @@ func (bt RubyBuildTool) Install() error {
 
 func (bt RubyBuildTool) Setup() error {
 	gemsDir := filepath.Join(bt.spec.PackageCacheDir, "rubygems")
-	plumbing.MkdirAsNeeded(gemsDir)
+	if err := os.MkdirAll(gemsDir, 0777); err != nil {
+		return fmt.Errorf("install Ruby: %w", err)
+	}
 
 	log.Infof("Setting GEM_HOME to %s", gemsDir)
 	os.Setenv("GEM_HOME", gemsDir)

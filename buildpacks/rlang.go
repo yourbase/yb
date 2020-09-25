@@ -100,7 +100,9 @@ func (bt RLangBuildTool) Install() error {
 			}
 		}
 
-		plumbing.MkdirAsNeeded(rlangDir)
+		if err := os.MkdirAll(rlangDir, 0777); err != nil {
+			return fmt.Errorf("install R: %w", err)
+		}
 		configCmd := fmt.Sprintf("./configure --with-x=no --prefix=%s", rlangDir)
 		plumbing.ExecToStdout(configCmd, srcDir)
 

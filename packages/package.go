@@ -10,6 +10,7 @@ import (
 
 	"github.com/yourbase/yb/buildpacks"
 	"github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/plumbing/log"
 	"github.com/yourbase/yb/types"
 	"gopkg.in/yaml.v2"
 )
@@ -69,19 +70,12 @@ func (p Package) BuildRoot() string {
 		workspaceDir = filepath.Join(workspacesRoot, workspaceHash[0:12])
 	}
 
-	plumbing.MkdirAsNeeded(workspaceDir)
-
-	buildDir := "build"
-	buildRoot := filepath.Join(workspaceDir, buildDir)
-
-	if _, err := os.Stat(buildRoot); os.IsNotExist(err) {
-		if err := os.Mkdir(buildRoot, 0700); err != nil {
-			fmt.Printf("Unable to create build dir in workspace: %v\n", err)
-		}
+	buildRoot := filepath.Join(workspaceDir, "build")
+	if err := os.MkdirAll(buildRoot, 0777); err != nil {
+		log.Errorf("Unable to create build dir in workspace: %v\n", err)
 	}
 
 	return buildRoot
-
 }
 
 func (p Package) SetupBuildDependencies(target types.BuildTarget) ([]types.CommandTimer, error) {
