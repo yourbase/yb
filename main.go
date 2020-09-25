@@ -27,7 +27,6 @@ func main() {
 	cmdr.Register(&cli.ConfigCmd{}, "")
 	cmdr.Register(&cli.ExecCmd{}, "")
 	cmdr.Register(&cli.LoginCmd{}, "")
-	cmdr.Register(&cli.PackageCmd{}, "")
 	cmdr.Register(&cli.PlatformCmd{}, "")
 	cmdr.Register(&cli.RemoteCmd{}, "")
 	cmdr.Register(&cli.RunCmd{}, "")
