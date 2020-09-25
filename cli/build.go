@@ -66,7 +66,9 @@ type BuildLog struct {
 func (*BuildCmd) Name() string     { return "build" }
 func (*BuildCmd) Synopsis() string { return "Build the workspace" }
 func (*BuildCmd) Usage() string {
-	return `build`
+	return `Usage: build [TARGET] [OPTIONS]
+Build the project in the current directory. Defaults to the "default" target.
+`
 }
 
 func (b *BuildCmd) SetFlags(f *flag.FlagSet) {

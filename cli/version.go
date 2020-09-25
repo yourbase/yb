@@ -16,9 +16,11 @@ type VersionCmd struct {
 }
 
 func (*VersionCmd) Name() string     { return "version" }
-func (*VersionCmd) Synopsis() string { return "Show version info." }
+func (*VersionCmd) Synopsis() string { return "Show version info" }
 func (*VersionCmd) Usage() string {
-	return `version`
+	return `Usage: version
+Print the current yb version.
+`
 }
 
 func (p *VersionCmd) SetFlags(f *flag.FlagSet) {

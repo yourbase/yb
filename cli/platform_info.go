@@ -12,9 +12,11 @@ type PlatformCmd struct {
 }
 
 func (*PlatformCmd) Name() string     { return "platform" }
-func (*PlatformCmd) Synopsis() string { return "Show platform info." }
+func (*PlatformCmd) Synopsis() string { return "Show platform info" }
 func (*PlatformCmd) Usage() string {
-	return `platform`
+	return `Usage: platform
+Show current platform information.
+`
 }
 
 func (p *PlatformCmd) SetFlags(f *flag.FlagSet) {

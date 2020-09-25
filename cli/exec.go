@@ -22,7 +22,9 @@ func (*ExecCmd) Synopsis() string {
 	return "Execute a project in the workspace, defaults to target project"
 }
 func (*ExecCmd) Usage() string {
-	return `exec [project]`
+	return `Usage: exec [PROJECT]
+Execute a project in the workspace, as specified by .yourbase.yml's exec block.
+`
 }
 
 func (p *ExecCmd) SetFlags(f *flag.FlagSet) {

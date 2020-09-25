@@ -23,7 +23,9 @@ type LoginCmd struct {
 func (*LoginCmd) Name() string     { return "login" }
 func (*LoginCmd) Synopsis() string { return "Log into YB" }
 func (*LoginCmd) Usage() string {
-	return `login`
+	return `Usage: login
+Configure yb to act as you in the YourBase API.
+`
 }
 
 func (p *LoginCmd) SetFlags(f *flag.FlagSet) {

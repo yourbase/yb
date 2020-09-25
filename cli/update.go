@@ -15,9 +15,10 @@ type UpdateCmd struct {
 }
 
 func (*UpdateCmd) Name() string     { return "update" }
-func (*UpdateCmd) Synopsis() string { return "Show update info." }
+func (*UpdateCmd) Synopsis() string { return "Self-update to the latest yb" }
 func (*UpdateCmd) Usage() string {
-	return `update
+	return `Usage: update [OPTIONS]
+Update yb to the latest verison, or a specific version.
 `
 }
 
