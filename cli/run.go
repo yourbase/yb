@@ -32,7 +32,7 @@ Executing the target involves:
 2. Run any dependent components
 3. Start target
 */
-func (b *RunCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (b *RunCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	if len(f.Args()) == 0 {
 		fmt.Println(b.Usage())
 		return subcommands.ExitFailure
@@ -47,7 +47,7 @@ func (b *RunCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	instructions := targetPackage.Manifest
 
 	log.Infof("Setting up dependencies...")
-	targetPackage.SetupRuntimeDependencies()
+	targetPackage.SetupRuntimeDependencies(ctx)
 
 	log.Infof("Setting environment variables...")
 	for _, property := range instructions.Exec.Environment["default"] {

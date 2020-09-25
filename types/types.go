@@ -1,8 +1,6 @@
 package types
 
 import (
-	"time"
-
 	"github.com/johnewart/narwhal"
 )
 
@@ -115,17 +113,6 @@ type WorktreeSave struct {
 	Path    string
 	Files   []string
 	Enabled bool
-}
-
-type CommandTimer struct {
-	Command   string
-	StartTime time.Time
-	EndTime   time.Time
-}
-
-type TargetTimer struct {
-	Name   string
-	Timers []CommandTimer
 }
 
 type BuildTool interface {

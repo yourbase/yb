@@ -1,14 +1,22 @@
 package buildpacks
 
 import (
+	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/plumbing/log"
 	"github.com/yourbase/yb/types"
+	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/label"
 )
+
+func tracer() trace.Tracer {
+	return global.Tracer("github.com/yourbase/yb/buildpacks")
+}
 
 type BuildToolSpec struct {
 	Tool            string
@@ -18,13 +26,11 @@ type BuildToolSpec struct {
 	PackageDir      string
 }
 
-func LoadBuildPacks(dependencies []string, pkgCacheDir string, pkgDir string) ([]types.CommandTimer, error) {
-	setupTimers := make([]types.CommandTimer, 0)
-
+func LoadBuildPacks(ctx context.Context, dependencies []string, pkgCacheDir string, pkgDir string) error {
 	for _, toolSpec := range dependencies {
 		buildpackName, versionString, err := SplitToolSpec(toolSpec)
 		if err != nil {
-			return nil, fmt.Errorf("load build packs: %w", err)
+			return fmt.Errorf("load build packs: %w", err)
 		}
 
 		sharedCacheDir := plumbing.ToolsDir()
@@ -84,37 +90,35 @@ func LoadBuildPacks(dependencies []string, pkgCacheDir string, pkgDir string) ([
 		case "protoc":
 			bt = NewProtocBuildTool(spec)
 		default:
-			return setupTimers, fmt.Errorf("Unknown build tool: %s\n", toolSpec)
+			return fmt.Errorf("Unknown build tool: %s\n", toolSpec)
 		}
 
 		// Install if needed
-		startTime := time.Now()
-		if err := bt.Install(); err != nil {
-			return setupTimers, fmt.Errorf("Unable to install tool %s: %v", toolSpec, err)
+		_, installSpan := tracer().Start(ctx, toolSpec+" [install]", trace.WithAttributes(
+			label.String("buildpack", buildpackName),
+			label.String("tool", toolSpec),
+		))
+		err = bt.Install()
+		installSpan.End()
+		if err != nil {
+			installSpan.SetStatus(codes.Unknown, err.Error())
+			return fmt.Errorf("Unable to install tool %s: %v", toolSpec, err)
 		}
-		endTime := time.Now()
-		setupTimers = append(setupTimers, types.CommandTimer{
-			Command:   fmt.Sprintf("%s [install]", toolSpec),
-			StartTime: startTime,
-			EndTime:   endTime,
-		})
 
 		// Setup build tool (paths, env, etc)
-		startTime = time.Now()
-		if err := bt.Setup(); err != nil {
-			return setupTimers, fmt.Errorf("Unable to setup tool %s: %v", toolSpec, err)
+		_, setupSpan := tracer().Start(ctx, toolSpec+" [setup]", trace.WithAttributes(
+			label.String("buildpack", buildpackName),
+			label.String("tool", toolSpec),
+		))
+		err = bt.Setup()
+		setupSpan.End()
+		if err != nil {
+			setupSpan.SetStatus(codes.Unknown, err.Error())
+			return fmt.Errorf("Unable to setup tool %s: %v", toolSpec, err)
 		}
-		endTime = time.Now()
-		setupTimers = append(setupTimers, types.CommandTimer{
-			Command:   fmt.Sprintf("%s [setup]", toolSpec),
-			StartTime: startTime,
-			EndTime:   endTime,
-		})
-
 	}
 
-	return setupTimers, nil
-
+	return nil
 }
 
 func SplitToolSpec(dep string) (tool, version string, _ error) {
