@@ -15,7 +15,9 @@ type CheckConfigCmd struct {
 func (*CheckConfigCmd) Name() string     { return "checkconfig" }
 func (*CheckConfigCmd) Synopsis() string { return "Check the config file syntax" }
 func (*CheckConfigCmd) Usage() string {
-	return `checkconfig`
+	return `checkconfig [-file FILE]
+Validate the local YourBase config file, .yourbase.yml by default.
+`
 }
 
 func (b *CheckConfigCmd) SetFlags(f *flag.FlagSet) {

@@ -19,7 +19,9 @@ type RunCmd struct {
 func (*RunCmd) Name() string     { return "run" }
 func (*RunCmd) Synopsis() string { return "Run an arbitrary command" }
 func (*RunCmd) Usage() string {
-	return `run [-e environment] command`
+	return `run [-e ENVIRONMENT] <COMMAND>
+Run a command in the project container.
+`
 }
 
 func (p *RunCmd) SetFlags(f *flag.FlagSet) {

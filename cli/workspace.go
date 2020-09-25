@@ -27,7 +27,9 @@ type WorkspaceCmd struct {
 func (*WorkspaceCmd) Name() string     { return "workspace" }
 func (*WorkspaceCmd) Synopsis() string { return "Workspace-related commands" }
 func (*WorkspaceCmd) Usage() string {
-	return `workspace <subcommand>`
+	return `Usage: workspace <SUBCOMMAND>
+Manage workspaces.
+`
 }
 
 func (w *WorkspaceCmd) SetFlags(f *flag.FlagSet) {}

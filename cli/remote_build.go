@@ -57,9 +57,11 @@ type RemoteCmd struct {
 }
 
 func (*RemoteCmd) Name() string     { return "remotebuild" }
-func (*RemoteCmd) Synopsis() string { return "Build remotely." }
+func (*RemoteCmd) Synopsis() string { return "Build remotely" }
 func (*RemoteCmd) Usage() string {
-	return "Build remotely using YB infrastructure"
+	return `Usage: remotebuild [TARGET] [OPTIONS]
+Build remotely using YourBase infrastructure. Defaults to the "default" target.
+`
 }
 
 func (p *RemoteCmd) SetFlags(f *flag.FlagSet) {

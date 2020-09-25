@@ -20,7 +20,14 @@ type ConfigCmd struct {
 func (*ConfigCmd) Name() string     { return "config" }
 func (*ConfigCmd) Synopsis() string { return "Convenient way to change settings" }
 func (*ConfigCmd) Usage() string {
-	return `config <subcommand>`
+	return `Usage: config get <KEY>
+       config set <KEY> <VALUE>
+Print or change a config variable.
+Keys:
+  environment
+Values:
+  environment: production, staging, preview, development
+`
 }
 
 func (w *ConfigCmd) SetFlags(f *flag.FlagSet) {}

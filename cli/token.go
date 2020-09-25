@@ -27,8 +27,8 @@ func (*TokenCmd) Synopsis() string {
 
 // Usage returns usage information for thet token command.
 func (*TokenCmd) Usage() string {
-	return `token
-Prints a YourBase auth token to stdout. Compose this with other tools to make interacting with the YourBase API easier.
+	return `Usage: token
+Print a YourBase auth token to stdout. Compose this with other tools to interact with the YourBase API more easily.
 `
 }
 
