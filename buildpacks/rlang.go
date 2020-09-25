@@ -9,7 +9,7 @@ import (
 
 	"github.com/johnewart/archiver"
 	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/plumbing/log"
+	"zombiezen.com/go/log"
 )
 
 const rLangDistMirror = "https://cloud.r-project.org/src/base"
@@ -60,7 +60,7 @@ func (bt rLangBuildTool) setup(ctx context.Context) error {
 	cmdPath := fmt.Sprintf("%s/bin", rlangDir)
 	currentPath := os.Getenv("PATH")
 	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
-	log.Infof("Setting PATH to %s", newPath)
+	log.Infof(ctx, "Setting PATH to %s", newPath)
 	os.Setenv("PATH", newPath)
 
 	return nil
@@ -72,15 +72,15 @@ func (bt rLangBuildTool) install(ctx context.Context) error {
 	rlangDir := bt.rLangDir()
 
 	if _, err := os.Stat(rlangDir); err == nil {
-		log.Infof("R v%s located in %s!", bt.version, rlangDir)
+		log.Infof(ctx, "R v%s located in %s!", bt.version, rlangDir)
 	} else {
-		log.Infof("Will install R v%s into %s", bt.version, installDir)
+		log.Infof(ctx, "Will install R v%s into %s", bt.version, installDir)
 		downloadUrl := bt.downloadURL()
 
-		log.Infof("Downloading from URL %s ...", downloadUrl)
+		log.Infof(ctx, "Downloading from URL %s ...", downloadUrl)
 		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 		if err != nil {
-			log.Errorf("Unable to download: %v", err)
+			log.Errorf(ctx, "Unable to download: %v", err)
 			return err
 		}
 
@@ -90,7 +90,7 @@ func (bt rLangBuildTool) install(ctx context.Context) error {
 		if !plumbing.DirectoryExists(srcDir) {
 			err = archiver.Unarchive(localFile, tmpDir)
 			if err != nil {
-				log.Errorf("Unable to decompress: %v", err)
+				log.Errorf(ctx, "Unable to decompress: %v", err)
 				return err
 			}
 		}

@@ -22,10 +22,10 @@ import (
 	"github.com/johnewart/narwhal"
 	"github.com/johnewart/subcommands"
 	"github.com/matishsiao/goInfo"
+	"github.com/yourbase/commons/xcontext"
 	ybconfig "github.com/yourbase/yb/config"
 	"github.com/yourbase/yb/packages"
 	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/plumbing/log"
 	"github.com/yourbase/yb/types"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/otel/label"
 	exporttrace "go.opentelemetry.io/otel/sdk/export/trace"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"zombiezen.com/go/log"
 )
 
 const TIME_FORMAT = "15:04:05 MST"
@@ -81,7 +82,7 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 	buildTraces := new(traceSink)
 	tp, err := sdktrace.NewProvider(sdktrace.WithSyncer(buildTraces))
 	if err != nil {
-		log.Errorf("%v", err)
+		log.Errorf(ctx, "%v", err)
 		return subcommands.ExitFailure
 	}
 	global.SetTraceProvider(tp)
@@ -91,20 +92,19 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 	defer span.End()
 
 	if plumbing.InsideTheMatrix() {
-		log.StartSection("BUILD CONTAINER", "CONTAINER")
+		startSection("BUILD CONTAINER")
 	} else {
-		log.StartSection("BUILD HOST", "HOST")
+		startSection("BUILD HOST")
 	}
 	gi := goInfo.GetInfo()
 	gi.VarDump()
-	log.EndSection()
 
-	log.StartSection("BUILD PACKAGE SETUP", "SETUP")
-	log.Infof("Build started at %s", startTime.Format(TIME_FORMAT))
+	startSection("BUILD PACKAGE SETUP")
+	log.Infof(ctx, "Build started at %s", startTime.Format(TIME_FORMAT))
 
 	targetPackage, err := GetTargetPackage()
 	if err != nil {
-		log.Errorf("%v", err)
+		log.Errorf(ctx, "%v", err)
 		return subcommands.ExitFailure
 	}
 
@@ -122,14 +122,14 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 	buildTargets, err := manifest.ResolveBuildTargets(buildTargetName)
 
 	if err != nil {
-		log.Errorf("Could not compute build target '%s': %v", buildTargetName, err)
-		log.Infof("Valid build targets: %s", strings.Join(manifest.BuildTargetList(), ", "))
+		log.Errorf(ctx, "Could not compute build target '%s': %v", buildTargetName, err)
+		log.Infof(ctx, "Valid build targets: %s", strings.Join(manifest.BuildTargetList(), ", "))
 		return subcommands.ExitFailure
 	}
 
 	primaryTarget, err := manifest.BuildTarget(buildTargetName)
 	if err != nil {
-		log.Errorf("Couldn't get primary build target '%s' specs: %v", buildTargetName, err)
+		log.Errorf(ctx, "Couldn't get primary build target '%s' specs: %v", buildTargetName, err)
 		return subcommands.ExitFailure
 	}
 
@@ -141,25 +141,25 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 		containers := target.Dependencies.Containers
 
 		if err := narwhal.DockerClient().Ping(); err != nil {
-			log.Error("Couldn't connect to Docker daemon. Try installing Docker Desktop: https://hub.docker.com/search/?type=edition&offering=community")
+			log.Errorf(ctx, "Couldn't connect to Docker daemon. Try installing Docker Desktop: https://hub.docker.com/search/?type=edition&offering=community")
 			return subcommands.ExitFailure
 		}
 		contextId := fmt.Sprintf("%s-%s", targetPackage.Name, target.Name)
 		sc, err := narwhal.NewServiceContextWithId(contextId, workDir)
 		if err != nil {
-			log.Errorf("Couldn't create service context for dependencies: %v", err)
+			log.Errorf(ctx, "Couldn't create service context for dependencies: %v", err)
 			return subcommands.ExitFailure
 		}
 
 		buildData.Containers.ServiceContext = sc
 
 		if len(containers) > 0 && !b.NoSideContainer {
-			log.Infof("Starting %d containers with context id %s...", len(containers), contextId)
+			log.Infof(ctx, "Starting %d containers with context id %s...", len(containers), contextId)
 			if !b.ReuseContainers {
-				log.Infof("Not reusing containers, will teardown existing ones and clean up after ourselves")
-				defer Cleanup(buildData)
+				log.Infof(ctx, "Not reusing containers, will teardown existing ones and clean up after ourselves")
+				defer Cleanup(xcontext.IgnoreDeadline(ctx), buildData)
 				if err := sc.TearDown(); err != nil {
-					log.Errorf("Couldn't terminate existing containers: %v", err)
+					log.Errorf(ctx, "Couldn't terminate existing containers: %v", err)
 					// FAIL?
 				}
 			}
@@ -167,7 +167,7 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 			for _, c := range containers {
 				_, err := sc.StartContainer(c)
 				if err != nil {
-					log.Errorf("Couldn't start dependencies: %v", err)
+					log.Errorf(ctx, "Couldn't start dependencies: %v", err)
 					return subcommands.ExitFailure
 				}
 			}
@@ -179,7 +179,7 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 	for _, envString := range primaryTarget.Environment {
 		parts := strings.SplitN(envString, "=", 2)
 		if len(parts) != 2 {
-			log.Warnf("'%s' doesn't look like an environment variable", envString)
+			log.Warnf(ctx, "'%s' doesn't look like an environment variable", envString)
 			continue
 		}
 		buildData.SetEnv(parts[0], parts[1])
@@ -188,8 +188,8 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 	_, exists := os.LookupEnv("YB_NO_CONTAINER_BUILDS")
 	// Should we build in a container?
 	if !b.NoContainer && !primaryTarget.HostOnly && !exists {
-		log.StartSection("BUILD IN CONTAINER", "BCONTAINER")
-		log.Infof("Executing build steps in container")
+		startSection("BUILD IN CONTAINER")
+		log.Infof(ctx, "Executing build steps in container")
 
 		target := primaryTarget
 		containerDef := target.Container
@@ -205,7 +205,7 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 			sourceMapDir = containerDef.WorkDir
 		}
 
-		log.Infof("Will mount package %s at %s in container", targetPackage.Path, sourceMapDir)
+		log.Infof(ctx, "Will mount package %s at %s in container", targetPackage.Path, sourceMapDir)
 		mount := fmt.Sprintf("%s:%s", targetPackage.Path, sourceMapDir)
 		containerDef.Mounts = append(containerDef.Mounts, mount)
 
@@ -215,9 +215,9 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 		}
 
 		// Do our build in a container - don't do the build locally
-		buildErr := b.BuildInsideContainer(target, containerDef, buildData, b.ExecPrefix, b.ReuseContainers)
+		buildErr := b.BuildInsideContainer(ctx, target, containerDef, buildData, b.ExecPrefix, b.ReuseContainers)
 		if buildErr != nil {
-			log.Errorf("Unable to build %s inside container: %v", target.Name, buildErr)
+			log.Errorf(ctx, "Unable to build %s inside container: %v", target.Name, buildErr)
 			return subcommands.ExitFailure
 		}
 
@@ -227,26 +227,23 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 	// Do the build!
 	targetDir := targetPackage.Path
 
-	log.Infof("Building package %s in %s...", targetPackage.Name, targetDir)
-	log.Infof("Checksum of dependencies: %s", manifest.BuildDependenciesChecksum())
-
-	log.EndSection()
+	log.Infof(ctx, "Building package %s in %s...", targetPackage.Name, targetDir)
+	log.Infof(ctx, "Checksum of dependencies: %s", manifest.BuildDependenciesChecksum())
 
 	if len(primaryTarget.Dependencies.Containers) > 0 {
-		log.StartSection("CONTAINER SETUP", "CONTAINER")
-		log.Info("")
-		log.Info("")
-		log.Infof("Available side containers:")
+		startSection("CONTAINER SETUP")
+		log.Infof(ctx, "")
+		log.Infof(ctx, "")
+		log.Infof(ctx, "Available side containers:")
 		for label, c := range primaryTarget.Dependencies.Containers {
 			ipv4 := buildData.Containers.IP(label)
-			log.Infof("  * %s (using %s) has IP address %s", label, c.ImageNameWithTag(), ipv4)
+			log.Infof(ctx, "  * %s (using %s) has IP address %s", label, c.ImageNameWithTag(), ipv4)
 		}
-		log.EndSection()
 	}
 
 	var buildError error
 
-	log.StartSection("BUILD", "BUILD")
+	startSection("BUILD")
 
 	config := BuildConfiguration{
 		ExecPrefix:       b.ExecPrefix,
@@ -257,9 +254,9 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 		BuildData:        buildData,
 	}
 
-	log.Infof("Going to build targets in the following order: ")
+	log.Infof(ctx, "Going to build targets in the following order: ")
 	for _, target := range buildTargets {
-		log.Infof("   - %s", target.Name)
+		log.Infof(ctx, "   - %s", target.Name)
 	}
 
 	for _, target := range buildTargets {
@@ -270,29 +267,29 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 		if err != nil {
 			targetSpan.SetStatus(codes.Internal, err.Error())
 			targetSpan.End()
-			log.Infof("Error setting up dependencies for target %s: %v", target.Name, err)
+			log.Infof(ctx, "Error setting up dependencies for target %s: %v", target.Name, err)
 			return subcommands.ExitFailure
 		}
 
 		if b.DependenciesOnly {
 			continue
 		}
-		log.SubSection(fmt.Sprintf("Build target: %s", target.Name))
+		subSection(fmt.Sprintf("Build target: %s", target.Name))
 		config.Target = target
-		buildData.ExportEnvironmentPublicly()
-		log.Infof("Executing build steps...")
+		buildData.ExportEnvironmentPublicly(ctx)
+		log.Infof(ctx, "Executing build steps...")
 		err = RunCommands(targetCtx, config)
 		if err != nil {
 			targetSpan.SetStatus(codes.Unknown, err.Error())
 		}
 		targetSpan.End()
-		buildData.UnexportEnvironmentPublicly()
+		buildData.UnexportEnvironmentPublicly(ctx)
 		if buildError != nil {
 			break
 		}
 	}
 	if b.DependenciesOnly {
-		log.Infof("Only installing dependencies; done!")
+		log.Infof(ctx, "Only installing dependencies; done!")
 		return subcommands.ExitSuccess
 	}
 
@@ -304,17 +301,17 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 	buildTime := endTime.Sub(startTime)
 	time.Sleep(100 * time.Millisecond)
 
-	log.Info("")
-	log.Infof("Build finished at %s, taking %s", endTime.Format(TIME_FORMAT), buildTime)
-	log.Info("")
+	log.Infof(ctx, "")
+	log.Infof(ctx, "Build finished at %s, taking %s", endTime.Format(TIME_FORMAT), buildTime)
+	log.Infof(ctx, "")
 
-	log.Infof("%s", buildTraces.dump())
+	log.Infof(ctx, "%s", buildTraces.dump())
 
 	if buildError != nil {
-		log.SubSection("BUILD FAILED")
-		log.Errorf("Build terminated with the following error: %v", buildError)
+		subSection("BUILD FAILED")
+		log.Errorf(ctx, "Build terminated with the following error: %v", buildError)
 	} else {
-		log.SubSection("BUILD SUCCEEDED")
+		subSection("BUILD SUCCEEDED")
 	}
 
 	// Output duplication start
@@ -356,7 +353,7 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 	//os.Stdout = realStdout
 
 	if uploadBuildLogs {
-		UploadBuildLogsToAPI(&buf)
+		UploadBuildLogsToAPI(ctx, &buf)
 	}
 
 	if buildError != nil {
@@ -367,19 +364,19 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 	return subcommands.ExitSuccess
 }
 
-func Cleanup(b BuildData) {
+func Cleanup(ctx context.Context, b BuildData) {
 	if b.Containers.ServiceContext != nil {
-		log.Infof("Cleaning up containers...")
+		log.Infof(ctx, "Cleaning up containers...")
 		if err := b.Containers.ServiceContext.TearDown(); err != nil {
-			log.Warnf("Problem tearing down containers: %v", err)
+			log.Warnf(ctx, "Problem tearing down containers: %v", err)
 		}
 	}
 }
 
-func (b *BuildCmd) BuildInsideContainer(target types.BuildTarget, containerDef narwhal.ContainerDefinition, buildData BuildData, execPrefix string, reuseOldContainer bool) error {
+func (b *BuildCmd) BuildInsideContainer(ctx context.Context, target types.BuildTarget, containerDef narwhal.ContainerDefinition, buildData BuildData, execPrefix string, reuseOldContainer bool) error {
 	// Perform build inside a container
 	image := target.Container.Image
-	log.Infof("Using container image: %s", image)
+	log.Infof(ctx, "Using container image: %s", image)
 	buildContainer, err := buildData.Containers.ServiceContext.StartContainer(containerDef)
 
 	if err != nil {
@@ -387,12 +384,12 @@ func (b *BuildCmd) BuildInsideContainer(target types.BuildTarget, containerDef n
 	}
 
 	if buildContainer != nil {
-		log.Infof("Found existing container %s", buildContainer.Id[0:12])
+		log.Infof(ctx, "Found existing container %s", buildContainer.Id[0:12])
 
 		_ = buildContainer.Stop(0)
 
 		if !reuseOldContainer {
-			log.Infof("Elected to not re-use containers, will remove the container")
+			log.Infof(ctx, "Elected to not re-use containers, will remove the container")
 			// Try stopping it first if needed
 			if err = narwhal.RemoveContainerById(buildContainer.Id); err != nil {
 				return fmt.Errorf("Unable to remove existing container: %v", err)
@@ -401,9 +398,9 @@ func (b *BuildCmd) BuildInsideContainer(target types.BuildTarget, containerDef n
 	}
 
 	if buildContainer != nil && reuseOldContainer {
-		log.Infof("Reusing existing build container %s", buildContainer.Id[0:12])
+		log.Infof(ctx, "Reusing existing build container %s", buildContainer.Id[0:12])
 	} else {
-		log.Infof("Creating a new build container...")
+		log.Infof(ctx, "Creating a new build container...")
 		if c, err := buildData.Containers.ServiceContext.StartContainer(containerDef); err != nil {
 			return fmt.Errorf("Couldn't create a new build container: %v", err)
 		} else {
@@ -435,7 +432,7 @@ func (b *BuildCmd) BuildInsideContainer(target types.BuildTarget, containerDef n
 		containerWorkDir = containerDef.WorkDir
 	}
 
-	log.Infof("Building from %s in container: %s", containerWorkDir, buildContainer.Id)
+	log.Infof(ctx, "Building from %s in container: %s", containerWorkDir, buildContainer.Id)
 
 	// Local path to binary that we want to inject
 	// TODO: this only supports Linux containers
@@ -449,7 +446,7 @@ func (b *BuildCmd) BuildInsideContainer(target types.BuildTarget, containerDef n
 	if b.Version == "DEVELOPMENT" {
 		if runtime.GOOS == "linux" {
 			// TODO: If we support building inside a container that's not Linux we will want to do something different
-			log.Infof("Development version in use, will upload development binary to the container")
+			log.Infof(ctx, "Development version in use, will upload development binary to the container")
 			devMode = true
 		}
 	}
@@ -461,7 +458,7 @@ func (b *BuildCmd) BuildInsideContainer(target types.BuildTarget, containerDef n
 			localYbPath = p
 		}
 	} else {
-		if p, err := DownloadYB(); err != nil {
+		if p, err := DownloadYB(ctx); err != nil {
 			return fmt.Errorf("Couldn't download YB: %v", err)
 		} else {
 			localYbPath = p
@@ -469,7 +466,7 @@ func (b *BuildCmd) BuildInsideContainer(target types.BuildTarget, containerDef n
 	}
 
 	// Upload and update CLI
-	log.Infof("Uploading YB from %s to /yb", localYbPath)
+	log.Infof(ctx, "Uploading YB from %s to /yb", localYbPath)
 	if err := buildContainer.UploadFile(localYbPath, "yb", "/"); err != nil {
 		return fmt.Errorf("Unable to upload YB to container: %v", err)
 	}
@@ -484,7 +481,7 @@ func (b *BuildCmd) BuildInsideContainer(target types.BuildTarget, containerDef n
 			ybChannel = envChannel
 		}
 
-		log.Infof("Updating YB in container from channel %s", ybChannel)
+		log.Infof(ctx, "Updating YB in container from channel %s", ybChannel)
 		updateCmd := fmt.Sprintf("/yb update -channel=%s", ybChannel)
 		if err := buildContainer.ExecToStdoutWithEnv(updateCmd, containerWorkDir, buildData.EnvironmentVariables()); err != nil {
 			return fmt.Errorf("Aborting build, unable to run %s: %v", updateCmd, err)
@@ -499,10 +496,10 @@ func (b *BuildCmd) BuildInsideContainer(target types.BuildTarget, containerDef n
 
 	cmdString = fmt.Sprintf("%s -no-container %s", cmdString, target.Name)
 
-	log.Infof("Running %s in the container in directory %s", cmdString, containerWorkDir)
+	log.Infof(ctx, "Running %s in the container in directory %s", cmdString, containerWorkDir)
 
 	if err := buildContainer.ExecToStdoutWithEnv(cmdString, containerWorkDir, buildData.EnvironmentVariables()); err != nil {
-		log.Errorf("Failed to run %s: %v", cmdString, err)
+		log.Errorf(ctx, "Failed to run %s: %v", cmdString, err)
 		return fmt.Errorf("Aborting build, unable to run %s: %v", cmdString, err)
 	}
 
@@ -517,7 +514,7 @@ func RunCommands(ctx context.Context, config BuildConfiguration) error {
 	target := config.Target
 	targetDir := config.TargetDir
 	if target.Root != "" {
-		log.Infof("Build root is %s", target.Root)
+		log.Infof(ctx, "Build root is %s", target.Root)
 		targetDir = filepath.Join(targetDir, target.Root)
 	}
 
@@ -530,7 +527,7 @@ func RunCommands(ctx context.Context, config BuildConfiguration) error {
 		if strings.HasPrefix(cmdString, "cd ") {
 			parts := strings.SplitN(cmdString, " ", 2)
 			dir := filepath.Join(targetDir, parts[1])
-			//log.Infof("Chdir to %s", dir)
+			//log.Infof(ctx, "Chdir to %s", dir)
 			//os.Chdir(dir)
 			targetDir = dir
 		} else {
@@ -539,7 +536,7 @@ func RunCommands(ctx context.Context, config BuildConfiguration) error {
 			}
 
 			if err := plumbing.ExecToStdout(cmdString, targetDir); err != nil {
-				log.Errorf("Failed to run %s: %v", cmdString, err)
+				log.Errorf(ctx, "Failed to run %s: %v", cmdString, err)
 				stepError = err
 				cmdSpan.SetStatus(codes.Unknown, err.Error())
 			}
@@ -557,8 +554,8 @@ func RunCommands(ctx context.Context, config BuildConfiguration) error {
 	return nil
 }
 
-func UploadBuildLogsToAPI(buf *bytes.Buffer) {
-	log.Infof("Uploading build logs...")
+func UploadBuildLogsToAPI(ctx context.Context, buf *bytes.Buffer) {
+	log.Infof(ctx, "Uploading build logs...")
 	buildLog := BuildLog{
 		Contents: buf.String(),
 	}
@@ -566,24 +563,24 @@ func UploadBuildLogsToAPI(buf *bytes.Buffer) {
 	resp, err := postJsonToApi("/buildlogs", jsonData)
 
 	if err != nil {
-		log.Errorf("Couldn't upload logs: %v", err)
+		log.Errorf(ctx, "Couldn't upload logs: %v", err)
 		return
 	}
 
 	if resp.StatusCode != 200 {
-		log.Warnf("Status code uploading log: %d", resp.StatusCode)
+		log.Warnf(ctx, "Status code uploading log: %d", resp.StatusCode)
 		return
 	} else {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			log.Errorf("Couldn't read response body: %s", err)
+			log.Errorf(ctx, "Couldn't read response body: %s", err)
 			return
 		}
 
 		var buildLog BuildLog
 		err = json.Unmarshal(body, &buildLog)
 		if err != nil {
-			log.Errorf("Failed to parse response: %v", err)
+			log.Errorf(ctx, "Failed to parse response: %v", err)
 			return
 		}
 
@@ -591,10 +588,10 @@ func UploadBuildLogsToAPI(buf *bytes.Buffer) {
 		buildLogUrl, err := ybconfig.ManagementUrl(logViewPath)
 
 		if err != nil {
-			log.Errorf("Unable to determine build log url: %v", err)
+			log.Errorf(ctx, "Unable to determine build log url: %v", err)
 		}
 
-		log.Infof("View your build log here: %s", buildLogUrl)
+		log.Infof(ctx, "View your build log here: %s", buildLogUrl)
 	}
 
 }
@@ -678,21 +675,21 @@ func (b BuildData) mergedEnvironment() map[string]string {
 	return result
 }
 
-func (b BuildData) ExportEnvironmentPublicly() {
-	log.Infof("Exporting environment")
+func (b BuildData) ExportEnvironmentPublicly(ctx context.Context) {
+	log.Infof(ctx, "Exporting environment")
 	for k, v := range b.mergedEnvironment() {
-		log.Infof(" * %s = %s", k, v)
+		log.Infof(ctx, " * %s = %s", k, v)
 		os.Setenv(k, v)
 	}
 }
 
-func (b BuildData) UnexportEnvironmentPublicly() {
-	log.Infof("Unexporting environment")
+func (b BuildData) UnexportEnvironmentPublicly(ctx context.Context) {
+	log.Infof(ctx, "Unexporting environment")
 	for k := range b.mergedEnvironment() {
 		if _, exists := b.originalEnv[k]; exists {
 			os.Setenv(k, b.originalEnv[k])
 		} else {
-			log.Infof("Unsetting %s", k)
+			log.Infof(ctx, "Unsetting %s", k)
 			os.Unsetenv(k)
 		}
 	}
@@ -723,7 +720,7 @@ func sha256File(path string) (string, error) {
 
 // TODO: non-linux things too if we ever support non-Linux containers
 // TODO: on non-Linux platforms we shouldn't constantly try to re-download it
-func DownloadYB() (string, error) {
+func DownloadYB(ctx context.Context) (string, error) {
 	// Stick with this version, we can track some relatively recent version because
 	// we will just update anyway so it doesn't need to be super-new unless we broke something
 	downloadUrl := "https://bin.equinox.io/a/7G9uDXWDjh8/yb-0.0.39-linux-amd64.tar.gz"
@@ -742,7 +739,7 @@ func DownloadYB() (string, error) {
 			return ybPath, nil
 		}
 
-		log.Infof("Local binary checksum mis-match, re-downloading YB")
+		log.Infof(ctx, "Local binary checksum mis-match, re-downloading YB")
 	}
 
 	// Couldn't tell, check if we need to and download the archive
@@ -827,6 +824,14 @@ func (sink *traceSink) dumpLocked(sb *strings.Builder, parent trace.SpanID, dept
 		)
 		sink.dumpLocked(sb, span.SpanContext.SpanID, depth+1)
 	}
+}
+
+func startSection(name string) {
+	fmt.Printf(" === %s ===\n", name)
+}
+
+func subSection(name string) {
+	fmt.Printf(" -- %s -- \n", name)
 }
 
 func writeSpaces(w io.ByteWriter, n int) {

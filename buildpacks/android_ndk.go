@@ -8,7 +8,7 @@ import (
 
 	"github.com/johnewart/archiver"
 	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/plumbing/log"
+	"zombiezen.com/go/log"
 )
 
 const androidNDKDistMirror = "https://dl.google.com/android/repository/android-ndk-{{.Version}}-{{.OS}}-{{.Arch}}.zip"
@@ -68,7 +68,7 @@ func (bt androidNDKBuildTool) ndkDir() string {
 func (bt androidNDKBuildTool) setup(ctx context.Context) error {
 	ndkDir := bt.ndkDir()
 
-	log.Infof("Setting ANDROID_NDK_HOME to %s", ndkDir)
+	log.Infof(ctx, "Setting ANDROID_NDK_HOME to %s", ndkDir)
 	os.Setenv("ANDROID_NDK_HOME", ndkDir)
 
 	return nil
@@ -80,20 +80,20 @@ func (bt androidNDKBuildTool) install(ctx context.Context) error {
 	installDir := bt.installDir()
 
 	if _, err := os.Stat(ndkDir); err == nil {
-		log.Infof("Android NDK v%s located in %s!", bt.version, ndkDir)
+		log.Infof(ctx, "Android NDK v%s located in %s!", bt.version, ndkDir)
 	} else {
-		log.Infof("Will install Android NDK v%s into %s", bt.version, ndkDir)
+		log.Infof(ctx, "Will install Android NDK v%s into %s", bt.version, ndkDir)
 		downloadUrl := bt.downloadURL()
 
-		log.Infof("Downloading Android NDK v%s from URL %s...", bt.version, downloadUrl)
+		log.Infof(ctx, "Downloading Android NDK v%s from URL %s...", bt.version, downloadUrl)
 		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 		if err != nil {
-			log.Errorf("Unable to download: %v", err)
+			log.Errorf(ctx, "Unable to download: %v", err)
 			return err
 		}
 		err = archiver.Unarchive(localFile, installDir)
 		if err != nil {
-			log.Errorf("Unable to decompress: %v", err)
+			log.Errorf(ctx, "Unable to decompress: %v", err)
 			return err
 		}
 

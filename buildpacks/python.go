@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/plumbing/log"
+	"zombiezen.com/go/log"
 )
 
 const (
@@ -43,16 +43,16 @@ func (bt pythonBuildTool) install(ctx context.Context) error {
 	setupDir := bt.spec.packageDir
 
 	if _, err := os.Stat(anacondaDir); err == nil {
-		log.Infof("anaconda installed in %s", anacondaDir)
+		log.Infof(ctx, "anaconda installed in %s", anacondaDir)
 	} else {
-		log.Infof("Installing anaconda")
+		log.Infof(ctx, "Installing anaconda")
 
 		downloadUrl := bt.downloadURL()
 
-		log.Infof("Downloading Miniconda from URL %s...", downloadUrl)
+		log.Infof(ctx, "Downloading Miniconda from URL %s...", downloadUrl)
 		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 		if err != nil {
-			log.Errorf("Unable to download: %v", err)
+			log.Errorf(ctx, "Unable to download: %v", err)
 			return err
 		}
 
@@ -61,7 +61,7 @@ func (bt pythonBuildTool) install(ctx context.Context) error {
 			fmt.Sprintf("chmod +x %s", localFile),
 			fmt.Sprintf("bash %s -b -p %s", localFile, anacondaDir),
 		} {
-			log.Infof("Running: '%v' ", cmd)
+			log.Infof(ctx, "Running: '%v' ", cmd)
 			plumbing.ExecToStdout(cmd, setupDir)
 		}
 
@@ -121,7 +121,7 @@ func (bt pythonBuildTool) setup(ctx context.Context) error {
 	envDir := bt.environmentDir()
 
 	if _, err := os.Stat(envDir); err == nil {
-		log.Infof("environment installed in %s", envDir)
+		log.Infof(ctx, "environment installed in %s", envDir)
 	} else {
 		currentPath := os.Getenv("PATH")
 		newPath := fmt.Sprintf("PATH=%s:%s", filepath.Join(condaDir, "bin"), currentPath)
@@ -134,9 +134,9 @@ func (bt pythonBuildTool) setup(ctx context.Context) error {
 			fmt.Sprintf("%s update -q conda", condaBin),
 			fmt.Sprintf("%s create --prefix %s python=%s", condaBin, envDir, bt.version),
 		} {
-			log.Infof("Running: '%v' ", cmd)
+			log.Infof(ctx, "Running: '%v' ", cmd)
 			if err := plumbing.ExecToStdoutWithEnv(cmd, setupDir, []string{newPath}); err != nil {
-				log.Errorf("Unable to run setup command: %s", cmd)
+				log.Errorf(ctx, "Unable to run setup command: %s", cmd)
 				return fmt.Errorf("Unable to run '%s': %v", cmd, err)
 			}
 		}

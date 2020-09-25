@@ -8,7 +8,7 @@ import (
 
 	"github.com/johnewart/archiver"
 	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/plumbing/log"
+	"zombiezen.com/go/log"
 )
 
 //https://archive.apache.org/dist/dart/dart-3/3.3.3/binaries/apache-dart-3.3.3-bin.tar.gz
@@ -87,20 +87,20 @@ func (bt dartBuildTool) install(ctx context.Context) error {
 	installDir := bt.installDir()
 
 	if _, err := os.Stat(dartDir); err == nil {
-		log.Infof("Dart v%s located in %s!", bt.version, dartDir)
+		log.Infof(ctx, "Dart v%s located in %s!", bt.version, dartDir)
 	} else {
-		log.Infof("Will install Dart v%s into %s", bt.version, dartDir)
+		log.Infof(ctx, "Will install Dart v%s into %s", bt.version, dartDir)
 		downloadUrl := bt.downloadURL()
 
-		log.Infof("Downloading Dart from URL %s...", downloadUrl)
+		log.Infof(ctx, "Downloading Dart from URL %s...", downloadUrl)
 		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 		if err != nil {
-			log.Errorf("Unable to download: %v", err)
+			log.Errorf(ctx, "Unable to download: %v", err)
 			return err
 		}
 		err = archiver.Unarchive(localFile, installDir)
 		if err != nil {
-			log.Errorf("Unable to decompress: %v", err)
+			log.Errorf(ctx, "Unable to decompress: %v", err)
 			return err
 		}
 	}

@@ -2,6 +2,7 @@ package plumbing
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -17,8 +18,8 @@ import (
 
 	"github.com/google/shlex"
 	"github.com/ulikunitz/xz"
-	"github.com/yourbase/yb/plumbing/log"
 	"github.com/yourbase/yb/types"
+	"zombiezen.com/go/log"
 )
 
 func ExecToStdoutWithExtraEnv(cmdString string, targetDir string, env []string) error {
@@ -27,7 +28,7 @@ func ExecToStdoutWithExtraEnv(cmdString string, targetDir string, env []string) 
 }
 
 func ExecToStdoutWithEnv(cmdString string, targetDir string, env []string) error {
-	log.Infof("Running: %s in %s", cmdString, targetDir)
+	log.Infof(context.TODO(), "Running: %s in %s", cmdString, targetDir)
 	cmdArgs, err := shlex.Split(cmdString)
 	if err != nil {
 		return fmt.Errorf("Can't parse command string '%s': %v", cmdString, err)
@@ -122,7 +123,7 @@ func ConfigFilePath(filename string) string {
 	u, _ := user.Current()
 	configDir := filepath.Join(u.HomeDir, ".config", "yb")
 	if err := os.MkdirAll(configDir, 0777); err != nil {
-		log.Errorf("%v", err)
+		log.Errorf(context.TODO(), "%v", err)
 	}
 	filePath := filepath.Join(configDir, filename)
 	return filePath
@@ -151,7 +152,7 @@ func TemplateToString(templateText string, data interface{}) (string, error) {
 	}
 	var tpl bytes.Buffer
 	if err := t.Execute(&tpl, data); err != nil {
-		log.Errorf("Can't render template:: %v", err)
+		log.Errorf(context.TODO(), "Can't render template:: %v", err)
 		return "", err
 	}
 
@@ -205,7 +206,7 @@ func ToolsDir() string {
 	}
 
 	if err := os.MkdirAll(toolsDir, 0777); err != nil {
-		log.Errorf("%v", err)
+		log.Errorf(context.TODO(), "%v", err)
 	}
 
 	return toolsDir
@@ -223,7 +224,7 @@ func CacheDir() string {
 	}
 
 	if err := os.MkdirAll(cacheDir, 0777); err != nil {
-		log.Errorf("%v", err)
+		log.Errorf(context.TODO(), "%v", err)
 	}
 
 	return cacheDir
@@ -258,7 +259,7 @@ func DownloadFileWithCache(url string) (string, error) {
 		resp, err := http.Head(url)
 		if err == nil {
 			if fi.Size() != resp.ContentLength {
-				log.Infof("Re-downloading %s because remote file and local file differ in size", url)
+				log.Infof(context.TODO(), "Re-downloading %s because remote file and local file differ in size", url)
 				fileSizeMismatch = true
 			}
 		}
@@ -267,7 +268,7 @@ func DownloadFileWithCache(url string) (string, error) {
 
 	if fileExists && !fileSizeMismatch {
 		// No mismatch known, but exists, use cached version
-		log.Infof("Re-using cached version of %s", url)
+		log.Infof(context.TODO(), "Re-using cached version of %s", url)
 		return cacheFilename, nil
 	}
 

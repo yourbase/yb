@@ -10,7 +10,7 @@ import (
 
 	"github.com/johnewart/archiver"
 	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/plumbing/log"
+	"zombiezen.com/go/log"
 )
 
 type javaBuildTool struct {
@@ -22,7 +22,7 @@ type javaBuildTool struct {
 	subVersion   string
 }
 
-func newJavaBuildTool(toolSpec buildToolSpec) javaBuildTool {
+func newJavaBuildTool(ctx context.Context, toolSpec buildToolSpec) javaBuildTool {
 
 	version := toolSpec.version
 
@@ -37,15 +37,15 @@ func newJavaBuildTool(toolSpec buildToolSpec) javaBuildTool {
 
 	majorVersion, err := convertVersionPiece(parts, 0)
 	if err != nil {
-		log.Debugf("Error when parsing majorVersion %d: %v", majorVersion, err)
+		log.Debugf(ctx, "Error when parsing majorVersion %d: %v", majorVersion, err)
 	}
 	minorVersion, err := convertVersionPiece(parts, 1)
 	if err != nil {
-		log.Debugf("Error when parsing minorVersion %d: %v", minorVersion, err)
+		log.Debugf(ctx, "Error when parsing minorVersion %d: %v", minorVersion, err)
 	}
 	patchVersion, err := convertVersionPiece(parts, 2)
 	if err != nil {
-		log.Debugf("Error when parsing patchVersion %d: %v", patchVersion, err)
+		log.Debugf(ctx, "Error when parsing patchVersion %d: %v", patchVersion, err)
 	}
 
 	// Sometimes a patchVersion can represent a subVersion
@@ -54,7 +54,7 @@ func newJavaBuildTool(toolSpec buildToolSpec) javaBuildTool {
 		subVersion = fmt.Sprintf("%02d", patchVersion)
 	}
 
-	log.Debugf("majorVersion: %d, minorVersion: %d, patchVersion: %d, subVersion: %s",
+	log.Debugf(ctx, "majorVersion: %d, minorVersion: %d, patchVersion: %d, subVersion: %s",
 		majorVersion, minorVersion, patchVersion, subVersion)
 
 	// Maybe we just require people format it with the build number?
@@ -131,15 +131,15 @@ func (bt javaBuildTool) setup(ctx context.Context) error {
 	cmdPath := fmt.Sprintf("%s/bin", javaDir)
 	currentPath := os.Getenv("PATH")
 	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
-	log.Infof("Setting PATH to %s", newPath)
+	log.Infof(ctx, "Setting PATH to %s", newPath)
 	os.Setenv("PATH", newPath)
-	log.Infof("Setting JAVA_HOME to %s", javaDir)
+	log.Infof(ctx, "Setting JAVA_HOME to %s", javaDir)
 	os.Setenv("JAVA_HOME", javaDir)
 
 	return nil
 }
 
-func (bt javaBuildTool) downloadURL() string {
+func (bt javaBuildTool) downloadURL(ctx context.Context) string {
 
 	// This changes pretty dramatically depending on major version :~(
 	// Using HotSpot version, we should consider an OpenJ9 option
@@ -191,12 +191,12 @@ func (bt javaBuildTool) downloadURL() string {
 		extension,
 	}
 
-	log.Debugf("URL params: %#v", data)
+	log.Debugf(ctx, "URL params: %#v", data)
 
 	url, err := plumbing.TemplateToString(urlPattern, data)
 
 	if err != nil {
-		log.Errorf("Error generating download URL: %v", err)
+		log.Errorf(ctx, "Error generating download URL: %v", err)
 	}
 
 	return url
@@ -211,20 +211,20 @@ func (bt javaBuildTool) install(ctx context.Context) error {
 	}
 
 	if _, err := os.Stat(javaPath); err == nil {
-		log.Infof("Java v%s located in %s!", bt.version, javaPath)
+		log.Infof(ctx, "Java v%s located in %s!", bt.version, javaPath)
 	} else {
-		log.Infof("Will install Java v%s into %s", bt.version, javaInstallDir)
-		downloadUrl := bt.downloadURL()
+		log.Infof(ctx, "Will install Java v%s into %s", bt.version, javaInstallDir)
+		downloadUrl := bt.downloadURL(ctx)
 
-		log.Infof("Downloading from URL %s ", downloadUrl)
+		log.Infof(ctx, "Downloading from URL %s ", downloadUrl)
 		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 		if err != nil {
-			log.Errorf("Unable to download: %v", err)
+			log.Errorf(ctx, "Unable to download: %v", err)
 			return err
 		}
 		err = archiver.Unarchive(localFile, javaInstallDir)
 		if err != nil {
-			log.Errorf("Unable to decompress: %v", err)
+			log.Errorf(ctx, "Unable to decompress: %v", err)
 			return err
 		}
 

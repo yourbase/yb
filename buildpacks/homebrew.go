@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/plumbing/log"
 	"gopkg.in/src-d/go-git.v4"
+	"zombiezen.com/go/log"
 )
 
 type homebrewBuildTool struct {
@@ -48,7 +48,7 @@ func (bt homebrewBuildTool) isPackage() bool {
 	return bt.pkgName != ""
 }
 
-func (bt homebrewBuildTool) packagePrefix(packageString string) (string, error) {
+func (bt homebrewBuildTool) packagePrefix(ctx context.Context, packageString string) (string, error) {
 	if bt.pkgPrefix != "" {
 		return bt.pkgPrefix, nil
 	}
@@ -61,13 +61,13 @@ func (bt homebrewBuildTool) packagePrefix(packageString string) (string, error) 
 	prefixPath := string(output)
 	prefixPath = strings.TrimSuffix(prefixPath, "\n")
 	bt.pkgPrefix = prefixPath
-	log.Debugf("Prefix for homebrew package %s is %s", bt.pkgName, prefixPath)
+	log.Debugf(ctx, "Prefix for homebrew package %s is %s", bt.pkgName, prefixPath)
 
 	return prefixPath, nil
 }
 
-func (bt homebrewBuildTool) packageInstalled() bool {
-	prefix, err := bt.packagePrefix(bt.packageVersionString())
+func (bt homebrewBuildTool) packageInstalled(ctx context.Context) bool {
+	prefix, err := bt.packagePrefix(ctx, bt.packageVersionString())
 	if err != nil {
 		return false
 	}
@@ -100,17 +100,17 @@ func (bt homebrewBuildTool) installDir() string {
 }
 
 func (bt homebrewBuildTool) install(ctx context.Context) error {
-	if err := bt.installBrew(); err != nil {
+	if err := bt.installBrew(ctx); err != nil {
 		return err
 	}
 	if !bt.isPackage() {
 		return nil
 	}
-	if bt.packageInstalled() {
-		log.Infof("Package %s already installed", bt.packageVersionString())
+	if bt.packageInstalled(ctx) {
+		log.Infof(ctx, "Package %s already installed", bt.packageVersionString())
 		return nil
 	}
-	log.Infof("Installing package %s", bt.packageVersionString())
+	log.Infof(ctx, "Installing package %s", bt.packageVersionString())
 	err := bt.installPackage(ctx)
 	if err != nil {
 		return fmt.Errorf("install homebrew: %w", err)
@@ -118,15 +118,15 @@ func (bt homebrewBuildTool) install(ctx context.Context) error {
 	return nil
 }
 
-func (bt homebrewBuildTool) installBrew() error {
+func (bt homebrewBuildTool) installBrew(ctx context.Context) error {
 	// If directory already exists, skip the install.
 	brewDir := bt.homebrewDir()
 	if _, err := os.Stat(brewDir); err == nil {
-		log.Infof("brew installed in %s", brewDir)
+		log.Infof(ctx, "brew installed in %s", brewDir)
 		return nil
 	}
 
-	log.Infof("Installing brew")
+	log.Infof(ctx, "Installing brew")
 	installDir := bt.installDir()
 	if err := os.MkdirAll(installDir, 0777); err != nil {
 		return fmt.Errorf("install homebrew: %w", err)
@@ -139,7 +139,7 @@ func (bt homebrewBuildTool) installBrew() error {
 		return fmt.Errorf("install homebrew: %w", err)
 	}
 
-	log.Infof("Updating brew")
+	log.Infof(ctx, "Updating brew")
 	if err := plumbing.ExecToStdout("brew update", brewDir); err != nil {
 		return fmt.Errorf("install homebrew: brew update: %w", err)
 	}
@@ -162,7 +162,7 @@ func (bt homebrewBuildTool) installPackage(ctx context.Context) error {
 		pkgVersion = fmt.Sprintf("@%s", bt.version)
 	}
 
-	log.Infof("Going to install %s%s from Homebrew...", bt.pkgName, pkgVersion)
+	log.Infof(ctx, "Going to install %s%s from Homebrew...", bt.pkgName, pkgVersion)
 	installCmd := fmt.Sprintf("brew install %s%s", bt.pkgName, pkgVersion)
 	err = plumbing.ExecToStdout(installCmd, brewDir)
 
@@ -175,7 +175,7 @@ func (bt homebrewBuildTool) installPackage(ctx context.Context) error {
 
 func (bt homebrewBuildTool) setup(ctx context.Context) error {
 	if bt.isPackage() {
-		prefixPath, err := bt.packagePrefix(bt.packageVersionString())
+		prefixPath, err := bt.packagePrefix(ctx, bt.packageVersionString())
 		if err != nil {
 			return fmt.Errorf("Unable to determine prefix for package %s: %v", bt.packageVersionString(), err)
 		}

@@ -10,7 +10,7 @@ import (
 	"github.com/johnewart/narwhal"
 	"github.com/johnewart/subcommands"
 	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/plumbing/log"
+	"zombiezen.com/go/log"
 )
 
 type ExecCmd struct {
@@ -39,13 +39,12 @@ func (b *ExecCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 
 	targetPackage, err := GetTargetPackage()
 	if err != nil {
-		log.Errorf("%v", err)
+		log.Errorf(ctx, "%v", err)
 		return subcommands.ExitFailure
 	}
 
-	log.ActiveSection("Dependencies")
 	if err := targetPackage.SetupRuntimeDependencies(ctx); err != nil {
-		log.Infof("Couldn't configure dependencies: %v\n", err)
+		log.Infof(ctx, "Couldn't configure dependencies: %v\n", err)
 		return subcommands.ExitFailure
 	}
 
@@ -55,18 +54,17 @@ func (b *ExecCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 	buildData := NewBuildData()
 
 	if len(containers) > 0 {
-		log.ActiveSection("Containers")
 		localContainerWorkDir := filepath.Join(targetPackage.BuildRoot(), "containers")
 		if err := os.MkdirAll(localContainerWorkDir, 0777); err != nil {
-			log.Errorf("Couldn't create directory: %v", err)
+			log.Errorf(ctx, "Couldn't create directory: %v", err)
 			return subcommands.ExitFailure
 		}
 
-		log.Infof("Will use %s as the dependency work dir", localContainerWorkDir)
-		log.Infof("Starting %d dependencies...", len(containers))
+		log.Infof(ctx, "Will use %s as the dependency work dir", localContainerWorkDir)
+		log.Infof(ctx, "Starting %d dependencies...", len(containers))
 		sc, err := narwhal.NewServiceContextWithId("exec", targetPackage.BuildRoot())
 		if err != nil {
-			log.Errorf("Couldn't create service context for dependencies: %v", err)
+			log.Errorf(ctx, "Couldn't create service context for dependencies: %v", err)
 			return subcommands.ExitFailure
 		}
 
@@ -74,7 +72,7 @@ func (b *ExecCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 			// TODO: avoid setting these here
 			c.LocalWorkDir = localContainerWorkDir
 			if _, err = sc.StartContainer(c); err != nil {
-				log.Infof("Couldn't start dependencies: %v\n", err)
+				log.Infof(ctx, "Couldn't start dependencies: %v\n", err)
 				return subcommands.ExitFailure
 			}
 		}
@@ -82,8 +80,7 @@ func (b *ExecCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 		buildData.Containers.ServiceContext = sc
 	}
 
-	log.ActiveSection("Environment")
-	log.Infof("Setting environment variables...")
+	log.Infof(ctx, "Setting environment variables...")
 	for _, property := range instructions.Exec.Environment["default"] {
 		s := strings.SplitN(property, "=", 2)
 		if len(s) == 2 {
@@ -100,21 +97,19 @@ func (b *ExecCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 		}
 	}
 
-	buildData.ExportEnvironmentPublicly()
+	buildData.ExportEnvironmentPublicly(ctx)
 
-	log.ActiveSection("Exec")
-
-	log.Infof("Execing target package %s...\n", targetPackage.Name)
+	log.Infof(ctx, "Execing target package %s...\n", targetPackage.Name)
 
 	execDir := targetPackage.Path
 
 	for _, logFile := range instructions.Exec.LogFiles {
-		log.Infof("Will tail %s...\n", logFile)
+		log.Infof(ctx, "Will tail %s...\n", logFile)
 	}
 
 	for _, cmdString := range instructions.Exec.Commands {
 		if err := plumbing.ExecToStdout(cmdString, execDir); err != nil {
-			log.Errorf("Failed to run %s: %v", cmdString, err)
+			log.Errorf(ctx, "Failed to run %s: %v", cmdString, err)
 			return subcommands.ExitFailure
 		}
 	}

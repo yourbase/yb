@@ -8,7 +8,7 @@ import (
 
 	"github.com/johnewart/archiver"
 	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/plumbing/log"
+	"zombiezen.com/go/log"
 )
 
 //https://archive.apache.org/dist/heroku/heroku-3/3.3.3/binaries/apache-heroku-3.3.3-bin.tar.gz
@@ -67,7 +67,7 @@ func (bt herokuBuildTool) setup(ctx context.Context) error {
 	cmdPath := fmt.Sprintf("%s/heroku/bin", herokuDir)
 	currentPath := os.Getenv("PATH")
 	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
-	log.Infof("Setting PATH to %s", newPath)
+	log.Infof(ctx, "Setting PATH to %s", newPath)
 	os.Setenv("PATH", newPath)
 
 	return nil
@@ -78,20 +78,20 @@ func (bt herokuBuildTool) install(ctx context.Context) error {
 	herokuDir := bt.herokuDir()
 
 	if _, err := os.Stat(herokuDir); err == nil {
-		log.Infof("Heroku v%s located in %s!", bt.version, herokuDir)
+		log.Infof(ctx, "Heroku v%s located in %s!", bt.version, herokuDir)
 	} else {
-		log.Infof("Will install Heroku v%s into %s", bt.version, herokuDir)
+		log.Infof(ctx, "Will install Heroku v%s into %s", bt.version, herokuDir)
 		downloadUrl := bt.downloadURL()
 
-		log.Infof("Downloading Heroku from URL %s...", downloadUrl)
+		log.Infof(ctx, "Downloading Heroku from URL %s...", downloadUrl)
 		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 		if err != nil {
-			log.Errorf("Unable to download: %v", err)
+			log.Errorf(ctx, "Unable to download: %v", err)
 			return err
 		}
 		err = archiver.Unarchive(localFile, herokuDir)
 		if err != nil {
-			log.Errorf("Unable to decompress: %v", err)
+			log.Errorf(ctx, "Unable to decompress: %v", err)
 			return err
 		}
 

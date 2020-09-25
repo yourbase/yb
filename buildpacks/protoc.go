@@ -9,7 +9,7 @@ import (
 
 	"github.com/johnewart/archiver"
 	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/plumbing/log"
+	"zombiezen.com/go/log"
 )
 
 // https://github.com/google/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip
@@ -89,21 +89,21 @@ func (bt protocBuildTool) install(ctx context.Context) error {
 	installDir := bt.installDir()
 
 	if _, err := os.Stat(protocDir); err == nil {
-		log.Infof("Protoc v%s located in %s!", bt.version, protocDir)
+		log.Infof(ctx, "Protoc v%s located in %s!", bt.version, protocDir)
 		return nil
 	}
-	log.Infof("Will install Protoc v%s into %s", bt.version, protocDir)
+	log.Infof(ctx, "Will install Protoc v%s into %s", bt.version, protocDir)
 	downloadUrl := bt.downloadURL()
 
-	log.Infof("Downloading Protoc from URL %s...", downloadUrl)
+	log.Infof(ctx, "Downloading Protoc from URL %s...", downloadUrl)
 	localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 	if err != nil {
-		log.Errorf("Unable to download: %v", err)
+		log.Errorf(ctx, "Unable to download: %v", err)
 		return err
 	}
 	err = archiver.Unarchive(localFile, installDir)
 	if err != nil {
-		log.Errorf("Unable to decompress: %v", err)
+		log.Errorf(ctx, "Unable to decompress: %v", err)
 		return err
 	}
 

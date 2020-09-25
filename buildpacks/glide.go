@@ -8,7 +8,7 @@ import (
 
 	"github.com/johnewart/archiver"
 	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/plumbing/log"
+	"zombiezen.com/go/log"
 )
 
 const glideDistMirror = "https://github.com/Masterminds/glide/releases/download/v{{.Version}}/glide-v{{.Version}}-{{.OS}}-{{.Arch}}.tar.gz"
@@ -42,7 +42,7 @@ func (bt glideBuildTool) setup(ctx context.Context) error {
 	cmdPath := fmt.Sprintf("%s/%s-%s", glideDir, OS(), Arch())
 	currentPath := os.Getenv("PATH")
 	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
-	log.Infof("Setting PATH to %s", newPath)
+	log.Infof(ctx, "Setting PATH to %s", newPath)
 	os.Setenv("PATH", newPath)
 
 	return nil
@@ -53,9 +53,9 @@ func (bt glideBuildTool) install(ctx context.Context) error {
 	glidePath := bt.glideDir()
 
 	if _, err := os.Stat(glidePath); err == nil {
-		log.Infof("Glide v%s located in %s!", bt.version, glidePath)
+		log.Infof(ctx, "Glide v%s located in %s!", bt.version, glidePath)
 	} else {
-		log.Infof("Will install Glide v%s into %s", bt.version, glidePath)
+		log.Infof(ctx, "Will install Glide v%s into %s", bt.version, glidePath)
 		params := downloadParameters{
 			OS:      OS(),
 			Arch:    Arch(),
@@ -64,14 +64,14 @@ func (bt glideBuildTool) install(ctx context.Context) error {
 
 		downloadUrl, err := plumbing.TemplateToString(glideDistMirror, params)
 		if err != nil {
-			log.Errorf("Unable to generate download URL: %v", err)
+			log.Errorf(ctx, "Unable to generate download URL: %v", err)
 			return err
 		}
 
-		log.Infof("Downloading from URL %s ...", downloadUrl)
+		log.Infof(ctx, "Downloading from URL %s ...", downloadUrl)
 		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 		if err != nil {
-			log.Errorf("Unable to download: %v", err)
+			log.Errorf(ctx, "Unable to download: %v", err)
 			return err
 		}
 
@@ -79,10 +79,10 @@ func (bt glideBuildTool) install(ctx context.Context) error {
 		if err := os.MkdirAll(extractDir, 0777); err != nil {
 			return err
 		}
-		log.Infof("Extracting glide %s to %s...", bt.version, extractDir)
+		log.Infof(ctx, "Extracting glide %s to %s...", bt.version, extractDir)
 		err = archiver.Unarchive(localFile, extractDir)
 		if err != nil {
-			log.Errorf("Unable to decompress: %v", err)
+			log.Errorf(ctx, "Unable to decompress: %v", err)
 			return err
 		}
 

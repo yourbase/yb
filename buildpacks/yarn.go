@@ -8,7 +8,7 @@ import (
 
 	"github.com/johnewart/archiver"
 	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/plumbing/log"
+	"zombiezen.com/go/log"
 )
 
 type yarnBuildTool struct {
@@ -52,11 +52,11 @@ func (bt yarnBuildTool) install(ctx context.Context) error {
 	installDir := bt.installDir()
 
 	if _, err := os.Stat(yarnDir); err == nil {
-		log.Infof("Yarn v%s located in %s!", bt.version, yarnDir)
+		log.Infof(ctx, "Yarn v%s located in %s!", bt.version, yarnDir)
 	} else {
-		log.Infof("Will install Yarn v%s into %s", bt.version, installDir)
+		log.Infof(ctx, "Will install Yarn v%s into %s", bt.version, installDir)
 		downloadUrl := bt.downloadURL()
-		log.Infof("Downloading from URL %s...", downloadUrl)
+		log.Infof(ctx, "Downloading from URL %s...", downloadUrl)
 		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 		if err != nil {
 			return fmt.Errorf("Unable to download %s: %v", downloadUrl, err)

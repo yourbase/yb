@@ -13,13 +13,13 @@ import (
 	"github.com/matishsiao/goInfo"
 
 	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/plumbing/log"
 	"gopkg.in/src-d/go-git.v4"
+	"zombiezen.com/go/log"
 )
 
 const rubyDownloadTemplate = "https://yourbase-build-tools.s3-us-west-2.amazonaws.com/ruby/ruby-{{ .Version }}-{{ .OS }}-{{ .Arch }}-{{ .OsVersion }}.{{ .Extension }}"
 
-func (bt rubyBuildTool) downloadURL() string {
+func (bt rubyBuildTool) downloadURL(ctx context.Context) string {
 	extension := "tar.bz2"
 	osVersion := OSVersion()
 	arch := Arch()
@@ -58,7 +58,7 @@ func (bt rubyBuildTool) downloadURL() string {
 	url, err := plumbing.TemplateToString(rubyDownloadTemplate, data)
 
 	if err != nil {
-		log.Infof("Error generating download URL: %v", err)
+		log.Infof(ctx, "Error generating download URL: %v", err)
 	}
 
 	return url
@@ -90,8 +90,8 @@ func (bt rubyBuildTool) rbenvDir() string {
 	return filepath.Join(bt.spec.sharedCacheDir, "rbenv")
 }
 
-func (bt rubyBuildTool) binaryExists() bool {
-	downloadUrl := bt.downloadURL()
+func (bt rubyBuildTool) binaryExists(ctx context.Context) bool {
+	downloadUrl := bt.downloadURL(ctx)
 	resp, err := http.Head(downloadUrl)
 
 	if err != nil {
@@ -113,39 +113,39 @@ func (bt rubyBuildTool) install(ctx context.Context) error {
 	rubyVersionDir := bt.rubyDir()
 
 	if _, err := os.Stat(rubyVersionDir); err == nil {
-		log.Infof("Ruby %s installed in %s", bt.version, rubyVersionDir)
+		log.Infof(ctx, "Ruby %s installed in %s", bt.version, rubyVersionDir)
 	} else {
 
-		if bt.binaryExists() {
+		if bt.binaryExists(ctx) {
 			rubyVersionsDir := bt.versionsDir()
-			downloadUrl := bt.downloadURL()
-			log.Infof("Will download pre-built Ruby from %s", downloadUrl)
+			downloadUrl := bt.downloadURL(ctx)
+			log.Infof(ctx, "Will download pre-built Ruby from %s", downloadUrl)
 
 			localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 			if err != nil {
-				log.Errorf("Unable to download: %v", err)
+				log.Errorf(ctx, "Unable to download: %v", err)
 				return err
 			}
 			err = archiver.Unarchive(localFile, rubyVersionsDir)
 			if err != nil {
-				log.Errorf("Unable to decompress: %v", err)
+				log.Errorf(ctx, "Unable to decompress: %v", err)
 				return err
 			}
 
 			return nil
 		} else {
-			log.Infof("Couldn't find a file at %s...", bt.downloadURL())
+			log.Infof(ctx, "Couldn't find a file at %s...", bt.downloadURL(ctx))
 		}
 
 		rbenvGitUrl := "https://github.com/rbenv/rbenv.git"
 		rbenvDir := bt.rbenvDir()
 
-		bt.installPlatformDependencies()
+		bt.installPlatformDependencies(ctx)
 
 		if _, err := os.Stat(rbenvDir); err == nil {
-			log.Infof("rbenv installed in %s", rbenvDir)
+			log.Infof(ctx, "rbenv installed in %s", rbenvDir)
 		} else {
-			log.Infof("Installing rbenv")
+			log.Infof(ctx, "Installing rbenv")
 
 			_, err := git.PlainClone(rbenvDir, false, &git.CloneOptions{
 				URL:      rbenvGitUrl,
@@ -153,7 +153,7 @@ func (bt rubyBuildTool) install(ctx context.Context) error {
 			})
 
 			if err != nil {
-				log.Infof("Unable to clone rbenv!")
+				log.Infof(ctx, "Unable to clone rbenv!")
 				return fmt.Errorf("Couldn't clone rbenv: %v", err)
 			}
 		}
@@ -167,9 +167,9 @@ func (bt rubyBuildTool) install(ctx context.Context) error {
 		rubyBuildDir := filepath.Join(pluginsDir, "ruby-build")
 
 		if plumbing.PathExists(rubyBuildDir) {
-			log.Infof("ruby-build installed in %s", rubyBuildDir)
+			log.Infof(ctx, "ruby-build installed in %s", rubyBuildDir)
 		} else {
-			log.Infof("Installing ruby-build")
+			log.Infof(ctx, "Installing ruby-build")
 
 			_, err := git.PlainClone(rubyBuildDir, false, &git.CloneOptions{
 				URL:      rubyBuildGitUrl,
@@ -177,7 +177,7 @@ func (bt rubyBuildTool) install(ctx context.Context) error {
 			})
 
 			if err != nil {
-				log.Errorf("Unable to clone ruby-build!")
+				log.Errorf(ctx, "Unable to clone ruby-build!")
 				return fmt.Errorf("Couldn't clone ruby-build: %v", err)
 			}
 		}
@@ -198,7 +198,7 @@ func (bt rubyBuildTool) setup(ctx context.Context) error {
 		return fmt.Errorf("install Ruby: %w", err)
 	}
 
-	log.Infof("Setting GEM_HOME to %s", gemsDir)
+	log.Infof(ctx, "Setting GEM_HOME to %s", gemsDir)
 	os.Setenv("GEM_HOME", gemsDir)
 
 	gemBinDir := filepath.Join(gemsDir, "bin")
@@ -210,14 +210,14 @@ func (bt rubyBuildTool) setup(ctx context.Context) error {
 	return nil
 }
 
-func (bt rubyBuildTool) installPlatformDependencies() error {
+func (bt rubyBuildTool) installPlatformDependencies(ctx context.Context) error {
 	gi := goInfo.GetInfo()
 	if gi.GoOS == "darwin" {
 		if strings.HasPrefix(gi.Core, "18.") {
 			// Need to install the headers on Mojave
 			if !plumbing.PathExists("/usr/include/zlib.h") {
 				installCmd := "sudo -S installer -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg -target /"
-				log.Infof("Going to run: %s", installCmd)
+				log.Infof(ctx, "Going to run: %s", installCmd)
 				cmdArgs := strings.Split(installCmd, " ")
 				cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
 				cmd.Stdout = os.Stdout
