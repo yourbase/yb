@@ -30,6 +30,7 @@ func main() {
 	cmdr.Register(&cli.PlatformCmd{}, "")
 	cmdr.Register(&cli.RemoteCmd{}, "")
 	cmdr.Register(&cli.RunCmd{}, "")
+	cmdr.Register(&cli.TokenCmd{}, "")
 	cmdr.Register(&cli.UpdateCmd{}, "")
 	cmdr.Register(&cli.WorkspaceCmd{}, "")
 	cmdr.Register(&cli.VersionCmd{Version: version, Channel: channel, Date: date, CommitSHA: commitSHA}, "")
