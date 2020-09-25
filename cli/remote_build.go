@@ -13,7 +13,6 @@ import (
 	"net/url"
 	"os"
 	"path"
-	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -570,27 +569,23 @@ func postToApi(path string, formData url.Values) (*http.Response, error) {
 	return res, nil
 }
 
-func managementLogUrl(url, org, label string) string {
-	wsUrlRegexp := regexp.MustCompile(`^wss?://[^/]+/builds/([0-9a-f-]+)/progress$`)
-
-	if wsUrlRegexp.MatchString(url) {
-		submatches := wsUrlRegexp.FindStringSubmatch(url)
-		build := ""
-		if len(submatches) > 1 {
-			build = submatches[1]
-		}
-		if len(build) == 0 {
-			return ""
-		}
-
-		u, err := ybconfig.ManagementUrl(fmt.Sprintf("/%s/%s/builds/%s", org, label, build))
-		if err != nil {
-			log.Errorf("Unable to generate App Url: %v", err)
-		}
-
-		return u
+// buildIDFromLogURL returns the build ID in a build log WebSocket URL.
+//
+// TODO(ch2570): This should come from the API.
+func buildIDFromLogURL(u *url.URL) (string, error) {
+	// Pattern is /builds/ID/progress
+	const prefix = "/builds/"
+	const suffix = "/progress"
+	if !strings.HasPrefix(u.Path, prefix) || !strings.HasSuffix(u.Path, suffix) {
+		return "", fmt.Errorf("build ID for %v: unrecognized path", u)
 	}
-	return ""
+	id := u.Path[len(prefix) : len(u.Path)-len(suffix)]
+	for i := 0; i < len(id); i++ {
+		if id[i] == '/' {
+			return "", fmt.Errorf("build ID for %v: unrecognized path", u)
+		}
+	}
+	return id, nil
 }
 
 func (p *RemoteCmd) fetchProject(urls []string) (*types.Project, error) {
@@ -729,17 +724,22 @@ func (cmd *RemoteCmd) submitBuild(project *types.Project, tagMap map[string]stri
 	case 500:
 		return fmt.Errorf("Internal server error")
 	}
-
-	response := string(body)
-
 	//Process simple response from the API
-	response = strings.ReplaceAll(response, "\"", "")
-
-	url := ""
-	if strings.Count(response, "\n") > 0 {
-		url = strings.Split(response, "\n")[0]
-	} else {
-		url = response
+	body = bytes.ReplaceAll(body, []byte(`"`), nil)
+	if i := bytes.IndexByte(body, '\n'); i != -1 {
+		body = body[:i]
+	}
+	logURL, err := url.Parse(string(body))
+	if err != nil {
+		return fmt.Errorf("server response: parse log URL: %w", err)
+	}
+	if logURL.Scheme != "ws" && logURL.Scheme != "wss" {
+		return fmt.Errorf("server response: parse log URL: unhandled scheme %q", logURL.Scheme)
+	}
+	uiURL := ""
+	if id, err := buildIDFromLogURL(logURL); err == nil {
+		// Fine to ignore error: this is displayed as a fallback if other things fail.
+		uiURL, _ = ybconfig.ManagementUrl("/" + project.OrgSlug + "/" + project.Label + "/builds/" + id)
 	}
 
 	endTime := time.Now()
@@ -748,57 +748,55 @@ func (cmd *RemoteCmd) submitBuild(project *types.Project, tagMap map[string]stri
 
 	startTime = time.Now()
 
-	if strings.HasPrefix(url, "ws:") || strings.HasPrefix(url, "wss:") {
-		conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), url)
+	conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), logURL.String())
+	if err != nil {
+		return fmt.Errorf("Cannot connect: %v", err)
+	}
+	defer func() {
+		if err := conn.Close(); err != nil {
+			log.Debugf("Cannot close: %v", err)
+		}
+	}()
+
+	buildSuccess := false
+	buildSetupFinished := false
+
+	for {
+		msg, control, err := wsutil.ReadServerData(conn)
 		if err != nil {
-			return fmt.Errorf("Cannot connect: %v", err)
-		} else {
-
-			defer func() {
-				if err = conn.Close(); err != nil {
-					log.Debugf("Cannot close: %v", err)
-				}
-			}()
-
-			buildSuccess := false
-			buildSetupFinished := false
-			for {
-				msg, control, err := wsutil.ReadServerData(conn)
-				if err != nil {
-					if err != io.EOF {
-						log.Tracef("Unstable connection: %v", err)
-					} else {
-						if buildSuccess {
-							log.Infoln("Build Completed!")
-						} else {
-							log.Errorln("Build failed or the connection was interrupted!")
-						}
-						log.Infof("Build Log: %v", managementLogUrl(url, project.OrgSlug, project.Label))
-						return nil
-					}
+			if err != io.EOF {
+				log.Tracef("Unstable connection: %v", err)
+			} else {
+				if buildSuccess {
+					log.Infoln("Build Completed!")
 				} else {
-					// TODO This depends on build agent output, try to structure this better
-					if control.IsData() && strings.Count(string(msg), "Streaming results from build") > 0 {
-						fmt.Println()
-					} else if control.IsData() && !buildSetupFinished && len(msg) > 0 {
-						buildSetupFinished = true
-						endTime := time.Now()
-						setupTime := endTime.Sub(startTime)
-						log.Infof("Set up finished at %s, taking %s", endTime.Format(TIME_FORMAT), setupTime.Truncate(time.Millisecond))
-						if cmd.publicRepo {
-							log.Infof("Building a public repository: '%s'", project.Repository)
-						}
-						log.Infof("Build Log: %v", managementLogUrl(url, project.OrgSlug, project.Label))
-					}
-					if !buildSuccess {
-						buildSuccess = strings.Count(string(msg), "-- BUILD SUCCEEDED --") > 0
-					}
-					fmt.Printf("%s", msg)
+					log.Errorln("Build failed or the connection was interrupted!")
+				}
+				if uiURL != "" {
+					log.Infof("Build Log: %s", uiURL)
+				}
+				return nil
+			}
+		} else {
+			// TODO This depends on build agent output, try to structure this better
+			if control.IsData() && strings.Count(string(msg), "Streaming results from build") > 0 {
+				fmt.Println()
+			} else if control.IsData() && !buildSetupFinished && len(msg) > 0 {
+				buildSetupFinished = true
+				endTime := time.Now()
+				setupTime := endTime.Sub(startTime)
+				log.Infof("Set up finished at %s, taking %s", endTime.Format(TIME_FORMAT), setupTime.Truncate(time.Millisecond))
+				if cmd.publicRepo {
+					log.Infof("Building a public repository: '%s'", project.Repository)
+				}
+				if uiURL != "" {
+					log.Infof("Build Log: %s", uiURL)
 				}
 			}
+			if !buildSuccess {
+				buildSuccess = strings.Count(string(msg), "-- BUILD SUCCEEDED --") > 0
+			}
+			fmt.Printf("%s", msg)
 		}
-	} else {
-		return fmt.Errorf("Unable to stream build output!")
 	}
-
 }
