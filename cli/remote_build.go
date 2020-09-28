@@ -732,10 +732,17 @@ func (cmd *RemoteCmd) submitBuild(ctx context.Context, project *types.Project, t
 	if logURL.Scheme != "ws" && logURL.Scheme != "wss" {
 		return fmt.Errorf("server response: parse log URL: unhandled scheme %q", logURL.Scheme)
 	}
+	// Construct UI URL to present to the user.
+	// Fine to proceed in the face of errors: this is displayed as a fallback if
+	// other things fail.
 	uiURL := ""
-	if id, err := buildIDFromLogURL(logURL); err == nil {
-		// Fine to ignore error: this is displayed as a fallback if other things fail.
-		uiURL, _ = ybconfig.ManagementUrl("/" + project.OrgSlug + "/" + project.Label + "/builds/" + id)
+	if id, err := buildIDFromLogURL(logURL); err != nil {
+		log.Warnf(ctx, "Could not construct build link: %v", err)
+	} else {
+		uiURL, err = ybconfig.ManagementUrl("/" + project.OrgSlug + "/" + project.Label + "/builds/" + id)
+		if err != nil {
+			log.Warnf(ctx, "Could not construct build link: %v", err)
+		}
 	}
 
 	endTime := time.Now()
