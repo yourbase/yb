@@ -1,104 +1,65 @@
 #!/bin/bash
+# Copyright 2020 YourBase Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# release.sh determines the version from CI metadata then calls upon package.sh
+# to create zip archives. The fleet distribution archive is sent to its bucket
+# and the primary archive is set as a GitHub Action output.
 
 set -euo pipefail
 
-source variables.sh
-
-local_test_release="${TEST_RELEASE:-}"
-
-# YourBase S3 artifacts Release
-AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID:-}"
-AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY:-}"
-aws_disabled=true
-[ -n "${AWS_ACCESS_KEY_ID}" -a -n "${AWS_SECRET_ACCESS_KEY}" ] && aws_disabled=false
-if $aws_disabled; then
-    echo "No AWS credentials, probably in Staging/Preview, giving up"
-    # Non fatal, we won't get GH status errors when trying to release on Staging/Preview
-    exit 0
+if [ -z "${VERSION:-}" ]; then
+    tag_ref="${YB_GIT_BRANCH:-${GITHUB_REF:-}}"
+    echo "Extracting version from tag ref $tag_ref" 1>&2
+    VERSION="$(echo "$tag_ref" | sed -e 's|refs/tags/||g')"
+    export VERSION
 fi
 
-echo "Releasing ${CHANNEL} yb version ${VERSION} [${COMMIT}]..."
+if [ -z "$VERSION" ]; then
+    echo "No version provided, won't release" 1>&2
+    exit 1
+fi
 
-(
-    for r in yb_${VERSION}_*_*.zip; do
-        bucket="s3://yourbase-cats-bundles/"
-        if [ -z "${local_test_release}" ]; then
-            aws s3 cp "$r" "${bucket}"
-        else
-            echo "Local test, would run:"
-            echo "aws s3 cp $r ${bucket}"
-        fi
-    done
-    # TODO(ch2141): Remove after being sure no build server needs this anymore
-    for r in yb-*-*-${VERSION}.tgz; do
-        bucket="s3://yourbase-artifacts/yb/${VERSION}/"
-        if [ -z "${local_test_release}" ]; then
-            aws s3 cp "$r" "${bucket}"
-        else
-            echo "Local test, would run:"
-            echo "aws s3 cp $r ${bucket}"
-        fi
-    done
-)
+if echo "$VERSION" | grep -vqo '^v'; then
+    echo "Doesn't start with a \"v\" when it should, not releasing" 1>&2
+    exit 1
+fi
 
-# Equinox install procedure
-# TODO Migrate to GoRelease (for GH Releases and Homebrew tap)
-#      or maybe use CATS to only send it to GH, and keep our home brew tap as is
+if echo "$VERSION" | grep -q -- '-[-.a-zA-Z0-9]\+'; then
+    # Pre-release
+    export CHANNEL="preview"
+else
+    export CHANNEL="stable"
+fi
 
-APP="app_gtQEt1zkGMj"
-PROJECT="yb"
-TOKEN="${RELEASE_TOKEN:-}"
-RELEASE_KEY="${RELEASE_KEY:-}"
+if [[ -z "${AWS_ACCESS_KEY_ID:-}" || -z "${AWS_SECRET_ACCESS_KEY:-}" ]]; then
+    echo "No AWS credentials, giving up" 1>&2
+    exit 1
+fi
 
-cleanup() {
-    rv=$?
-    rm -rf "$tmpkeyfile"
-    rm -rf equinox release-tool-stable-linux-amd64.tgz
-    exit $rv
+zipname="$( ./package.sh )"
+
+# dryrunnable echoes a command to stderr, but doesn't run it if
+# TEST_RELEASE is set.
+dryrunnable() {
+    echo "# $*" 1>&2
+    if [[ -z "${TEST_RELEASE:-}" ]]; then
+        "$@"
+    fi
 }
 
-tmpkeyfile="$(mktemp)"
-trap "cleanup" INT TERM EXIT
-
-KEY_FILE="${tmpkeyfile}"
-
-equinox_disabled=true
-
-[ -n "${RELEASE_KEY}" -a -n "${TOKEN}" ] && equinox_disabled=false
-if $equinox_disabled; then
-    echo "No Equinox credentials, probably in Staging/Preview, giving up"
-    # Non fatal, we won't get GH status errors when trying to release on Staging/Preview
-    exit 0
-fi
-
-echo "${RELEASE_KEY}" > "${KEY_FILE}"
-
-wget https://bin.equinox.io/c/mBWdkfai63v/release-tool-stable-linux-amd64.tgz
-tar zxvf release-tool-stable-linux-amd64.tgz
-
-if [ -n "${local_test_release}" ]; then
-    echo -e "Local test, would run:
-./equinox release
-        --version=$VERSION
-        --platforms='darwin_amd64 linux_amd64'
-        --signing-key='${KEY_FILE}'
-        --app='$APP'
-        --token='${TOKEN}'
-        --channel='${CHANNEL}'
-    --
-    -ldflags '-X main.version=$VERSION -X 'main.date=$(date -u '+%F-%T')' -X 'main.channel=$CHANNEL'${BUILD_COMMIT_INFO} -s -w'
-    'github.com/yourbase/${PROJECT}'"
-
-    exit 0
-fi
-
-./equinox release \
-        --version=$VERSION \
-        --platforms="darwin_amd64 linux_amd64" \
-        --signing-key="${KEY_FILE}"  \
-        --app="$APP" \
-        --token="${TOKEN}" \
-        --channel="${CHANNEL}" \
-    -- \
-    -ldflags "-X main.version=$VERSION -X 'main.date=$(date -u '+%F-%T')' -X 'main.channel=$CHANNEL'${BUILD_COMMIT_INFO} -s -w" \
-    "github.com/yourbase/${PROJECT}"
+dryrunnable aws s3 cp "${zipname}_cats.zip" "s3://yourbase-cats-bundles/${zipname}.zip"
+echo "::set-output name=file::${zipname}.zip"
