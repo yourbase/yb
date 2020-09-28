@@ -7,7 +7,7 @@ import (
 
 	"github.com/johnewart/subcommands"
 	"github.com/yourbase/yb/config"
-	"github.com/yourbase/yb/plumbing/log"
+	"zombiezen.com/go/log"
 )
 
 // TokenCmd represents an invocation of `yb token`, which outputs the saved
@@ -34,10 +34,10 @@ func (p *TokenCmd) SetFlags(f *flag.FlagSet) {
 }
 
 // Execute runs the token command.
-func (p *TokenCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (p *TokenCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	token, err := config.GetConfigValue("user", "api_key")
 	if err != nil {
-		log.Errorf("Cannot get auth token: %v", err)
+		log.Errorf(ctx, "Cannot get auth token: %v", err)
 		return subcommands.ExitFailure
 	}
 
