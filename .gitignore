@@ -3,6 +3,5 @@
 **/*.vim
 yb
 .DS_Store
-.vscode
 /yb_*_*_*.zip
 /yb-*-*-*.tgz
