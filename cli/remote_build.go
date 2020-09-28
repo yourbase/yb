@@ -236,19 +236,20 @@ func (p *RemoteCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface
 		log.Debugf(ctx, "Start backing up the worktree-save")
 		saver, err := types.NewWorktreeSave(targetPackage.Path, headCommit.Hash.String(), p.backupWorktree)
 		if err != nil {
-			log.Errorf(ctx, "%s", err)
+			log.Errorf(ctx, "%v", err)
+			return subcommands.ExitFailure
 		}
 
 		// TODO When go-git worktree.Status() get faster use this instead:
 		// There's also the problem detecting CRLF in Windows text/source files
 		//if err = worktree.AddGlob("."); err != nil {
-		if skippedBinaries, err := p.traverseChanges(ctx, worktree, saver); err != nil {
+		skippedBinaries, err := p.traverseChanges(ctx, worktree, saver)
+		if err != nil {
 			log.Errorf(ctx, "%v", err)
 			return subcommands.ExitFailure
-		} else {
-			if len(skippedBinaries) > 0 {
-				log.Infof(ctx, "Skipped binaries:\n  %s", strings.Join(skippedBinaries, "\n  "))
-			}
+		}
+		if len(skippedBinaries) > 0 {
+			log.Infof(ctx, "Skipped binaries:\n  %s", strings.Join(skippedBinaries, "\n  "))
 		}
 
 		resetDone := false
