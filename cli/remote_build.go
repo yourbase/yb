@@ -578,10 +578,8 @@ func buildIDFromLogURL(u *url.URL) (string, error) {
 		return "", fmt.Errorf("build ID for %v: unrecognized path", u)
 	}
 	id := u.Path[len(prefix) : len(u.Path)-len(suffix)]
-	for i := 0; i < len(id); i++ {
-		if id[i] == '/' {
-			return "", fmt.Errorf("build ID for %v: unrecognized path", u)
-		}
+	if strings.ContainsRune(id, '/') {
+		return "", fmt.Errorf("build ID for %v: unrecognized path", u)
 	}
 	return id, nil
 }
