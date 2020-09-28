@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/johnewart/subcommands"
-	"github.com/yourbase/yb/plumbing/log"
+	"zombiezen.com/go/log"
 )
 
 type RunCmd struct {
@@ -42,20 +42,20 @@ func (b *RunCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{})
 
 	targetPackage, err := GetTargetPackage()
 	if err != nil {
-		log.Errorf("%v", err)
+		log.Errorf(ctx, "%v", err)
 		return subcommands.ExitFailure
 	}
 
 	instructions := targetPackage.Manifest
 
-	log.Infof("Setting up dependencies...")
+	log.Infof(ctx, "Setting up dependencies...")
 	targetPackage.SetupRuntimeDependencies(ctx)
 
-	log.Infof("Setting environment variables...")
+	log.Infof(ctx, "Setting environment variables...")
 	for _, property := range instructions.Exec.Environment["default"] {
 		s := strings.Split(property, "=")
 		if len(s) == 2 {
-			log.Infof("  %s", s[0])
+			log.Infof(ctx, "  %s", s[0])
 			os.Setenv(s[0], s[1])
 		}
 	}
@@ -64,7 +64,7 @@ func (b *RunCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{})
 		for _, property := range instructions.Exec.Environment[b.environment] {
 			s := strings.Split(property, "=")
 			if len(s) == 2 {
-				log.Infof("  %s", s[0])
+				log.Infof(ctx, "  %s", s[0])
 				os.Setenv(s[0], s[1])
 			}
 		}
@@ -73,7 +73,7 @@ func (b *RunCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{})
 	execDir, _ := os.Getwd()
 	//execDir := filepath.Join(workspace.Path, targetPackage)
 
-	log.Infof("Running %s from %s", strings.Join(f.Args(), " "), execDir)
+	log.Infof(ctx, "Running %s from %s", strings.Join(f.Args(), " "), execDir)
 	cmdName := f.Args()[0]
 	cmdArgs := f.Args()[1:]
 	cmd := exec.Command(cmdName, cmdArgs...)

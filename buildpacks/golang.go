@@ -9,7 +9,7 @@ import (
 
 	"github.com/johnewart/archiver"
 	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/plumbing/log"
+	"zombiezen.com/go/log"
 )
 
 //https://dl.google.com/go/go1.11.5.linux-amd64.tar.gz
@@ -72,9 +72,9 @@ func (bt golangBuildTool) setup(ctx context.Context) error {
 		plumbing.PrependToPath(pathBinDir)
 	}
 
-	log.Infof("Setting GOROOT to %s", golangDir)
+	log.Infof(ctx, "Setting GOROOT to %s", golangDir)
 	os.Setenv("GOROOT", golangDir)
-	log.Infof("Setting GOPATH to %s", goPath)
+	log.Infof(ctx, "Setting GOPATH to %s", goPath)
 	os.Setenv("GOPATH", goPathVar)
 
 	return nil
@@ -86,24 +86,24 @@ func (bt golangBuildTool) install(ctx context.Context) error {
 	golangDir := bt.golangDir()
 
 	if _, err := os.Stat(golangDir); err == nil {
-		log.Infof("Golang v%s located in %s!", bt.version, golangDir)
+		log.Infof(ctx, "Golang v%s located in %s!", bt.version, golangDir)
 	} else {
-		log.Infof("Will install Golang v%s into %s", bt.version, golangDir)
+		log.Infof(ctx, "Will install Golang v%s into %s", bt.version, golangDir)
 		downloadUrl := bt.downloadURL()
 
-		log.Infof("Downloading from URL %s ...", downloadUrl)
+		log.Infof(ctx, "Downloading from URL %s ...", downloadUrl)
 		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 		if err != nil {
-			log.Errorf("Unable to download: %v", err)
+			log.Errorf(ctx, "Unable to download: %v", err)
 			return err
 		}
 		err = archiver.Unarchive(localFile, installDir)
 		if err != nil {
-			log.Errorf("Unable to decompress: %v", err)
+			log.Errorf(ctx, "Unable to decompress: %v", err)
 			return err
 		}
 
-		log.Infof("Making go installation in %s read-only", golangDir)
+		log.Infof(ctx, "Making go installation in %s read-only", golangDir)
 		plumbing.RemoveWritePermissionRecursively(golangDir)
 	}
 

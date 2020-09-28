@@ -11,11 +11,11 @@ import (
 
 	"github.com/yourbase/yb/buildpacks"
 	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/plumbing/log"
 	"github.com/yourbase/yb/types"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"gopkg.in/yaml.v2"
+	"zombiezen.com/go/log"
 )
 
 func tracer() trace.Tracer {
@@ -79,7 +79,7 @@ func (p Package) BuildRoot() string {
 
 	buildRoot := filepath.Join(workspaceDir, "build")
 	if err := os.MkdirAll(buildRoot, 0777); err != nil {
-		log.Errorf("Unable to create build dir in workspace: %v\n", err)
+		log.Errorf(context.TODO(), "Unable to create build dir in workspace: %v", err)
 	}
 
 	return buildRoot

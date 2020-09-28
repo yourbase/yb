@@ -117,8 +117,6 @@ func managementBaseUrl() (string, error) {
 	default:
 		return "", fmt.Errorf("Unknown environment (%s) and no override in the config file or environment available", profile)
 	}
-
-	return "", fmt.Errorf("Unable to generate URL")
 }
 
 func ManagementUrl(path string) (string, error) {

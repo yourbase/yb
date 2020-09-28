@@ -8,7 +8,7 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/plumbing/log"
+	"zombiezen.com/go/log"
 )
 
 type anacondaBuildTool struct {
@@ -49,23 +49,23 @@ func (bt anacondaBuildTool) install(ctx context.Context) error {
 	setupDir := bt.spec.packageDir
 
 	if _, err := os.Stat(anacondaDir); err == nil {
-		log.Infof("anaconda installed in %s", anacondaDir)
+		log.Infof(ctx, "anaconda installed in %s", anacondaDir)
 	} else {
-		log.Infof("Installing anaconda")
+		log.Infof(ctx, "Installing anaconda")
 
-		downloadUrl := bt.downloadURL()
+		downloadUrl := bt.downloadURL(ctx)
 
-		log.Infof("Downloading Miniconda from URL %s...", downloadUrl)
+		log.Infof(ctx, "Downloading Miniconda from URL %s...", downloadUrl)
 		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 		if err != nil {
-			log.Errorf("Unable to download: %v\n", err)
+			log.Errorf(ctx, "Unable to download: %v\n", err)
 			return err
 		}
 		for _, cmd := range []string{
 			fmt.Sprintf("chmod +x %s", localFile),
 			fmt.Sprintf("bash %s -b -p %s", localFile, anacondaDir),
 		} {
-			log.Infof("Running: '%v' ", cmd)
+			log.Infof(ctx, "Running: '%v' ", cmd)
 			plumbing.ExecToStdout(cmd, setupDir)
 		}
 
@@ -74,7 +74,7 @@ func (bt anacondaBuildTool) install(ctx context.Context) error {
 	return nil
 }
 
-func (bt anacondaBuildTool) downloadURL() string {
+func (bt anacondaBuildTool) downloadURL(ctx context.Context) string {
 	var v semver.Version
 
 	opsys := OS()
@@ -129,11 +129,11 @@ func (bt anacondaBuildTool) downloadURL() string {
 	// We'll stick to Python 3.7, the stable version right now
 	if v.Major == 4 && v.Minor == 8 {
 		url, err := plumbing.TemplateToString(anacondaNewerDistMirrorTemplate, data)
-		log.Errorf("Unable to apply template: %v", err)
+		log.Errorf(ctx, "Unable to apply template: %v", err)
 		return url
 	}
 	url, err := plumbing.TemplateToString(anacondaDistMirrorTemplate, data)
-	log.Errorf("Unable to apply template: %v", err)
+	log.Errorf(ctx, "Unable to apply template: %v", err)
 
 	return url
 }
@@ -147,7 +147,7 @@ func (bt anacondaBuildTool) setup(ctx context.Context) error {
 		"conda config --set always_yes yes --set changeps1 no",
 		"conda update -q conda",
 	} {
-		log.Infof("Running: '%v' ", cmd)
+		log.Infof(ctx, "Running: '%v' ", cmd)
 		plumbing.ExecToStdout(cmd, setupDir)
 	}
 

@@ -7,7 +7,7 @@ import (
 
 	"github.com/johnewart/subcommands"
 	"github.com/yourbase/yb/config"
-	"github.com/yourbase/yb/plumbing/log"
+	"zombiezen.com/go/log"
 )
 
 var (
@@ -53,7 +53,7 @@ func (w *configSetCmd) SetFlags(f *flag.FlagSet) {
 
 func (w *configSetCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	if len(f.Args()) < 1 {
-		log.Warnln(w.Usage())
+		log.Warnf(ctx, "%s", w.Usage())
 		return subcommands.ExitFailure
 	}
 
@@ -68,18 +68,18 @@ func (w *configSetCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interf
 				}
 			}
 			if !found {
-				log.Infof("Currently supports: '%v' config variables", strings.Join(VARS, ", "))
+				log.Infof(ctx, "Currently supports: '%v' config variables", strings.Join(VARS, ", "))
 			}
 		} else {
-			log.Errorln("Please give a full <key=value>")
+			log.Errorf(ctx, "Please give a full <key=value>")
 			return subcommands.ExitFailure
 		}
 	} else {
-		log.Errorln("Please use <key=value> to set a default configuration")
+		log.Errorf(ctx, "Please use <key=value> to set a default configuration")
 		return subcommands.ExitFailure
 	}
 
-	log.Infoln("Configuration done")
+	log.Infof(ctx, "Configuration done")
 	return subcommands.ExitSuccess
 }
 
@@ -96,7 +96,7 @@ func (w *configGetCmd) SetFlags(f *flag.FlagSet) {}
 
 func (w *configGetCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	if len(f.Args()) < 1 {
-		log.Warnln(w.Usage())
+		log.Warnf(ctx, "%s", w.Usage())
 		return subcommands.ExitFailure
 	}
 
@@ -105,15 +105,15 @@ func (w *configGetCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interf
 		if passed := f.Args()[0]; passed == configVar {
 			env, err := config.GetConfigValue("defaults", configVar)
 			if err != nil {
-				log.Errorf("Unable to get current %v: %v", configVar, err)
+				log.Errorf(ctx, "Unable to get current %v: %v", configVar, err)
 				return subcommands.ExitFailure
 			}
 			found = true
-			log.Infof("Current %v value: '%v'", configVar, env)
+			log.Infof(ctx, "Current %v value: '%v'", configVar, env)
 		}
 	}
 	if !found {
-		log.Infof("Currently supports: '%v' config variables", strings.Join(VARS, ", "))
+		log.Infof(ctx, "Currently supports: '%v' config variables", strings.Join(VARS, ", "))
 	}
 
 	return subcommands.ExitSuccess

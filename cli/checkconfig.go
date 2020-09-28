@@ -5,7 +5,7 @@ import (
 	"flag"
 
 	"github.com/johnewart/subcommands"
-	"github.com/yourbase/yb/plumbing/log"
+	"zombiezen.com/go/log"
 )
 
 type CheckConfigCmd struct {
@@ -24,15 +24,15 @@ func (b *CheckConfigCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&b.file, "file", "", "YAML file to check, or else the default: .yourbase.yml")
 }
 
-func (b *CheckConfigCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (b *CheckConfigCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 
 	targetPackage, err := GetTargetPackageNamed(b.file)
 	if err != nil {
-		log.Errorf("%v", err)
+		log.Errorf(ctx, "%v", err)
 		return subcommands.ExitFailure
 	}
 
-	log.Infof("Config syntax for package '%s' is OK: your package is yourbased!", targetPackage.Name)
+	log.Infof(ctx, "Config syntax for package '%s' is OK: your package is yourbased!", targetPackage.Name)
 
 	return subcommands.ExitSuccess
 }

@@ -1,8 +1,12 @@
 package buildpacks
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
 
 func TestOpenJDKUrlGeneration(t *testing.T) {
+	ctx := context.Background()
 	// NOTE This can go on forever, so we better come up with a generic and reliable way of keep tools versions up to date
 	for _, data := range []struct {
 		version string
@@ -77,9 +81,15 @@ func TestOpenJDKUrlGeneration(t *testing.T) {
 			url:     "https://github.com/AdoptOpenJDK/openjdk14-binaries/releases/download/jdk-14%2B36/OpenJDK14U-jdk_x64_linux_hotspot_14_36.tar.gz",
 		},
 	} {
-		bt := newJavaBuildTool(buildToolSpec{tool: "java", version: data.version, sharedCacheDir: "/tmp/ybcache", packageCacheDir: "/tmp/pkgcache", packageDir: "/opt/tools/java"})
+		bt := newJavaBuildTool(ctx, buildToolSpec{
+			tool:            "java",
+			version:         data.version,
+			sharedCacheDir:  "/tmp/ybcache",
+			packageCacheDir: "/tmp/pkgcache",
+			packageDir:      "/opt/tools/java",
+		})
 
-		url := bt.downloadURL()
+		url := bt.downloadURL(ctx)
 		wanted := data.url
 
 		if url != wanted {

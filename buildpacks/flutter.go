@@ -11,7 +11,7 @@ import (
 	"golang.org/x/mod/semver"
 
 	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/plumbing/log"
+	"zombiezen.com/go/log"
 )
 
 // Stable channel URL example:
@@ -98,7 +98,7 @@ func (bt flutterBuildTool) setup(ctx context.Context) error {
 	cmdPath := filepath.Join(flutterDir, "bin")
 	currentPath := os.Getenv("PATH")
 	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
-	log.Infof("Setting PATH to %s", newPath)
+	log.Infof(ctx, "Setting PATH to %s", newPath)
 	os.Setenv("PATH", newPath)
 
 	return nil
@@ -110,20 +110,20 @@ func (bt flutterBuildTool) install(ctx context.Context) error {
 	installDir := bt.installDir()
 
 	if _, err := os.Stat(flutterDir); err == nil {
-		log.Infof("Flutter %s located in %s!", downloadURLVersion(bt.version), flutterDir)
+		log.Infof(ctx, "Flutter %s located in %s!", downloadURLVersion(bt.version), flutterDir)
 	} else {
-		log.Infof("Will install Flutter %s into %s", downloadURLVersion(bt.version), flutterDir)
+		log.Infof(ctx, "Will install Flutter %s into %s", downloadURLVersion(bt.version), flutterDir)
 		downloadUrl := bt.downloadURL()
 
-		log.Infof("Downloading Flutter from URL %s...", downloadUrl)
+		log.Infof(ctx, "Downloading Flutter from URL %s...", downloadUrl)
 		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 		if err != nil {
-			log.Errorf("Unable to download: %v", err)
+			log.Errorf(ctx, "Unable to download: %v", err)
 			return err
 		}
 		err = archiver.Unarchive(localFile, installDir)
 		if err != nil {
-			log.Errorf("Unable to decompress: %v", err)
+			log.Errorf(ctx, "Unable to decompress: %v", err)
 			return err
 		}
 

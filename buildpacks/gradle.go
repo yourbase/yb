@@ -9,7 +9,7 @@ import (
 
 	"github.com/johnewart/archiver"
 	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/plumbing/log"
+	"zombiezen.com/go/log"
 )
 
 const gradleDistMirror = "https://services.gradle.org/distributions/gradle-{{.Version}}-bin.zip"
@@ -71,10 +71,10 @@ func (bt gradleBuildTool) setup(ctx context.Context) error {
 	cmdPath := filepath.Join(gradleDir, "bin")
 	currentPath := os.Getenv("PATH")
 	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
-	log.Infof("Setting PATH to %s", newPath)
+	log.Infof(ctx, "Setting PATH to %s", newPath)
 	os.Setenv("PATH", newPath)
 
-	log.Infof("Setting GRADLE_USER_HOME to %s", gradleHome)
+	log.Infof(ctx, "Setting GRADLE_USER_HOME to %s", gradleHome)
 	os.Setenv("GRADLE_USER_HOME", gradleHome)
 
 	return nil
@@ -86,20 +86,20 @@ func (bt gradleBuildTool) install(ctx context.Context) error {
 	installDir := bt.installDir()
 
 	if _, err := os.Stat(gradleDir); err == nil {
-		log.Infof("Gradle v%s located in %s!", bt.version, gradleDir)
+		log.Infof(ctx, "Gradle v%s located in %s!", bt.version, gradleDir)
 	} else {
-		log.Infof("Will install Gradle v%s into %s", bt.version, gradleDir)
+		log.Infof(ctx, "Will install Gradle v%s into %s", bt.version, gradleDir)
 		downloadUrl := bt.downloadURL()
 
-		log.Infof("Downloading Gradle from URL %s...", downloadUrl)
+		log.Infof(ctx, "Downloading Gradle from URL %s...", downloadUrl)
 		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 		if err != nil {
-			log.Errorf("Unable to download: %v", err)
+			log.Errorf(ctx, "Unable to download: %v", err)
 			return err
 		}
 		err = archiver.Unarchive(localFile, installDir)
 		if err != nil {
-			log.Errorf("Unable to decompress: %v", err)
+			log.Errorf(ctx, "Unable to decompress: %v", err)
 			return err
 		}
 

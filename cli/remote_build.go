@@ -13,7 +13,6 @@ import (
 	"net/url"
 	"os"
 	"path"
-	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -25,11 +24,11 @@ import (
 	"github.com/johnewart/subcommands"
 	ybconfig "github.com/yourbase/yb/config"
 	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/plumbing/log"
 	"github.com/yourbase/yb/types"
 	"gopkg.in/src-d/go-git.v4"
 	gitplumbing "gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
+	"zombiezen.com/go/log"
 )
 
 var (
@@ -78,7 +77,7 @@ func (p *RemoteCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.backupWorktree, "backup-worktree", false, "Saves uncommitted work into a tarball")
 }
 
-func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (p *RemoteCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 
 	// Consistent with how the `build` cmd works
 	p.target = "default"
@@ -88,7 +87,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	targetPackage, err := GetTargetPackage()
 	if err != nil {
-		log.Errorf("%v", err)
+		log.Errorf(ctx, "%v", err)
 		return subcommands.ExitFailure
 	}
 
@@ -99,13 +98,13 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	if len(manifest.BuildTargets) == 0 {
 		target = manifest.Build
 		if len(target.Commands) == 0 {
-			log.Errorf("Default build command has no steps and no targets described")
+			log.Errorf(ctx, "Default build command has no steps and no targets described")
 			return subcommands.ExitFailure
 		}
 	} else {
 		if _, err := manifest.BuildTarget(p.target); err != nil {
-			log.Errorf("Build target %s specified but it doesn't exist!", p.target)
-			log.Infof("Valid build targets: %s", strings.Join(manifest.BuildTargetList(), ", "))
+			log.Errorf(ctx, "Build target %s specified but it doesn't exist!", p.target)
+			log.Infof(ctx, "Valid build targets: %s", strings.Join(manifest.BuildTargetList(), ", "))
 			return subcommands.ExitFailure
 		}
 	}
@@ -114,7 +113,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	workRepo, err := git.PlainOpen(p.repoDir)
 
 	if err != nil {
-		log.Errorf("Error opening repository %s: %v", p.repoDir, err)
+		log.Errorf(ctx, "Error opening repository %s: %v", p.repoDir, err)
 		return subcommands.ExitFailure
 	}
 
@@ -126,11 +125,11 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		cmdString := fmt.Sprintf("%s --version", gitExe)
 		if err := plumbing.ExecSilently(cmdString, p.repoDir); err != nil {
 			if strings.Contains(err.Error(), "executable file not found in $PATH") {
-				log.Warnf("The flag -go-git-status wasn't specified and '%s' wasn't found in PATH", gitExe)
+				log.Warnf(ctx, "The flag -go-git-status wasn't specified and '%s' wasn't found in PATH", gitExe)
 			} else {
-				log.Warnf("The flag -go-git-status wasn't specified but calling '%s' gives: %v", cmdString, err)
+				log.Warnf(ctx, "The flag -go-git-status wasn't specified but calling '%s' gives: %v", cmdString, err)
 			}
-			log.Warn("Switching to using internal go-git status to detect local changes, it can be slower")
+			log.Warnf(ctx, "Switching to using internal go-git status to detect local changes, it can be slower")
 			p.goGitStatus = true
 		}
 	}
@@ -138,12 +137,12 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	// Show timing feedback and start tracking spent time
 	startTime := time.Now()
 
-	log.Info("Bootstrapping...")
+	log.Infof(ctx, "Bootstrapping...")
 
 	list, err := workRepo.Remotes()
 
 	if err != nil {
-		log.Errorf("Error getting remotes for %s: %v", p.repoDir, err)
+		log.Errorf(ctx, "Error getting remotes for %s: %v", p.repoDir, err)
 		return subcommands.ExitFailure
 	}
 
@@ -154,20 +153,20 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 		repoUrls = append(repoUrls, c.URLs...)
 	}
 
-	project, err := p.fetchProject(repoUrls)
+	project, err := p.fetchProject(ctx, repoUrls)
 	if err != nil {
-		log.Error(err)
+		log.Errorf(ctx, "%v", err)
 		return subcommands.ExitFailure
 	}
 
 	if project.Repository == "" {
 		projectUrl, err := ybconfig.ManagementUrl(fmt.Sprintf("%s/%s", project.OrgSlug, project.Label))
 		if err != nil {
-			log.Errorf("Unable to generate project URL: %v", err)
+			log.Errorf(ctx, "Unable to generate project URL: %v", err)
 			return subcommands.ExitFailure
 		}
 
-		log.Errorf("Empty repository for project %s, please check your project settings at %s", project.Label, projectUrl)
+		log.Errorf(ctx, "Empty repository for project %s, please check your project settings at %s", project.Label, projectUrl)
 		return subcommands.ExitFailure
 	}
 
@@ -180,7 +179,7 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	//    3.3. Save the patch and compress it
 	// 4. Submit build!
 
-	ancestorRef, commitCount, branch := fastFindAncestor(workRepo)
+	ancestorRef, commitCount, branch := fastFindAncestor(ctx, workRepo)
 	if commitCount == -1 { // Error
 		return subcommands.ExitFailure
 	}
@@ -189,87 +188,85 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 
 	head, err := workRepo.Head()
 	if err != nil {
-		log.Errorf("Couldn't find HEAD commit: %v", err)
+		log.Errorf(ctx, "Couldn't find HEAD commit: %v", err)
 		return subcommands.ExitFailure
 	}
 	headCommit, err := workRepo.CommitObject(head.Hash())
 	if err != nil {
-		log.Errorf("Couldn't find HEAD commit: %v", err)
+		log.Errorf(ctx, "Couldn't find HEAD commit: %v", err)
 		return subcommands.ExitFailure
 	}
 	ancestorCommit, err := workRepo.CommitObject(ancestorRef)
 	if err != nil {
-		log.Errorf("Couldn't find merge-base commit: %v", err)
+		log.Errorf(ctx, "Couldn't find merge-base commit: %v", err)
 		return subcommands.ExitFailure
 	}
 
 	// Show feedback: end of bootstrap
 	endTime := time.Now()
 	bootTime := endTime.Sub(startTime)
-	log.Infof("Bootstrap finished at %s, taking %s", endTime.Format(TIME_FORMAT), bootTime.Truncate(time.Millisecond))
+	log.Infof(ctx, "Bootstrap finished at %s, taking %s", endTime.Format(TIME_FORMAT), bootTime.Truncate(time.Millisecond))
 
 	// Process patches
 	startTime = time.Now()
 	pGenerationChan := make(chan bool)
 	if p.committed && headCommit.Hash.String() != p.baseCommit {
-		log.Infof("Generating patch for %d commits...", commitCount)
+		log.Infof(ctx, "Generating patch for %d commits...", commitCount)
 
 		patch, err := ancestorCommit.Patch(headCommit)
 		if err != nil {
-			log.Errorf("Patch generation failed: %v", err)
+			log.Errorf(ctx, "Patch generation failed: %v", err)
 			return subcommands.ExitFailure
 		}
 		// This is where the patch is actually generated see #278
 		go func(ch chan<- bool) {
-			log.Debug("Starting the actual patch generation...")
+			log.Debugf(ctx, "Starting the actual patch generation...")
 			p.patchData = []byte(patch.String())
-			log.Debug("Patch generation finished, only committed changes")
+			log.Debugf(ctx, "Patch generation finished, only committed changes")
 			ch <- true
 		}(pGenerationChan)
 	} else if !p.committed {
 		// Apply changes that weren't committed yet
 		worktree, err := workRepo.Worktree() // current worktree
 		if err != nil {
-			log.Errorf("Couldn't get current worktree: %v", err)
+			log.Errorf(ctx, "Couldn't get current worktree: %v", err)
 			return subcommands.ExitFailure
 		}
 
-		log.Info("Generating patch for local changes...")
+		log.Infof(ctx, "Generating patch for local changes...")
 
-		log.Debug("Start backing up the worktree-save")
+		log.Debugf(ctx, "Start backing up the worktree-save")
 		saver, err := types.NewWorktreeSave(targetPackage.Path, headCommit.Hash.String(), p.backupWorktree)
 		if err != nil {
-			log.Errorf("%s", err)
+			log.Errorf(ctx, "%v", err)
+			return subcommands.ExitFailure
 		}
 
 		// TODO When go-git worktree.Status() get faster use this instead:
 		// There's also the problem detecting CRLF in Windows text/source files
 		//if err = worktree.AddGlob("."); err != nil {
-		if skippedBinaries, err := p.traverseChanges(worktree, saver); err != nil {
-			log.Error(err)
+		skippedBinaries, err := p.traverseChanges(ctx, worktree, saver)
+		if err != nil {
+			log.Errorf(ctx, "%v", err)
 			return subcommands.ExitFailure
-		} else {
-			if len(skippedBinaries) > 0 {
-				log.Infoln("Skipped binaries:")
-				for _, n := range skippedBinaries {
-					fmt.Printf("   '%s'\n", n)
-				}
-			}
+		}
+		if len(skippedBinaries) > 0 {
+			log.Infof(ctx, "Skipped binaries:\n  %s", strings.Join(skippedBinaries, "\n  "))
 		}
 
 		resetDone := false
 		if p.backupWorktree && len(saver.Files) > 0 {
-			log.Debug("Saving a tarball  with all the worktree changes made")
+			log.Debugf(ctx, "Saving a tarball  with all the worktree changes made")
 			// Save them before committing
 			if saveFile, err := saver.Save(); err != nil {
-				log.Errorf("Unable to keep worktree changes, won't commit: %v", err)
+				log.Errorf(ctx, "Unable to keep worktree changes, won't commit: %v", err)
 				return subcommands.ExitFailure
 			} else {
 				defer func(s string) {
 					if !resetDone {
-						log.Debug("Reset failed, restoring the tarball")
+						log.Debugf(ctx, "Reset failed, restoring the tarball")
 						if err := saver.Restore(s); err != nil {
-							log.Errorf("Unable to restore kept files at %v: %v\n     Please consider unarchiving that package", saveFile, err)
+							log.Errorf(ctx, "Unable to restore kept files at %v: %v\n     Please consider unarchiving that package", saveFile, err)
 						} else {
 							_ = os.Remove(s)
 						}
@@ -280,62 +277,62 @@ func (p *RemoteCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			}
 		}
 
-		log.Debug("Committing temporary changes")
+		log.Debugf(ctx, "Committing temporary changes")
 		latest, err := commitTempChanges(worktree, headCommit)
 		if err != nil {
-			log.Errorf("Commit to temporary cloned repository failed: %v", err)
+			log.Errorf(ctx, "Commit to temporary cloned repository failed: %v", err)
 			return subcommands.ExitFailure
 		}
 
 		tempCommit, err := workRepo.CommitObject(latest)
 		if err != nil {
-			log.Errorf("Can't find commit '%v': %v", latest, err)
+			log.Errorf(ctx, "Can't find commit '%v': %v", latest, err)
 			return subcommands.ExitFailure
 		}
 
-		log.Debug("Starting the actual patch generation...")
+		log.Debugf(ctx, "Starting the actual patch generation...")
 		patch, err := ancestorCommit.Patch(tempCommit)
 		if err != nil {
-			log.Errorf("Patch generation failed: %v", err)
+			log.Errorf(ctx, "Patch generation failed: %v", err)
 			return subcommands.ExitFailure
 		}
 
 		// This is where the patch is actually generated see #278
 		p.patchData = []byte(patch.String())
-		log.Debug("Actual patch generation finished")
+		log.Debugf(ctx, "Actual patch generation finished")
 
-		log.Debug("Reseting worktree to previous state...")
+		log.Debugf(ctx, "Reseting worktree to previous state...")
 		// Reset back to HEAD
 		if err := worktree.Reset(&git.ResetOptions{
 			Commit: headCommit.Hash,
 		}); err != nil {
-			log.Errorf("Unable to reset temporary commit: %v\n    Please try `git reset --hard HEAD~1`", err)
+			log.Errorf(ctx, "Unable to reset temporary commit: %v\n    Please try `git reset --hard HEAD~1`", err)
 		} else {
 			resetDone = true
 		}
-		log.Debug("Worktree reset done.")
+		log.Debugf(ctx, "Worktree reset done.")
 
 	}
 
 	// Show feedback: end of patch generation
 	endTime = time.Now()
 	patchTime := endTime.Sub(startTime)
-	log.Infof("Patch finished at %s, taking %s", endTime.Format(TIME_FORMAT), patchTime.Truncate(time.Millisecond))
+	log.Infof(ctx, "Patch finished at %s, taking %s", endTime.Format(TIME_FORMAT), patchTime.Truncate(time.Millisecond))
 	if len(p.patchPath) > 0 && len(p.patchData) > 0 {
 		if err := p.savePatch(); err != nil {
-			log.Warningf("Unable to save copy of generated patch: %v", err)
+			log.Warnf(ctx, "Unable to save copy of generated patch: %v", err)
 		}
 	}
 
 	if !p.dryRun {
-		err = p.submitBuild(project, target.Tags)
+		err = p.submitBuild(ctx, project, target.Tags)
 
 		if err != nil {
-			log.Errorf("Unable to submit build: %v", err)
+			log.Errorf(ctx, "Unable to submit build: %v", err)
 			return subcommands.ExitFailure
 		}
 	} else {
-		log.Infoln("Dry run ended, build not submitted")
+		log.Infof(ctx, "Dry run ended, build not submitted")
 	}
 
 	return subcommands.ExitSuccess
@@ -359,18 +356,18 @@ func commitTempChanges(w *git.Worktree, c *object.Commit) (latest gitplumbing.Ha
 	return
 }
 
-func (p *RemoteCmd) traverseChanges(worktree *git.Worktree, saver *types.WorktreeSave) (skipped []string, err error) {
+func (p *RemoteCmd) traverseChanges(ctx context.Context, worktree *git.Worktree, saver *types.WorktreeSave) (skipped []string, err error) {
 	if p.goGitStatus {
-		log.Debug("Decided to use Go-Git")
-		skipped, err = p.libTraverseChanges(worktree, saver)
+		log.Debugf(ctx, "Decided to use Go-Git")
+		skipped, err = p.libTraverseChanges(ctx, worktree, saver)
 	} else {
-		log.Debugf("Decided to use `%s`", gitStatusCmd)
-		skipped, err = p.commandTraverseChanges(worktree, saver)
+		log.Debugf(ctx, "Decided to use `%s`", gitStatusCmd)
+		skipped, err = p.commandTraverseChanges(ctx, worktree, saver)
 	}
 	return
 }
 
-func shouldSkip(file string, worktree *git.Worktree) bool {
+func shouldSkip(ctx context.Context, file string, worktree *git.Worktree) bool {
 	filePath := path.Join(worktree.Filesystem.Root(), file)
 	fi, err := os.Stat(filePath)
 	if err != nil {
@@ -378,17 +375,17 @@ func shouldSkip(file string, worktree *git.Worktree) bool {
 	}
 
 	if fi.IsDir() {
-		log.Debugf("Added a dir, checking it's contents: %s", file)
+		log.Debugf(ctx, "Added a dir, checking it's contents: %s", file)
 		f, err := os.Open(filePath)
 		if err != nil {
 			return true
 		}
 		dir, err := f.Readdir(0)
-		log.Debugf("Ls dir %s", filePath)
+		log.Debugf(ctx, "Ls dir %s", filePath)
 		for _, f := range dir {
 			child := path.Join(file, f.Name())
-			log.Debugf("Shoud skip child '%s'?", child)
-			if shouldSkip(child, worktree) {
+			log.Debugf(ctx, "Shoud skip child '%s'?", child)
+			if shouldSkip(ctx, child, worktree) {
 				continue
 			} else {
 				worktree.Add(child)
@@ -396,7 +393,7 @@ func shouldSkip(file string, worktree *git.Worktree) bool {
 		}
 		return true
 	} else {
-		log.Debugf("Should skip '%s'?", filePath)
+		log.Debugf(ctx, "Should skip '%s'?", filePath)
 		if is, _ := plumbing.IsBinary(filePath); is {
 			return true
 		}
@@ -404,13 +401,13 @@ func shouldSkip(file string, worktree *git.Worktree) bool {
 	return false
 }
 
-func (p *RemoteCmd) commandTraverseChanges(worktree *git.Worktree, saver *types.WorktreeSave) (skipped []string, err error) {
+func (p *RemoteCmd) commandTraverseChanges(ctx context.Context, worktree *git.Worktree, saver *types.WorktreeSave) (skipped []string, err error) {
 	// TODO When go-git worktree.Status() works faster, we'll disable this
 	// Get worktree path
 	repoDir := worktree.Filesystem.Root()
 	cmdString := fmt.Sprintf(gitStatusCmd, gitExe)
 	buf := bytes.NewBuffer(nil)
-	log.Debugf("Executing '%v'...", cmdString)
+	log.Debugf(ctx, "Executing '%v'...", cmdString)
 	if err = plumbing.ExecSilentlyToWriter(cmdString, repoDir, buf); err != nil {
 		return skipped, fmt.Errorf("When running git status: %v", err)
 	}
@@ -423,18 +420,18 @@ func (p *RemoteCmd) commandTraverseChanges(worktree *git.Worktree, saver *types.
 		for {
 			if line, err := buf.ReadString('\n'); len(line) > 4 && err == nil { // Line should have at least 4 chars
 				line = strings.Trim(line, "\n")
-				log.Debugf("Processing git status line:\n%s", line)
+				log.Debugf(ctx, "Processing git status line:\n%s", line)
 				mode := line[:2]
 				file := line[3:]
 				modUnstagedMap := map[byte]bool{'?': true, 'M': true, 'D': true, 'R': true} // 'R' isn't really found at mode[1], but...
 
 				// Unstaged modifications of any kind
 				if modUnstagedMap[mode[1]] {
-					if shouldSkip(file, worktree) {
+					if shouldSkip(ctx, file, worktree) {
 						skipped = append(skipped, file)
 						continue
 					}
-					log.Debugf("Adding %s to the index", file)
+					log.Debugf(ctx, "Adding %s to the index", file)
 					// Add each detected change
 					if _, err = worktree.Add(file); err != nil {
 						return skipped, fmt.Errorf("Unable to add %s: %v", file, err)
@@ -442,7 +439,7 @@ func (p *RemoteCmd) commandTraverseChanges(worktree *git.Worktree, saver *types.
 
 					if mode[1] != 'D' {
 						// No need to add deletion to the saver, right?
-						log.Debugf("Saving %s to the tarball", file)
+						log.Debugf(ctx, "Saving %s to the tarball", file)
 						if err = saver.Add(file); err != nil {
 							return skipped, fmt.Errorf("Need to save state, but couldn't: %v", err)
 						}
@@ -462,11 +459,11 @@ func (p *RemoteCmd) commandTraverseChanges(worktree *git.Worktree, saver *types.
 	}
 	return
 }
-func (p *RemoteCmd) libTraverseChanges(worktree *git.Worktree, saver *types.WorktreeSave) (skipped []string, err error) {
+func (p *RemoteCmd) libTraverseChanges(ctx context.Context, worktree *git.Worktree, saver *types.WorktreeSave) (skipped []string, err error) {
 	// This could get real slow, check https://github.com/src-d/go-git/issues/844
 	status, err := worktree.Status()
 	if err != nil {
-		log.Errorf("Couldn't get current worktree status: %v", err)
+		log.Errorf(ctx, "Couldn't get current worktree status: %v", err)
 		return
 	}
 
@@ -475,7 +472,7 @@ func (p *RemoteCmd) libTraverseChanges(worktree *git.Worktree, saver *types.Work
 		fmt.Print(status.String())
 	}
 	for n, s := range status {
-		log.Debugf("Checking status %v", n)
+		log.Debugf(ctx, "Checking status %v", n)
 		// Deleted (staged removal or not)
 		if s.Worktree == git.Deleted {
 
@@ -487,7 +484,7 @@ func (p *RemoteCmd) libTraverseChanges(worktree *git.Worktree, saver *types.Work
 			// Ignore it
 		} else if s.Worktree == git.Renamed || s.Staging == git.Renamed {
 
-			log.Debugf("Saving %s to the tarball", n)
+			log.Debugf(ctx, "Saving %s to the tarball", n)
 			if err = saver.Add(n); err != nil {
 				err = fmt.Errorf("Need to save state, but couldn't: %v", err)
 				return
@@ -498,11 +495,11 @@ func (p *RemoteCmd) libTraverseChanges(worktree *git.Worktree, saver *types.Work
 				return
 			}
 		} else {
-			if shouldSkip(n, worktree) {
+			if shouldSkip(ctx, n, worktree) {
 				skipped = append(skipped, n)
 				continue
 			}
-			log.Debugf("Saving %s to the tarball", n)
+			log.Debugf(ctx, "Saving %s to the tarball", n)
 			if err = saver.Add(n); err != nil {
 				err = fmt.Errorf("Need to save state, but couldn't: %v", err)
 				return
@@ -572,44 +569,38 @@ func postToApi(path string, formData url.Values) (*http.Response, error) {
 	return res, nil
 }
 
-func managementLogUrl(url, org, label string) string {
-	wsUrlRegexp := regexp.MustCompile(`^wss?://[^/]+/builds/([0-9a-f-]+)/progress$`)
-
-	if wsUrlRegexp.MatchString(url) {
-		submatches := wsUrlRegexp.FindStringSubmatch(url)
-		build := ""
-		if len(submatches) > 1 {
-			build = submatches[1]
-		}
-		if len(build) == 0 {
-			return ""
-		}
-
-		u, err := ybconfig.ManagementUrl(fmt.Sprintf("/%s/%s/builds/%s", org, label, build))
-		if err != nil {
-			log.Errorf("Unable to generate App Url: %v", err)
-		}
-
-		return u
+// buildIDFromLogURL returns the build ID in a build log WebSocket URL.
+//
+// TODO(ch2570): This should come from the API.
+func buildIDFromLogURL(u *url.URL) (string, error) {
+	// Pattern is /builds/ID/progress
+	const prefix = "/builds/"
+	const suffix = "/progress"
+	if !strings.HasPrefix(u.Path, prefix) || !strings.HasSuffix(u.Path, suffix) {
+		return "", fmt.Errorf("build ID for %v: unrecognized path", u)
 	}
-	return ""
+	id := u.Path[len(prefix) : len(u.Path)-len(suffix)]
+	if strings.ContainsRune(id, '/') {
+		return "", fmt.Errorf("build ID for %v: unrecognized path", u)
+	}
+	return id, nil
 }
 
-func (p *RemoteCmd) fetchProject(urls []string) (*types.Project, error) {
+func (p *RemoteCmd) fetchProject(ctx context.Context, urls []string) (*types.Project, error) {
 	v := url.Values{}
 	fmt.Println()
-	log.Infof("URLs used to search: %s", urls)
+	log.Infof(ctx, "URLs used to search: %s", urls)
 
 	for _, u := range urls {
 		rem, err := ggit.ParseURL(u)
 		if err != nil {
-			log.Warnf("Invalid remote %s (%v), ignoring", u, err)
+			log.Warnf(ctx, "Invalid remote %s (%v), ignoring", u, err)
 			continue
 		}
 		// We only support GitHub by now
 		// TODO create something more generic
 		if rem.Host != "github.com" {
-			log.Warnf("Ignoring remote %s (only github.com supported)", u)
+			log.Warnf(ctx, "Ignoring remote %s (only github.com supported)", u)
 			continue
 		}
 		p.remotes = append(p.remotes, rem)
@@ -622,7 +613,7 @@ func (p *RemoteCmd) fetchProject(urls []string) (*types.Project, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		log.Debugf("Build server returned HTTP Status %d", resp.StatusCode)
+		log.Debugf(ctx, "Build server returned HTTP Status %d", resp.StatusCode)
 		switch resp.StatusCode {
 		case http.StatusNonAuthoritativeInfo:
 			p.publicRepo = true
@@ -658,7 +649,7 @@ func (cmd *RemoteCmd) savePatch() error {
 	return nil
 }
 
-func (cmd *RemoteCmd) submitBuild(project *types.Project, tagMap map[string]string) error {
+func (cmd *RemoteCmd) submitBuild(ctx context.Context, project *types.Project, tagMap map[string]string) error {
 
 	startTime := time.Now()
 
@@ -731,76 +722,86 @@ func (cmd *RemoteCmd) submitBuild(project *types.Project, tagMap map[string]stri
 	case 500:
 		return fmt.Errorf("Internal server error")
 	}
-
-	response := string(body)
-
 	//Process simple response from the API
-	response = strings.ReplaceAll(response, "\"", "")
-
-	url := ""
-	if strings.Count(response, "\n") > 0 {
-		url = strings.Split(response, "\n")[0]
+	body = bytes.ReplaceAll(body, []byte(`"`), nil)
+	if i := bytes.IndexByte(body, '\n'); i != -1 {
+		body = body[:i]
+	}
+	logURL, err := url.Parse(string(body))
+	if err != nil {
+		return fmt.Errorf("server response: parse log URL: %w", err)
+	}
+	if logURL.Scheme != "ws" && logURL.Scheme != "wss" {
+		return fmt.Errorf("server response: parse log URL: unhandled scheme %q", logURL.Scheme)
+	}
+	// Construct UI URL to present to the user.
+	// Fine to proceed in the face of errors: this is displayed as a fallback if
+	// other things fail.
+	uiURL := ""
+	if id, err := buildIDFromLogURL(logURL); err != nil {
+		log.Warnf(ctx, "Could not construct build link: %v", err)
 	} else {
-		url = response
+		uiURL, err = ybconfig.ManagementUrl("/" + project.OrgSlug + "/" + project.Label + "/builds/" + id)
+		if err != nil {
+			log.Warnf(ctx, "Could not construct build link: %v", err)
+		}
 	}
 
 	endTime := time.Now()
 	submitTime := endTime.Sub(startTime)
-	log.Infof("Submission finished at %s, taking %s", endTime.Format(TIME_FORMAT), submitTime.Truncate(time.Millisecond))
+	log.Infof(ctx, "Submission finished at %s, taking %s", endTime.Format(TIME_FORMAT), submitTime.Truncate(time.Millisecond))
 
 	startTime = time.Now()
 
-	if strings.HasPrefix(url, "ws:") || strings.HasPrefix(url, "wss:") {
-		conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), url)
+	conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), logURL.String())
+	if err != nil {
+		return fmt.Errorf("Cannot connect: %v", err)
+	}
+	defer func() {
+		if err := conn.Close(); err != nil {
+			log.Debugf(ctx, "Cannot close: %v", err)
+		}
+	}()
+
+	buildSuccess := false
+	buildSetupFinished := false
+
+	for {
+		msg, control, err := wsutil.ReadServerData(conn)
 		if err != nil {
-			return fmt.Errorf("Cannot connect: %v", err)
-		} else {
-
-			defer func() {
-				if err = conn.Close(); err != nil {
-					log.Debugf("Cannot close: %v", err)
-				}
-			}()
-
-			buildSuccess := false
-			buildSetupFinished := false
-			for {
-				msg, control, err := wsutil.ReadServerData(conn)
-				if err != nil {
-					if err != io.EOF {
-						log.Tracef("Unstable connection: %v", err)
-					} else {
-						if buildSuccess {
-							log.Infoln("Build Completed!")
-						} else {
-							log.Errorln("Build failed or the connection was interrupted!")
-						}
-						log.Infof("Build Log: %v", managementLogUrl(url, project.OrgSlug, project.Label))
-						return nil
-					}
+			if err != io.EOF {
+				log.Debugf(ctx, "Unstable connection: %v", err)
+			} else {
+				if buildSuccess {
+					log.Infof(ctx, "Build Completed!")
 				} else {
-					// TODO This depends on build agent output, try to structure this better
-					if control.IsData() && strings.Count(string(msg), "Streaming results from build") > 0 {
-						fmt.Println()
-					} else if control.IsData() && !buildSetupFinished && len(msg) > 0 {
-						buildSetupFinished = true
-						endTime := time.Now()
-						setupTime := endTime.Sub(startTime)
-						log.Infof("Set up finished at %s, taking %s", endTime.Format(TIME_FORMAT), setupTime.Truncate(time.Millisecond))
-						if cmd.publicRepo {
-							log.Infof("Building a public repository: '%s'", project.Repository)
-						}
-						log.Infof("Build Log: %v", managementLogUrl(url, project.OrgSlug, project.Label))
-					}
-					if !buildSuccess {
-						buildSuccess = strings.Count(string(msg), "-- BUILD SUCCEEDED --") > 0
-					}
-					fmt.Printf("%s", msg)
+					log.Errorf(ctx, "Build failed or the connection was interrupted!")
+				}
+				if uiURL != "" {
+					log.Infof(ctx, "Build Log: %s", uiURL)
+				}
+				return nil
+			}
+		} else {
+			// TODO This depends on build agent output, try to structure this better
+			if control.IsData() && strings.Count(string(msg), "Streaming results from build") > 0 {
+				fmt.Println()
+			} else if control.IsData() && !buildSetupFinished && len(msg) > 0 {
+				buildSetupFinished = true
+				endTime := time.Now()
+				setupTime := endTime.Sub(startTime)
+				log.Infof(ctx, "Set up finished at %s, taking %s", endTime.Format(TIME_FORMAT), setupTime.Truncate(time.Millisecond))
+				if cmd.publicRepo {
+					log.Infof(ctx, "Building a public repository: '%s'", project.Repository)
+				}
+				if uiURL != "" {
+					log.Infof(ctx, "Build Log: %s", uiURL)
 				}
 			}
+			if !buildSuccess {
+				buildSuccess = strings.Count(string(msg), "-- BUILD SUCCEEDED --") > 0
+			}
+			os.Stdout.Write(msg)
 		}
-	} else {
-		return fmt.Errorf("Unable to stream build output!")
 	}
-
 }

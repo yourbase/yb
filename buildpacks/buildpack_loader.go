@@ -6,11 +6,11 @@ import (
 	"strings"
 
 	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/plumbing/log"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/label"
+	"zombiezen.com/go/log"
 )
 
 func tracer() trace.Tracer {
@@ -53,7 +53,7 @@ func Install(ctx context.Context, pkgCacheDir string, pkgDir string, spec string
 		// than modify global state.
 		setup(ctx context.Context) error
 	}
-	log.Infof("Configuring build tool: %s", spec)
+	log.Infof(ctx, "Configuring build tool: %s", spec)
 
 	switch buildpackName {
 	case "anaconda2":
@@ -85,7 +85,7 @@ func Install(ctx context.Context, pkgCacheDir string, pkgDir string, spec string
 	case "rust":
 		bt = newRustBuildTool(parsed)
 	case "java":
-		bt = newJavaBuildTool(parsed)
+		bt = newJavaBuildTool(ctx, parsed)
 	case "maven":
 		bt = newMavenBuildTool(parsed)
 	case "go":

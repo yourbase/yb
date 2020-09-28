@@ -9,7 +9,7 @@ import (
 
 	"github.com/johnewart/archiver"
 	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/plumbing/log"
+	"zombiezen.com/go/log"
 )
 
 //https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apache-maven-3.3.3-bin.tar.gz
@@ -61,7 +61,7 @@ func (bt mavenBuildTool) setup(ctx context.Context) error {
 	cmdPath := fmt.Sprintf("%s/bin", mavenDir)
 	currentPath := os.Getenv("PATH")
 	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
-	log.Infof("Setting PATH to %s", newPath)
+	log.Infof(ctx, "Setting PATH to %s", newPath)
 	os.Setenv("PATH", newPath)
 
 	return nil
@@ -72,20 +72,20 @@ func (bt mavenBuildTool) install(ctx context.Context) error {
 	mavenDir := bt.mavenDir()
 
 	if _, err := os.Stat(mavenDir); err == nil {
-		log.Infof("Maven v%s located in %s!", bt.version, mavenDir)
+		log.Infof(ctx, "Maven v%s located in %s!", bt.version, mavenDir)
 	} else {
-		log.Infof("Will install Maven v%s into %s", bt.version, bt.installDir())
+		log.Infof(ctx, "Will install Maven v%s into %s", bt.version, bt.installDir())
 		downloadUrl := bt.downloadURL()
 
-		log.Infof("Downloading Maven from URL %s...", downloadUrl)
+		log.Infof(ctx, "Downloading Maven from URL %s...", downloadUrl)
 		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
 		if err != nil {
-			log.Errorf("Unable to download: %v", err)
+			log.Errorf(ctx, "Unable to download: %v", err)
 			return err
 		}
 		err = archiver.Unarchive(localFile, bt.installDir())
 		if err != nil {
-			log.Errorf("Unable to decompress: %v", err)
+			log.Errorf(ctx, "Unable to decompress: %v", err)
 			return err
 		}
 

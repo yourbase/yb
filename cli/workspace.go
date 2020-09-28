@@ -13,12 +13,12 @@ import (
 	"github.com/johnewart/subcommands"
 	pkg "github.com/yourbase/yb/packages"
 	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/plumbing/log"
 	ybtypes "github.com/yourbase/yb/types"
 	"github.com/yourbase/yb/workspace"
 	"gopkg.in/src-d/go-git.v4"
 	gitplumbing "gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
+	"zombiezen.com/go/log"
 )
 
 type WorkspaceCmd struct {
@@ -56,24 +56,24 @@ func (*workspaceLocationCmd) Usage() string {
 func (w *workspaceLocationCmd) SetFlags(f *flag.FlagSet) {
 }
 
-func (w *workspaceLocationCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (w *workspaceLocationCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	// check if we're just a package
 	if plumbing.PathExists(ybtypes.MANIFEST_FILE) {
 		currentPath, _ := filepath.Abs(".")
 		_, pkgName := filepath.Split(currentPath)
 		pkg, err := pkg.LoadPackage(pkgName, currentPath)
 		if err != nil {
-			log.Errorf("Error loading package '%s': %v", pkgName, err)
+			log.Errorf(ctx, "Error loading package '%s': %v", pkgName, err)
 			return subcommands.ExitFailure
 		}
 
-		log.Infoln(pkg.BuildRoot())
+		log.Infof(ctx, "%s", pkg.BuildRoot())
 		return subcommands.ExitSuccess
 	} else {
 		ws, err := workspace.LoadWorkspace()
 
 		if err != nil {
-			log.Errorf("No package here, and no workspace, nothing to do!")
+			log.Errorf(ctx, "No package here, and no workspace, nothing to do!")
 			return subcommands.ExitFailure
 		}
 		fmt.Println(ws.Root()) // No logging used, because this can be used by scripts
@@ -96,26 +96,26 @@ func (w *workspaceCreateCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&w.name, "name", "", "Workspace name")
 }
 
-func (w *workspaceCreateCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (w *workspaceCreateCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	if len(w.name) == 0 {
-		log.Errorf("No name provided!")
+		log.Errorf(ctx, "No name provided!")
 		return subcommands.ExitFailure
 	}
 
 	err := os.Mkdir(w.name, 0700)
 	if err != nil {
-		log.Errorf("Workspace already exists!")
+		log.Errorf(ctx, "Workspace already exists!")
 		return subcommands.ExitFailure
 	}
 
 	configPath, _ := filepath.Abs(filepath.Join(w.name, "config.yml"))
 	header := fmt.Sprintf("# Workspace config for %s", w.name)
 	if err := ioutil.WriteFile(configPath, []byte(header), 0600); err != nil {
-		log.Errorf("Unable to create initial config as %s: %v", configPath, err)
+		log.Errorf(ctx, "Unable to create initial config as %s: %v", configPath, err)
 		return subcommands.ExitFailure
 	}
 
-	log.Infof("Created new workspace %s", w.name)
+	log.Infof(ctx, "Created new workspace %s", w.name)
 	return subcommands.ExitSuccess
 
 }
@@ -156,17 +156,17 @@ func (w *workspaceAddCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...int
 		cloneDir = cloneDir[0:offset]
 	}
 
-	log.Infof("Cloning %s into %s...", repository, cloneDir)
+	log.Infof(ctx, "Cloning %s into %s...", repository, cloneDir)
 
 	refName := "refs/heads/master"
 
 	if w.Branch != "" {
-		log.Infof("Using branch %s", w.Branch)
+		log.Infof(ctx, "Using branch %s", w.Branch)
 		refName = fmt.Sprintf("refs/heads/%s", w.Branch)
 	}
 
 	if w.Tag != "" {
-		log.Infof("Using tag %s", w.Tag)
+		log.Infof(ctx, "Using tag %s", w.Tag)
 		refName = fmt.Sprintf("refs/tags/%s", w.Tag)
 	}
 
@@ -182,8 +182,8 @@ func (w *workspaceAddCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...int
 	_, err := git.PlainClone(cloneDir, false, &cloneOpts)
 
 	if err != nil {
-		log.Errorf("Error: %v", err)
-		log.Warnln("Authentication required")
+		log.Errorf(ctx, "Error: %v", err)
+		log.Warnf(ctx, "Authentication required")
 
 		// Try again with HTTP Auth
 		// TODO only do this if the URL has github?
@@ -191,7 +191,7 @@ func (w *workspaceAddCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...int
 
 		var auth http.BasicAuth
 		if exists {
-			log.Infof("Using GitHub token")
+			log.Infof(ctx, "Using GitHub token")
 			auth = http.BasicAuth{Username: "yourbase", Password: githubtoken}
 		} else {
 
@@ -216,7 +216,7 @@ func (w *workspaceAddCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...int
 
 		_, err := git.PlainClone(cloneDir, false, &cloneOpts)
 		if err != nil {
-			log.Errorf("Unable to clone repository, even with authentication: %v", err)
+			log.Errorf(ctx, "Unable to clone repository, even with authentication: %v", err)
 			return subcommands.ExitFailure
 		}
 	}
@@ -239,11 +239,11 @@ func (w *workspaceTargetCmd) SetFlags(f *flag.FlagSet) {}
 func (w *workspaceTargetCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	packageName := f.Args()[0]
 
-	log.Infof("Setting %s as target", packageName)
+	log.Infof(ctx, "Setting %s as target", packageName)
 
 	workspace, err := workspace.LoadWorkspace()
 	if err != nil {
-		log.Errorf("Can't load workspace: %v", err)
+		log.Errorf(ctx, "Can't load workspace: %v", err)
 		return subcommands.ExitFailure
 	}
 
