@@ -54,5 +54,5 @@ esac
   --define="version $rpmversion" \
   --define="_rpmdir $outdir" \
   -bb "$srcroot/yb.spec" ) 1>&2
-echo "${rpmarch}/yb-${rpmversion}-1-${rpmarch}.rpm"
+echo "${rpmarch}/yb-${rpmversion}-1.${rpmarch}.rpm"
 
