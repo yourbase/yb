@@ -6,3 +6,4 @@ yb
 /yb_*_*_*.zip
 /yb-*-*-*.tgz
 *.deb
+*.rpm

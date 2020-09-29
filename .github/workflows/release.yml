@@ -80,3 +80,33 @@ jobs:
         asset_path: ./${{ steps.package.outputs.file }}
         asset_name: ${{ steps.package.outputs.file }}
         asset_content_type: application/vnd.debian.binary-package
+  rpm:
+    name: RPM
+    runs-on: ubuntu-18.04
+    steps:
+    - name: Install rpm
+      run: sudo apt-get install rpm
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: "^1.15"
+    - name: Check out code
+      uses: actions/checkout@v2
+    - name: Download dependencies
+      run: go mod download
+      env:
+        GO111MODULE: on
+    - id: package
+      name: Package release
+      run: ./release.sh rpm
+      env:
+        GO111MODULE: on
+    - name: Upload binary package
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./${{ steps.package.outputs.file }}
+        asset_name: ${{ steps.package.outputs.name }}
+        asset_content_type: application/octet-stream
