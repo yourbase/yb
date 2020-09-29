@@ -22,32 +22,32 @@
 set -euo pipefail
 
 if [ -z "${VERSION:-}" ]; then
-    tag_ref="${YB_GIT_BRANCH:-${GITHUB_REF:-}}"
-    echo "Extracting version from tag ref $tag_ref" 1>&2
-    VERSION="$(echo "$tag_ref" | sed -e 's|refs/tags/||g')"
-    export VERSION
+  tag_ref="${YB_GIT_BRANCH:-${GITHUB_REF:-}}"
+  echo "Extracting version from tag ref $tag_ref" 1>&2
+  VERSION="$(echo "$tag_ref" | sed -e 's|^refs/tags/||')"
+  export VERSION
 fi
 
 if [ -z "$VERSION" ]; then
-    echo "No version provided, won't release" 1>&2
-    exit 1
+  echo "No version provided, won't release" 1>&2
+  exit 1
 fi
 
 if echo "$VERSION" | grep -vqo '^v'; then
-    echo "Doesn't start with a \"v\" when it should, not releasing" 1>&2
-    exit 1
+  echo "Doesn't start with a \"v\" when it should, not releasing" 1>&2
+  exit 1
 fi
 
 if echo "$VERSION" | grep -q -- '-[-.a-zA-Z0-9]\+'; then
-    # Pre-release
-    export CHANNEL="preview"
+  # Pre-release
+  export CHANNEL="preview"
 else
-    export CHANNEL="stable"
+  export CHANNEL="stable"
 fi
 
 if [[ -z "${AWS_ACCESS_KEY_ID:-}" || -z "${AWS_SECRET_ACCESS_KEY:-}" ]]; then
-    echo "No AWS credentials, giving up" 1>&2
-    exit 1
+  echo "No AWS credentials, giving up" 1>&2
+  exit 1
 fi
 
 zipname="$( ./package.sh )"
@@ -55,10 +55,10 @@ zipname="$( ./package.sh )"
 # dryrunnable echoes a command to stderr, but doesn't run it if
 # TEST_RELEASE is set.
 dryrunnable() {
-    echo "# $*" 1>&2
-    if [[ -z "${TEST_RELEASE:-}" ]]; then
-        "$@"
-    fi
+  echo "# $*" 1>&2
+  if [[ -z "${TEST_RELEASE:-}" ]]; then
+    "$@"
+  fi
 }
 
 dryrunnable aws s3 cp "${zipname}_cats.zip" "s3://yourbase-cats-bundles/${zipname}.zip"
