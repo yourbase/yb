@@ -56,6 +56,8 @@ jobs:
     name: Debian
     runs-on: ubuntu-18.04
     steps:
+    - name: Install Debian tooling
+      run: sudo apt-get install -y --no-install-recommends dpkg lintian
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
@@ -85,7 +87,7 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
     - name: Install rpm
-      run: sudo apt-get install rpm
+      run: sudo apt-get install -y --no-install-recommends rpm
     - name: Set up Go
       uses: actions/setup-go@v2
       with:

@@ -21,7 +21,7 @@
 set -euo pipefail
 
 if [[ $# -ne 0 ]]; then
-  echo "usage: VERSION=vX.Y.Z package.sh" 1>&2
+  echo "usage: VERSION=vX.Y.Z debpackage.sh" 1>&2
   exit 64
 fi
 
