@@ -22,7 +22,7 @@
 set -euo pipefail
 
 if [[ $# -gt 1 ]]; then
-  echo "usage: release.sh [zip|debian]" 1>&2
+  echo "usage: release.sh [zip|debian|rpm]" 1>&2
   exit 64
 fi
 
@@ -77,8 +77,13 @@ case "$mode" in
     debfile="$( ./debpackage.sh )"
     echo "::set-output name=file::${debfile}"
     ;;
+  rpm)
+    rpmfile="$( ./rpmpackage.sh )"
+    echo "::set-output name=name::$( basename "$rpmfile" )"
+    echo "::set-output name=file::${rpmfile}"
+    ;;
   *)
-    echo "usage: release.sh [debian|zip]" 1>&2
+    echo "usage: release.sh [debian|zip|rpm]" 1>&2
     exit 1
     ;;
 esac
