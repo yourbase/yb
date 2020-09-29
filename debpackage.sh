@@ -73,7 +73,7 @@ mkdir -m 755 \
   "$stageroot/usr/share/lintian" \
   "$stageroot/usr/share/lintian/overrides"
 install -m 644 \
-  "$srcroot/debian/gg.lintian-overrides" \
+  "$srcroot/debian/yb.lintian-overrides" \
   "$stageroot/usr/share/lintian/overrides/yb"
 
 # Create binary package.
