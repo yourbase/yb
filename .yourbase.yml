@@ -20,83 +20,13 @@ build_targets:
       - bash -c "cd integration-tests; ../yb build -no-container ruby"
       - bash -c "cd integration-tests; ../yb build -no-container java"
 
-  - name: release
-    build_after:
-      - default
-    dependencies:
-      build:
-        - python:3.7
-    commands:
-      - apt-get update
-      - apt-get install -y --no-install-recommends zip
-      - pip install awscli
-      - bash package.sh
-      - bash release.sh 
-
-  - name: local_test_release
-    build_after:
-      - default
-    dependencies:
-      build:
-        - python:3.7
-    environment:
-      - TEST_RELEASE=test_me
-      - AWS_ACCESS_KEY_ID=only_smeagle_knows
-      - AWS_SECRET_ACCESS_KEY=only_smeagle_knows
-      - RELEASE_KEY=not known
-      - RELEASE_TOKEN=also unknown
-      - YB_GIT_BRANCH=refs/tags/v0.0.0-rc0
-    commands:
-      - apt-get update
-      - apt-get install -y --no-install-recommends zip
-      - pip install awscli
-      - bash package.sh
-      - bash release.sh
-      - rm -f yb
-      - unzip yb_v0.0.0-rc0_linux_amd64.zip
-      - mv yb_v0.0.0-rc0_linux_amd64/yb yb
-      - rmdir yb_v0.0.0-rc0_linux_amd64/
-      - ls -lh yb
-      - ./yb version
-      - rm -f yb
-      - tar xf yb-linux-amd64-v0.0.0-rc0.tgz
-      - mv yb-linux-amd64 yb
-      - ls -lh yb
-      - ./yb version
-
-  - name: linux
-    build_after:
-      - default
-    tags:
-      os: linux
-    environment: 
-      - GOOS=linux
-      - GOARCH=amd64
-    commands:
-      - go build -o yb-linux-amd64
-
-  - name: darwin
-    build_after:
-      - default
-    tags:
-      os: darwin
-    environment:
-      - GOOS=darwin
-      - GOARCH=amd64
-    commands:
-      - go build -o yb-darwin-amd64
-
 ci:
   builds:
     - name: test_build
       build_target: default
-      when: branch IS 'main' OR branch IS 'next' OR action IS 'pull_request'
+      when: branch IS 'main' OR action IS 'pull_request'
 
     - name: test_integration
       build_target: integration
-      when: branch IS 'main' OR branch IS 'next' OR action IS 'pull_request'
-
-    - name: release
-      build_target: release
-      when: tagged IS true
+      when: branch IS 'main' OR action IS 'pull_request'
 
