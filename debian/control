@@ -1,0 +1,13 @@
+Package: yb
+Version:
+Architecture: any
+Maintainer: YourBase <noreply@yourbase.io>
+Depends: libc6 (>= 2.4)
+Section: devel
+Priority: optional
+Homepage: https://yourbase.io/
+Description: Build tool optimized for local + remote development
+ YourBase is a build tool that makes working on projects much more
+ delightful. Stop worrying about dependencies, keep your CI build process
+ in-sync with your local development process and onboard new team members
+ with ease.

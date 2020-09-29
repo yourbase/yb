@@ -37,6 +37,7 @@ echo "CHANNEL=$CHANNEL" 1>&2
 echo "COMMIT=$COMMIT" 1>&2
 
 go build \
+  -buildmode=pie \
   -ldflags "-X 'main.version=$VERSION' -X 'main.date=$(date -u '+%FT%TZ')' -X 'main.channel=$CHANNEL' -X 'main.commitSHA=$COMMIT' -s -w" \
   -o "$1" \
   github.com/yourbase/yb 1>&2

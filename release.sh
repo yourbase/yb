@@ -21,6 +21,13 @@
 
 set -euo pipefail
 
+if [[ $# -gt 1 ]]; then
+  echo "usage: release.sh [zip|debian]" 1>&2
+  exit 64
+fi
+
+mode="${1:-zip}"
+
 if [ -z "${VERSION:-}" ]; then
   tag_ref="${YB_GIT_BRANCH:-${GITHUB_REF:-}}"
   echo "Extracting version from tag ref $tag_ref" 1>&2
@@ -45,13 +52,6 @@ else
   export CHANNEL="stable"
 fi
 
-if [[ -z "${AWS_ACCESS_KEY_ID:-}" || -z "${AWS_SECRET_ACCESS_KEY:-}" ]]; then
-  echo "No AWS credentials, giving up" 1>&2
-  exit 1
-fi
-
-zipname="$( ./package.sh )"
-
 # dryrunnable echoes a command to stderr, but doesn't run it if
 # TEST_RELEASE is set.
 dryrunnable() {
@@ -61,5 +61,24 @@ dryrunnable() {
   fi
 }
 
-dryrunnable aws s3 cp "${zipname}_cats.zip" "s3://yourbase-cats-bundles/${zipname}.zip"
-echo "::set-output name=file::${zipname}.zip"
+case "$mode" in
+  zip)
+    if [[ -z "${AWS_ACCESS_KEY_ID:-}" || -z "${AWS_SECRET_ACCESS_KEY:-}" ]]; then
+      echo "No AWS credentials, giving up" 1>&2
+      exit 1
+    fi
+
+    zipname="$( ./package.sh )"
+
+    dryrunnable aws s3 cp "${zipname}_cats.zip" "s3://yourbase-cats-bundles/${zipname}.zip"
+    echo "::set-output name=file::${zipname}.zip"
+    ;;
+  debian)
+    debfile="$( ./debpackage.sh )"
+    echo "::set-output name=file::${debfile}"
+    ;;
+  *)
+    echo "usage: release.sh [debian|zip]" 1>&2
+    exit 1
+    ;;
+esac
