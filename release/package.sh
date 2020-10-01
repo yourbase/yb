@@ -30,7 +30,7 @@ fi
 
 # Identify directories and create temporary staging directory.
 outdir="$( pwd )"
-srcroot="$(dirname "${BASH_SOURCE[0]}")"
+srcroot="$(dirname "$(dirname "${BASH_SOURCE[0]}")" )"
 stageroot="$(mktemp -d 2>/dev/null || mktemp -d -t yb_release)"
 cleanup() {
   rm -rf "$stageroot"
@@ -54,7 +54,7 @@ mkzip() {
 }
 
 # First: create minimal fleet distribution.
-./build.sh "$distroot/yb"
+"$srcroot/release/build.sh" "$distroot/yb"
 mkzip "${bundle}_cats.zip"
 
 # Next: create end-user-friendly distribution.

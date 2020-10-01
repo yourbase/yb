@@ -61,6 +61,7 @@ dryrunnable() {
   fi
 }
 
+srcroot="$(dirname "$(dirname "${BASH_SOURCE[0]}")" )"
 case "$mode" in
   zip)
     if [[ -z "${AWS_ACCESS_KEY_ID:-}" || -z "${AWS_SECRET_ACCESS_KEY:-}" ]]; then
@@ -68,17 +69,17 @@ case "$mode" in
       exit 1
     fi
 
-    zipname="$( ./package.sh )"
+    zipname="$( "$srcroot/release/package.sh" )"
 
     dryrunnable aws s3 cp "${zipname}_cats.zip" "s3://yourbase-cats-bundles/${zipname}.zip"
     echo "::set-output name=file::${zipname}.zip"
     ;;
   debian)
-    debfile="$( ./debpackage.sh )"
+    debfile="$( "$srcroot/release/debpackage.sh" )"
     echo "::set-output name=file::${debfile}"
     ;;
   rpm)
-    rpmfile="$( ./rpmpackage.sh )"
+    rpmfile="$( "$srcroot/release/rpmpackage.sh" )"
     echo "::set-output name=name::$( basename "$rpmfile" )"
     echo "::set-output name=file::${rpmfile}"
     ;;

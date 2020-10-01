@@ -45,7 +45,7 @@ jobs:
       env:
         GO111MODULE: on
     - name: Build binary
-      run: ./build.sh yb
+      run: release/build.sh yb
       env:
         GO111MODULE: on
     - name: Upload binary

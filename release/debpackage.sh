@@ -27,7 +27,7 @@ fi
 
 # Identify directories and create temporary staging directory.
 outdir="$( pwd )"
-srcroot="$(dirname "${BASH_SOURCE[0]}")"
+srcroot="$(dirname "$(dirname "${BASH_SOURCE[0]}")" )"
 stageroot="$(mktemp -d 2>/dev/null || mktemp -d -t yb_release)"
 cleanup() {
   rm -rf "$stageroot"
@@ -66,7 +66,7 @@ install -m 644 "$srcroot/debian/control" "$stageroot/DEBIAN/control"
 sed -i -e "s/^Version:.*/Version: $debversion/" "$stageroot/DEBIAN/control"
 sed -i -e "s/^Architecture: any\$/Architecture: $debarch/" "$stageroot/DEBIAN/control"
 install -m 644 "$srcroot/debian/copyright" "$stageroot/usr/share/doc/yb/copyright"
-"$srcroot/build.sh" "$stageroot/usr/bin/yb"
+"$srcroot/release/build.sh" "$stageroot/usr/bin/yb"
 chmod 755 "$stageroot/usr/bin/yb"
 
 mkdir -m 755 \

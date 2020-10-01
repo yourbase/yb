@@ -26,7 +26,7 @@ fi
 
 # Identify directories and create temporary staging directory.
 outdir="$( pwd )"
-srcroot="$(dirname "${BASH_SOURCE[0]}")"
+srcroot="$(dirname "$(dirname "${BASH_SOURCE[0]}")" )"
 
 # Compute version.
 VERSION="${VERSION:-DEVELOPMENT}"
@@ -53,6 +53,6 @@ esac
   --build-in-place \
   --define="version $rpmversion" \
   --define="_rpmdir $outdir" \
-  -bb "$srcroot/yb.spec" ) 1>&2
+  -bb release/yb.spec ) 1>&2
 echo "${rpmarch}/yb-${rpmversion}-1.${rpmarch}.rpm"
 
