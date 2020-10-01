@@ -18,6 +18,8 @@ name: Release
 on:
   release:
     types: [published]
+env:
+  AWS_REGION: us-west-2
 jobs:
   unix:
     name: Unix
