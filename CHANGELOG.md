@@ -1,0 +1,31 @@
+# yb Release Notes
+
+The format is based on [Keep a Changelog][], and this project adheres to
+[Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+[Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
+
+## [Unreleased][]
+
+[Unreleased]: https://github.com/gg-scm/gg/compare/v0.0.55...HEAD
+
+### Added
+
+-  Add `yb token` command
+
+### Changed
+
+-  We are no longer using Equinox for releases. See the
+   [README](https://github.com/yourbase/yb/blob/main/README.md) for installation
+   instructions.
+-  Release binaries are now smaller due to debug symbol stripping.
+-  Release binaries are now built as [position-independent executables][].
+-  The output of timing information at the end of a build has changed formatting
+   slightly to accommodate more sophisticated breakdowns in the future.
+
+[position-independent executables]: https://en.wikipedia.org/wiki/Position-independent_code
+
+### Fixed
+
+-  Fixes to OpenJDK and Anaconda buildpacks
+   ([#170](https://github.com/yourbase/yb/pull/170))

@@ -1,4 +1,6 @@
-![YourBase](docs/images/Logo-Horiz-On-White@1x.jpg "YourBase")
+# YourBase CLI
+
+<img src="docs/images/Logo-Horiz-On-White@1x.jpg" width="384" height="112" alt="YourBase">
 
 [![YourBase Community Slack](https://img.shields.io/badge/slack-@yourbase/community-blue.svg?logo=slack)](https://slack.yourbase.io)
 
@@ -32,30 +34,54 @@ The primary features of the YB tooling are:
 
 ![magic!](http://www.reactiongifs.com/r/mgc.gif)
 
-# How to use it
+## Installation
 
-1. Install Docker if you don't have it: https://hub.docker.com/search/?type=edition&offering=community (We know this can be annoying; sorry about that.) If you're using WSL on Windows, you will need to use [Docker in WSL2](https://code.visualstudio.com/blogs/2020/03/02/docker-in-wsl2).
-1. Download and install `yb`. You can do this using Homebrew:
-    ```sh
-    brew install yourbase/core/yb
-    ```
-    Or by building it yourself with a recent version of Go:
-    ```sh
-    go get -u github.com/yourbase/yb
-    ```
-    Or by downloading the binary: https://dl.equinox.io/yourbase/yb/stable
-1. Clone a package from GitHub 
-1. Write a simple build manifest (more below)
-1. Build awesome things!
+yb uses Docker for isolating the build environment. You can install Docker here:
+https://hub.docker.com/search/?type=edition&offering=community
 
-# Getting Started
+If you're using WSL on Windows, you will need to use [Docker in WSL2](https://code.visualstudio.com/blogs/2020/03/02/docker-in-wsl2).
+
+### macOS
+
+You can install `yb` using [Homebrew][]:
+
+```sh
+brew install yourbase/yourbase/yb
+```
+
+or you can download a binary from the [latest GitHub release][] and place it
+in your `PATH`.
+
+[Homebrew]: https://brew.sh/
+[latest GitHub release]: https://github.com/yourbase/yb/releases/latest
+
+### Linux (and WSL2)
+
+On Debian-based distributions (including Ubuntu), you can use our APT
+repository:
+
+```sh
+# Import the signing key
+sudo curl -fsSLo /etc/apt/trusted.gpg.d/yourbase.asc https://apt.yourbase.io/signing-key.asc
+
+# Add the YourBase APT repository to the list of sources
+echo "deb [signed-by=/etc/apt/trusted.gpg.d/yourbase.gpg] https://apt.yourbase.io stable main" | sudo tee /etc/apt/sources.list.d/yourbase.list
+echo "deb-src [signed-by=/etc/apt/trusted.gpg.d/yourbase.gpg] https://apt.yourbase.io stable main" | sudo tee -a /etc/apt/sources.list.d/yourbase.list
+
+# Update the package list and install yb
+sudo apt-get update && sudo apt-get install yb
+```
+
+For Red Hat, Fedora, or CentOS, you can install the RPM from the
+[latest GitHub release][]. For other distributions, copy the Linux binary from
+the release into your `PATH`.
+
+## Getting Started
 
 To use yb you need a `.yourbase.yml` file in your repository with
 enough information to build your project:
 
-## Example .yourbase.yml
-
-```
+```yaml
 dependencies:
    build:
      - python:3.7
@@ -72,10 +98,10 @@ ci:
       build_target: default
 ```
 
-The YourBase config was designed from the ground up to be a fast, composable
-and easy to use method to declare build targets. Targets defined in the config
-are built in an isolated and uniform container, so local builds are similar to
-remote builds.
+The YourBase configuration was designed from the ground up to be a fast,
+composable and easy to use method to declare build targets. Targets defined
+in the configuration are built in an isolated and uniform container, so local
+builds are similar to remote builds.
 
 The YourBase YAML replaces both legacy CI configs and container build
 configuration formats like Dockerfile. It uses containers underneath and you can
@@ -85,110 +111,74 @@ container image.
 For more examples and a complete reference to the YAML configuration syntax,
 see https://docs.yourbase.io/configuration/yourbase_yaml.html
 
-## Test the .yourbase.yml
-
-You can test the configuration locally before committing it by calling `yb checkconfig` in the the root directory of your repository:
-
-`yb checkconfig`
-
-Make sure you have a `.yourbase.yml` file in that directory.
-
-## Run your first local build
+### Run your first local build
 
 If you created a `default` target, you can build it with:
 
-`yb build`
+```sh
+yb build
+```
 
 Or if you have a different `build_target`, try:
 
-`yb build <target name>`
+```sh
+yb build <target name>
+```
 
-## Run the first remote build
+### Run the first remote build
 
-To use remote builds, first you have to sign-in to YourBase.io with. Run this to get a sign-in URL:
+To use remote builds, first you have to sign-in to YourBase.io.
+Run this to get a sign-in URL:
 
-`yb login`
+```sh
+yb login
+```
 
 Then try to run a remote build. To build the `default` target, just do:
 
-`yb remotebuild`
+```sh
+yb remotebuild
+```
 
 or if you have a different target in your config:
 
-`yb remotebuild <target>`
+```sh
+yb remotebuild <target>
+```
 
 You can watch the build/test stream both locally and in the build dashboard at https://app.yourbase.io
 
-## Triggering Builds from GitHub pushes
+### Triggering Builds from GitHub pushes
 
-You can also build code after it's pushed to a GitHub repository. Install the
-  free `YourBase Accelerated CI app for GitHub` at https://github.com/apps/yourbase. 
+You can also build code after every push to a GitHub repository. Install the
+[GitHub application](https://github.com/apps/yourbase), then push a change to
+your repository. After you do, you should see a new build in the
+[YourBase dashboard](https://app.yourbase.io).
 
-Then push any change to GitHub, on any branch. If the `.yourbase.yml` file is in that change and is valid, you should see your build in the dashboard.
+By default, the YourBase Accelerated CI runs all build targets whenever there
+is a GitHub push event. You can change it to only build after certain events or
+targets by specifying conditions for build service builds:
 
-  - YourBase GitHub app: https://github.com/apps/yourbase
-  - Dashboard: https://app.yourbase.io
-
-### Build Conditions
-
-By default, the YourBase Accelerated CI runs the specified build targets whenever there is
-a GitHub push event. You can change it to only build after certain events,
-by specifying conditions for build service builds:
-
-```
-   ci:
-     builds:
-       - name: tests
-         build_target: default
-         when: branch is 'master' OR action is 'pull_request'
+```yaml
+ci:
+  builds:
+    - name: tests
+      build_target: default
+      when: branch is 'master' OR action is 'pull_request'
 ```
 
-# Documentation
+## Documentation
 
-See the complete documentation and configuration reference at http://docs.yourbase.io.
+More documentation available at http://docs.yourbase.io
 
-# Self-update
+## Contributing 
 
-To update to a new *stable* version of yb, use:
+We welcome contributions to this project! Please see the [contributor's guide][]
+for more information. 
 
-`yb update`
+[contributor's guide]: CONTRIBUTING.md
 
-# Using non-stable versions:
+## License 
 
-You can change yb to other channels by using `-channel`:
-
-`yb update -channel=preview`
-
-Currently, the _inner_ yb that runs inside the build container will use the stable channel by default. To change that, set the environment variable `YB_UPDATE_CHANNEL=preview` before running yb.
-
-# Contributing 
-
-We welcome contributions to this CLI, please see the CONTRIBUTING file for more
-information. 
-
-# Two channels
-
-Currently the Preview channel has all the release candidates for what we call "Runtime Context" yb, where the main subcommands run in a Docker container:
-
-`yb exec`
-Will prepare and execute a long running container with runtime dependencies, startup commands and environment.
-
-`yb run`
-It will reuse the same container as the one created from the build target definition (i.e. with its dependencies and so forth).
-
-Current stable only runs in a container when building, but it can be turned off by:
-
-`yb build -no-container [build-target]`
-
-We're not updating the `unstable` channel anymore, we only have `stable` and `preview` right now.
-
-# Runtime-Context
-
-What we mean by "runtime-context" is that this branch and versions (v0.1.x and v0.2.x) doesn't inject yb in the container, we send commands directly to the docker daemon (`docker exec ...`) and set them up as defined in the YAML.
-
-
-# License 
-
-This project is licensed under the Apache 2.0 license, please see the LICENSE
-file for more information.
+This project is licensed under an [Apache 2.0 license](LICENSE.md).
 
