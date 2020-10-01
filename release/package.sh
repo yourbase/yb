@@ -58,7 +58,7 @@ mkzip() {
 mkzip "${bundle}_cats.zip"
 
 # Next: create end-user-friendly distribution.
-cp "$srcroot/README.md" "$srcroot/LICENSE" "$distroot/"
+cp "$srcroot/README.md" "$srcroot/LICENSE" "$srcroot/CHANGELOG.md" "$distroot/"
 mkzip "${bundle}.zip"
 
 # Output base name of bundle.
