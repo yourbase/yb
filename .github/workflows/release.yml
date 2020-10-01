@@ -57,7 +57,11 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
     - name: Install Debian tooling
-      run: sudo apt-get install -y --no-install-recommends dpkg lintian
+      run: sudo apt-get update && sudo apt-get install -y --no-install-recommends dpkg gnupg lintian
+    - name: Import signing key
+      run: echo "$APT_SIGNING_KEY" | gpg --import --batch --no-tty
+      env:
+        APT_SIGNING_KEY: ${{secrets.APT_SIGNING_KEY}}
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
@@ -68,11 +72,17 @@ jobs:
       run: go mod download
       env:
         GO111MODULE: on
+    - name: Install aptblob
+      run: cd "$HOME" && GOPATH="$HOME" go get zombiezen.com/go/aptblob
+      env:
+        GO111MODULE: on
     - id: package
       name: Package release
       run: release/release.sh debian
       env:
         GO111MODULE: on
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     - name: Upload binary package
       uses: actions/upload-release-asset@v1
       env:

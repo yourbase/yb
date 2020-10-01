@@ -64,18 +64,24 @@ dryrunnable() {
 srcroot="$(dirname "$(dirname "${BASH_SOURCE[0]}")" )"
 case "$mode" in
   zip)
-    if [[ -z "${AWS_ACCESS_KEY_ID:-}" || -z "${AWS_SECRET_ACCESS_KEY:-}" ]]; then
-      echo "No AWS credentials, giving up" 1>&2
-      exit 1
-    fi
-
     zipname="$( "$srcroot/release/package.sh" )"
-
     dryrunnable aws s3 cp "${zipname}_cats.zip" "s3://yourbase-cats-bundles/${zipname}.zip"
     echo "::set-output name=file::${zipname}.zip"
     ;;
   debian)
     debfile="$( "$srcroot/release/debpackage.sh" )"
+    dryrunnable aptblob upload \
+      -k 86669479255976751E2352D6649960422CC7F0F8 \
+      s3://yourbase-apt-repo \
+      preview \
+      "$debfile"
+    if [[ "$CHANNEL" == stable ]]; then
+      dryrunnable aptblob upload \
+        -k 86669479255976751E2352D6649960422CC7F0F8 \
+        s3://yourbase-apt-repo \
+        stable \
+        "$debfile"
+    fi
     echo "::set-output name=file::${debfile}"
     ;;
   rpm)
