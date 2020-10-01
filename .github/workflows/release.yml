@@ -78,7 +78,7 @@ jobs:
         GO111MODULE: on
     - id: package
       name: Package release
-      run: release/release.sh debian
+      run: PATH="$HOME/bin:$PATH" release/release.sh debian
       env:
         GO111MODULE: on
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
