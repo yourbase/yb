@@ -19,7 +19,7 @@ with ease.
 %install
 mkdir -p %{buildroot}/usr/bin/
 # TODO(light): This could be under %build.
-VERSION=v%{version} ./build.sh %{buildroot}/usr/bin/yb
+VERSION=v%{version} release/build.sh %{buildroot}/usr/bin/yb
 chmod 755 %{buildroot}/usr/bin/yb
 
 %files
