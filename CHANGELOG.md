@@ -5,9 +5,11 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
 
-## [Unreleased][]
+## [0.3.0][]
 
-[Unreleased]: https://github.com/gg-scm/gg/compare/v0.0.55...HEAD
+Version 0.3 is the first release with our new release automation.
+
+[0.3.0]: https://github.com/yourbase/yb/releases/tag/v0.3.0
 
 ### Added
 
