@@ -22,8 +22,7 @@ func mergeDeps(b *types.BuildManifest) error {
 		}
 		globalDepsMap[tool] = version
 	}
-	for i := range targetList {
-		tgt := &targetList[i]
+	for _, tgt := range targetList {
 		tgtToolMap := make(map[string]string)
 		for tool, version := range globalDepsMap {
 			tgtToolMap[tool] = version

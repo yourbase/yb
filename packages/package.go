@@ -28,30 +28,28 @@ type Package struct {
 	Manifest types.BuildManifest
 }
 
-func LoadPackage(name string, path string) (Package, error) {
+func LoadPackage(name string, path string) (*Package, error) {
 	manifest := types.BuildManifest{}
 	buildYaml := filepath.Join(path, types.MANIFEST_FILE)
 	if _, err := os.Stat(buildYaml); os.IsNotExist(err) {
-		return Package{}, fmt.Errorf("Can't load %s: %v", types.MANIFEST_FILE, err)
+		return nil, fmt.Errorf("Can't load %s: %v", types.MANIFEST_FILE, err)
 	}
 
 	buildyaml, _ := ioutil.ReadFile(buildYaml)
 	err := yaml.Unmarshal([]byte(buildyaml), &manifest)
 	if err != nil {
-		return Package{}, fmt.Errorf("Error loading %s for %s: %v", types.MANIFEST_FILE, name, err)
+		return nil, fmt.Errorf("Error loading %s for %s: %v", types.MANIFEST_FILE, name, err)
 	}
 	err = mergeDeps(&manifest)
 	if err != nil {
-		return Package{}, fmt.Errorf("Error loading %s for %s: %v", types.MANIFEST_FILE, name, err)
+		return nil, fmt.Errorf("Error loading %s for %s: %v", types.MANIFEST_FILE, name, err)
 	}
 
-	p := Package{
+	return &Package{
 		Path:     path,
 		Name:     name,
 		Manifest: manifest,
-	}
-
-	return p, nil
+	}, nil
 }
 
 func (p Package) BuildRoot() string {
@@ -85,7 +83,7 @@ func (p Package) BuildRoot() string {
 	return buildRoot
 }
 
-func (p Package) SetupBuildDependencies(ctx context.Context, target types.BuildTarget) error {
+func (p Package) SetupBuildDependencies(ctx context.Context, target *types.BuildTarget) error {
 	for _, dep := range target.Dependencies.Build {
 		if err := buildpacks.Install(ctx, p.BuildRoot(), p.Path, dep); err != nil {
 			return err

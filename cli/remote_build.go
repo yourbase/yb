@@ -93,7 +93,7 @@ func (p *RemoteCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface
 
 	manifest := targetPackage.Manifest
 
-	var target types.BuildTarget
+	var target *types.BuildTarget
 
 	if len(manifest.BuildTargets) == 0 {
 		target = manifest.Build
