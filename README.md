@@ -63,7 +63,7 @@ repository:
 sudo curl -fsSLo /etc/apt/trusted.gpg.d/yourbase.asc https://apt.yourbase.io/signing-key.asc
 
 # Add the YourBase APT repository to the list of sources
-echo "deb [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/yourbase.gpg] https://apt.yourbase.io stable main" | sudo tee /etc/apt/sources.list.d/yourbase.list
+echo "deb [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/yourbase.asc] https://apt.yourbase.io stable main" | sudo tee /etc/apt/sources.list.d/yourbase.list
 
 # Update the package list and install yb
 sudo apt-get update && sudo apt-get install yb
