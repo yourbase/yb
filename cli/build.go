@@ -24,6 +24,7 @@ import (
 	"github.com/yourbase/commons/xcontext"
 	"github.com/yourbase/narwhal"
 	ybconfig "github.com/yourbase/yb/config"
+	"github.com/yourbase/yb/internal/ybtrace"
 	"github.com/yourbase/yb/packages"
 	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/types"
@@ -90,7 +91,7 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 	global.SetTraceProvider(tp)
 
 	startTime := time.Now()
-	ctx, span := tracer().Start(ctx, "Build", trace.WithNewRoot())
+	ctx, span := ybtrace.Start(ctx, "Build", trace.WithNewRoot())
 	defer span.End()
 
 	if plumbing.InsideTheMatrix() {
@@ -262,7 +263,7 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 
 	var buildError error
 	for _, target := range buildTargets {
-		targetCtx, targetSpan := tracer().Start(ctx, target.Name, trace.WithAttributes(
+		targetCtx, targetSpan := ybtrace.Start(ctx, target.Name, trace.WithAttributes(
 			label.String("target", target.Name),
 		))
 		buildError = targetPackage.SetupBuildDependencies(targetCtx, target)
@@ -551,7 +552,7 @@ func RunCommands(ctx context.Context, config BuildConfiguration) error {
 	for _, cmdString := range target.Commands {
 		var stepError error
 
-		_, cmdSpan := tracer().Start(ctx, cmdString, trace.WithAttributes(
+		_, cmdSpan := ybtrace.Start(ctx, cmdString, trace.WithAttributes(
 			label.String("command", cmdString),
 		))
 		if strings.HasPrefix(cmdString, "cd ") {
