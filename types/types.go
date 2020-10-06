@@ -1,7 +1,7 @@
 package types
 
 import (
-	"github.com/johnewart/narwhal"
+	"github.com/yourbase/narwhal"
 )
 
 const (
@@ -11,17 +11,17 @@ const (
 )
 
 type BuildManifest struct {
-	Dependencies DependencySet `yaml:"dependencies"`
-	Sandbox      bool          `yaml:"sandbox"`
-	BuildTargets []BuildTarget `yaml:"build_targets"`
-	Build        BuildTarget   `yaml:"build"`
-	Exec         ExecPhase     `yaml:"exec"`
-	Package      PackagePhase  `yaml:"package"`
-	CI           CIInfo        `yaml:"ci"`
+	Dependencies DependencySet  `yaml:"dependencies"`
+	Sandbox      bool           `yaml:"sandbox"`
+	BuildTargets []*BuildTarget `yaml:"build_targets"`
+	Build        *BuildTarget   `yaml:"build"`
+	Exec         *ExecPhase     `yaml:"exec"`
+	Package      *PackagePhase  `yaml:"package"`
+	CI           *CIInfo        `yaml:"ci"`
 }
 
 type CIInfo struct {
-	CIBuilds []CIBuild `yaml:"builds"`
+	CIBuilds []*CIBuild `yaml:"builds"`
 }
 
 type CIBuild struct {
@@ -40,59 +40,107 @@ type DependencySet struct {
 }
 
 type ExecPhase struct {
-	Name         string                      `yaml:"name"`
-	Dependencies ExecDependencies            `yaml:"dependencies"`
-	Container    narwhal.ContainerDefinition `yaml:"container"`
-	Commands     []string                    `yaml:"commands"`
-	Ports        []string                    `yaml:"ports"`
-	Environment  map[string][]string         `yaml:"environment"`
-	LogFiles     []string                    `yaml:"logfiles"`
-	Sandbox      bool                        `yaml:"sandbox"`
-	HostOnly     bool                        `yaml:"host_only"`
-	BuildFirst   []string                    `yaml:"build_first"`
+	Name         string               `yaml:"name"`
+	Dependencies ExecDependencies     `yaml:"dependencies"`
+	Container    *ContainerDefinition `yaml:"container"`
+	Commands     []string             `yaml:"commands"`
+	Ports        []string             `yaml:"ports"`
+	Environment  map[string][]string  `yaml:"environment"`
+	LogFiles     []string             `yaml:"logfiles"`
+	Sandbox      bool                 `yaml:"sandbox"`
+	HostOnly     bool                 `yaml:"host_only"`
+	BuildFirst   []string             `yaml:"build_first"`
+}
+
+type ContainerDefinition struct {
+	Image         string   `yaml:"image"`
+	Mounts        []string `yaml:"mounts"`
+	Ports         []string `yaml:"ports"`
+	Environment   []string `yaml:"environment"`
+	Command       string   `yaml:"command"`
+	WorkDir       string   `yaml:"workdir"`
+	Privileged    bool
+	PortWaitCheck PortWaitCheck `yaml:"port_check"`
+	Label         string        `yaml:"label"`
+	ExecUserId    string
+	ExecGroupId   string
+	Namespace     string
+	LocalWorkDir  string
+}
+
+func (def *ContainerDefinition) ToNarwhal() *narwhal.ContainerDefinition {
+	return &narwhal.ContainerDefinition{
+		Image:         def.Image,
+		Mounts:        def.Mounts,
+		Ports:         def.Ports,
+		Environment:   def.Environment,
+		Command:       def.Command,
+		WorkDir:       def.WorkDir,
+		Privileged:    def.Privileged,
+		PortWaitCheck: *def.PortWaitCheck.ToNarwhal(),
+		Label:         def.Label,
+		ExecUserId:    def.ExecUserId,
+		ExecGroupId:   def.ExecGroupId,
+		Namespace:     def.Namespace,
+		LocalWorkDir:  def.LocalWorkDir,
+	}
+}
+
+type PortWaitCheck struct {
+	Port         int `yaml:"port"`
+	Timeout      int `yaml:"timeout"`
+	LocalPortMap int
+}
+
+func (check *PortWaitCheck) ToNarwhal() *narwhal.PortWaitCheck {
+	return &narwhal.PortWaitCheck{
+		Port:         check.Port,
+		Timeout:      check.Timeout,
+		LocalPortMap: check.LocalPortMap,
+	}
 }
 
 type BuildDependencies struct {
-	Build      []string                               `yaml:"build"`
-	Containers map[string]narwhal.ContainerDefinition `yaml:"containers"`
+	Build      []string                        `yaml:"build"`
+	Containers map[string]*ContainerDefinition `yaml:"containers"`
 }
 
-func (b BuildDependencies) ContainerList() []narwhal.ContainerDefinition {
-	containers := make([]narwhal.ContainerDefinition, 0)
+func (b BuildDependencies) ContainerList() []*narwhal.ContainerDefinition {
+	containers := make([]*narwhal.ContainerDefinition, 0, len(b.Containers))
 	for label, c := range b.Containers {
 		c.Label = label
-		containers = append(containers, c)
+		containers = append(containers, c.ToNarwhal())
 	}
 	return containers
 }
 
 type ExecDependencies struct {
-	Containers map[string]narwhal.ContainerDefinition `yaml:"containers"`
+	Containers map[string]*ContainerDefinition `yaml:"containers"`
 }
 
-func (b ExecDependencies) ContainerList() []narwhal.ContainerDefinition {
-	containers := make([]narwhal.ContainerDefinition, 0)
+func (b ExecDependencies) ContainerList() []*narwhal.ContainerDefinition {
+	containers := make([]*narwhal.ContainerDefinition, 0, len(b.Containers))
 	for label, c := range b.Containers {
 		c.Label = label
-		containers = append(containers, c)
+		containers = append(containers, c.ToNarwhal())
 	}
 	return containers
 }
 
 type BuildTarget struct {
-	Name         string                      `yaml:"name"`
-	Container    narwhal.ContainerDefinition `yaml:"container"`
-	Tools        []string                    `yaml:"tools"`
-	Commands     []string                    `yaml:"commands"`
-	Artifacts    []string                    `yaml:"artifacts"`
-	CachePaths   []string                    `yaml:"cache_paths"`
-	Sandbox      bool                        `yaml:"sandbox"`
-	HostOnly     bool                        `yaml:"host_only"`
-	Root         string                      `yaml:"root"`
-	Environment  []string                    `yaml:"environment"`
-	Tags         map[string]string           `yaml:"tags"`
-	BuildAfter   []string                    `yaml:"build_after"`
-	Dependencies BuildDependencies           `yaml:"dependencies"`
+	Name         string               `yaml:"name"`
+	Container    *ContainerDefinition `yaml:"container"`
+	Tools        []string             `yaml:"tools"`
+	Commands     []string             `yaml:"commands"`
+	Artifacts    []string             `yaml:"artifacts"`
+	CachePaths   []string             `yaml:"cache_paths"`
+	Sandbox      bool                 `yaml:"sandbox"`
+	HostOnly     bool                 `yaml:"host_only"`
+	Root         string               `yaml:"root"`
+	Environment  []string             `yaml:"environment"`
+	Tags         map[string]string    `yaml:"tags"`
+	BuildAfter   []string             `yaml:"build_after"`
+	Dependencies BuildDependencies    `yaml:"dependencies"`
 }
 
 // A Project is a YourBase project as returned by the API.

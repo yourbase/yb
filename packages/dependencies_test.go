@@ -27,7 +27,7 @@ func TestMergeDeps(t *testing.T) {
 				Dependencies: types.DependencySet{
 					Build: []string{dummyGoToolSpec},
 				},
-				BuildTargets: []types.BuildTarget{
+				BuildTargets: []*types.BuildTarget{
 					{
 						Name: "default",
 					},
@@ -37,7 +37,7 @@ func TestMergeDeps(t *testing.T) {
 				Dependencies: types.DependencySet{
 					Build: []string{dummyGoToolSpec},
 				},
-				BuildTargets: []types.BuildTarget{
+				BuildTargets: []*types.BuildTarget{
 					{
 						Name: "default",
 						Dependencies: types.BuildDependencies{
@@ -53,7 +53,7 @@ func TestMergeDeps(t *testing.T) {
 				Dependencies: types.DependencySet{
 					Build: []string{"go:1.13"},
 				},
-				BuildTargets: []types.BuildTarget{
+				BuildTargets: []*types.BuildTarget{
 					{
 						Name: "default",
 						Dependencies: types.BuildDependencies{
@@ -66,7 +66,7 @@ func TestMergeDeps(t *testing.T) {
 				Dependencies: types.DependencySet{
 					Build: []string{"go:1.13"},
 				},
-				BuildTargets: []types.BuildTarget{
+				BuildTargets: []*types.BuildTarget{
 					{
 						Name: "default",
 						Dependencies: types.BuildDependencies{
@@ -82,7 +82,7 @@ func TestMergeDeps(t *testing.T) {
 				Dependencies: types.DependencySet{
 					Build: []string{dummyGoToolSpec},
 				},
-				BuildTargets: []types.BuildTarget{
+				BuildTargets: []*types.BuildTarget{
 					{
 						Name: "default",
 						Dependencies: types.BuildDependencies{
@@ -95,7 +95,7 @@ func TestMergeDeps(t *testing.T) {
 				Dependencies: types.DependencySet{
 					Build: []string{dummyGoToolSpec},
 				},
-				BuildTargets: []types.BuildTarget{
+				BuildTargets: []*types.BuildTarget{
 					{
 						Name: "default",
 						Dependencies: types.BuildDependencies{

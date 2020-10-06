@@ -4,6 +4,14 @@ The format is based on [Keep a Changelog][], and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
+[Unreleased]: https://github.com/yourbase/yb/compare/v0.3.1...HEAD
+
+## [Unreleased][]
+
+### Fixed
+
+-  Update to latest version of [Narwhal](https://github.com/yourbase/narwhal),
+   which contains many fixes for Docker interactions.
 
 ## [0.3.1][]
 

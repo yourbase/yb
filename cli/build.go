@@ -17,11 +17,12 @@ import (
 	"sync"
 	"time"
 
+	docker "github.com/fsouza/go-dockerclient"
 	"github.com/johnewart/archiver"
-	"github.com/johnewart/narwhal"
 	"github.com/johnewart/subcommands"
 	"github.com/matishsiao/goInfo"
 	"github.com/yourbase/commons/xcontext"
+	"github.com/yourbase/narwhal"
 	ybconfig "github.com/yourbase/yb/config"
 	"github.com/yourbase/yb/packages"
 	"github.com/yourbase/yb/plumbing"
@@ -49,11 +50,11 @@ type BuildCmd struct {
 }
 
 type BuildConfiguration struct {
-	Target           types.BuildTarget
+	Target           *types.BuildTarget
 	TargetDir        string
 	ExecPrefix       string
 	ForceNoContainer bool
-	TargetPackage    packages.Package
+	TargetPackage    *packages.Package
 	BuildData        BuildData
 	ReuseContainers  bool
 }
@@ -137,6 +138,11 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 	buildData := NewBuildData()
 
 	if !b.NoContainer {
+		dockerClient, err := docker.NewVersionedClient("unix:///var/run/docker.sock", "1.39")
+		if err != nil {
+			log.Errorf(ctx, "%v", err)
+			return subcommands.ExitFailure
+		}
 		target := primaryTarget
 		// Setup dependencies
 		containers := target.Dependencies.Containers
@@ -146,7 +152,7 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 			return subcommands.ExitFailure
 		}
 		contextId := fmt.Sprintf("%s-%s", targetPackage.Name, target.Name)
-		sc, err := narwhal.NewServiceContextWithId(contextId, workDir)
+		sc, err := narwhal.NewServiceContextWithId(ctx, dockerClient, contextId, workDir)
 		if err != nil {
 			log.Errorf(ctx, "Couldn't create service context for dependencies: %v", err)
 			return subcommands.ExitFailure
@@ -159,18 +165,19 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 			if !b.ReuseContainers {
 				log.Infof(ctx, "Not reusing containers, will teardown existing ones and clean up after ourselves")
 				defer Cleanup(xcontext.IgnoreDeadline(ctx), buildData)
-				if err := sc.TearDown(); err != nil {
+				if err := sc.TearDown(xcontext.IgnoreDeadline(ctx)); err != nil {
 					log.Errorf(ctx, "Couldn't terminate existing containers: %v", err)
 					// FAIL?
 				}
 			}
 
-			for _, c := range containers {
-				_, err := sc.StartContainer(c)
+			for _, cd := range containers {
+				c, err := sc.StartContainer(ctx, os.Stderr, cd.ToNarwhal())
 				if err != nil {
 					log.Errorf(ctx, "Couldn't start dependencies: %v", err)
 					return subcommands.ExitFailure
 				}
+				buildData.Containers.Containers[cd.Label] = c
 			}
 
 		}
@@ -211,7 +218,7 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 		containerDef.Mounts = append(containerDef.Mounts, mount)
 
 		// Do our build in a container - don't do the build locally
-		err := b.BuildInsideContainer(ctx, target, containerDef, buildData, b.ExecPrefix, b.ReuseContainers)
+		err := b.BuildInsideContainer(ctx, target, containerDef.ToNarwhal(), buildData, b.ExecPrefix, b.ReuseContainers)
 		if err != nil {
 			log.Errorf(ctx, "Unable to build %s inside container: %v", target.Name, err)
 			return subcommands.ExitFailure
@@ -232,8 +239,8 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 		log.Infof(ctx, "")
 		log.Infof(ctx, "Available side containers:")
 		for label, c := range primaryTarget.Dependencies.Containers {
-			ipv4 := buildData.Containers.IP(label)
-			log.Infof(ctx, "  * %s (using %s) has IP address %s", label, c.ImageNameWithTag(), ipv4)
+			ipv4 := buildData.Containers.IP(ctx, label)
+			log.Infof(ctx, "  * %s (using %s) has IP address %s", label, c.ToNarwhal().ImageNameWithTag(), ipv4)
 		}
 	}
 
@@ -359,44 +366,43 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 func Cleanup(ctx context.Context, b BuildData) {
 	if b.Containers.ServiceContext != nil {
 		log.Infof(ctx, "Cleaning up containers...")
-		if err := b.Containers.ServiceContext.TearDown(); err != nil {
+		if err := b.Containers.ServiceContext.TearDown(ctx); err != nil {
 			log.Warnf(ctx, "Problem tearing down containers: %v", err)
 		}
 	}
 }
 
-func (b *BuildCmd) BuildInsideContainer(ctx context.Context, target types.BuildTarget, containerDef narwhal.ContainerDefinition, buildData BuildData, execPrefix string, reuseOldContainer bool) error {
-	// Perform build inside a container
+func (b *BuildCmd) BuildInsideContainer(ctx context.Context, target *types.BuildTarget, containerDef *narwhal.ContainerDefinition, buildData BuildData, execPrefix string, reuseOldContainer bool) error {
+	dockerClient := buildData.Containers.ServiceContext.DockerClient
 	image := target.Container.Image
 	log.Infof(ctx, "Using container image: %s", image)
-	buildContainer, err := buildData.Containers.ServiceContext.StartContainer(containerDef)
-
+	buildContainer, err := buildData.Containers.ServiceContext.FindContainer(ctx, containerDef)
 	if err != nil {
-		return fmt.Errorf("Failed trying to find container: %v", err)
+		return err
 	}
 
 	if buildContainer != nil {
 		log.Infof(ctx, "Found existing container %s", buildContainer.Id[0:12])
 
-		_ = buildContainer.Stop(0)
-
 		if !reuseOldContainer {
 			log.Infof(ctx, "Elected to not re-use containers, will remove the container")
 			// Try stopping it first if needed
-			if err = narwhal.RemoveContainerById(buildContainer.Id); err != nil {
+			_ = dockerClient.StopContainer(buildContainer.Id, 0)
+			err := dockerClient.RemoveContainer(docker.RemoveContainerOptions{
+				Context: ctx,
+				ID:      buildContainer.Id,
+			})
+			if err != nil {
 				return fmt.Errorf("Unable to remove existing container: %v", err)
 			}
+			buildContainer = nil
 		}
 	}
-
-	if buildContainer != nil && reuseOldContainer {
-		log.Infof(ctx, "Reusing existing build container %s", buildContainer.Id[0:12])
-	} else {
+	if buildContainer == nil {
 		log.Infof(ctx, "Creating a new build container...")
-		if c, err := buildData.Containers.ServiceContext.StartContainer(containerDef); err != nil {
+		buildContainer, err = buildData.Containers.ServiceContext.StartContainer(ctx, os.Stderr, containerDef)
+		if err != nil {
 			return fmt.Errorf("Couldn't create a new build container: %v", err)
-		} else {
-			buildContainer = c
 		}
 	}
 
@@ -404,17 +410,17 @@ func (b *BuildCmd) BuildInsideContainer(ctx context.Context, target types.BuildT
 	signal.Notify(c, os.Interrupt)
 	go func() {
 		<-c
-		buildContainer.Stop(0)
+		dockerClient.StopContainerWithContext(buildContainer.Id, 0, ctx)
 		os.Exit(0)
 	}()
 
-	defer buildContainer.Stop(0)
+	defer dockerClient.StopContainerWithContext(buildContainer.Id, 0, xcontext.IgnoreDeadline(ctx))
 
 	if err != nil {
 		return fmt.Errorf("Error creating build container: %v", err)
 	}
 
-	if err := buildContainer.Start(); err != nil {
+	if err := narwhal.StartContainer(ctx, dockerClient, buildContainer.Id); err != nil {
 		return fmt.Errorf("Unable to start container %s: %v", buildContainer.Id, err)
 	}
 
@@ -459,7 +465,8 @@ func (b *BuildCmd) BuildInsideContainer(ctx context.Context, target types.BuildT
 
 	// Upload and update CLI
 	log.Infof(ctx, "Uploading YB from %s to /yb", localYbPath)
-	if err := buildContainer.UploadFile(localYbPath, "yb", "/"); err != nil {
+	err = narwhal.UploadFile(ctx, dockerClient, buildContainer.Id, "/yb", localYbPath)
+	if err != nil {
 		return fmt.Errorf("Unable to upload YB to container: %v", err)
 	}
 
@@ -474,31 +481,62 @@ func (b *BuildCmd) BuildInsideContainer(ctx context.Context, target types.BuildT
 		}
 
 		log.Infof(ctx, "Updating YB in container from channel %s", ybChannel)
-		updateCmd := fmt.Sprintf("/yb update -channel=%s", ybChannel)
-		if err := buildContainer.ExecToStdoutWithEnv(updateCmd, containerWorkDir, buildData.EnvironmentVariables()); err != nil {
-			return fmt.Errorf("Aborting build, unable to run %s: %v", updateCmd, err)
+		err := execToStdoutWithEnv(
+			ctx,
+			dockerClient,
+			buildContainer, []string{"/yb", "update", "-channel=" + ybChannel},
+			containerWorkDir,
+			buildData.EnvironmentVariables(ctx),
+		)
+		if err != nil {
+			return err
 		}
 	}
 
-	cmdString := "/yb build"
-
+	argv := []string{"/yb", "build"}
 	if len(execPrefix) > 0 {
-		cmdString = fmt.Sprintf("%s -exec-prefix %s", cmdString, execPrefix)
+		argv = append(argv, "-exec-prefix", execPrefix)
 	}
+	argv = append(argv, "-no-container", target.Name)
 
-	cmdString = fmt.Sprintf("%s -no-container %s", cmdString, target.Name)
-
-	log.Infof(ctx, "Running %s in the container in directory %s", cmdString, containerWorkDir)
-
-	if err := buildContainer.ExecToStdoutWithEnv(cmdString, containerWorkDir, buildData.EnvironmentVariables()); err != nil {
-		log.Errorf(ctx, "Failed to run %s: %v", cmdString, err)
-		return fmt.Errorf("Aborting build, unable to run %s: %v", cmdString, err)
+	if err := execToStdoutWithEnv(ctx, dockerClient, buildContainer, argv, containerWorkDir, buildData.EnvironmentVariables(ctx)); err != nil {
+		return err
 	}
 
 	// Make sure our goroutine gets this from stdout
 	// TODO: There must be a better way...
 	time.Sleep(10 * time.Millisecond)
 
+	return nil
+}
+
+func execToStdoutWithEnv(ctx context.Context, client *docker.Client, c *narwhal.Container, argv []string, workDir string, env []string) error {
+	cmdString := strings.Join(argv, " ")
+	log.Infof(ctx, "Running in container directory %s: %s", workDir, cmdString)
+	opts := docker.CreateExecOptions{
+		Context:      ctx,
+		Container:    c.Id,
+		Cmd:          argv,
+		WorkingDir:   workDir,
+		Env:          env,
+		AttachStdout: true,
+		AttachStderr: true,
+	}
+	if c.Definition.ExecUserId != "" || c.Definition.ExecGroupId != "" {
+		opts.User = c.Definition.ExecUserId + ":" + c.Definition.ExecGroupId
+	}
+	e, err := client.CreateExec(opts)
+	if err != nil {
+		return fmt.Errorf("exec %s: %w", cmdString, err)
+	}
+	err = client.StartExec(e.ID, docker.StartExecOptions{
+		Context:      ctx,
+		OutputStream: os.Stdout,
+		ErrorStream:  os.Stdout,
+	})
+	if err != nil {
+		return fmt.Errorf("exec %s: %w", cmdString, err)
+	}
 	return nil
 }
 
@@ -591,15 +629,16 @@ func UploadBuildLogsToAPI(ctx context.Context, buf *bytes.Buffer) {
 // Build metadata; used for things like interpolation in environment variables
 type ContainerData struct {
 	ServiceContext *narwhal.ServiceContext
+	Containers     map[string]*narwhal.Container
 }
 
-func (c ContainerData) IP(label string) string {
-	// Check service context
-	if c.ServiceContext != nil {
-		if buildContainer, ok := c.ServiceContext.Containers[label]; ok {
-			if ipv4, err := buildContainer.IPv4Address(); err == nil {
-				return ipv4
-			}
+func (c ContainerData) IP(ctx context.Context, label string) string {
+	if buildContainer := c.Containers[label]; buildContainer != nil && c.ServiceContext != nil {
+		ip, err := narwhal.IPv4Address(ctx, c.ServiceContext.DockerClient, buildContainer.Id)
+		if err != nil {
+			log.Warnf(ctx, "Obtaining address for %s container: %v", label, buildContainer)
+		} else {
+			return ip.String()
 		}
 	}
 
@@ -612,14 +651,17 @@ func (c ContainerData) IP(label string) string {
 	return ""
 }
 
-func (c ContainerData) Environment() map[string]string {
+func (c ContainerData) Environment(ctx context.Context) map[string]string {
 	result := make(map[string]string)
 	if c.ServiceContext != nil {
-		for label, container := range c.ServiceContext.Containers {
-			if ipv4, err := container.IPv4Address(); err == nil {
-				key := fmt.Sprintf("YB_CONTAINER_%s_IP", strings.ToUpper(label))
-				result[key] = ipv4
+		for label, container := range c.Containers {
+			ipv4, err := narwhal.IPv4Address(ctx, c.ServiceContext.DockerClient, container.Id)
+			if err != nil {
+				log.Warnf(ctx, "Obtaining address for %s container: %v", label, err)
+				continue
 			}
+			key := fmt.Sprintf("YB_CONTAINER_%s_IP", strings.ToUpper(label))
+			result[key] = ipv4.String()
 		}
 	}
 	return result
@@ -641,7 +683,9 @@ func NewBuildData() BuildData {
 		}
 	}
 	return BuildData{
-		Containers:  ContainerData{},
+		Containers: ContainerData{
+			Containers: make(map[string]*narwhal.Container),
+		},
 		Environment: make(map[string]string),
 		originalEnv: originalEnv,
 	}
@@ -656,9 +700,9 @@ func (b BuildData) SetEnv(key string, value string) {
 	}
 }
 
-func (b BuildData) mergedEnvironment() map[string]string {
+func (b BuildData) mergedEnvironment(ctx context.Context) map[string]string {
 	result := make(map[string]string)
-	for k, v := range b.Containers.Environment() {
+	for k, v := range b.Containers.Environment(ctx) {
 		result[k] = v
 	}
 	for k, v := range b.Environment {
@@ -669,7 +713,7 @@ func (b BuildData) mergedEnvironment() map[string]string {
 
 func (b BuildData) ExportEnvironmentPublicly(ctx context.Context) {
 	log.Infof(ctx, "Exporting environment")
-	for k, v := range b.mergedEnvironment() {
+	for k, v := range b.mergedEnvironment(ctx) {
 		log.Infof(ctx, " * %s = %s", k, v)
 		os.Setenv(k, v)
 	}
@@ -677,7 +721,7 @@ func (b BuildData) ExportEnvironmentPublicly(ctx context.Context) {
 
 func (b BuildData) UnexportEnvironmentPublicly(ctx context.Context) {
 	log.Infof(ctx, "Unexporting environment")
-	for k := range b.mergedEnvironment() {
+	for k := range b.mergedEnvironment(ctx) {
 		if _, exists := b.originalEnv[k]; exists {
 			os.Setenv(k, b.originalEnv[k])
 		} else {
@@ -687,9 +731,9 @@ func (b BuildData) UnexportEnvironmentPublicly(ctx context.Context) {
 	}
 }
 
-func (b BuildData) EnvironmentVariables() []string {
+func (b BuildData) EnvironmentVariables(ctx context.Context) []string {
 	result := make([]string, 0)
-	for k, v := range b.mergedEnvironment() {
+	for k, v := range b.mergedEnvironment(ctx) {
 		result = append(result, fmt.Sprintf("%s=%s", k, v))
 	}
 	return result

@@ -23,43 +23,38 @@ func (w Workspace) Root() string {
 	return w.Path
 }
 
-func (w Workspace) TargetPackage() (packages.Package, error) {
-	if w.Target != "" {
-		return w.PackageByName(w.Target)
-	} else {
-		return packages.Package{}, fmt.Errorf("No default package specified for the workspace")
+func (w Workspace) TargetPackage() (*packages.Package, error) {
+	if w.Target == "" {
+		return nil, fmt.Errorf("no default package specified for the workspace")
 	}
+	return w.PackageByName(w.Target)
 }
 
-func (w Workspace) PackageByName(name string) (packages.Package, error) {
+func (w Workspace) PackageByName(name string) (*packages.Package, error) {
 	pkgList, err := w.PackageList()
-
 	if err != nil {
-		return packages.Package{}, err
+		return nil, err
 	}
-
 	for _, pkg := range pkgList {
 		if pkg.Name == name {
 			return pkg, nil
 		}
 	}
-
-	return packages.Package{}, fmt.Errorf("No package with name %s found in the workspace", name)
+	return nil, fmt.Errorf("no package with name %q found in the workspace", name)
 }
 
-func (w Workspace) PackageList() ([]packages.Package, error) {
-	var packagesList []packages.Package
-
+func (w Workspace) PackageList() ([]*packages.Package, error) {
 	globStr := filepath.Join(w.Path, "*")
 	files, err := filepath.Glob(globStr)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
+	var packagesList []*packages.Package
 	for _, f := range files {
 		fi, err := os.Stat(f)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 		if fi.IsDir() {
 			_, pkgName := filepath.Split(f)
@@ -67,15 +62,13 @@ func (w Workspace) PackageList() ([]packages.Package, error) {
 			if !strings.HasPrefix(pkgName, ".") {
 				pkg, err := packages.LoadPackage(pkgName, pkgPath)
 				if err != nil {
-					return packagesList, err
+					return nil, err
 				}
 				packagesList = append(packagesList, pkg)
 			}
 		}
 	}
-
 	return packagesList, nil
-
 }
 
 func (w Workspace) BuildRoot() string {

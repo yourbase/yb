@@ -19,45 +19,43 @@ func (b BuildManifest) BuildDependenciesChecksum() string {
 }
 
 // XXX: Support more than one level? Intuitively that seems like it will breed un-needed complexity
-func (b BuildManifest) ResolveBuildTargets(targetName string) ([]BuildTarget, error) {
-	targetList := make([]BuildTarget, 0)
-
+func (b BuildManifest) ResolveBuildTargets(targetName string) ([]*BuildTarget, error) {
 	target, err := b.BuildTarget(targetName)
 	if err != nil {
-		return targetList, err
+		return nil, err
 	}
 
+	var targetList []*BuildTarget
 	if len(target.BuildAfter) > 0 {
 		for _, depName := range target.BuildAfter {
 			depTarget, err := b.BuildTarget(depName)
 			if err != nil {
-				return targetList, err
+				return nil, err
 			}
 			targetList = append(targetList, depTarget)
 		}
 	}
 
 	targetList = append(targetList, target)
-
 	return targetList, nil
 }
 
-func (b BuildManifest) CIBuild(buildName string) (CIBuild, error) {
+func (b BuildManifest) CIBuild(buildName string) (*CIBuild, error) {
 	for _, build := range b.CI.CIBuilds {
 		if build.Name == buildName {
 			return build, nil
 		}
 	}
-	return CIBuild{}, fmt.Errorf("No such CI build '%s' in build manifest", buildName)
+	return nil, fmt.Errorf("no such CI build '%s' in build manifest", buildName)
 }
 
-func (b BuildManifest) BuildTarget(targetName string) (BuildTarget, error) {
+func (b BuildManifest) BuildTarget(targetName string) (*BuildTarget, error) {
 	for _, target := range b.BuildTargets {
 		if target.Name == targetName {
 			return target, nil
 		}
 	}
-	return BuildTarget{}, fmt.Errorf("No such target '%s' in build manifest", targetName)
+	return nil, fmt.Errorf("no such target '%s' in build manifest", targetName)
 }
 
 func (b BuildManifest) BuildTargetList() []string {

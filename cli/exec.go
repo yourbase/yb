@@ -7,8 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/johnewart/narwhal"
+	docker "github.com/fsouza/go-dockerclient"
 	"github.com/johnewart/subcommands"
+	"github.com/yourbase/narwhal"
 	"github.com/yourbase/yb/plumbing"
 	"zombiezen.com/go/log"
 )
@@ -56,6 +57,12 @@ func (b *ExecCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 	buildData := NewBuildData()
 
 	if len(containers) > 0 {
+		dockerClient, err := docker.NewVersionedClient("unix:///var/run/docker.sock", "1.39")
+		if err != nil {
+			log.Errorf(ctx, "%v", err)
+			return subcommands.ExitFailure
+		}
+
 		localContainerWorkDir := filepath.Join(targetPackage.BuildRoot(), "containers")
 		if err := os.MkdirAll(localContainerWorkDir, 0777); err != nil {
 			log.Errorf(ctx, "Couldn't create directory: %v", err)
@@ -64,7 +71,7 @@ func (b *ExecCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 
 		log.Infof(ctx, "Will use %s as the dependency work dir", localContainerWorkDir)
 		log.Infof(ctx, "Starting %d dependencies...", len(containers))
-		sc, err := narwhal.NewServiceContextWithId("exec", targetPackage.BuildRoot())
+		sc, err := narwhal.NewServiceContextWithId(ctx, dockerClient, "exec", targetPackage.BuildRoot())
 		if err != nil {
 			log.Errorf(ctx, "Couldn't create service context for dependencies: %v", err)
 			return subcommands.ExitFailure
@@ -73,7 +80,7 @@ func (b *ExecCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 		for _, c := range containers {
 			// TODO: avoid setting these here
 			c.LocalWorkDir = localContainerWorkDir
-			if _, err = sc.StartContainer(c); err != nil {
+			if _, err = sc.StartContainer(ctx, os.Stderr, c); err != nil {
 				log.Infof(ctx, "Couldn't start dependencies: %v\n", err)
 				return subcommands.ExitFailure
 			}
