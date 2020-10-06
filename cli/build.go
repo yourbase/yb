@@ -11,7 +11,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
-	"os/user"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -218,15 +217,10 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 		mount := fmt.Sprintf("%s:%s", targetPackage.Path, sourceMapDir)
 		containerDef.Mounts = append(containerDef.Mounts, mount)
 
-		if false {
-			u, _ := user.Current()
-			fmt.Printf("U! %s", u.Uid)
-		}
-
 		// Do our build in a container - don't do the build locally
-		buildErr := b.BuildInsideContainer(ctx, target, containerDef.ToNarwhal(), buildData, b.ExecPrefix, b.ReuseContainers)
-		if buildErr != nil {
-			log.Errorf(ctx, "Unable to build %s inside container: %v", target.Name, buildErr)
+		err := b.BuildInsideContainer(ctx, target, containerDef.ToNarwhal(), buildData, b.ExecPrefix, b.ReuseContainers)
+		if err != nil {
+			log.Errorf(ctx, "Unable to build %s inside container: %v", target.Name, err)
 			return subcommands.ExitFailure
 		}
 
@@ -250,8 +244,6 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 		}
 	}
 
-	var buildError error
-
 	startSection("BUILD")
 
 	config := BuildConfiguration{
@@ -268,16 +260,17 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 		log.Infof(ctx, "   - %s", target.Name)
 	}
 
+	var buildError error
 	for _, target := range buildTargets {
 		targetCtx, targetSpan := tracer().Start(ctx, target.Name, trace.WithAttributes(
 			label.String("target", target.Name),
 		))
-		err := targetPackage.SetupBuildDependencies(targetCtx, target)
-		if err != nil {
-			targetSpan.SetStatus(codes.Internal, err.Error())
+		buildError = targetPackage.SetupBuildDependencies(targetCtx, target)
+		if buildError != nil {
+			buildError = fmt.Errorf("setting up dependencies for target %s: %w", target.Name, buildError)
+			targetSpan.SetStatus(codes.Internal, buildError.Error())
 			targetSpan.End()
-			log.Infof(ctx, "Error setting up dependencies for target %s: %v", target.Name, err)
-			return subcommands.ExitFailure
+			break
 		}
 
 		if b.DependenciesOnly {
@@ -287,9 +280,10 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 		config.Target = target
 		buildData.ExportEnvironmentPublicly(ctx)
 		log.Infof(ctx, "Executing build steps...")
-		err = RunCommands(targetCtx, config)
-		if err != nil {
-			targetSpan.SetStatus(codes.Unknown, err.Error())
+		buildError = RunCommands(targetCtx, config)
+		if buildError != nil {
+			buildError = fmt.Errorf("running commands for target %s: %w", target.Name, buildError)
+			targetSpan.SetStatus(codes.Unknown, buildError.Error())
 		}
 		targetSpan.End()
 		buildData.UnexportEnvironmentPublicly(ctx)
@@ -297,17 +291,13 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 			break
 		}
 	}
-	if b.DependenciesOnly {
-		log.Infof(ctx, "Only installing dependencies; done!")
-		return subcommands.ExitSuccess
-	}
-
 	if buildError != nil {
 		span.SetStatus(codes.Unknown, buildError.Error())
 	}
-	endTime := time.Now()
 	span.End()
+	endTime := time.Now()
 	buildTime := endTime.Sub(startTime)
+
 	time.Sleep(100 * time.Millisecond)
 
 	log.Infof(ctx, "")

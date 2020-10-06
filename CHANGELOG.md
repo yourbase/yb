@@ -4,7 +4,7 @@ The format is based on [Keep a Changelog][], and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
-[Unreleased]: https://github.com/yourbase/yb/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/yourbase/yb/compare/v0.3.1...HEAD
 
 ## [Unreleased][]
 
@@ -12,6 +12,17 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 -  Update to latest version of [Narwhal](https://github.com/yourbase/narwhal),
    which contains many fixes for Docker interactions.
+
+## [0.3.1][]
+
+Version 0.3.1 fixes an issue with error handling during builds.
+
+[0.3.1]: https://github.com/yourbase/yb/releases/tag/v0.3.1
+
+### Fixed
+
+-  Fixed a regression where if a dependent target fails, it did not stop
+   the build.
 
 ## [0.3.0][]
 
