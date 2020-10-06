@@ -5,6 +5,17 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
 
+## [0.3.1][]
+
+Version 0.3.1 fixes an issue with error handling during builds.
+
+[0.3.1]: https://github.com/yourbase/yb/releases/tag/v0.3.1
+
+### Fixed
+
+-  Fixed a regression where if a dependent target fails, it did not stop
+   the build.
+
 ## [0.3.0][]
 
 Version 0.3 is the first release with our new release automation.
