@@ -18,8 +18,8 @@ type anacondaBuildTool struct {
 	pyCompatibleNum int
 }
 
-const anacondaDistMirrorTemplate = "https://repo.continuum.io/miniconda/Miniconda{{.PyNum}}-{{.Version}}-{{.OS}}-{{.Arch}}.{{.Extension}}"
-const anacondaNewerDistMirrorTemplate = "https://repo.continuum.io/miniconda/Miniconda{{.PyNum}}-{{.PyMajorVersion}}_{{.Version}}-{{.OS}}-{{.Arch}}.{{.Extension}}"
+const anacondaDistMirrorTemplate = "https://repo.continuum.io/miniconda/Miniconda{{.PyMajor}}-{{.Version}}-{{.OS}}-{{.Arch}}.sh"
+const anacondaNewerDistMirrorTemplate = "https://repo.continuum.io/miniconda/Miniconda{{.PyMajor}}-py{{.PyMajor}}{{.PyMinor}}_{{.Version}}-{{.OS}}-{{.Arch}}.sh"
 
 func newAnaconda2BuildTool(toolSpec buildToolSpec) anacondaBuildTool {
 	tool := anacondaBuildTool{
@@ -54,7 +54,13 @@ func (bt anacondaBuildTool) install(ctx context.Context) error {
 	} else {
 		log.Infof(ctx, "Installing anaconda")
 
-		downloadURL := bt.downloadURL(ctx)
+		// Just so happens that for right now, Python 2.7 and 3.7
+		// are the ones used for Miniconda.
+		const pyMinor = 7
+		downloadURL, err := anacondaDownloadURL(bt.version, bt.pyCompatibleNum, pyMinor)
+		if err != nil {
+			return fmt.Errorf("anaconda buildpack: %w", err)
+		}
 
 		log.Infof(ctx, "Downloading Miniconda from URL %s...", downloadURL)
 		localFile, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, downloadURL)
@@ -75,68 +81,60 @@ func (bt anacondaBuildTool) install(ctx context.Context) error {
 	return nil
 }
 
-func (bt anacondaBuildTool) downloadURL(ctx context.Context) string {
-	var v semver.Version
-
-	opsys := OS()
-	arch := Arch()
-	extension := "sh"
-	version := bt.version
-
-	if version == "" {
-		version = "latest"
-	} else {
-		var errv error
-		v, errv = semver.Parse(version)
-		if errv != nil {
-			return ""
-		}
+// TODO(light): Only being shared for testing. Once OS/Arch is able to be set in
+// test, we can have fixed constant strings as expected outputs.
+var (
+	anacondaOSMap = map[string]string{
+		"darwin": "MacOSX",
+		"linux":  "Linux",
+		// TODO(light): Omitting Windows, since the extension also needs to change to .exe.
 	}
-
-	if arch == "amd64" {
-		arch = "x86_64"
+	anacondaArchMap = map[string]string{
+		"amd64": "x86_64",
+		"386":   "x86",
 	}
+)
 
-	if opsys == "darwin" {
-		opsys = "MacOSX"
+func anacondaDownloadURL(version string, pyMajor, pyMinor int) (string, error) {
+	v, err := semver.Parse(version)
+	if err != nil {
+		return "", fmt.Errorf("compute anaconda %s download url: %w", version, err)
 	}
-
-	if opsys == "linux" {
-		opsys = "Linux"
+	opsys := anacondaOSMap[OS()]
+	if opsys == "" {
+		return "", fmt.Errorf("compute anaconda %s download url: not found for OS %s", version, OS())
 	}
-
-	if opsys == "windows" {
-		opsys = "Windows"
-		extension = "exe"
+	arch := anacondaArchMap[Arch()]
+	if arch == "" {
+		return "", fmt.Errorf("compute anaconda %s download url: not found for architecture %s", version, Arch())
 	}
 
 	data := struct {
-		PyNum          int
-		PyMajorVersion string
-		OS             string
-		Arch           string
-		Version        string
-		Extension      string
+		PyMajor int
+		PyMinor int
+		OS      string
+		Arch    string
+		Version string
 	}{
-		bt.pyCompatibleNum,
-		"py37",
+		pyMajor,
+		pyMinor,
 		opsys,
 		arch,
 		version,
-		extension,
 	}
 
-	// Newest Miniconda installs has different installers for Python 3.7 and Python 3.8
-	// We'll stick to Python 3.7, the stable version right now
-	if v.Major == 4 && v.Minor == 8 {
+	if v.Major > 4 || (v.Major == 4 && v.Minor >= 8) {
 		url, err := plumbing.TemplateToString(anacondaNewerDistMirrorTemplate, data)
-		log.Errorf(ctx, "Unable to apply template: %v", err)
-		return url
+		if err != nil {
+			return "", fmt.Errorf("compute anaconda %s download url: %w", version, err)
+		}
+		return url, nil
 	}
 	url, err := plumbing.TemplateToString(anacondaDistMirrorTemplate, data)
-	log.Errorf(ctx, "Unable to apply template: %v", err)
-
-	return url
+	if err != nil {
+		return "", fmt.Errorf("compute anaconda %s download url: %w", version, err)
+	}
+	return url, nil
 }
 
 func (bt anacondaBuildTool) setup(ctx context.Context) error {
@@ -145,7 +143,8 @@ func (bt anacondaBuildTool) setup(ctx context.Context) error {
 	setupDir := bt.spec.packageDir
 
 	for _, cmd := range []string{
-		"conda config --set always_yes yes --set changeps1 no",
+		"conda config --set always_yes yes",
+		"conda config --set changeps1 no",
 		"conda update -q conda",
 	} {
 		log.Infof(ctx, "Running: '%v' ", cmd)

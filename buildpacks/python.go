@@ -11,11 +11,7 @@ import (
 	"zombiezen.com/go/log"
 )
 
-const (
-	anacondaToolVersion = "4.8.3"
-	// The version above needs a newer template
-	anacondaURLTemplate = "https://repo.continuum.io/miniconda/Miniconda{{.PyNum}}-{{.Version}}-{{.OS}}-{{.Arch}}.{{.Extension}}"
-)
+const pythonAnacondaToolVersion = "4.8.3"
 
 type pythonBuildTool struct {
 	version string
@@ -32,7 +28,7 @@ func newPythonBuildTool(toolSpec buildToolSpec) pythonBuildTool {
 }
 
 func (bt pythonBuildTool) anacondaInstallDir() string {
-	return filepath.Join(bt.spec.sharedCacheDir, "miniconda3", fmt.Sprintf("miniconda-%s", anacondaToolVersion))
+	return filepath.Join(bt.spec.sharedCacheDir, "miniconda3", "miniconda-"+pythonAnacondaToolVersion)
 }
 
 func (bt pythonBuildTool) environmentDir() string {
@@ -48,7 +44,10 @@ func (bt pythonBuildTool) install(ctx context.Context) error {
 	} else {
 		log.Infof(ctx, "Installing anaconda")
 
-		downloadURL := bt.downloadURL()
+		downloadURL, err := anacondaDownloadURL(pythonAnacondaToolVersion, 3, 7)
+		if err != nil {
+			return fmt.Errorf("python buildpack: %w", err)
+		}
 
 		log.Infof(ctx, "Downloading Miniconda from URL %s...", downloadURL)
 		localFile, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, downloadURL)
@@ -71,52 +70,6 @@ func (bt pythonBuildTool) install(ctx context.Context) error {
 	return nil
 }
 
-func (bt pythonBuildTool) downloadURL() string {
-	opsys := OS()
-	arch := Arch()
-	extension := "sh"
-	version := bt.version
-
-	if version == "" {
-		version = "latest"
-	}
-
-	if arch == "amd64" {
-		arch = "x86_64"
-	}
-
-	if opsys == "darwin" {
-		opsys = "MacOSX"
-	}
-
-	if opsys == "linux" {
-		opsys = "Linux"
-	}
-
-	if opsys == "windows" {
-		opsys = "Windows"
-		extension = "exe"
-	}
-
-	data := struct {
-		PyNum     int
-		OS        string
-		Arch      string
-		Version   string
-		Extension string
-	}{
-		3,
-		opsys,
-		arch,
-		anacondaToolVersion,
-		extension,
-	}
-
-	url, _ := plumbing.TemplateToString(anacondaURLTemplate, data)
-
-	return url
-}
-
 func (bt pythonBuildTool) setup(ctx context.Context) error {
 	condaDir := bt.anacondaInstallDir()
 	envDir := bt.environmentDir()
@@ -130,8 +83,9 @@ func (bt pythonBuildTool) setup(ctx context.Context) error {
 		condaBin := filepath.Join(condaDir, "bin", "conda")
 
 		for _, cmd := range []string{
+			fmt.Sprintf("%s config --set always_yes yes", condaBin),
+			fmt.Sprintf("%s config --set changeps1 no", condaBin),
 			fmt.Sprintf("%s install -c anaconda setuptools", condaBin),
-			fmt.Sprintf("%s config --set always_yes yes --set changeps1 no", condaBin),
 			fmt.Sprintf("%s update -q conda", condaBin),
 			fmt.Sprintf("%s create --prefix %s python=%s", condaBin, envDir, bt.version),
 		} {
