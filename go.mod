@@ -7,7 +7,10 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/containerd/containerd v1.4.0 // indirect
 	github.com/containerd/continuity v0.0.0-20190827140505-75bee3e2ccb6 // indirect
-	github.com/docker/docker v17.12.0-ce-rc1.0.20200618181300-9dc6525e6118+incompatible // indirect
+	// Docker is pinned to a weird specific commit (https://github.com/moby/moby/commit/8312004f41e9500824fa16ae991eeee0083f4771)
+	// to avoid use of github.com/docker/docker/pkg/term, which depends on
+	// unsupported Darwin syscalls in golang.org/x/sys.
+	github.com/docker/docker v17.12.0-ce-rc1.0.20200421142927-8312004f41e9+incompatible // indirect
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/equinox-io/equinox v1.2.0
 	github.com/frankban/quicktest v1.5.0 // indirect
@@ -22,6 +25,8 @@ require (
 	github.com/johnewart/archiver v3.1.4+incompatible
 	github.com/johnewart/subcommands v0.0.0-20181012225330-46f0354f6315
 	github.com/matishsiao/goInfo v0.0.0-20200404012835-b5f882ee2288
+	github.com/moby/sys/mount v0.1.1 // indirect
+	github.com/moby/term v0.0.0-20200915141129-7f0af18e79f2 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/nwaples/rardecode v1.1.0 // indirect
 	github.com/pierrec/lz4 v2.5.2+incompatible // indirect
@@ -38,7 +43,6 @@ require (
 	golang.org/x/mod v0.3.0
 	golang.org/x/net v0.0.0-20200822124328-c89045814202 // indirect
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
-	golang.org/x/sys v0.0.0-20200831180312-196b9ba8737a // indirect
 	google.golang.org/genproto v0.0.0-20200831141814-d751682dd103 // indirect
 	google.golang.org/grpc v1.31.1 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
