@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -760,7 +761,7 @@ func sha256File(path string) (string, error) {
 func DownloadYB(ctx context.Context) (string, error) {
 	// Stick with this version, we can track some relatively recent version because
 	// we will just update anyway so it doesn't need to be super-new unless we broke something
-	downloadUrl := "https://bin.equinox.io/a/7G9uDXWDjh8/yb-0.0.39-linux-amd64.tar.gz"
+	downloadURL := "https://bin.equinox.io/a/7G9uDXWDjh8/yb-0.0.39-linux-amd64.tar.gz"
 	binarySha256 := "3e21a9c98daa168ea95a5be45d14408c18688b5eea211d7936f6cd013bd23210"
 	cachePath := plumbing.CacheDir()
 	tmpPath := filepath.Join(cachePath, ".yb-tmp")
@@ -780,7 +781,7 @@ func DownloadYB(ctx context.Context) (string, error) {
 	}
 
 	// Couldn't tell, check if we need to and download the archive
-	localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
+	localFile, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, downloadURL)
 	if err != nil {
 		return "", fmt.Errorf("download yb: %w", err)
 	}

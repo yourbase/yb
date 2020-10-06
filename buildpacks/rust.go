@@ -3,6 +3,7 @@ package buildpacks
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 
@@ -65,12 +66,12 @@ func (bt rustBuildTool) install(ctx context.Context) error {
 		log.Infof(ctx, "Will install Rust v%s into %s", bt.version, rustDir)
 		extension := ""
 		installerFile := fmt.Sprintf("rustup-init%s", extension)
-		downloadUrl := fmt.Sprintf("%s/%s-%s/%s", rustDistMirror, arch, operatingSystem, installerFile)
+		downloadURL := fmt.Sprintf("%s/%s-%s/%s", rustDistMirror, arch, operatingSystem, installerFile)
 
 		downloadDir := bt.spec.packageCacheDir
 		localFile := filepath.Join(downloadDir, installerFile)
-		log.Infof(ctx, "Downloading from URL %s to local file %s", downloadUrl, localFile)
-		err := plumbing.DownloadFile(localFile, downloadUrl)
+		log.Infof(ctx, "Downloading from URL %s to local file %s", downloadURL, localFile)
+		err := plumbing.DownloadFile(ctx, http.DefaultClient, localFile, downloadURL)
 		if err != nil {
 			log.Errorf(ctx, "Unable to download: %v", err)
 			return err

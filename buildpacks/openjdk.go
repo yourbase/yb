@@ -3,6 +3,7 @@ package buildpacks
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -214,10 +215,10 @@ func (bt javaBuildTool) install(ctx context.Context) error {
 		log.Infof(ctx, "Java v%s located in %s!", bt.version, javaPath)
 	} else {
 		log.Infof(ctx, "Will install Java v%s into %s", bt.version, javaInstallDir)
-		downloadUrl := bt.downloadURL(ctx)
+		downloadURL := bt.downloadURL(ctx)
 
-		log.Infof(ctx, "Downloading from URL %s ", downloadUrl)
-		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
+		log.Infof(ctx, "Downloading from URL %s ", downloadURL)
+		localFile, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, downloadURL)
 		if err != nil {
 			log.Errorf(ctx, "Unable to download: %v", err)
 			return err

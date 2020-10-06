@@ -18,7 +18,11 @@ import (
 
 	"github.com/google/shlex"
 	"github.com/ulikunitz/xz"
+	"github.com/yourbase/yb/internal/ybtrace"
 	"github.com/yourbase/yb/types"
+	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/label"
 	"zombiezen.com/go/log"
 )
 
@@ -230,72 +234,121 @@ func CacheDir() string {
 	return cacheDir
 }
 
-func CacheFilenameForUrl(url string) (string, error) {
-	cacheDir := CacheDir()
-	reg, err := regexp.Compile("[^a-zA-Z0-9.]+")
-	if err != nil {
-		return "", fmt.Errorf("Can't compile regex: %v", err)
-	}
+var cacheFilenameUnsafeChars = regexp.MustCompile(`[^a-zA-Z0-9.]+`)
 
-	fileName := reg.ReplaceAllString(url, "")
-	return filepath.Join(cacheDir, fileName), nil
+func cacheFilenameForURL(url string) string {
+	// TODO(light): Use a hash-based scheme.
+	cacheDir := CacheDir()
+	fileName := cacheFilenameUnsafeChars.ReplaceAllString(url, "")
+	return filepath.Join(cacheDir, fileName)
 }
 
-func DownloadFileWithCache(url string) (string, error) {
-	cacheFilename, err := CacheFilenameForUrl(url)
-
-	if err != nil {
-		return cacheFilename, err
-	}
-
-	fileExists := false
-	fileSizeMismatch := false
-
-	// Exists, don't re-download
-	if fi, err := os.Stat(cacheFilename); !os.IsNotExist(err) {
-		fileExists = true
-
-		// try HEAD'ing the URL and comparing to local file
-		resp, err := http.Head(url)
-		if err == nil {
-			if fi.Size() != resp.ContentLength {
-				log.Infof(context.TODO(), "Re-downloading %s because remote file and local file differ in size", url)
-				fileSizeMismatch = true
-			}
-		}
-
-	}
-
-	if fileExists && !fileSizeMismatch {
-		// No mismatch known, but exists, use cached version
-		log.Infof(context.TODO(), "Re-using cached version of %s", url)
+func DownloadFileWithCache(ctx context.Context, client *http.Client, url string) (string, error) {
+	cacheFilename := cacheFilenameForURL(url)
+	err := validateDownloadCache(ctx, client, cacheFilename, url)
+	if err == nil {
+		log.Infof(ctx, "Reusing cached version of %s", url)
 		return cacheFilename, nil
 	}
-
-	// Otherwise download
-	err = DownloadFile(cacheFilename, url)
+	log.Infof(ctx, "Not using cache for %s: %v", url, err)
+	err = DownloadFile(ctx, client, cacheFilename, url)
 	return cacheFilename, err
 }
 
-func DownloadFile(filepath string, url string) error {
+func validateDownloadCache(ctx context.Context, client *http.Client, cacheFilename string, url string) (err error) {
+	ctx, span := ybtrace.Start(ctx, "validateDownloadCache %s",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			label.String("http.method", http.MethodHead),
+			label.String("http.url", url),
+		),
+	)
+	defer func() {
+		if err != nil {
+			span.SetStatus(codes.Unknown, err.Error())
+		}
+		span.End()
+	}()
 
-	// Get the data
-	resp, err := http.Get(url)
+	info, err := os.Stat(cacheFilename)
 	if err != nil {
-		return err
+		return fmt.Errorf("validate %s download cache: %w", url, err)
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodHead, url, nil)
+	if err != nil {
+		return fmt.Errorf("validate %s download cache: %w", url, err)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("validate %s download cache: %w", url, err)
+	}
+	resp.Body.Close()
+	span.SetAttribute("http.status_code", resp.StatusCode)
+	span.SetAttribute("http.response_content_length", resp.ContentLength)
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("validate %s download cache: HTTP %s", url, resp.Status)
+	}
+	if fileSize := info.Size(); fileSize != resp.ContentLength {
+		return fmt.Errorf("validate %s download cache: size %d does not match resource size %d", url, fileSize, resp.ContentLength)
+	}
+	return nil
+}
+
+func DownloadFile(ctx context.Context, client *http.Client, dst string, url string) (err error) {
+	ctx, span := ybtrace.Start(ctx, "DownloadFile %s",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			label.String("http.method", http.MethodGet),
+			label.String("http.url", url),
+		),
+	)
+	defer func() {
+		if err != nil {
+			span.SetStatus(codes.Unknown, err.Error())
+		}
+		span.End()
+	}()
+
+	// Create file first, since that requires less work to fail faster.
+	out, err := os.Create(dst)
+	if err != nil {
+		return fmt.Errorf("download %s: %w", url, err)
+	}
+	defer func() {
+		out.Close() // *os.File explicitly permits double-closes.
+		if err != nil {
+			if err := os.Remove(dst); err != nil {
+				log.Warnf(ctx, "Failed to clean up failed download: %v", err)
+			}
+		}
+	}()
+
+	// Make HTTP request.
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		out.Close()
+		return fmt.Errorf("download %s: %w", url, err)
+	}
+	log.Infof(ctx, "Downloading %s", url)
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("download %s: %w", url, err)
 	}
 	defer resp.Body.Close()
-
-	// Create the file
-	out, err := os.Create(filepath)
-	if err != nil {
-		return err
+	span.SetAttribute("http.status_code", resp.StatusCode)
+	span.SetAttribute("http.response_content_length", resp.ContentLength)
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("download %s: HTTP %s", url, resp.Status)
 	}
-	defer out.Close()
 
-	// Write the body to file
-	_, err = io.Copy(out, resp.Body)
-	return err
+	// Copy to file.
+	if _, err := io.Copy(out, resp.Body); err != nil {
+		return fmt.Errorf("download %s: %w", url, err)
+	}
+	if err := out.Close(); err != nil {
+		return fmt.Errorf("download %s: %w", url, err)
+	}
+	return nil
 }
 
 /*
