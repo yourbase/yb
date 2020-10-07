@@ -256,7 +256,7 @@ func DownloadFileWithCache(ctx context.Context, client *http.Client, url string)
 }
 
 func validateDownloadCache(ctx context.Context, client *http.Client, cacheFilename string, url string) (err error) {
-	ctx, span := ybtrace.Start(ctx, "validateDownloadCache %s",
+	ctx, span := ybtrace.Start(ctx, "validateDownloadCache "+url,
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(
 			label.String("http.method", http.MethodHead),
@@ -295,7 +295,7 @@ func validateDownloadCache(ctx context.Context, client *http.Client, cacheFilena
 }
 
 func DownloadFile(ctx context.Context, client *http.Client, dst string, url string) (err error) {
-	ctx, span := ybtrace.Start(ctx, "DownloadFile %s",
+	ctx, span := ybtrace.Start(ctx, "DownloadFile "+url,
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(
 			label.String("http.method", http.MethodGet),
