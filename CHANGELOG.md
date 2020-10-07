@@ -5,6 +5,18 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
 
+## [0.3.2][]
+
+Version 0.3.2 fixes issues with the Python buildpack.
+
+[0.3.2]: https://github.com/yourbase/yb/releases/tag/v0.3.2
+
+### Fixed
+
+-  Fixed an incorrect URL for Miniconda in the Python buildpack.
+-  HTTP downloads in yb no longer ignore the status code and will abort for
+   any non-200 status code.
+
 ## [0.3.1][]
 
 Version 0.3.1 fixes an issue with error handling during builds.
