@@ -3,6 +3,7 @@ package buildpacks
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -113,10 +114,10 @@ func (bt flutterBuildTool) install(ctx context.Context) error {
 		log.Infof(ctx, "Flutter %s located in %s!", downloadURLVersion(bt.version), flutterDir)
 	} else {
 		log.Infof(ctx, "Will install Flutter %s into %s", downloadURLVersion(bt.version), flutterDir)
-		downloadUrl := bt.downloadURL()
+		downloadURL := bt.downloadURL()
 
-		log.Infof(ctx, "Downloading Flutter from URL %s...", downloadUrl)
-		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
+		log.Infof(ctx, "Downloading Flutter from URL %s...", downloadURL)
+		localFile, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, downloadURL)
 		if err != nil {
 			log.Errorf(ctx, "Unable to download: %v", err)
 			return err

@@ -3,6 +3,7 @@ package buildpacks
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -89,10 +90,10 @@ func (bt golangBuildTool) install(ctx context.Context) error {
 		log.Infof(ctx, "Golang v%s located in %s!", bt.version, golangDir)
 	} else {
 		log.Infof(ctx, "Will install Golang v%s into %s", bt.version, golangDir)
-		downloadUrl := bt.downloadURL()
+		downloadURL := bt.downloadURL()
 
-		log.Infof(ctx, "Downloading from URL %s ...", downloadUrl)
-		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
+		log.Infof(ctx, "Downloading from URL %s ...", downloadURL)
+		localFile, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, downloadURL)
 		if err != nil {
 			log.Errorf(ctx, "Unable to download: %v", err)
 			return err

@@ -3,6 +3,7 @@ package buildpacks
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 
@@ -83,10 +84,10 @@ func (bt androidNDKBuildTool) install(ctx context.Context) error {
 		log.Infof(ctx, "Android NDK v%s located in %s!", bt.version, ndkDir)
 	} else {
 		log.Infof(ctx, "Will install Android NDK v%s into %s", bt.version, ndkDir)
-		downloadUrl := bt.downloadURL()
+		downloadURL := bt.downloadURL()
 
-		log.Infof(ctx, "Downloading Android NDK v%s from URL %s...", bt.version, downloadUrl)
-		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
+		log.Infof(ctx, "Downloading Android NDK v%s from URL %s...", bt.version, downloadURL)
+		localFile, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, downloadURL)
 		if err != nil {
 			log.Errorf(ctx, "Unable to download: %v", err)
 			return err

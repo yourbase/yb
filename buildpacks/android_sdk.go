@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -138,10 +139,10 @@ func (bt androidBuildTool) install(ctx context.Context) error {
 		log.Infof(ctx, "Android v%s located in %s!", bt.version, androidDir)
 	} else {
 		log.Infof(ctx, "Will install Android v%s into %s", bt.version, androidDir)
-		downloadUrl := bt.downloadURL()
+		downloadURL := bt.downloadURL()
 
-		log.Infof(ctx, "Downloading Android from URL %s...", downloadUrl)
-		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
+		log.Infof(ctx, "Downloading Android from URL %s...", downloadURL)
+		localFile, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, downloadURL)
 		if err != nil {
 			log.Errorf(ctx, "Unable to download: %v", err)
 			return err

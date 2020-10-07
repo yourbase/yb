@@ -3,6 +3,7 @@ package buildpacks
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -80,10 +81,10 @@ func (bt antBuildTool) install(ctx context.Context) error {
 		log.Infof(ctx, "Ant v%s located in %s!", bt.version, antDir)
 	} else {
 		log.Infof(ctx, "Will install Ant v%s into %s", bt.version, antDir)
-		downloadUrl := bt.downloadURL()
+		downloadURL := bt.downloadURL()
 
-		log.Infof(ctx, "Downloading Ant from URL %s...", downloadUrl)
-		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
+		log.Infof(ctx, "Downloading Ant from URL %s...", downloadURL)
+		localFile, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, downloadURL)
 		if err != nil {
 			log.Errorf(ctx, "Unable to download: %v", err)
 			return err

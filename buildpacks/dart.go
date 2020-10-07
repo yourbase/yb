@@ -2,6 +2,7 @@ package buildpacks
 
 import (
 	"context"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -90,10 +91,10 @@ func (bt dartBuildTool) install(ctx context.Context) error {
 		log.Infof(ctx, "Dart v%s located in %s!", bt.version, dartDir)
 	} else {
 		log.Infof(ctx, "Will install Dart v%s into %s", bt.version, dartDir)
-		downloadUrl := bt.downloadURL()
+		downloadURL := bt.downloadURL()
 
-		log.Infof(ctx, "Downloading Dart from URL %s...", downloadUrl)
-		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
+		log.Infof(ctx, "Downloading Dart from URL %s...", downloadURL)
+		localFile, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, downloadURL)
 		if err != nil {
 			log.Errorf(ctx, "Unable to download: %v", err)
 			return err

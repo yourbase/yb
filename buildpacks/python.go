@@ -3,6 +3,7 @@ package buildpacks
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 
@@ -49,7 +50,7 @@ func (bt pythonBuildTool) install(ctx context.Context) error {
 		}
 
 		log.Infof(ctx, "Downloading Miniconda from URL %s...", downloadURL)
-		localFile, err := plumbing.DownloadFileWithCache(downloadURL)
+		localFile, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, downloadURL)
 		if err != nil {
 			log.Errorf(ctx, "Unable to download: %v", err)
 			return err

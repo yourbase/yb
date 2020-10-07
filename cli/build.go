@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -23,6 +24,7 @@ import (
 	"github.com/matishsiao/goInfo"
 	"github.com/yourbase/commons/xcontext"
 	ybconfig "github.com/yourbase/yb/config"
+	"github.com/yourbase/yb/internal/ybtrace"
 	"github.com/yourbase/yb/packages"
 	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/types"
@@ -89,7 +91,7 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 	global.SetTraceProvider(tp)
 
 	startTime := time.Now()
-	ctx, span := tracer().Start(ctx, "Build", trace.WithNewRoot())
+	ctx, span := ybtrace.Start(ctx, "Build", trace.WithNewRoot())
 	defer span.End()
 
 	if plumbing.InsideTheMatrix() {
@@ -255,7 +257,7 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 
 	var buildError error
 	for _, target := range buildTargets {
-		targetCtx, targetSpan := tracer().Start(ctx, target.Name, trace.WithAttributes(
+		targetCtx, targetSpan := ybtrace.Start(ctx, target.Name, trace.WithAttributes(
 			label.String("target", target.Name),
 		))
 		buildError = targetPackage.SetupBuildDependencies(targetCtx, target)
@@ -513,7 +515,7 @@ func RunCommands(ctx context.Context, config BuildConfiguration) error {
 	for _, cmdString := range target.Commands {
 		var stepError error
 
-		_, cmdSpan := tracer().Start(ctx, cmdString, trace.WithAttributes(
+		_, cmdSpan := ybtrace.Start(ctx, cmdString, trace.WithAttributes(
 			label.String("command", cmdString),
 		))
 		if strings.HasPrefix(cmdString, "cd ") {
@@ -715,7 +717,7 @@ func sha256File(path string) (string, error) {
 func DownloadYB(ctx context.Context) (string, error) {
 	// Stick with this version, we can track some relatively recent version because
 	// we will just update anyway so it doesn't need to be super-new unless we broke something
-	downloadUrl := "https://bin.equinox.io/a/7G9uDXWDjh8/yb-0.0.39-linux-amd64.tar.gz"
+	downloadURL := "https://bin.equinox.io/a/7G9uDXWDjh8/yb-0.0.39-linux-amd64.tar.gz"
 	binarySha256 := "3e21a9c98daa168ea95a5be45d14408c18688b5eea211d7936f6cd013bd23210"
 	cachePath := plumbing.CacheDir()
 	tmpPath := filepath.Join(cachePath, ".yb-tmp")
@@ -735,7 +737,7 @@ func DownloadYB(ctx context.Context) (string, error) {
 	}
 
 	// Couldn't tell, check if we need to and download the archive
-	localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
+	localFile, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, downloadURL)
 	if err != nil {
 		return "", fmt.Errorf("download yb: %w", err)
 	}

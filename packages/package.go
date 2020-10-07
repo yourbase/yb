@@ -12,15 +12,9 @@ import (
 	"github.com/yourbase/yb/buildpacks"
 	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/types"
-	"go.opentelemetry.io/otel/api/global"
-	"go.opentelemetry.io/otel/api/trace"
 	"gopkg.in/yaml.v2"
 	"zombiezen.com/go/log"
 )
-
-func tracer() trace.Tracer {
-	return global.Tracer("github.com/yourbase/yb/packages")
-}
 
 type Package struct {
 	Name     string

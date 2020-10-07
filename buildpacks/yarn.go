@@ -3,6 +3,7 @@ package buildpacks
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 
@@ -55,11 +56,11 @@ func (bt yarnBuildTool) install(ctx context.Context) error {
 		log.Infof(ctx, "Yarn v%s located in %s!", bt.version, yarnDir)
 	} else {
 		log.Infof(ctx, "Will install Yarn v%s into %s", bt.version, installDir)
-		downloadUrl := bt.downloadURL()
-		log.Infof(ctx, "Downloading from URL %s...", downloadUrl)
-		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
+		downloadURL := bt.downloadURL()
+		log.Infof(ctx, "Downloading from URL %s...", downloadURL)
+		localFile, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, downloadURL)
 		if err != nil {
-			return fmt.Errorf("Unable to download %s: %v", downloadUrl, err)
+			return fmt.Errorf("Unable to download %s: %v", downloadURL, err)
 		}
 
 		if err := archiver.Unarchive(localFile, installDir); err != nil {
