@@ -3,6 +3,7 @@ package buildpacks
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -93,10 +94,10 @@ func (bt protocBuildTool) install(ctx context.Context) error {
 		return nil
 	}
 	log.Infof(ctx, "Will install Protoc v%s into %s", bt.version, protocDir)
-	downloadUrl := bt.downloadURL()
+	downloadURL := bt.downloadURL()
 
-	log.Infof(ctx, "Downloading Protoc from URL %s...", downloadUrl)
-	localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
+	log.Infof(ctx, "Downloading Protoc from URL %s...", downloadURL)
+	localFile, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, downloadURL)
 	if err != nil {
 		log.Errorf(ctx, "Unable to download: %v", err)
 		return err

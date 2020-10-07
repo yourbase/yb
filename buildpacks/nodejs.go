@@ -3,6 +3,7 @@ package buildpacks
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 
@@ -59,9 +60,9 @@ func (bt nodeBuildTool) install(ctx context.Context) error {
 	} else {
 		log.Infof(ctx, "Would install Node v%s into %s", bt.version, installDir)
 		archiveFile := fmt.Sprintf("%s.tar.gz", nodePkgString)
-		downloadUrl := fmt.Sprintf("%s/v%s/%s", nodeDistMirror, bt.version, archiveFile)
-		log.Infof(ctx, "Downloading from URL %s...", downloadUrl)
-		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
+		downloadURL := fmt.Sprintf("%s/v%s/%s", nodeDistMirror, bt.version, archiveFile)
+		log.Infof(ctx, "Downloading from URL %s...", downloadURL)
+		localFile, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, downloadURL)
 		if err != nil {
 			log.Errorf(ctx, "Unable to download: %v", err)
 			return err

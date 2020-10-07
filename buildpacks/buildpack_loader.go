@@ -5,17 +5,13 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/yourbase/yb/internal/ybtrace"
 	"github.com/yourbase/yb/plumbing"
-	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/label"
 	"zombiezen.com/go/log"
 )
-
-func tracer() trace.Tracer {
-	return global.Tracer("github.com/yourbase/yb/buildpacks")
-}
 
 type buildToolSpec struct {
 	tool            string
@@ -103,7 +99,7 @@ func Install(ctx context.Context, pkgCacheDir string, pkgDir string, spec string
 	}
 
 	// Install if needed
-	_, installSpan := tracer().Start(ctx, spec+" [install]", trace.WithAttributes(
+	_, installSpan := ybtrace.Start(ctx, spec+" [install]", trace.WithAttributes(
 		label.String("buildpack", buildpackName),
 		label.String("tool", spec),
 	))
@@ -115,7 +111,7 @@ func Install(ctx context.Context, pkgCacheDir string, pkgDir string, spec string
 	}
 
 	// Setup build tool (paths, env, etc)
-	_, setupSpan := tracer().Start(ctx, spec+" [setup]", trace.WithAttributes(
+	_, setupSpan := ybtrace.Start(ctx, spec+" [setup]", trace.WithAttributes(
 		label.String("buildpack", buildpackName),
 		label.String("tool", spec),
 	))

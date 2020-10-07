@@ -3,6 +3,7 @@ package buildpacks
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 
@@ -62,14 +63,14 @@ func (bt glideBuildTool) install(ctx context.Context) error {
 			Version: bt.version,
 		}
 
-		downloadUrl, err := plumbing.TemplateToString(glideDistMirror, params)
+		downloadURL, err := plumbing.TemplateToString(glideDistMirror, params)
 		if err != nil {
 			log.Errorf(ctx, "Unable to generate download URL: %v", err)
 			return err
 		}
 
-		log.Infof(ctx, "Downloading from URL %s ...", downloadUrl)
-		localFile, err := plumbing.DownloadFileWithCache(downloadUrl)
+		log.Infof(ctx, "Downloading from URL %s ...", downloadURL)
+		localFile, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, downloadURL)
 		if err != nil {
 			log.Errorf(ctx, "Unable to download: %v", err)
 			return err
