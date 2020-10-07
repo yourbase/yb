@@ -4,7 +4,7 @@ The format is based on [Keep a Changelog][], and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
-[Unreleased]: https://github.com/yourbase/yb/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/yourbase/yb/compare/v0.3.2...HEAD
 
 ## [Unreleased][]
 
@@ -12,6 +12,18 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 -  Update to latest version of [Narwhal](https://github.com/yourbase/narwhal),
    which contains many fixes for Docker interactions.
+
+## [0.3.2][]
+
+Version 0.3.2 fixes issues with the Python buildpack.
+
+[0.3.2]: https://github.com/yourbase/yb/releases/tag/v0.3.2
+
+### Fixed
+
+-  Fixed an incorrect URL for Miniconda in the Python buildpack.
+-  HTTP downloads in yb no longer ignore the status code and will abort for
+   any non-200 status code.
 
 ## [0.3.1][]
 
