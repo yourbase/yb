@@ -202,7 +202,7 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 		log.Infof(ctx, "Executing build steps in container")
 
 		target := primaryTarget
-		containerDef := target.Container
+		containerDef := target.Container.ToNarwhal()
 		containerDef.Command = "/usr/bin/tail -f /dev/null"
 
 		// Append build environment variables
@@ -220,7 +220,7 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 		containerDef.Mounts = append(containerDef.Mounts, mount)
 
 		// Do our build in a container - don't do the build locally
-		err := b.BuildInsideContainer(ctx, target, containerDef.ToNarwhal(), buildData, b.ExecPrefix, b.ReuseContainers)
+		err := b.BuildInsideContainer(ctx, target, containerDef, buildData, b.ExecPrefix, b.ReuseContainers)
 		if err != nil {
 			log.Errorf(ctx, "Unable to build %s inside container: %v", target.Name, err)
 			return subcommands.ExitFailure
@@ -376,7 +376,7 @@ func Cleanup(ctx context.Context, b BuildData) {
 
 func (b *BuildCmd) BuildInsideContainer(ctx context.Context, target *types.BuildTarget, containerDef *narwhal.ContainerDefinition, buildData BuildData, execPrefix string, reuseOldContainer bool) error {
 	dockerClient := buildData.Containers.ServiceContext.DockerClient
-	image := target.Container.Image
+	image := containerDef.Image
 	log.Infof(ctx, "Using container image: %s", image)
 	buildContainer, err := buildData.Containers.ServiceContext.FindContainer(ctx, containerDef)
 	if err != nil {
