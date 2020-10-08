@@ -87,7 +87,7 @@ func (bt androidNDKBuildTool) install(ctx context.Context) error {
 		downloadURL := bt.downloadURL()
 
 		log.Infof(ctx, "Downloading Android NDK v%s from URL %s...", bt.version, downloadURL)
-		localFile, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, downloadURL)
+		localFile, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, bt.spec.dataDirs, downloadURL)
 		if err != nil {
 			log.Errorf(ctx, "Unable to download: %v", err)
 			return err

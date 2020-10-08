@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/yourbase/yb/buildpacks"
+	"github.com/yourbase/yb/internal/ybdata"
 	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/types"
 	"gopkg.in/yaml.v2"
@@ -77,23 +78,23 @@ func (p Package) BuildRoot() string {
 	return buildRoot
 }
 
-func (p Package) SetupBuildDependencies(ctx context.Context, target *types.BuildTarget) error {
+func (p Package) SetupBuildDependencies(ctx context.Context, dataDirs *ybdata.Dirs, target *types.BuildTarget) error {
 	for _, dep := range target.Dependencies.Build {
-		if err := buildpacks.Install(ctx, p.BuildRoot(), p.Path, dep); err != nil {
+		if err := buildpacks.Install(ctx, dataDirs, p.BuildRoot(), p.Path, dep); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (p Package) SetupRuntimeDependencies(ctx context.Context) error {
+func (p Package) SetupRuntimeDependencies(ctx context.Context, dataDirs *ybdata.Dirs) error {
 	for _, dep := range p.Manifest.Dependencies.Runtime {
-		if err := buildpacks.Install(ctx, p.BuildRoot(), p.Path, dep); err != nil {
+		if err := buildpacks.Install(ctx, dataDirs, p.BuildRoot(), p.Path, dep); err != nil {
 			return err
 		}
 	}
 	for _, dep := range p.Manifest.Dependencies.Build {
-		if err := buildpacks.Install(ctx, p.BuildRoot(), p.Path, dep); err != nil {
+		if err := buildpacks.Install(ctx, dataDirs, p.BuildRoot(), p.Path, dep); err != nil {
 			return err
 		}
 	}

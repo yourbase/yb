@@ -121,7 +121,7 @@ func (bt rubyBuildTool) install(ctx context.Context) error {
 			downloadURL := bt.downloadURL(ctx)
 			log.Infof(ctx, "Will download pre-built Ruby from %s", downloadURL)
 
-			localFile, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, downloadURL)
+			localFile, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, bt.spec.dataDirs, downloadURL)
 			if err != nil {
 				log.Errorf(ctx, "Unable to download: %v", err)
 				return err
