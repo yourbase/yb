@@ -33,26 +33,26 @@ func (p *LoginCmd) SetFlags(f *flag.FlagSet) {
 
 func (p *LoginCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	reader := bufio.NewReader(os.Stdin)
-	tokenUrl, err := ybconfig.UserSettingsUrl()
+	tokenURL, err := ybconfig.UserSettingsURL()
 	if err != nil {
 		log.Errorf(ctx, "Couldn't determine login URL: %v\n", err)
 		return subcommands.ExitFailure
 	}
 
-	tokenPrompt := fmt.Sprintf("Open up %s and then paste the token here.", tokenUrl)
+	tokenPrompt := fmt.Sprintf("Open up %s and then paste the token here.", tokenURL)
 	fmt.Println(tokenPrompt)
 	fmt.Print("API Token: ")
 	apiToken, _ := reader.ReadString('\n')
 	apiToken = strings.TrimSuffix(apiToken, "\n")
 
-	validationUrl, err := ybconfig.TokenValidationUrl(apiToken)
+	validationURL, err := ybconfig.TokenValidationURL(apiToken)
 
 	if err != nil {
 		log.Errorf(ctx, "Unable to get token validation URL: %v\n", err)
 		return subcommands.ExitFailure
 	}
 
-	resp, err := http.Get(validationUrl)
+	resp, err := http.Get(validationURL)
 
 	if err != nil {
 		log.Errorf(ctx, "Couldn't make validation request: %v\n", err)
@@ -89,7 +89,7 @@ func (p *LoginCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 		return subcommands.ExitFailure
 	}
 
-	if err = ybconfig.SetConfigValue("user", "api_key", apiToken); err != nil {
+	if err = ybconfig.Set("user", "api_key", apiToken); err != nil {
 		log.Errorf(ctx, "Cannot store API token: %v\n", err)
 		return subcommands.ExitFailure
 	}

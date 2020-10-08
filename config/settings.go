@@ -4,59 +4,41 @@ import (
 	"fmt"
 	"os"
 	"strings"
-)
 
-const (
-	APP_SETTINGS       = "/user/settings"
-	API_TOKEN_VALIDATE = "/apikey/validate/%s"
+	"gopkg.in/ini.v1"
 )
 
 func ShouldUploadBuildLogs() bool {
-
-	if v, err := GetConfigValue("user", "upload_build_logs"); err == nil {
+	if v, err := Get("user", "upload_build_logs"); err == nil {
 		if v == "true" {
 			return true
 		}
 	}
-
 	return false
 }
 
-func YourBaseProfile() string {
-	profile, exists := os.LookupEnv("YOURBASE_PROFILE")
-
-	if exists {
+func getProfile(cfg *ini.File) string {
+	if profile := os.Getenv("YOURBASE_PROFILE"); profile != "" {
 		return profile
 	}
-
-	profile, exists = os.LookupEnv("YB_PROFILE")
-
-	if exists {
+	if profile := os.Getenv("YB_PROFILE"); profile != "" {
 		return profile
 	}
-
-	profile, err := GetConfigValue("defaults", "environment")
-	if err == nil {
-		return profile
-	}
-
-	return ""
+	return cfg.Section("defaults").Key("environment").String()
 }
 
-func apiBaseUrl() (string, error) {
+func apiBaseURL() (string, error) {
 	if url, exists := os.LookupEnv("YOURBASE_API_URL"); exists {
 		return url, nil
 	}
-
-	if url, err := GetConfigValue("yourbase", "api_url"); err == nil {
-		if url != "" {
-			return url, nil
-		}
+	cfg, err := loadConfigFiles()
+	if err != nil {
+		return "", fmt.Errorf("determine API URL: %w", err)
 	}
-
-	profile := YourBaseProfile()
-
-	switch profile {
+	if url := get(cfg, "yourbase", "api_url"); url != "" {
+		return url, nil
+	}
+	switch profile := getProfile(cfg); profile {
 	case "staging":
 		return "https://api.staging.yourbase.io", nil
 	case "preview":
@@ -68,42 +50,34 @@ func apiBaseUrl() (string, error) {
 	case "":
 		return "https://api.yourbase.io", nil
 	default:
-		return "", fmt.Errorf("Unknown environment (%s) and no override in the config file or environment available", profile)
-	}
-
-	return "", fmt.Errorf("Unable to generate URL")
-}
-
-func ApiUrl(path string) (string, error) {
-	if !strings.HasPrefix(path, "/") {
-		path = fmt.Sprintf("/%s", path)
-	}
-
-	if baseUrl, err := apiBaseUrl(); err != nil {
-		return "", fmt.Errorf("Can't determine API URL: %v", err)
-	} else {
-		return fmt.Sprintf("%s%s", baseUrl, path), nil
+		return "", fmt.Errorf("determine API URL: unknown environment %s and no configuration set", profile)
 	}
 }
 
-func TokenValidationUrl(apiToken string) (string, error) {
-	return ApiUrl(fmt.Sprintf(API_TOKEN_VALIDATE, apiToken))
+func APIURL(path string) (string, error) {
+	base, err := apiBaseURL()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSuffix(base, "/") + "/" + strings.TrimPrefix(path, "/"), nil
 }
 
-func managementBaseUrl() (string, error) {
-	if url, exists := os.LookupEnv("YOURBASE_UI_URL"); exists {
+func TokenValidationURL(apiToken string) (string, error) {
+	return APIURL("/apikey/validate/" + apiToken)
+}
+
+func uiBaseURL() (string, error) {
+	if url := os.Getenv("YOURBASE_UI_URL"); url != "" {
 		return url, nil
 	}
-
-	if url, err := GetConfigValue("yourbase", "management_url"); err == nil {
-		if url != "" {
-			return url, nil
-		}
+	cfg, err := loadConfigFiles()
+	if err != nil {
+		return "", fmt.Errorf("determine UI URL: %w", err)
 	}
-
-	profile := YourBaseProfile()
-
-	switch profile {
+	if url := get(cfg, "yourbase", "management_url"); url != "" {
+		return url, nil
+	}
+	switch profile := getProfile(cfg); profile {
 	case "staging":
 		return "https://app.staging.yourbase.io", nil
 	case "preview":
@@ -115,58 +89,50 @@ func managementBaseUrl() (string, error) {
 	case "":
 		return "https://app.yourbase.io", nil
 	default:
-		return "", fmt.Errorf("Unknown environment (%s) and no override in the config file or environment available", profile)
+		return "", fmt.Errorf("determine UI URL: unknown environment %s and no configuration set", profile)
 	}
 }
 
-func ManagementUrl(path string) (string, error) {
-	if !strings.HasPrefix(path, "/") {
-		path = fmt.Sprintf("/%s", path)
+func UIURL(path string) (string, error) {
+	base, err := uiBaseURL()
+	if err != nil {
+		return "", err
 	}
-
-	if baseUrl, err := managementBaseUrl(); err != nil {
-		return "", fmt.Errorf("Couldn't determine management URL: %v", err)
-	} else {
-		return fmt.Sprintf("%s%s", baseUrl, path), nil
-	}
+	return strings.TrimSuffix(base, "/") + "/" + strings.TrimPrefix(path, "/"), nil
 }
 
-func UserSettingsUrl() (string, error) {
-	return ManagementUrl(APP_SETTINGS)
+func UserSettingsURL() (string, error) {
+	return UIURL("/user/settings")
 }
 
-func CurrentGHAppUrl() (gh string) {
-	profile := YourBaseProfile()
-
+func GitHubAppURL() (gh string) {
+	profile := "production"
+	if cfg, err := loadConfigFiles(); err == nil {
+		profile = getProfile(cfg)
+	}
 	switch profile {
 	case "staging":
-		gh = "https://github.com/apps/yourbase-staging"
+		return "https://github.com/apps/yourbase-staging"
 	case "preview":
-		gh = "https://github.com/apps/yourbase-preview"
+		return "https://github.com/apps/yourbase-preview"
 	case "development":
-		gh = "https://github.com/apps/yourbase-development"
-	case "production":
-		gh = "https://github.com/apps/yourbase"
+		return "https://github.com/apps/yourbase-development"
 	default:
-		gh = "https://github.com/apps/yourbase"
+		return "https://github.com/apps/yourbase"
 	}
-
-	return
 }
 
 func UserToken() (string, error) {
-	token, exists := os.LookupEnv("YB_USER_TOKEN")
-	if !exists {
-		token, err := GetConfigValue("user", "api_key")
-
-		if err != nil {
-			return "", fmt.Errorf("Unable to find YB token in config file or environment.\nUse yb login to fetch one, if you already logged in to https://app.yourbase.io")
-		}
-
-		return token, nil
-	} else {
+	if token := os.Getenv("YB_USER_TOKEN"); token != "" {
 		return token, nil
 	}
-
-	return "", fmt.Errorf("Unable to determine token - not in the config or environment")
+	token, err := Get("user", "api_key")
+	if err != nil {
+		return "", fmt.Errorf("get API token: %w", err)
+	}
+	if token == "" {
+		return "", fmt.Errorf("get API token: not found in configuration or environment. " +
+			"Use 'yb login' to log into YourBase.")
+	}
+	return token, nil
 }

@@ -617,13 +617,13 @@ func UploadBuildLogsToAPI(ctx context.Context, buf *bytes.Buffer) {
 		}
 
 		logViewPath := fmt.Sprintf("/buildlogs/%s", buildLog.UUID)
-		buildLogUrl, err := ybconfig.ManagementUrl(logViewPath)
+		buildLogURL, err := ybconfig.UIURL(logViewPath)
 
 		if err != nil {
 			log.Errorf(ctx, "Unable to determine build log url: %v", err)
 		}
 
-		log.Infof(ctx, "View your build log here: %s", buildLogUrl)
+		log.Infof(ctx, "View your build log here: %s", buildLogURL)
 	}
 
 }

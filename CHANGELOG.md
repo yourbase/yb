@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 ### Fixed
 
+-  yb now respects the `XDG_CONFIG_HOME` and `XDG_CONFIG_DIRS` environment
+   variables when reading configuration files.
 -  Update to latest version of [Narwhal](https://github.com/yourbase/narwhal),
    which contains many fixes for Docker interactions.
 

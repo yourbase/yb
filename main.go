@@ -106,7 +106,7 @@ func (l *logger) LogEnabled(entry log.Entry) bool {
 }
 
 func configuredLogLevel() log.Level {
-	l, _ := ybconfig.GetConfigValue("defaults", "log-level")
+	l, _ := ybconfig.Get("defaults", "log-level")
 	switch strings.ToLower(l) {
 	case "debug":
 		return log.Debug
@@ -124,7 +124,7 @@ func colorLogs() bool {
 }
 
 func showLogLevels() bool {
-	out, _ := ybconfig.GetConfigValue("defaults", "no-pretty-output")
+	out, _ := ybconfig.Get("defaults", "no-pretty-output")
 	if out != "" {
 		b, _ := strconv.ParseBool(out)
 		return !b
