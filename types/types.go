@@ -53,36 +53,33 @@ type ExecPhase struct {
 }
 
 type ContainerDefinition struct {
-	Image         string   `yaml:"image"`
-	Mounts        []string `yaml:"mounts"`
-	Ports         []string `yaml:"ports"`
-	Environment   []string `yaml:"environment"`
-	Command       string   `yaml:"command"`
-	WorkDir       string   `yaml:"workdir"`
-	Privileged    bool
+	Image         string        `yaml:"image"`
+	Mounts        []string      `yaml:"mounts"`
+	Ports         []string      `yaml:"ports"`
+	Environment   []string      `yaml:"environment"`
+	Command       string        `yaml:"command"`
+	WorkDir       string        `yaml:"workdir"`
 	PortWaitCheck PortWaitCheck `yaml:"port_check"`
 	Label         string        `yaml:"label"`
-	ExecUserId    string
-	ExecGroupId   string
-	Namespace     string
-	LocalWorkDir  string
 }
 
 func (def *ContainerDefinition) ToNarwhal() *narwhal.ContainerDefinition {
+	image := "yourbase/yb_ubuntu:18.04"
+	if def == nil {
+		return &narwhal.ContainerDefinition{Image: image}
+	}
+	if def.Image != "" {
+		image = def.Image
+	}
 	return &narwhal.ContainerDefinition{
-		Image:         def.Image,
-		Mounts:        def.Mounts,
-		Ports:         def.Ports,
-		Environment:   def.Environment,
+		Image:         image,
+		Mounts:        append([]string(nil), def.Mounts...),
+		Ports:         append([]string(nil), def.Ports...),
+		Environment:   append([]string(nil), def.Environment...),
 		Command:       def.Command,
 		WorkDir:       def.WorkDir,
-		Privileged:    def.Privileged,
 		PortWaitCheck: *def.PortWaitCheck.ToNarwhal(),
 		Label:         def.Label,
-		ExecUserId:    def.ExecUserId,
-		ExecGroupId:   def.ExecGroupId,
-		Namespace:     def.Namespace,
-		LocalWorkDir:  def.LocalWorkDir,
 	}
 }
 
