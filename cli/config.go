@@ -63,7 +63,7 @@ func (w *configSetCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interf
 			found := false
 			for _, configVar := range VARS {
 				if parts[0] == configVar {
-					config.SetConfigValue("defaults", configVar, parts[1])
+					config.Set("defaults", configVar, parts[1])
 					found = true
 				}
 			}
@@ -103,7 +103,7 @@ func (w *configGetCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interf
 	found := false
 	for _, configVar := range VARS {
 		if passed := f.Args()[0]; passed == configVar {
-			env, err := config.GetConfigValue("defaults", configVar)
+			env, err := config.Get("defaults", configVar)
 			if err != nil {
 				log.Errorf(ctx, "Unable to get current %v: %v", configVar, err)
 				return subcommands.ExitFailure

@@ -160,13 +160,13 @@ func (p *RemoteCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface
 	}
 
 	if project.Repository == "" {
-		projectUrl, err := ybconfig.ManagementUrl(fmt.Sprintf("%s/%s", project.OrgSlug, project.Label))
+		projectURL, err := ybconfig.UIURL(fmt.Sprintf("%s/%s", project.OrgSlug, project.Label))
 		if err != nil {
 			log.Errorf(ctx, "Unable to generate project URL: %v", err)
 			return subcommands.ExitFailure
 		}
 
-		log.Errorf(ctx, "Empty repository for project %s, please check your project settings at %s", project.Label, projectUrl)
+		log.Errorf(ctx, "Empty repository for project %s, please check your project settings at %s", project.Label, projectURL)
 		return subcommands.ExitFailure
 	}
 
@@ -523,14 +523,14 @@ func postJsonToApi(path string, jsonData []byte) (*http.Response, error) {
 		return nil, err
 	}
 
-	apiUrl, err := ybconfig.ApiUrl(path)
+	apiURL, err := ybconfig.APIURL(path)
 
 	if err != nil {
 		return nil, fmt.Errorf("Unable to generate API URL: %v", err)
 	}
 
 	client := &http.Client{}
-	req, err := http.NewRequest("POST", apiUrl, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, err
 	}
@@ -549,12 +549,12 @@ func postToApi(path string, formData url.Values) (*http.Response, error) {
 		return nil, fmt.Errorf("Couldn't get user token: %v", err)
 	}
 
-	apiUrl, err := ybconfig.ApiUrl(path)
+	apiURL, err := ybconfig.APIURL(path)
 	if err != nil {
 		return nil, fmt.Errorf("Couldn't determine API URL: %v", err)
 	}
 	client := &http.Client{}
-	req, err := http.NewRequest("POST", apiUrl, strings.NewReader(formData.Encode()))
+	req, err := http.NewRequest("POST", apiURL, strings.NewReader(formData.Encode()))
 	if err != nil {
 		return nil, fmt.Errorf("Couldn't make API call: %v", err)
 	}
@@ -620,7 +620,7 @@ func (p *RemoteCmd) fetchProject(ctx context.Context, urls []string) (*types.Pro
 		case http.StatusUnauthorized:
 			return nil, fmt.Errorf("Unauthorized, authentication failed.\nPlease `yb login` again.")
 		case http.StatusPreconditionFailed, http.StatusNotFound:
-			return nil, fmt.Errorf("Please verify if this private repository has %s installed.", ybconfig.CurrentGHAppUrl())
+			return nil, fmt.Errorf("Please verify if this private repository has %s installed.", ybconfig.GitHubAppURL())
 		default:
 			return nil, fmt.Errorf("This is us, not you, please try again in a few minutes.")
 		}
@@ -718,7 +718,7 @@ func (cmd *RemoteCmd) submitBuild(ctx context.Context, project *types.Project, t
 		}
 	case 412:
 		// TODO Show helpful message with App URL to fix GH App installation issue
-		return fmt.Errorf("Please verify if this specific repo has %s installed", ybconfig.CurrentGHAppUrl())
+		return fmt.Errorf("Please verify if this specific repo has %s installed", ybconfig.GitHubAppURL())
 	case 500:
 		return fmt.Errorf("Internal server error")
 	}
@@ -741,7 +741,7 @@ func (cmd *RemoteCmd) submitBuild(ctx context.Context, project *types.Project, t
 	if id, err := buildIDFromLogURL(logURL); err != nil {
 		log.Warnf(ctx, "Could not construct build link: %v", err)
 	} else {
-		uiURL, err = ybconfig.ManagementUrl("/" + project.OrgSlug + "/" + project.Label + "/builds/" + id)
+		uiURL, err = ybconfig.UIURL("/" + project.OrgSlug + "/" + project.Label + "/builds/" + id)
 		if err != nil {
 			log.Warnf(ctx, "Could not construct build link: %v", err)
 		}

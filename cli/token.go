@@ -35,7 +35,7 @@ func (p *TokenCmd) SetFlags(f *flag.FlagSet) {
 
 // Execute runs the token command.
 func (p *TokenCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	token, err := config.GetConfigValue("user", "api_key")
+	token, err := config.Get("user", "api_key")
 	if err != nil {
 		log.Errorf(ctx, "Cannot get auth token: %v", err)
 		return subcommands.ExitFailure
