@@ -10,6 +10,7 @@ import (
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/johnewart/subcommands"
 	"github.com/yourbase/narwhal"
+	"github.com/yourbase/yb/internal/ybdata"
 	"github.com/yourbase/yb/plumbing"
 	"zombiezen.com/go/log"
 )
@@ -39,6 +40,11 @@ Executing the target involves:
 3. Start target
 */
 func (b *ExecCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+	dataDirs, err := ybdata.FromEnv()
+	if err != nil {
+		log.Errorf(ctx, "%v", err)
+		return subcommands.ExitFailure
+	}
 
 	targetPackage, err := GetTargetPackage()
 	if err != nil {
@@ -46,7 +52,7 @@ func (b *ExecCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 		return subcommands.ExitFailure
 	}
 
-	if err := targetPackage.SetupRuntimeDependencies(ctx); err != nil {
+	if err := targetPackage.SetupRuntimeDependencies(ctx, dataDirs); err != nil {
 		log.Infof(ctx, "Couldn't configure dependencies: %v\n", err)
 		return subcommands.ExitFailure
 	}
@@ -63,7 +69,12 @@ func (b *ExecCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 			return subcommands.ExitFailure
 		}
 
-		localContainerWorkDir := filepath.Join(targetPackage.BuildRoot(), "containers")
+		buildRoot, err := targetPackage.BuildRoot(dataDirs)
+		if err != nil {
+			log.Errorf(ctx, "%v", err)
+			return subcommands.ExitFailure
+		}
+		localContainerWorkDir := filepath.Join(buildRoot, "containers")
 		if err := os.MkdirAll(localContainerWorkDir, 0777); err != nil {
 			log.Errorf(ctx, "Couldn't create directory: %v", err)
 			return subcommands.ExitFailure
@@ -71,7 +82,7 @@ func (b *ExecCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 
 		log.Infof(ctx, "Will use %s as the dependency work dir", localContainerWorkDir)
 		log.Infof(ctx, "Starting %d dependencies...", len(containers))
-		sc, err := narwhal.NewServiceContextWithId(ctx, dockerClient, "exec", targetPackage.BuildRoot())
+		sc, err := narwhal.NewServiceContextWithId(ctx, dockerClient, "exec", buildRoot)
 		if err != nil {
 			log.Errorf(ctx, "Couldn't create service context for dependencies: %v", err)
 			return subcommands.ExitFailure

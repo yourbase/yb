@@ -10,9 +10,9 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 ### Changed
 
--  Buildpacks are no longer installed to `$HOME/.yourbase/tools`. They are now
-   installed into the per-build context cache. You can safely remove
-   `$HOME/.yourbase/tools` to reclaim disk space.
+-  The build cache is now created under `$XDG_CACHE_HOME/yb`
+   (usually `$HOME/.cache/yb`) rather than `$HOME/.yourbase`.
+   You can safely remove `$HOME/.yourbase` to reclaim disk space.
 
 ### Fixed
 

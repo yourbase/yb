@@ -27,6 +27,7 @@ import (
 	"github.com/yourbase/commons/xcontext"
 	"github.com/yourbase/narwhal"
 	ybconfig "github.com/yourbase/yb/config"
+	"github.com/yourbase/yb/internal/ybdata"
 	"github.com/yourbase/yb/internal/ybtrace"
 	"github.com/yourbase/yb/packages"
 	"github.com/yourbase/yb/plumbing"
@@ -93,6 +94,12 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 	}
 	global.SetTraceProvider(tp)
 
+	dataDirs, err := ybdata.FromEnv()
+	if err != nil {
+		log.Errorf(ctx, "%v", err)
+		return subcommands.ExitFailure
+	}
+
 	startTime := time.Now()
 	ctx, span := ybtrace.Start(ctx, "Build", trace.WithNewRoot())
 	defer span.End()
@@ -115,7 +122,11 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 	}
 
 	manifest := targetPackage.Manifest
-	workDir := targetPackage.BuildRoot()
+	workDir, err := targetPackage.BuildRoot(dataDirs)
+	if err != nil {
+		log.Errorf(ctx, "%v", err)
+		return subcommands.ExitFailure
+	}
 
 	// Determine build target
 	buildTargetName := "default"
@@ -222,7 +233,7 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 		containerDef.Mounts = append(containerDef.Mounts, mount)
 
 		// Do our build in a container - don't do the build locally
-		err := b.BuildInsideContainer(ctx, target, containerDef, buildData, b.ExecPrefix, b.ReuseContainers)
+		err := b.BuildInsideContainer(ctx, dataDirs, target, containerDef, buildData, b.ExecPrefix, b.ReuseContainers)
 		if err != nil {
 			log.Errorf(ctx, "Unable to build %s inside container: %v", target.Name, err)
 			return subcommands.ExitFailure
@@ -269,7 +280,7 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 		targetCtx, targetSpan := ybtrace.Start(ctx, target.Name, trace.WithAttributes(
 			label.String("target", target.Name),
 		))
-		buildError = targetPackage.SetupBuildDependencies(targetCtx, target)
+		buildError = targetPackage.SetupBuildDependencies(targetCtx, dataDirs, target)
 		if buildError != nil {
 			buildError = fmt.Errorf("setting up dependencies for target %s: %w", target.Name, buildError)
 			targetSpan.SetStatus(codes.Internal, buildError.Error())
@@ -376,7 +387,7 @@ func Cleanup(ctx context.Context, b BuildData) {
 	}
 }
 
-func (b *BuildCmd) BuildInsideContainer(ctx context.Context, target *types.BuildTarget, containerDef *narwhal.ContainerDefinition, buildData BuildData, execPrefix string, reuseOldContainer bool) error {
+func (b *BuildCmd) BuildInsideContainer(ctx context.Context, dataDirs *ybdata.Dirs, target *types.BuildTarget, containerDef *narwhal.ContainerDefinition, buildData BuildData, execPrefix string, reuseOldContainer bool) error {
 	dockerClient := buildData.Containers.ServiceContext.DockerClient
 	image := containerDef.Image
 	log.Infof(ctx, "Using container image: %s", image)
@@ -447,7 +458,7 @@ func (b *BuildCmd) BuildInsideContainer(ctx context.Context, target *types.Build
 		devMode = true
 	}
 
-	if err := uploadYBToContainer(ctx, dockerClient, buildContainer, devMode); err != nil {
+	if err := uploadYBToContainer(ctx, dockerClient, dataDirs, buildContainer, devMode); err != nil {
 		return err
 	}
 
@@ -735,7 +746,7 @@ func sha256File(path string) (string, error) {
 	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }
 
-func uploadYBToContainer(ctx context.Context, dockerClient *docker.Client, buildContainer *narwhal.Container, devMode bool) error {
+func uploadYBToContainer(ctx context.Context, dockerClient *docker.Client, dataDirs *ybdata.Dirs, buildContainer *narwhal.Container, devMode bool) error {
 	log.Infof(ctx, "Uploading YB to /yb")
 
 	var localYB io.ReadCloser
@@ -758,7 +769,7 @@ func uploadYBToContainer(ctx context.Context, dockerClient *docker.Client, build
 		localYBSize = info.Size()
 	} else {
 		var err error
-		localYB, localYBSize, err = downloadYB(ctx)
+		localYB, localYBSize, err = downloadYB(ctx, dataDirs)
 		if err != nil {
 			return fmt.Errorf("upload yb to container: %w", err)
 		}
@@ -778,11 +789,11 @@ func uploadYBToContainer(ctx context.Context, dockerClient *docker.Client, build
 
 // TODO: non-linux things too if we ever support non-Linux containers
 // TODO: on non-Linux platforms we shouldn't constantly try to re-download it
-func downloadYB(ctx context.Context) (_ io.ReadCloser, size int64, err error) {
+func downloadYB(ctx context.Context, dataDirs *ybdata.Dirs) (_ io.ReadCloser, size int64, err error) {
 	// Stick with this version, we can track some relatively recent version because
 	// we will just update anyway so it doesn't need to be super-new unless we broke something
 	const downloadURL = "https://bin.equinox.io/a/7G9uDXWDjh8/yb-0.0.39-linux-amd64.tar.gz"
-	archivePath, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, downloadURL)
+	archivePath, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, dataDirs, downloadURL)
 	if err != nil {
 		return nil, 0, fmt.Errorf("download yb: %w", err)
 	}

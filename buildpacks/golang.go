@@ -93,7 +93,7 @@ func (bt golangBuildTool) install(ctx context.Context) error {
 		downloadURL := bt.downloadURL()
 
 		log.Infof(ctx, "Downloading from URL %s ...", downloadURL)
-		localFile, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, downloadURL)
+		localFile, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, bt.spec.dataDirs, downloadURL)
 		if err != nil {
 			log.Errorf(ctx, "Unable to download: %v", err)
 			return err

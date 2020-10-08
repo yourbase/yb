@@ -62,7 +62,7 @@ func (bt nodeBuildTool) install(ctx context.Context) error {
 		archiveFile := fmt.Sprintf("%s.tar.gz", nodePkgString)
 		downloadURL := fmt.Sprintf("%s/v%s/%s", nodeDistMirror, bt.version, archiveFile)
 		log.Infof(ctx, "Downloading from URL %s...", downloadURL)
-		localFile, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, downloadURL)
+		localFile, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, bt.spec.dataDirs, downloadURL)
 		if err != nil {
 			log.Errorf(ctx, "Unable to download: %v", err)
 			return err

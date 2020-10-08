@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/johnewart/subcommands"
+	"github.com/yourbase/yb/internal/ybdata"
 	pkg "github.com/yourbase/yb/packages"
 	"github.com/yourbase/yb/plumbing"
 	ybtypes "github.com/yourbase/yb/types"
@@ -67,7 +68,17 @@ func (w *workspaceLocationCmd) Execute(ctx context.Context, f *flag.FlagSet, _ .
 			return subcommands.ExitFailure
 		}
 
-		log.Infof(ctx, "%s", pkg.BuildRoot())
+		dataDirs, err := ybdata.FromEnv()
+		if err != nil {
+			log.Errorf(ctx, "%v", err)
+			return subcommands.ExitFailure
+		}
+		buildRoot, err := pkg.BuildRoot(dataDirs)
+		if err != nil {
+			log.Errorf(ctx, "%v", err)
+			return subcommands.ExitFailure
+		}
+		log.Infof(ctx, "%s", buildRoot)
 		return subcommands.ExitSuccess
 	} else {
 		ws, err := workspace.LoadWorkspace()

@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"os/user"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -18,6 +17,7 @@ import (
 
 	"github.com/google/shlex"
 	"github.com/ulikunitz/xz"
+	"github.com/yourbase/yb/internal/ybdata"
 	"github.com/yourbase/yb/internal/ybtrace"
 	"github.com/yourbase/yb/types"
 	"go.opentelemetry.io/otel/api/trace"
@@ -123,16 +123,6 @@ func PrependToPath(dir string) {
 	}
 }
 
-func ConfigFilePath(filename string) string {
-	u, _ := user.Current()
-	configDir := filepath.Join(u.HomeDir, ".config", "yb")
-	if err := os.MkdirAll(configDir, 0777); err != nil {
-		log.Errorf(context.TODO(), "%v", err)
-	}
-	filePath := filepath.Join(configDir, filename)
-	return filePath
-}
-
 func PathExists(path string) bool {
 	if _, err := os.Lstat(path); os.IsNotExist(err) {
 		return false
@@ -198,35 +188,18 @@ func RemoveWritePermissionRecursively(path string) bool {
 	return true
 }
 
-func CacheDir() string {
-	cacheDir, exists := os.LookupEnv("YB_CACHE_DIR")
-	if !exists {
-		u, err := user.Current()
-		if err != nil {
-			cacheDir = "/tmp/yourbase/cache"
-		} else {
-			cacheDir = fmt.Sprintf("%s/.yourbase/cache", u.HomeDir)
-		}
-	}
-
-	if err := os.MkdirAll(cacheDir, 0777); err != nil {
-		log.Errorf(context.TODO(), "%v", err)
-	}
-
-	return cacheDir
-}
-
 var cacheFilenameUnsafeChars = regexp.MustCompile(`[^a-zA-Z0-9.]+`)
 
 func cacheFilenameForURL(url string) string {
 	// TODO(light): Use a hash-based scheme.
-	cacheDir := CacheDir()
-	fileName := cacheFilenameUnsafeChars.ReplaceAllString(url, "")
-	return filepath.Join(cacheDir, fileName)
+	return cacheFilenameUnsafeChars.ReplaceAllString(url, "")
 }
 
-func DownloadFileWithCache(ctx context.Context, client *http.Client, url string) (string, error) {
-	cacheFilename := cacheFilenameForURL(url)
+func DownloadFileWithCache(ctx context.Context, client *http.Client, dataDirs *ybdata.Dirs, url string) (string, error) {
+	cacheFilename := filepath.Join(dataDirs.Downloads(), cacheFilenameForURL(url))
+	if err := os.MkdirAll(filepath.Dir(cacheFilename), 0777); err != nil {
+		return "", fmt.Errorf("download %s: %w", url, err)
+	}
 	err := validateDownloadCache(ctx, client, cacheFilename, url)
 	if err == nil {
 		log.Infof(ctx, "Reusing cached version of %s", url)

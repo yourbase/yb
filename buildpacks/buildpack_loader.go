@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/yourbase/yb/internal/ybdata"
 	"github.com/yourbase/yb/internal/ybtrace"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/codes"
@@ -15,12 +16,13 @@ import (
 type buildToolSpec struct {
 	tool       string
 	version    string
+	dataDirs   *ybdata.Dirs
 	cacheDir   string
 	packageDir string
 }
 
 // Install installs the buildpack given by spec.
-func Install(ctx context.Context, pkgCacheDir string, pkgDir string, spec string) error {
+func Install(ctx context.Context, dataDirs *ybdata.Dirs, pkgCacheDir string, pkgDir string, spec string) error {
 	buildpackName, versionString, err := SplitToolSpec(spec)
 	if err != nil {
 		return fmt.Errorf("load build packs: %w", err)
@@ -29,6 +31,7 @@ func Install(ctx context.Context, pkgCacheDir string, pkgDir string, spec string
 	parsed := buildToolSpec{
 		tool:       buildpackName,
 		version:    versionString,
+		dataDirs:   dataDirs,
 		cacheDir:   pkgCacheDir,
 		packageDir: pkgDir,
 	}
