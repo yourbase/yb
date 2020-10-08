@@ -18,8 +18,8 @@ const (
 )
 
 func loadConfigFiles() (*ini.File, error) {
-	// Gather INI files in reverse order because earlier entries should override
-	// later entries.
+	// xdgdir.Config.SearchPaths returns config files in descending order of preference,
+	// but ini.Load accepts them in ascending order of preference, so gather them in reverse.
 	searchPaths := xdgdir.Config.SearchPaths()
 	var iniFiles []interface{}
 	for i := len(searchPaths) - 1; i >= 0; i-- {
