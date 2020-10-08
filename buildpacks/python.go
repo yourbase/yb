@@ -28,11 +28,11 @@ func newPythonBuildTool(toolSpec buildToolSpec) pythonBuildTool {
 }
 
 func (bt pythonBuildTool) anacondaInstallDir() string {
-	return filepath.Join(bt.spec.sharedCacheDir, "miniconda3", "miniconda-"+pythonAnacondaToolVersion)
+	return filepath.Join(bt.spec.cacheDir, "miniconda3", "miniconda-"+pythonAnacondaToolVersion)
 }
 
 func (bt pythonBuildTool) environmentDir() string {
-	return filepath.Join(bt.spec.packageCacheDir, "conda-python", bt.version)
+	return filepath.Join(bt.spec.cacheDir, "conda-python", bt.version)
 }
 
 func (bt pythonBuildTool) install(ctx context.Context) error {

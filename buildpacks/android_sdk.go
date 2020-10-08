@@ -73,7 +73,7 @@ func (bt androidBuildTool) majorVersion() string {
 }
 
 func (bt androidBuildTool) installDir() string {
-	return filepath.Join(plumbing.ToolsDir(), "android", fmt.Sprintf("android-%s", bt.version))
+	return filepath.Join(bt.spec.cacheDir, "android", fmt.Sprintf("android-%s", bt.version))
 }
 
 func (bt androidBuildTool) androidDir() string {

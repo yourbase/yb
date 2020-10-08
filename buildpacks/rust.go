@@ -32,7 +32,7 @@ func (bt rustBuildTool) rustDir() string {
 }
 
 func (bt rustBuildTool) installDir() string {
-	return filepath.Join(bt.spec.sharedCacheDir, "rust")
+	return filepath.Join(bt.spec.cacheDir, "rust")
 }
 
 func (bt rustBuildTool) setup(ctx context.Context) error {
@@ -68,7 +68,7 @@ func (bt rustBuildTool) install(ctx context.Context) error {
 		installerFile := fmt.Sprintf("rustup-init%s", extension)
 		downloadURL := fmt.Sprintf("%s/%s-%s/%s", rustDistMirror, arch, operatingSystem, installerFile)
 
-		downloadDir := bt.spec.packageCacheDir
+		downloadDir := bt.spec.cacheDir
 		localFile := filepath.Join(downloadDir, installerFile)
 		log.Infof(ctx, "Downloading from URL %s to local file %s", downloadURL, localFile)
 		err := plumbing.DownloadFile(ctx, http.DefaultClient, localFile, downloadURL)

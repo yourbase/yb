@@ -62,12 +62,12 @@ func (bt gradleBuildTool) gradleDir() string {
 }
 
 func (bt gradleBuildTool) installDir() string {
-	return filepath.Join(bt.spec.sharedCacheDir, "gradle")
+	return filepath.Join(bt.spec.cacheDir, "gradle")
 }
 
 func (bt gradleBuildTool) setup(ctx context.Context) error {
 	gradleDir := bt.gradleDir()
-	gradleHome := filepath.Join(bt.spec.packageCacheDir, "gradle-home", bt.version)
+	gradleHome := filepath.Join(bt.spec.cacheDir, "gradle-home", bt.version)
 
 	cmdPath := filepath.Join(gradleDir, "bin")
 	currentPath := os.Getenv("PATH")

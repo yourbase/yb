@@ -87,7 +87,7 @@ func (bt rubyBuildTool) rubyDir() string {
 }
 
 func (bt rubyBuildTool) rbenvDir() string {
-	return filepath.Join(bt.spec.sharedCacheDir, "rbenv")
+	return filepath.Join(bt.spec.cacheDir, "rbenv")
 }
 
 func (bt rubyBuildTool) binaryExists(ctx context.Context) bool {
@@ -193,7 +193,7 @@ func (bt rubyBuildTool) install(ctx context.Context) error {
 }
 
 func (bt rubyBuildTool) setup(ctx context.Context) error {
-	gemsDir := filepath.Join(bt.spec.packageCacheDir, "rubygems")
+	gemsDir := filepath.Join(bt.spec.cacheDir, "rubygems")
 	if err := os.MkdirAll(gemsDir, 0777); err != nil {
 		return fmt.Errorf("install Ruby: %w", err)
 	}

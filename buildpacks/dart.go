@@ -67,7 +67,7 @@ func (bt dartBuildTool) majorVersion() string {
 }
 
 func (bt dartBuildTool) installDir() string {
-	return filepath.Join(bt.spec.sharedCacheDir, "dart", bt.version)
+	return filepath.Join(bt.spec.cacheDir, "dart", bt.version)
 }
 
 func (bt dartBuildTool) dartDir() string {

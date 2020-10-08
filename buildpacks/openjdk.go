@@ -94,7 +94,7 @@ func newJavaBuildTool(ctx context.Context, toolSpec buildToolSpec) javaBuildTool
 }
 
 func (bt javaBuildTool) installDir() string {
-	return filepath.Join(bt.spec.sharedCacheDir, "java")
+	return filepath.Join(bt.spec.cacheDir, "java")
 }
 
 func (bt javaBuildTool) javaDir() string {

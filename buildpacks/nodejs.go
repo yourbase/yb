@@ -46,7 +46,7 @@ func (bt nodeBuildTool) nodeDir() string {
 }
 
 func (bt nodeBuildTool) installDir() string {
-	return filepath.Join(bt.spec.sharedCacheDir, "nodejs")
+	return filepath.Join(bt.spec.cacheDir, "nodejs")
 }
 
 func (bt nodeBuildTool) install(ctx context.Context) error {

@@ -50,7 +50,7 @@ func (bt golangBuildTool) majorVersion() string {
 }
 
 func (bt golangBuildTool) installDir() string {
-	return fmt.Sprintf("%s/go/%s", bt.spec.sharedCacheDir, bt.version)
+	return fmt.Sprintf("%s/go/%s", bt.spec.cacheDir, bt.version)
 }
 
 func (bt golangBuildTool) golangDir() string {
@@ -60,7 +60,7 @@ func (bt golangBuildTool) golangDir() string {
 // TODO: handle multiple packages, for now this is ok
 func (bt golangBuildTool) setup(ctx context.Context) error {
 	golangDir := bt.golangDir()
-	goPath := bt.spec.packageCacheDir
+	goPath := bt.spec.cacheDir
 	pkgPath := bt.spec.packageDir
 
 	var goPathElements = []string{goPath, pkgPath}
