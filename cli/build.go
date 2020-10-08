@@ -1,10 +1,13 @@
 package cli
 
 import (
+	"archive/tar"
 	"bytes"
+	"compress/gzip"
 	"context"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -19,7 +22,6 @@ import (
 	"time"
 
 	docker "github.com/fsouza/go-dockerclient"
-	"github.com/johnewart/archiver"
 	"github.com/johnewart/subcommands"
 	"github.com/matishsiao/goInfo"
 	"github.com/yourbase/commons/xcontext"
@@ -434,40 +436,51 @@ func (b *BuildCmd) BuildInsideContainer(ctx context.Context, target *types.Build
 
 	log.Infof(ctx, "Building from %s in container: %s", containerWorkDir, buildContainer.Id)
 
-	// Local path to binary that we want to inject
-	// TODO: this only supports Linux containers
-	localYbPath := ""
-	devMode := false
-
 	// If this is development mode, use the YB binary currently running
 	// We can't do this by default because this only works if the host is
 	// Linux so we might as well behave the same on all platforms
 	// If not development mode, download the binary from the distribution channel
-	if b.Version == "DEVELOPMENT" {
-		if runtime.GOOS == "linux" {
-			// TODO: If we support building inside a container that's not Linux we will want to do something different
-			log.Infof(ctx, "Development version in use, will upload development binary to the container")
-			devMode = true
-		}
+	devMode := false
+	if b.Version == "DEVELOPMENT" && runtime.GOOS == "linux" {
+		// TODO: If we support building inside a container that's not Linux we will want to do something different
+		log.Infof(ctx, "Development version in use, will upload development binary to the container")
+		devMode = true
 	}
 
+	var localYB io.ReadCloser
+	var localYBSize int64
 	if devMode {
-		if p, err := os.Executable(); err != nil {
-			return fmt.Errorf("Can't determine local path to YB: %v", err)
-		} else {
-			localYbPath = p
+		p, err := os.Executable()
+		if err != nil {
+			return err
 		}
+		f, err := os.Open(p)
+		if err != nil {
+			return err
+		}
+		info, err := f.Stat()
+		if err != nil {
+			f.Close()
+			return err
+		}
+		localYB = f
+		localYBSize = info.Size()
 	} else {
-		if p, err := DownloadYB(ctx); err != nil {
-			return fmt.Errorf("Couldn't download YB: %v", err)
-		} else {
-			localYbPath = p
+		var err error
+		localYB, localYBSize, err = DownloadYB(ctx)
+		if err != nil {
+			return err
 		}
 	}
 
 	// Upload and update CLI
-	log.Infof(ctx, "Uploading YB from %s to /yb", localYbPath)
-	err = narwhal.UploadFile(ctx, dockerClient, buildContainer.Id, "/yb", localYbPath)
+	log.Infof(ctx, "Uploading YB to /yb")
+	err = narwhal.Upload(ctx, dockerClient, buildContainer.Id, "/yb", localYB, &tar.Header{
+		Mode:     0777,
+		Size:     localYBSize,
+		Typeflag: tar.TypeReg,
+	})
+	localYB.Close() // just a reader, Close can be ignored.
 	if err != nil {
 		return fmt.Errorf("Unable to upload YB to container: %v", err)
 	}
@@ -758,40 +771,65 @@ func sha256File(path string) (string, error) {
 
 // TODO: non-linux things too if we ever support non-Linux containers
 // TODO: on non-Linux platforms we shouldn't constantly try to re-download it
-func DownloadYB(ctx context.Context) (string, error) {
+func DownloadYB(ctx context.Context) (_ io.ReadCloser, size int64, _ error) {
 	// Stick with this version, we can track some relatively recent version because
 	// we will just update anyway so it doesn't need to be super-new unless we broke something
-	downloadURL := "https://bin.equinox.io/a/7G9uDXWDjh8/yb-0.0.39-linux-amd64.tar.gz"
-	binarySha256 := "3e21a9c98daa168ea95a5be45d14408c18688b5eea211d7936f6cd013bd23210"
-	cachePath := plumbing.CacheDir()
-	tmpPath := filepath.Join(cachePath, ".yb-tmp")
-	ybPath := filepath.Join(tmpPath, "yb")
-	if err := os.MkdirAll(tmpPath, 0777); err != nil {
-		return "", fmt.Errorf("download yb: %w", err)
+	const downloadURL = "https://bin.equinox.io/a/7G9uDXWDjh8/yb-0.0.39-linux-amd64.tar.gz"
+	archivePath, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, downloadURL)
+	if err != nil {
+		return nil, 0, fmt.Errorf("download yb: %w", err)
 	}
-
-	if plumbing.PathExists(ybPath) {
-		checksum, err := sha256File(ybPath)
-		// Checksum match? We're good to go
-		if err == nil && checksum == binarySha256 {
-			return ybPath, nil
+	archiveFile, err := os.Open(archivePath)
+	if err != nil {
+		return nil, 0, fmt.Errorf("download yb: %w", err)
+	}
+	zr, err := gzip.NewReader(archiveFile)
+	if err != nil {
+		archiveFile.Close()
+		return nil, 0, fmt.Errorf("download yb: %s: %w", archivePath, err)
+	}
+	archive := tar.NewReader(zr)
+	found := false
+	for {
+		hdr, err := archive.Next()
+		if errors.Is(err, io.EOF) {
+			break
 		}
-
-		log.Infof(ctx, "Local binary checksum mis-match, re-downloading YB")
+		if err != nil {
+			zr.Close()
+			archiveFile.Close()
+			return nil, 0, fmt.Errorf("download yb: %s: %w", archivePath, err)
+		}
+		if hdr.Name == "yb" {
+			found = true
+			size = hdr.Size
+			break
+		}
 	}
-
-	// Couldn't tell, check if we need to and download the archive
-	localFile, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, downloadURL)
-	if err != nil {
-		return "", fmt.Errorf("download yb: %w", err)
+	if !found {
+		zr.Close()
+		archiveFile.Close()
+		return nil, 0, fmt.Errorf("download yb: no 'yb' found in %s", downloadURL)
 	}
+	return multiCloseReader{
+		Reader:  archive,
+		closers: []io.Closer{zr, archiveFile},
+	}, size, nil
+}
 
-	err = archiver.Unarchive(localFile, tmpPath)
-	if err != nil {
-		return "", fmt.Errorf("download yb: decompress: %v", err)
+type multiCloseReader struct {
+	io.Reader
+	closers []io.Closer
+}
+
+func (mcr multiCloseReader) Close() error {
+	var firstErr error
+	for _, c := range mcr.closers {
+		if err := c.Close(); err != nil && firstErr == nil {
+			firstErr = err
+		}
 	}
-
-	return ybPath, nil
+	return firstErr
 }
 
 // A traceSink records spans in memory. The zero value is an empty sink.
