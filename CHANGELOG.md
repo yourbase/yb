@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 ## [Unreleased][]
 
+### Changed
+
+-  Buildpacks are no longer installed to `$HOME/.yourbase/tools`. They are now
+   installed into the per-build context cache. You can safely remove
+   `$HOME/.yourbase/tools` to reclaim disk space.
+
 ### Fixed
 
 -  Update to latest version of [Narwhal](https://github.com/yourbase/narwhal),
