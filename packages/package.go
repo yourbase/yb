@@ -6,14 +6,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/user"
 	"path/filepath"
 
 	"github.com/yourbase/yb/buildpacks"
+	"github.com/yourbase/yb/internal/ybdata"
 	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/types"
 	"gopkg.in/yaml.v2"
-	"zombiezen.com/go/log"
 )
 
 type Package struct {
@@ -46,54 +45,49 @@ func LoadPackage(name string, path string) (*Package, error) {
 	}, nil
 }
 
-func (p Package) BuildRoot() string {
+func (p Package) BuildRoot(dataDirs *ybdata.Dirs) (string, error) {
 	// Are we a part of a workspace?
 	workspaceDir, err := plumbing.FindWorkspaceRoot()
-
 	if err != nil {
 		// Nope, just ourselves...
-		workspacesRoot, exists := os.LookupEnv("YB_WORKSPACES_ROOT")
-		if !exists {
-			u, err := user.Current()
-			if err != nil {
-				workspacesRoot = "/tmp/yourbase/workspaces"
-			} else {
-				workspacesRoot = fmt.Sprintf("%s/.yourbase/workspaces", u.HomeDir)
-			}
-		}
-
 		h := sha256.New()
-
 		h.Write([]byte(p.Path))
 		workspaceHash := fmt.Sprintf("%x", h.Sum(nil))
-		workspaceDir = filepath.Join(workspacesRoot, workspaceHash[0:12])
+		workspaceDir = filepath.Join(dataDirs.Workspaces(), workspaceHash[0:12])
 	}
 
 	buildRoot := filepath.Join(workspaceDir, "build")
 	if err := os.MkdirAll(buildRoot, 0777); err != nil {
-		log.Errorf(context.TODO(), "Unable to create build dir in workspace: %v", err)
+		return "", fmt.Errorf("create workspace build directory: %w", err)
 	}
-
-	return buildRoot
+	return buildRoot, nil
 }
 
-func (p Package) SetupBuildDependencies(ctx context.Context, target *types.BuildTarget) error {
+func (p Package) SetupBuildDependencies(ctx context.Context, dataDirs *ybdata.Dirs, target *types.BuildTarget) error {
+	buildRoot, err := p.BuildRoot(dataDirs)
+	if err != nil {
+		return err
+	}
 	for _, dep := range target.Dependencies.Build {
-		if err := buildpacks.Install(ctx, p.BuildRoot(), p.Path, dep); err != nil {
+		if err := buildpacks.Install(ctx, dataDirs, buildRoot, p.Path, dep); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (p Package) SetupRuntimeDependencies(ctx context.Context) error {
+func (p Package) SetupRuntimeDependencies(ctx context.Context, dataDirs *ybdata.Dirs) error {
+	buildRoot, err := p.BuildRoot(dataDirs)
+	if err != nil {
+		return err
+	}
 	for _, dep := range p.Manifest.Dependencies.Runtime {
-		if err := buildpacks.Install(ctx, p.BuildRoot(), p.Path, dep); err != nil {
+		if err := buildpacks.Install(ctx, dataDirs, buildRoot, p.Path, dep); err != nil {
 			return err
 		}
 	}
 	for _, dep := range p.Manifest.Dependencies.Build {
-		if err := buildpacks.Install(ctx, p.BuildRoot(), p.Path, dep); err != nil {
+		if err := buildpacks.Install(ctx, dataDirs, buildRoot, p.Path, dep); err != nil {
 			return err
 		}
 	}

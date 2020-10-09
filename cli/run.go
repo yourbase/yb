@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/johnewart/subcommands"
+	"github.com/yourbase/yb/internal/ybdata"
 	"zombiezen.com/go/log"
 )
 
@@ -39,6 +40,11 @@ func (b *RunCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{})
 		fmt.Println(b.Usage())
 		return subcommands.ExitFailure
 	}
+	dataDirs, err := ybdata.DirsFromEnv()
+	if err != nil {
+		log.Errorf(ctx, "%v", err)
+		return subcommands.ExitFailure
+	}
 
 	targetPackage, err := GetTargetPackage()
 	if err != nil {
@@ -49,7 +55,10 @@ func (b *RunCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{})
 	instructions := targetPackage.Manifest
 
 	log.Infof(ctx, "Setting up dependencies...")
-	targetPackage.SetupRuntimeDependencies(ctx)
+	if err := targetPackage.SetupRuntimeDependencies(ctx, dataDirs); err != nil {
+		log.Errorf(ctx, "%v", err)
+		return subcommands.ExitFailure
+	}
 
 	log.Infof(ctx, "Setting environment variables...")
 	for _, property := range instructions.Exec.Environment["default"] {

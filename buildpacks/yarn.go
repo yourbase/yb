@@ -58,7 +58,7 @@ func (bt yarnBuildTool) install(ctx context.Context) error {
 		log.Infof(ctx, "Will install Yarn v%s into %s", bt.version, installDir)
 		downloadURL := bt.downloadURL()
 		log.Infof(ctx, "Downloading from URL %s...", downloadURL)
-		localFile, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, downloadURL)
+		localFile, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, bt.spec.dataDirs, downloadURL)
 		if err != nil {
 			return fmt.Errorf("Unable to download %s: %v", downloadURL, err)
 		}
