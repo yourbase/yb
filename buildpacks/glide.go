@@ -35,7 +35,7 @@ func newGlideBuildTool(toolSpec buildToolSpec) glideBuildTool {
 }
 
 func (bt glideBuildTool) glideDir() string {
-	return filepath.Join(bt.spec.sharedCacheDir, fmt.Sprintf("glide-%v", bt.version))
+	return filepath.Join(bt.spec.cacheDir, fmt.Sprintf("glide-%v", bt.version))
 }
 
 func (bt glideBuildTool) setup(ctx context.Context) error {

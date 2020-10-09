@@ -60,7 +60,7 @@ func (bt herokuBuildTool) majorVersion() string {
 }
 
 func (bt herokuBuildTool) herokuDir() string {
-	return fmt.Sprintf("%s/heroku-%s", bt.spec.packageCacheDir, bt.version)
+	return fmt.Sprintf("%s/heroku-%s", bt.spec.cacheDir, bt.version)
 }
 
 func (bt herokuBuildTool) setup(ctx context.Context) error {

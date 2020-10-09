@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/yourbase/yb/internal/ybtrace"
-	"github.com/yourbase/yb/plumbing"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/label"
@@ -14,11 +13,10 @@ import (
 )
 
 type buildToolSpec struct {
-	tool            string
-	version         string
-	sharedCacheDir  string
-	packageCacheDir string
-	packageDir      string
+	tool       string
+	version    string
+	cacheDir   string
+	packageDir string
 }
 
 // Install installs the buildpack given by spec.
@@ -28,14 +26,11 @@ func Install(ctx context.Context, pkgCacheDir string, pkgDir string, spec string
 		return fmt.Errorf("load build packs: %w", err)
 	}
 
-	sharedCacheDir := plumbing.ToolsDir()
-
 	parsed := buildToolSpec{
-		tool:            buildpackName,
-		version:         versionString,
-		sharedCacheDir:  sharedCacheDir,
-		packageCacheDir: pkgCacheDir,
-		packageDir:      pkgDir,
+		tool:       buildpackName,
+		version:    versionString,
+		cacheDir:   pkgCacheDir,
+		packageDir: pkgDir,
 	}
 
 	var bt interface {

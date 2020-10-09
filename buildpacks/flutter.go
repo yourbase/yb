@@ -86,7 +86,7 @@ func (bt flutterBuildTool) majorVersion() string {
 }
 
 func (bt flutterBuildTool) installDir() string {
-	return filepath.Join(bt.spec.packageCacheDir, "flutter", fmt.Sprintf("flutter-%s", bt.version))
+	return filepath.Join(bt.spec.cacheDir, "flutter", fmt.Sprintf("flutter-%s", bt.version))
 }
 
 func (bt flutterBuildTool) flutterDir() string {

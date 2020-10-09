@@ -59,7 +59,7 @@ func (bt androidNDKBuildTool) downloadURL() string {
 }
 
 func (bt androidNDKBuildTool) installDir() string {
-	return filepath.Join(plumbing.ToolsDir(), "android-ndk")
+	return filepath.Join(bt.spec.cacheDir, "android-ndk")
 }
 
 func (bt androidNDKBuildTool) ndkDir() string {

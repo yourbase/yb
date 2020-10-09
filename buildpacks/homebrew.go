@@ -96,7 +96,7 @@ func (bt homebrewBuildTool) homebrewDir() string {
 }
 
 func (bt homebrewBuildTool) installDir() string {
-	return filepath.Join(bt.spec.packageCacheDir, "homebrew")
+	return filepath.Join(bt.spec.cacheDir, "homebrew")
 }
 
 func (bt homebrewBuildTool) install(ctx context.Context) error {

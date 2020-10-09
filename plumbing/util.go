@@ -198,24 +198,6 @@ func RemoveWritePermissionRecursively(path string) bool {
 	return true
 }
 
-func ToolsDir() string {
-	toolsDir, exists := os.LookupEnv("YB_TOOLS_DIR")
-	if !exists {
-		u, err := user.Current()
-		if err != nil {
-			toolsDir = "/tmp/yourbase/tools"
-		} else {
-			toolsDir = fmt.Sprintf("%s/.yourbase/tools", u.HomeDir)
-		}
-	}
-
-	if err := os.MkdirAll(toolsDir, 0777); err != nil {
-		log.Errorf(context.TODO(), "%v", err)
-	}
-
-	return toolsDir
-}
-
 func CacheDir() string {
 	cacheDir, exists := os.LookupEnv("YB_CACHE_DIR")
 	if !exists {

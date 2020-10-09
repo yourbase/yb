@@ -50,7 +50,7 @@ func (bt mavenBuildTool) majorVersion() string {
 }
 
 func (bt mavenBuildTool) installDir() string {
-	return filepath.Join(plumbing.ToolsDir(), "maven")
+	return filepath.Join(bt.spec.cacheDir, "maven")
 }
 
 func (bt mavenBuildTool) mavenDir() string {

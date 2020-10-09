@@ -57,7 +57,7 @@ func (bt antBuildTool) antDir() string {
 }
 
 func (bt antBuildTool) installDir() string {
-	return filepath.Join(bt.spec.sharedCacheDir, "ant")
+	return filepath.Join(bt.spec.cacheDir, "ant")
 }
 
 func (bt antBuildTool) setup(ctx context.Context) error {

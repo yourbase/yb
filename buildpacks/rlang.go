@@ -48,7 +48,7 @@ func (bt rLangBuildTool) majorVersion() string {
 }
 
 func (bt rLangBuildTool) installDir() string {
-	return filepath.Join(bt.spec.sharedCacheDir, "R")
+	return filepath.Join(bt.spec.cacheDir, "R")
 }
 
 func (bt rLangBuildTool) rLangDir() string {

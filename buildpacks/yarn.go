@@ -31,7 +31,7 @@ func (bt yarnBuildTool) yarnDir() string {
 }
 
 func (bt yarnBuildTool) installDir() string {
-	return filepath.Join(bt.spec.sharedCacheDir, "yarn")
+	return filepath.Join(bt.spec.cacheDir, "yarn")
 }
 
 func (bt yarnBuildTool) downloadURL() string {

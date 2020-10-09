@@ -42,7 +42,7 @@ func newAnaconda3BuildTool(toolSpec buildToolSpec) anacondaBuildTool {
 }
 
 func (bt anacondaBuildTool) installDir() string {
-	return filepath.Join(bt.spec.packageCacheDir, "miniconda", fmt.Sprintf("miniconda-%s", bt.version))
+	return filepath.Join(bt.spec.cacheDir, "miniconda", fmt.Sprintf("miniconda-%s", bt.version))
 }
 
 func (bt anacondaBuildTool) install(ctx context.Context) error {

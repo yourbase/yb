@@ -93,11 +93,10 @@ func TestOpenJDKUrlGeneration(t *testing.T) {
 		},
 	} {
 		bt := newJavaBuildTool(ctx, buildToolSpec{
-			tool:            "java",
-			version:         data.version,
-			sharedCacheDir:  "/tmp/ybcache",
-			packageCacheDir: "/tmp/pkgcache",
-			packageDir:      "/opt/tools/java",
+			tool:       "java",
+			version:    data.version,
+			cacheDir:   "/tmp/pkgcache",
+			packageDir: "/opt/tools/java",
 		})
 
 		url := bt.downloadURL(ctx)

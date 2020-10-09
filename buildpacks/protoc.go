@@ -69,7 +69,7 @@ func (bt protocBuildTool) majorVersion() string {
 }
 
 func (bt protocBuildTool) installDir() string {
-	return filepath.Join(bt.spec.packageCacheDir, "protoc", fmt.Sprintf("protoc-%s", bt.version))
+	return filepath.Join(bt.spec.cacheDir, "protoc", fmt.Sprintf("protoc-%s", bt.version))
 }
 
 func (bt protocBuildTool) protocDir() string {
