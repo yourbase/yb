@@ -32,8 +32,8 @@ type Dirs struct {
 	workspaces string
 }
 
-// FromEnv finds data directories based on environment variables.
-func FromEnv() (*Dirs, error) {
+// DirsFromEnv finds data directories based on environment variables.
+func DirsFromEnv() (*Dirs, error) {
 	cache := os.Getenv("YB_CACHE_DIR")
 	if cache == "" {
 		// TODO(light): This should use LocalAppData on Windows.
@@ -56,7 +56,10 @@ func FromEnv() (*Dirs, error) {
 // NewDirs returns a set of directories that is enclosed within a root directory.
 // This is useful for isolating test data.
 func NewDirs(root string) *Dirs {
-	return &Dirs{cache: root}
+	return &Dirs{
+		cache:      root,
+		workspaces: filepath.Join(cache, "workspaces"),
+	}
 }
 
 // Downloads returns the top-level directory to store downloaded files.
