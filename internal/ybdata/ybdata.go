@@ -58,7 +58,7 @@ func DirsFromEnv() (*Dirs, error) {
 func NewDirs(root string) *Dirs {
 	return &Dirs{
 		cache:      root,
-		workspaces: filepath.Join(cache, "workspaces"),
+		workspaces: filepath.Join(root, "workspaces"),
 	}
 }
 
