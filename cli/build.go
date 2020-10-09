@@ -771,7 +771,7 @@ func sha256File(path string) (string, error) {
 
 // TODO: non-linux things too if we ever support non-Linux containers
 // TODO: on non-Linux platforms we shouldn't constantly try to re-download it
-func DownloadYB(ctx context.Context) (_ io.ReadCloser, size int64, _ error) {
+func DownloadYB(ctx context.Context) (_ io.ReadCloser, size int64, err error) {
 	// Stick with this version, we can track some relatively recent version because
 	// we will just update anyway so it doesn't need to be super-new unless we broke something
 	const downloadURL = "https://bin.equinox.io/a/7G9uDXWDjh8/yb-0.0.39-linux-amd64.tar.gz"
@@ -783,38 +783,37 @@ func DownloadYB(ctx context.Context) (_ io.ReadCloser, size int64, _ error) {
 	if err != nil {
 		return nil, 0, fmt.Errorf("download yb: %w", err)
 	}
+	defer func() {
+		if err != nil {
+			archiveFile.Close()
+		}
+	}()
 	zr, err := gzip.NewReader(archiveFile)
 	if err != nil {
-		archiveFile.Close()
 		return nil, 0, fmt.Errorf("download yb: %s: %w", archivePath, err)
 	}
+	defer func() {
+		if err != nil {
+			zr.Close()
+		}
+	}()
 	archive := tar.NewReader(zr)
-	found := false
 	for {
 		hdr, err := archive.Next()
 		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
-			zr.Close()
-			archiveFile.Close()
 			return nil, 0, fmt.Errorf("download yb: %s: %w", archivePath, err)
 		}
 		if hdr.Name == "yb" {
-			found = true
-			size = hdr.Size
-			break
+			return multiCloseReader{
+				Reader:  archive,
+				closers: []io.Closer{zr, archiveFile},
+			}, hdr.Size, nil
 		}
 	}
-	if !found {
-		zr.Close()
-		archiveFile.Close()
-		return nil, 0, fmt.Errorf("download yb: no 'yb' found in %s", downloadURL)
-	}
-	return multiCloseReader{
-		Reader:  archive,
-		closers: []io.Closer{zr, archiveFile},
-	}, size, nil
+	return nil, 0, fmt.Errorf("download yb: no 'yb' found in %s", downloadURL)
 }
 
 type multiCloseReader struct {
