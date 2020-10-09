@@ -447,42 +447,8 @@ func (b *BuildCmd) BuildInsideContainer(ctx context.Context, target *types.Build
 		devMode = true
 	}
 
-	var localYB io.ReadCloser
-	var localYBSize int64
-	if devMode {
-		p, err := os.Executable()
-		if err != nil {
-			return err
-		}
-		f, err := os.Open(p)
-		if err != nil {
-			return err
-		}
-		info, err := f.Stat()
-		if err != nil {
-			f.Close()
-			return err
-		}
-		localYB = f
-		localYBSize = info.Size()
-	} else {
-		var err error
-		localYB, localYBSize, err = DownloadYB(ctx)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Upload and update CLI
-	log.Infof(ctx, "Uploading YB to /yb")
-	err = narwhal.Upload(ctx, dockerClient, buildContainer.Id, "/yb", localYB, &tar.Header{
-		Mode:     0777,
-		Size:     localYBSize,
-		Typeflag: tar.TypeReg,
-	})
-	localYB.Close() // just a reader, Close can be ignored.
-	if err != nil {
-		return fmt.Errorf("Unable to upload YB to container: %v", err)
+	if err := uploadYBToContainer(ctx, dockerClient, buildContainer, devMode); err != nil {
+		return err
 	}
 
 	if !devMode {
@@ -769,9 +735,50 @@ func sha256File(path string) (string, error) {
 	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }
 
+func uploadYBToContainer(ctx context.Context, dockerClient *docker.Client, buildContainer *narwhal.Container, devMode bool) error {
+	log.Infof(ctx, "Uploading YB to /yb")
+
+	var localYB io.ReadCloser
+	var localYBSize int64
+	if devMode {
+		p, err := os.Executable()
+		if err != nil {
+			return fmt.Errorf("upload yb to container: %w", err)
+		}
+		f, err := os.Open(p)
+		if err != nil {
+			return fmt.Errorf("upload yb to container: %w", err)
+		}
+		defer f.Close()
+		info, err := f.Stat()
+		if err != nil {
+			return fmt.Errorf("upload yb to container: %w", err)
+		}
+		localYB = f
+		localYBSize = info.Size()
+	} else {
+		var err error
+		localYB, localYBSize, err = downloadYB(ctx)
+		if err != nil {
+			return fmt.Errorf("upload yb to container: %w", err)
+		}
+		defer localYB.Close()
+	}
+
+	err := narwhal.Upload(ctx, dockerClient, buildContainer.Id, "/yb", localYB, &tar.Header{
+		Mode:     0777,
+		Size:     localYBSize,
+		Typeflag: tar.TypeReg,
+	})
+	if err != nil {
+		return fmt.Errorf("upload yb to container: %w", err)
+	}
+	return nil
+}
+
 // TODO: non-linux things too if we ever support non-Linux containers
 // TODO: on non-Linux platforms we shouldn't constantly try to re-download it
-func DownloadYB(ctx context.Context) (_ io.ReadCloser, size int64, err error) {
+func downloadYB(ctx context.Context) (_ io.ReadCloser, size int64, err error) {
 	// Stick with this version, we can track some relatively recent version because
 	// we will just update anyway so it doesn't need to be super-new unless we broke something
 	const downloadURL = "https://bin.equinox.io/a/7G9uDXWDjh8/yb-0.0.39-linux-amd64.tar.gz"
