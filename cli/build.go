@@ -94,7 +94,7 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 	}
 	global.SetTraceProvider(tp)
 
-	dataDirs, err := ybdata.FromEnv()
+	dataDirs, err := ybdata.DirsFromEnv()
 	if err != nil {
 		log.Errorf(ctx, "%v", err)
 		return subcommands.ExitFailure

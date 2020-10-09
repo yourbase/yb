@@ -68,7 +68,7 @@ func (w *workspaceLocationCmd) Execute(ctx context.Context, f *flag.FlagSet, _ .
 			return subcommands.ExitFailure
 		}
 
-		dataDirs, err := ybdata.FromEnv()
+		dataDirs, err := ybdata.DirsFromEnv()
 		if err != nil {
 			log.Errorf(ctx, "%v", err)
 			return subcommands.ExitFailure

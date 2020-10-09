@@ -40,7 +40,7 @@ Executing the target involves:
 3. Start target
 */
 func (b *ExecCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	dataDirs, err := ybdata.FromEnv()
+	dataDirs, err := ybdata.DirsFromEnv()
 	if err != nil {
 		log.Errorf(ctx, "%v", err)
 		return subcommands.ExitFailure
