@@ -3,7 +3,7 @@ package packages
 import (
 	"fmt"
 
-	"github.com/yourbase/yb/buildpacks"
+	"github.com/yourbase/yb/internal/buildpack"
 	"github.com/yourbase/yb/types"
 )
 
@@ -16,7 +16,7 @@ func mergeDeps(b *types.BuildManifest) error {
 	targetList := b.BuildTargets
 
 	for _, dep := range globalDeps {
-		tool, version, err := buildpacks.SplitToolSpec(dep)
+		tool, version, err := buildpack.SplitToolSpec(dep)
 		if err != nil {
 			return fmt.Errorf("merging/overriding build localDeps: %w", err)
 		}
@@ -28,7 +28,7 @@ func mergeDeps(b *types.BuildManifest) error {
 			tgtToolMap[tool] = version
 		}
 		for _, dep := range tgt.Dependencies.Build {
-			tool, version, err := buildpacks.SplitToolSpec(dep)
+			tool, version, err := buildpack.SplitToolSpec(dep)
 			if err != nil {
 				return fmt.Errorf("merging/overriding build localDeps: %w", err)
 			}
