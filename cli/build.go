@@ -86,6 +86,10 @@ func (b *BuildCmd) SetFlags(f *flag.FlagSet) {
 }
 
 func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+	if f.NArg() > 1 {
+		log.Errorf(ctx, "usage: yb build takes at most one target")
+		return subcommands.ExitUsageError
+	}
 	buildTraces := new(traceSink)
 	tp, err := sdktrace.NewProvider(sdktrace.WithSyncer(buildTraces))
 	if err != nil {

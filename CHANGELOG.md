@@ -20,6 +20,8 @@ The format is based on [Keep a Changelog][], and this project adheres to
    variables when reading configuration files.
 -  Update to latest version of [Narwhal](https://github.com/yourbase/narwhal),
    which contains many fixes for Docker interactions.
+-  `yb build` will now exit with a non-zero status code if more than one
+   argument is given. Previously, it would silently ignore such arguments.
 
 ## [0.3.2][]
 
