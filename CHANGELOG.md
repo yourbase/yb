@@ -4,9 +4,15 @@ The format is based on [Keep a Changelog][], and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
-[Unreleased]: https://github.com/yourbase/yb/compare/v0.3.2...HEAD
+[Unreleased]: https://github.com/yourbase/yb/compare/v0.4.0...HEAD
 
-## [Unreleased][]
+## [0.4.0][] - 2020-10-12
+
+Version 0.4 removes some broken or ill-conceived functionality from yb and
+changes where yb stores files to obey the [XDG Base Directory specification][].
+
+[0.4.0]: https://github.com/yourbase/yb/releases/tag/v0.4.0
+[XDG Base Directory specification]: https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
 
 ### Changed
 
@@ -32,8 +38,10 @@ The format is based on [Keep a Changelog][], and this project adheres to
    which contains many fixes for Docker interactions.
 -  `yb build` will now exit with a non-zero status code if more than one
    argument is given. Previously, it would silently ignore such arguments.
+-  The download span names in the `yb build` trace now include the URL rather
+   than the unhelpful `%s`.
 
-## [0.3.2][]
+## [0.3.2][] - 2020-10-07
 
 Version 0.3.2 fixes issues with the Python buildpack.
 
@@ -45,7 +53,7 @@ Version 0.3.2 fixes issues with the Python buildpack.
 -  HTTP downloads in yb no longer ignore the status code and will abort for
    any non-200 status code.
 
-## [0.3.1][]
+## [0.3.1][] - 2020-10-06
 
 Version 0.3.1 fixes an issue with error handling during builds.
 
@@ -56,7 +64,7 @@ Version 0.3.1 fixes an issue with error handling during builds.
 -  Fixed a regression where if a dependent target fails, it did not stop
    the build.
 
-## [0.3.0][]
+## [0.3.0][] - 2020-10-05
 
 Version 0.3 is the first release with our new release automation.
 
