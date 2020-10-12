@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/yourbase/yb/buildpacks"
+	"github.com/yourbase/yb/internal/buildpack"
 	"github.com/yourbase/yb/internal/ybdata"
 	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/types"
@@ -69,7 +69,7 @@ func (p Package) SetupBuildDependencies(ctx context.Context, dataDirs *ybdata.Di
 		return err
 	}
 	for _, dep := range target.Dependencies.Build {
-		if err := buildpacks.Install(ctx, dataDirs, buildRoot, p.Path, dep); err != nil {
+		if err := buildpack.Install(ctx, dataDirs, buildRoot, p.Path, dep); err != nil {
 			return err
 		}
 	}
@@ -82,12 +82,12 @@ func (p Package) SetupRuntimeDependencies(ctx context.Context, dataDirs *ybdata.
 		return err
 	}
 	for _, dep := range p.Manifest.Dependencies.Runtime {
-		if err := buildpacks.Install(ctx, dataDirs, buildRoot, p.Path, dep); err != nil {
+		if err := buildpack.Install(ctx, dataDirs, buildRoot, p.Path, dep); err != nil {
 			return err
 		}
 	}
 	for _, dep := range p.Manifest.Dependencies.Build {
-		if err := buildpacks.Install(ctx, dataDirs, buildRoot, p.Path, dep); err != nil {
+		if err := buildpack.Install(ctx, dataDirs, buildRoot, p.Path, dep); err != nil {
 			return err
 		}
 	}

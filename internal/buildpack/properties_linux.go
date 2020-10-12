@@ -1,6 +1,6 @@
 // +build linux
 
-package buildpacks
+package buildpack
 
 import (
 	"bufio"
