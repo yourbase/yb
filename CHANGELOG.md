@@ -14,6 +14,11 @@ The format is based on [Keep a Changelog][], and this project adheres to
    (usually `$HOME/.cache/yb`) rather than `$HOME/.yourbase`.
    You can safely remove `$HOME/.yourbase` to reclaim disk space.
 
+### Removed
+
+-  The build log streaming feature has been removed, since it has been broken
+   for some time. However, we hope to reintroduce it in a future version.
+
 ### Fixed
 
 -  yb now respects the `XDG_CONFIG_HOME` and `XDG_CONFIG_DIRS` environment
