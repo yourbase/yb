@@ -12,7 +12,6 @@ require (
 	// unsupported Darwin syscalls in golang.org/x/sys.
 	github.com/docker/docker v17.12.0-ce-rc1.0.20200421142927-8312004f41e9+incompatible // indirect
 	github.com/dsnet/compress v0.0.1 // indirect
-	github.com/equinox-io/equinox v1.2.0
 	github.com/frankban/quicktest v1.5.0 // indirect
 	github.com/fsouza/go-dockerclient v1.6.0
 	github.com/gobwas/httphead v0.0.0-20180130184737-2c6c146eadee // indirect

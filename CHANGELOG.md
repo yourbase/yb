@@ -21,6 +21,8 @@ The format is based on [Keep a Changelog][], and this project adheres to
    work inside yb.
 -  The build log streaming feature has been removed, since it has been broken
    for some time. However, we hope to reintroduce it in a future version.
+-  Removed the `yb update` command. Users can now stay up-to-date with either
+   the APT or Homebrew repositories.
 
 ### Fixed
 
