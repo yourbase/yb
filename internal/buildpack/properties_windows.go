@@ -1,9 +1,9 @@
-// +build darwin
+// +build windows
 
-package buildpacks
+package buildpack
 
 func OS() string {
-	return "darwin"
+	return "windows"
 }
 
 func Arch() string {
@@ -11,5 +11,5 @@ func Arch() string {
 }
 
 func OSVersion() string {
-	return "18.5.0"
+	return "10"
 }

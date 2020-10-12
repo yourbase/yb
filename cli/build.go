@@ -86,6 +86,10 @@ func (b *BuildCmd) SetFlags(f *flag.FlagSet) {
 }
 
 func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+	if f.NArg() > 1 {
+		log.Errorf(ctx, "usage: yb build takes at most one target")
+		return subcommands.ExitUsageError
+	}
 	buildTraces := new(traceSink)
 	tp, err := sdktrace.NewProvider(sdktrace.WithSyncer(buildTraces))
 	if err != nil {
@@ -313,8 +317,6 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 	endTime := time.Now()
 	buildTime := endTime.Sub(startTime)
 
-	time.Sleep(100 * time.Millisecond)
-
 	log.Infof(ctx, "")
 	log.Infof(ctx, "Build finished at %s, taking %s", endTime.Format(TIME_FORMAT), buildTime)
 	log.Infof(ctx, "")
@@ -326,48 +328,6 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 		log.Errorf(ctx, "Build terminated with the following error: %v", buildError)
 	} else {
 		subSection("BUILD SUCCEEDED")
-	}
-
-	// Output duplication start
-	realStdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	outputs := io.MultiWriter(realStdout)
-	var buf bytes.Buffer
-	uploadBuildLogs := ybconfig.ShouldUploadBuildLogs()
-
-	if uploadBuildLogs {
-		outputs = io.MultiWriter(realStdout, &buf)
-	}
-
-	c := make(chan bool)
-
-	// copy the output in a separate goroutine so printing can't block indefinitely
-	go func() {
-		for {
-			select {
-			case <-c:
-				return
-			case <-time.After(100 * time.Millisecond):
-				io.Copy(outputs, r)
-			}
-		}
-	}()
-	defer func() {
-		w.Close()
-		io.Copy(outputs, r)
-		close(c)
-		r.Close()
-	}()
-	// Output duplication end
-
-	time.Sleep(10 * time.Millisecond)
-	// Reset stdout
-	//os.Stdout = realStdout
-
-	if uploadBuildLogs {
-		UploadBuildLogsToAPI(ctx, &buf)
 	}
 
 	if buildError != nil {
@@ -392,7 +352,7 @@ func (b *BuildCmd) BuildInsideContainer(ctx context.Context, dataDirs *ybdata.Di
 	image := containerDef.Image
 	log.Infof(ctx, "Using container image: %s", image)
 	buildContainer, err := buildData.Containers.ServiceContext.FindContainer(ctx, containerDef)
-	if err != nil {
+	if err != nil && !narwhal.IsContainerNotFound(err) {
 		return err
 	}
 

@@ -16,6 +16,11 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 ### Removed
 
+-  Workspaces. At the moment, we're focusing on single packages and will
+   reintroduce the concept when we have a better grasp on how dependencies will
+   work inside yb.
+-  The build log streaming feature has been removed, since it has been broken
+   for some time. However, we hope to reintroduce it in a future version.
 -  Removed the `yb update` command. Users can now stay up-to-date with either
    the APT or Homebrew repositories.
 
@@ -25,6 +30,8 @@ The format is based on [Keep a Changelog][], and this project adheres to
    variables when reading configuration files.
 -  Update to latest version of [Narwhal](https://github.com/yourbase/narwhal),
    which contains many fixes for Docker interactions.
+-  `yb build` will now exit with a non-zero status code if more than one
+   argument is given. Previously, it would silently ignore such arguments.
 
 ## [0.3.2][]
 
