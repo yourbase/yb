@@ -1,4 +1,4 @@
-package buildpacks
+package buildpack
 
 import (
 	"testing"
