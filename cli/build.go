@@ -392,7 +392,7 @@ func (b *BuildCmd) BuildInsideContainer(ctx context.Context, dataDirs *ybdata.Di
 	image := containerDef.Image
 	log.Infof(ctx, "Using container image: %s", image)
 	buildContainer, err := buildData.Containers.ServiceContext.FindContainer(ctx, containerDef)
-	if err != nil {
+	if err != nil && !narwhal.IsContainerNotFound(err) {
 		return err
 	}
 
