@@ -16,6 +16,9 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 ### Removed
 
+-  Workspaces. At the moment, we're focusing on single packages and will
+   reintroduce the concept when we have a better grasp on how dependencies will
+   work inside yb.
 -  The build log streaming feature has been removed, since it has been broken
    for some time. However, we hope to reintroduce it in a future version.
 

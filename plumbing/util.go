@@ -19,7 +19,6 @@ import (
 	"github.com/ulikunitz/xz"
 	"github.com/yourbase/yb/internal/ybdata"
 	"github.com/yourbase/yb/internal/ybtrace"
-	"github.com/yourbase/yb/types"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/label"
@@ -304,63 +303,6 @@ func DownloadFile(ctx context.Context, client *http.Client, dst string, url stri
 		return fmt.Errorf("download %s: %w", url, err)
 	}
 	return nil
-}
-
-/*
- * Look in the directory above the manifest file, if there's a config.yml, use that
- * otherwise we use the directory of the manifest file as the workspace root
- */
-func FindWorkspaceRoot() (string, error) {
-	wd, err := os.Getwd()
-
-	if err != nil {
-		panic(err)
-	}
-
-	if _, err := os.Stat(filepath.Join(wd, "config.yml")); err == nil {
-		// If we're currently in the directory with the config.yml
-		return wd, nil
-	}
-
-	// Look upwards to find a manifest file
-	packageDir, err := FindNearestManifestFile()
-
-	// If we find a manifest file, check the parent directory for a config.yml
-	if err == nil {
-		parent := filepath.Dir(packageDir)
-		if _, err := os.Stat(filepath.Join(parent, "config.yml")); err == nil {
-			return parent, nil
-		}
-	} else {
-		return "", err
-	}
-
-	// No config in the parent of the package? No workspace!
-	return "", fmt.Errorf("No workspace root found nearby.")
-}
-
-func FindFileUpTree(filename string) (string, error) {
-	wd, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-
-	for {
-		file_path := filepath.Join(wd, filename)
-		if _, err := os.Stat(file_path); err == nil {
-			return wd, nil
-		}
-
-		wd = filepath.Dir(wd)
-
-		if strings.HasSuffix(wd, "/") {
-			return "", fmt.Errorf("Can't find %s, ended up at the root...", filename)
-		}
-	}
-}
-
-func FindNearestManifestFile() (string, error) {
-	return FindFileUpTree(types.MANIFEST_FILE)
 }
 
 // Because, why not?

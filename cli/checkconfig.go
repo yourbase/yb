@@ -5,6 +5,7 @@ import (
 	"flag"
 
 	"github.com/johnewart/subcommands"
+	"github.com/yourbase/yb/types"
 	"zombiezen.com/go/log"
 )
 
@@ -21,7 +22,7 @@ Validate the local YourBase config file, .yourbase.yml by default.
 }
 
 func (b *CheckConfigCmd) SetFlags(f *flag.FlagSet) {
-	f.StringVar(&b.file, "file", "", "YAML file to check, or else the default: .yourbase.yml")
+	f.StringVar(&b.file, "file", types.MANIFEST_FILE, "YAML file to check")
 }
 
 func (b *CheckConfigCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
