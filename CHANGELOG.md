@@ -14,6 +14,12 @@ The format is based on [Keep a Changelog][], and this project adheres to
    (usually `$HOME/.cache/yb`) rather than `$HOME/.yourbase`.
    You can safely remove `$HOME/.yourbase` to reclaim disk space.
 
+### Removed
+
+-  Workspaces. At the moment, we're focusing on single packages and will
+   reintroduce the concept when we have a better grasp on how dependencies will
+   work inside yb.
+
 ### Fixed
 
 -  yb now respects the `XDG_CONFIG_HOME` and `XDG_CONFIG_DIRS` environment
