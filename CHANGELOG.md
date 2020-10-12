@@ -14,6 +14,11 @@ The format is based on [Keep a Changelog][], and this project adheres to
    (usually `$HOME/.cache/yb`) rather than `$HOME/.yourbase`.
    You can safely remove `$HOME/.yourbase` to reclaim disk space.
 
+### Removed
+
+-  Removed the `yb update` command. Users can now stay up-to-date with either
+   the APT or Homebrew repositories.
+
 ### Fixed
 
 -  yb now respects the `XDG_CONFIG_HOME` and `XDG_CONFIG_DIRS` environment
