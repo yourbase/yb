@@ -1,22 +1,13 @@
 package cli
 
 import (
-	"archive/tar"
-	"bytes"
-	"compress/gzip"
 	"context"
 	"crypto/sha256"
-	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
-	"net/http"
 	"os"
-	"os/signal"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -26,7 +17,6 @@ import (
 	"github.com/matishsiao/goInfo"
 	"github.com/yourbase/commons/xcontext"
 	"github.com/yourbase/narwhal"
-	ybconfig "github.com/yourbase/yb/config"
 	"github.com/yourbase/yb/internal/ybdata"
 	"github.com/yourbase/yb/internal/ybtrace"
 	"github.com/yourbase/yb/packages"
@@ -44,9 +34,6 @@ import (
 const TIME_FORMAT = "15:04:05 MST"
 
 type BuildCmd struct {
-	Channel          string
-	Version          string
-	CommitSHA        string
 	ExecPrefix       string
 	NoContainer      bool
 	NoSideContainer  bool
@@ -62,11 +49,6 @@ type BuildConfiguration struct {
 	TargetPackage    *packages.Package
 	BuildData        BuildData
 	ReuseContainers  bool
-}
-
-type BuildLog struct {
-	Contents string `json:"contents"`
-	UUID     string `json:"uuid"`
 }
 
 func (*BuildCmd) Name() string     { return "build" }
@@ -156,22 +138,19 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 
 	buildData := NewBuildData()
 
-	if !b.NoContainer {
+	// Start resources.
+	if !b.NoContainer && !b.NoSideContainer && len(primaryTarget.Dependencies.Containers) > 0 {
 		dockerClient, err := docker.NewVersionedClient("unix:///var/run/docker.sock", "1.39")
 		if err != nil {
 			log.Errorf(ctx, "%v", err)
 			return subcommands.ExitFailure
 		}
-		target := primaryTarget
-		// Setup dependencies
-		containers := target.Dependencies.Containers
-
 		if err := narwhal.DockerClient().Ping(); err != nil {
 			log.Errorf(ctx, "Couldn't connect to Docker daemon. Try installing Docker Desktop: https://hub.docker.com/search/?type=edition&offering=community")
 			return subcommands.ExitFailure
 		}
-		contextId := fmt.Sprintf("%s-%s", targetPackage.Name, target.Name)
-		sc, err := narwhal.NewServiceContextWithId(ctx, dockerClient, contextId, workDir)
+		contextID := targetPackage.Name + "-" + primaryTarget.Name
+		sc, err := narwhal.NewServiceContextWithId(ctx, dockerClient, contextID, workDir)
 		if err != nil {
 			log.Errorf(ctx, "Couldn't create service context for dependencies: %v", err)
 			return subcommands.ExitFailure
@@ -179,31 +158,32 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 
 		buildData.containers.serviceContext = sc
 
-		if len(containers) > 0 && !b.NoSideContainer {
-			log.Infof(ctx, "Starting %d containers with context id %s...", len(containers), contextId)
-			if !b.ReuseContainers {
-				log.Infof(ctx, "Not reusing containers, will teardown existing ones and clean up after ourselves")
-				defer Cleanup(xcontext.IgnoreDeadline(ctx), buildData)
-				if err := sc.TearDown(xcontext.IgnoreDeadline(ctx)); err != nil {
-					log.Errorf(ctx, "Couldn't terminate existing containers: %v", err)
-					// FAIL?
-				}
+		log.Infof(ctx, "Starting %d containers with context id %s...", len(primaryTarget.Dependencies.Containers), contextID)
+		if !b.ReuseContainers {
+			log.Infof(ctx, "Not reusing containers, will teardown existing ones and clean up after ourselves")
+			defer Cleanup(xcontext.IgnoreDeadline(ctx), buildData)
+			if err := sc.TearDown(xcontext.IgnoreDeadline(ctx)); err != nil {
+				log.Errorf(ctx, "Couldn't terminate existing containers: %v", err)
+				// FAIL?
 			}
+		}
 
-			for label, cd := range containers {
-				c, err := sc.StartContainer(ctx, os.Stderr, cd.ToNarwhal())
-				if err != nil {
-					log.Errorf(ctx, "Couldn't start dependencies: %v", err)
-					return subcommands.ExitFailure
-				}
-				buildData.containers.containers[label] = c
+		for label, cd := range primaryTarget.Dependencies.Containers {
+			c, err := sc.StartContainer(ctx, os.Stderr, cd.ToNarwhal())
+			if err != nil {
+				log.Errorf(ctx, "Couldn't start dependencies: %v", err)
+				return subcommands.ExitFailure
 			}
-
+			buildData.containers.containers[label] = c
 		}
 	}
 
-	// Do this after the containers are up
+	// Expand environment variables. Depends on container IP addresses.
 	exp, err := newConfigExpansion(ctx, buildData.containers, primaryTarget.Dependencies.Containers)
+	if err != nil {
+		log.Errorf(ctx, "%v", err)
+		return subcommands.ExitFailure
+	}
 	for _, envString := range primaryTarget.Environment {
 		parts := strings.SplitN(envString, "=", 2)
 		if len(parts) != 2 {
@@ -214,40 +194,6 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 			log.Errorf(ctx, "%v", err)
 			return subcommands.ExitFailure
 		}
-	}
-
-	_, exists := os.LookupEnv("YB_NO_CONTAINER_BUILDS")
-	// Should we build in a container?
-	if !b.NoContainer && !primaryTarget.HostOnly && !exists {
-		startSection("BUILD IN CONTAINER")
-		log.Infof(ctx, "Executing build steps in container")
-
-		target := primaryTarget
-		containerDef := target.Container.ToNarwhal()
-		containerDef.Command = "/usr/bin/tail -f /dev/null"
-
-		// Append build environment variables
-		//container.Environment = append(container.Environment, buildData.EnvironmentVariables()...)
-		containerDef.Environment = []string{}
-
-		// Add package to mounts @ /workspace
-		sourceMapDir := "/workspace"
-		if containerDef.WorkDir != "" {
-			sourceMapDir = containerDef.WorkDir
-		}
-
-		log.Infof(ctx, "Will mount package %s at %s in container", targetPackage.Path, sourceMapDir)
-		mount := fmt.Sprintf("%s:%s", targetPackage.Path, sourceMapDir)
-		containerDef.Mounts = append(containerDef.Mounts, mount)
-
-		// Do our build in a container - don't do the build locally
-		err := b.BuildInsideContainer(ctx, dataDirs, target, containerDef, buildData, b.ExecPrefix, b.ReuseContainers)
-		if err != nil {
-			log.Errorf(ctx, "Unable to build %s inside container: %v", target.Name, err)
-			return subcommands.ExitFailure
-		}
-
-		return subcommands.ExitSuccess
 	}
 
 	// Do the build!
@@ -355,151 +301,6 @@ func Cleanup(ctx context.Context, b BuildData) {
 	}
 }
 
-func (b *BuildCmd) BuildInsideContainer(ctx context.Context, dataDirs *ybdata.Dirs, target *types.BuildTarget, containerDef *narwhal.ContainerDefinition, buildData BuildData, execPrefix string, reuseOldContainer bool) error {
-	dockerClient := buildData.containers.serviceContext.DockerClient
-	image := containerDef.Image
-	log.Infof(ctx, "Using container image: %s", image)
-	buildContainer, err := buildData.containers.serviceContext.FindContainer(ctx, containerDef)
-	if err != nil && !narwhal.IsContainerNotFound(err) {
-		return err
-	}
-
-	if buildContainer != nil {
-		log.Infof(ctx, "Found existing container %s", buildContainer.Id[0:12])
-
-		if !reuseOldContainer {
-			log.Infof(ctx, "Elected to not re-use containers, will remove the container")
-			// Try stopping it first if needed
-			_ = dockerClient.StopContainer(buildContainer.Id, 0)
-			err := dockerClient.RemoveContainer(docker.RemoveContainerOptions{
-				Context: ctx,
-				ID:      buildContainer.Id,
-			})
-			if err != nil {
-				return fmt.Errorf("Unable to remove existing container: %v", err)
-			}
-			buildContainer = nil
-		}
-	}
-	if buildContainer == nil {
-		log.Infof(ctx, "Creating a new build container...")
-		buildContainer, err = buildData.containers.serviceContext.StartContainer(ctx, os.Stderr, containerDef)
-		if err != nil {
-			return fmt.Errorf("Couldn't create a new build container: %v", err)
-		}
-	}
-
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	go func() {
-		<-c
-		dockerClient.StopContainerWithContext(buildContainer.Id, 0, ctx)
-		os.Exit(0)
-	}()
-
-	defer dockerClient.StopContainerWithContext(buildContainer.Id, 0, xcontext.IgnoreDeadline(ctx))
-
-	if err != nil {
-		return fmt.Errorf("Error creating build container: %v", err)
-	}
-
-	if err := narwhal.StartContainer(ctx, dockerClient, buildContainer.Id); err != nil {
-		return fmt.Errorf("Unable to start container %s: %v", buildContainer.Id, err)
-	}
-
-	// Set container work dir
-	containerWorkDir := "/workspace"
-	if containerDef.WorkDir != "" {
-		containerWorkDir = containerDef.WorkDir
-	}
-
-	log.Infof(ctx, "Building from %s in container: %s", containerWorkDir, buildContainer.Id)
-
-	// If this is development mode, use the YB binary currently running
-	// We can't do this by default because this only works if the host is
-	// Linux so we might as well behave the same on all platforms
-	// If not development mode, download the binary from the distribution channel
-	devMode := false
-	if b.Version == "DEVELOPMENT" && runtime.GOOS == "linux" {
-		// TODO: If we support building inside a container that's not Linux we will want to do something different
-		log.Infof(ctx, "Development version in use, will upload development binary to the container")
-		devMode = true
-	}
-
-	if err := uploadYBToContainer(ctx, dockerClient, dataDirs, buildContainer, devMode); err != nil {
-		return err
-	}
-
-	if !devMode {
-		// Default to whatever channel being used, unless told otherwise
-		// TODO: Make the download URL used for downloading track the latest stable
-		ybChannel := b.Channel
-
-		// Overwrites local configuration
-		if envChannel, exists := os.LookupEnv("YB_UPDATE_CHANNEL"); exists {
-			ybChannel = envChannel
-		}
-
-		log.Infof(ctx, "Updating YB in container from channel %s", ybChannel)
-		err := execToStdoutWithEnv(
-			ctx,
-			dockerClient,
-			buildContainer, []string{"/yb", "update", "-channel=" + ybChannel},
-			containerWorkDir,
-			buildData.EnvironmentVariables(ctx),
-		)
-		if err != nil {
-			return err
-		}
-	}
-
-	argv := []string{"/yb", "build"}
-	if len(execPrefix) > 0 {
-		argv = append(argv, "-exec-prefix", execPrefix)
-	}
-	argv = append(argv, "-no-container", target.Name)
-
-	if err := execToStdoutWithEnv(ctx, dockerClient, buildContainer, argv, containerWorkDir, buildData.EnvironmentVariables(ctx)); err != nil {
-		return err
-	}
-
-	// Make sure our goroutine gets this from stdout
-	// TODO: There must be a better way...
-	time.Sleep(10 * time.Millisecond)
-
-	return nil
-}
-
-func execToStdoutWithEnv(ctx context.Context, client *docker.Client, c *narwhal.Container, argv []string, workDir string, env []string) error {
-	cmdString := strings.Join(argv, " ")
-	log.Infof(ctx, "Running in container directory %s: %s", workDir, cmdString)
-	opts := docker.CreateExecOptions{
-		Context:      ctx,
-		Container:    c.Id,
-		Cmd:          argv,
-		WorkingDir:   workDir,
-		Env:          env,
-		AttachStdout: true,
-		AttachStderr: true,
-	}
-	if c.Definition.ExecUserId != "" || c.Definition.ExecGroupId != "" {
-		opts.User = c.Definition.ExecUserId + ":" + c.Definition.ExecGroupId
-	}
-	e, err := client.CreateExec(opts)
-	if err != nil {
-		return fmt.Errorf("exec %s: %w", cmdString, err)
-	}
-	err = client.StartExec(e.ID, docker.StartExecOptions{
-		Context:      ctx,
-		OutputStream: os.Stdout,
-		ErrorStream:  os.Stdout,
-	})
-	if err != nil {
-		return fmt.Errorf("exec %s: %w", cmdString, err)
-	}
-	return nil
-}
-
 func RunCommands(ctx context.Context, config BuildConfiguration) error {
 	target := config.Target
 	targetDir := config.TargetDir
@@ -542,48 +343,6 @@ func RunCommands(ctx context.Context, config BuildConfiguration) error {
 	}
 
 	return nil
-}
-
-func UploadBuildLogsToAPI(ctx context.Context, buf *bytes.Buffer) {
-	log.Infof(ctx, "Uploading build logs...")
-	buildLog := BuildLog{
-		Contents: buf.String(),
-	}
-	jsonData, _ := json.Marshal(buildLog)
-	resp, err := postJsonToApi("/buildlogs", jsonData)
-
-	if err != nil {
-		log.Errorf(ctx, "Couldn't upload logs: %v", err)
-		return
-	}
-
-	if resp.StatusCode != 200 {
-		log.Warnf(ctx, "Status code uploading log: %d", resp.StatusCode)
-		return
-	} else {
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			log.Errorf(ctx, "Couldn't read response body: %s", err)
-			return
-		}
-
-		var buildLog BuildLog
-		err = json.Unmarshal(body, &buildLog)
-		if err != nil {
-			log.Errorf(ctx, "Failed to parse response: %v", err)
-			return
-		}
-
-		logViewPath := fmt.Sprintf("/buildlogs/%s", buildLog.UUID)
-		buildLogURL, err := ybconfig.UIURL(logViewPath)
-
-		if err != nil {
-			log.Errorf(ctx, "Unable to determine build log url: %v", err)
-		}
-
-		log.Infof(ctx, "View your build log here: %s", buildLogURL)
-	}
-
 }
 
 // configExpansion expands templated substitutions in parts of the
@@ -738,124 +497,6 @@ func (b BuildData) EnvironmentVariables(ctx context.Context) []string {
 		result = append(result, fmt.Sprintf("%s=%s", k, v))
 	}
 	return result
-}
-
-func sha256File(path string) (string, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-
-	h := sha256.New()
-	if _, err := io.Copy(h, f); err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("%x", h.Sum(nil)), nil
-}
-
-func uploadYBToContainer(ctx context.Context, dockerClient *docker.Client, dataDirs *ybdata.Dirs, buildContainer *narwhal.Container, devMode bool) error {
-	log.Infof(ctx, "Uploading YB to /yb")
-
-	var localYB io.ReadCloser
-	var localYBSize int64
-	if devMode {
-		p, err := os.Executable()
-		if err != nil {
-			return fmt.Errorf("upload yb to container: %w", err)
-		}
-		f, err := os.Open(p)
-		if err != nil {
-			return fmt.Errorf("upload yb to container: %w", err)
-		}
-		defer f.Close()
-		info, err := f.Stat()
-		if err != nil {
-			return fmt.Errorf("upload yb to container: %w", err)
-		}
-		localYB = f
-		localYBSize = info.Size()
-	} else {
-		var err error
-		localYB, localYBSize, err = downloadYB(ctx, dataDirs)
-		if err != nil {
-			return fmt.Errorf("upload yb to container: %w", err)
-		}
-		defer localYB.Close()
-	}
-
-	err := narwhal.Upload(ctx, dockerClient, buildContainer.Id, "/yb", localYB, &tar.Header{
-		Mode:     0777,
-		Size:     localYBSize,
-		Typeflag: tar.TypeReg,
-	})
-	if err != nil {
-		return fmt.Errorf("upload yb to container: %w", err)
-	}
-	return nil
-}
-
-// TODO: non-linux things too if we ever support non-Linux containers
-// TODO: on non-Linux platforms we shouldn't constantly try to re-download it
-func downloadYB(ctx context.Context, dataDirs *ybdata.Dirs) (_ io.ReadCloser, size int64, err error) {
-	// Stick with this version, we can track some relatively recent version because
-	// we will just update anyway so it doesn't need to be super-new unless we broke something
-	const downloadURL = "https://bin.equinox.io/a/7G9uDXWDjh8/yb-0.0.39-linux-amd64.tar.gz"
-	archivePath, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, dataDirs, downloadURL)
-	if err != nil {
-		return nil, 0, fmt.Errorf("download yb: %w", err)
-	}
-	archiveFile, err := os.Open(archivePath)
-	if err != nil {
-		return nil, 0, fmt.Errorf("download yb: %w", err)
-	}
-	defer func() {
-		if err != nil {
-			archiveFile.Close()
-		}
-	}()
-	zr, err := gzip.NewReader(archiveFile)
-	if err != nil {
-		return nil, 0, fmt.Errorf("download yb: %s: %w", archivePath, err)
-	}
-	defer func() {
-		if err != nil {
-			zr.Close()
-		}
-	}()
-	archive := tar.NewReader(zr)
-	for {
-		hdr, err := archive.Next()
-		if errors.Is(err, io.EOF) {
-			break
-		}
-		if err != nil {
-			return nil, 0, fmt.Errorf("download yb: %s: %w", archivePath, err)
-		}
-		if hdr.Name == "yb" {
-			return multiCloseReader{
-				Reader:  archive,
-				closers: []io.Closer{zr, archiveFile},
-			}, hdr.Size, nil
-		}
-	}
-	return nil, 0, fmt.Errorf("download yb: no 'yb' found in %s", downloadURL)
-}
-
-type multiCloseReader struct {
-	io.Reader
-	closers []io.Closer
-}
-
-func (mcr multiCloseReader) Close() error {
-	var firstErr error
-	for _, c := range mcr.closers {
-		if err := c.Close(); err != nil && firstErr == nil {
-			firstErr = err
-		}
-	}
-	return firstErr
 }
 
 // A traceSink records spans in memory. The zero value is an empty sink.

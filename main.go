@@ -36,7 +36,7 @@ func main() {
 	cmdr.Register(cmdr.HelpCommand(), "")
 	cmdr.Register(cmdr.FlagsCommand(), "")
 	cmdr.Register(cmdr.CommandsCommand(), "")
-	cmdr.Register(&cli.BuildCmd{Version: version, Channel: channel, CommitSHA: commitSHA}, "")
+	cmdr.Register(&cli.BuildCmd{}, "")
 	cmdr.Register(&cli.CheckConfigCmd{}, "")
 	cmdr.Register(&cli.ConfigCmd{}, "")
 	cmdr.Register(&cli.ExecCmd{}, "")
