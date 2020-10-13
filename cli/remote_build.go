@@ -516,32 +516,6 @@ func (p *RemoteCmd) libTraverseChanges(ctx context.Context, worktree *git.Worktr
 
 }
 
-func postJsonToApi(path string, jsonData []byte) (*http.Response, error) {
-	userToken, err := ybconfig.UserToken()
-
-	if err != nil {
-		return nil, err
-	}
-
-	apiURL, err := ybconfig.APIURL(path)
-
-	if err != nil {
-		return nil, fmt.Errorf("Unable to generate API URL: %v", err)
-	}
-
-	client := &http.Client{}
-	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonData))
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("YB_API_TOKEN", userToken)
-	req.Header.Set("Content-Type", "application/json")
-	res, err := client.Do(req)
-	return res, err
-
-}
-
 func postToApi(path string, formData url.Values) (*http.Response, error) {
 	userToken, err := ybconfig.UserToken()
 
