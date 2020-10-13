@@ -58,7 +58,7 @@ func (b *ExecCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	instructions := targetPackage.Manifest
-	containers := instructions.Exec.Dependencies.ContainerList()
+	containers := instructions.Exec.Dependencies.Containers
 
 	buildData := NewBuildData()
 
@@ -88,31 +88,41 @@ func (b *ExecCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 			return subcommands.ExitFailure
 		}
 
-		for _, c := range containers {
+		for label, cd := range containers {
+			ncd := cd.ToNarwhal()
 			// TODO: avoid setting these here
-			c.LocalWorkDir = localContainerWorkDir
-			if _, err = sc.StartContainer(ctx, os.Stderr, c); err != nil {
-				log.Infof(ctx, "Couldn't start dependencies: %v\n", err)
+			ncd.LocalWorkDir = localContainerWorkDir
+			c, err := sc.StartContainer(ctx, os.Stderr, ncd)
+			if err != nil {
+				log.Errorf(ctx, "Couldn't start dependencies: %v\n", err)
 				return subcommands.ExitFailure
 			}
+			buildData.containers.containers[label] = c
 		}
 
-		buildData.Containers.ServiceContext = sc
+		buildData.containers.serviceContext = sc
 	}
 
 	log.Infof(ctx, "Setting environment variables...")
+	exp, err := newConfigExpansion(ctx, buildData.containers, instructions.Exec.Dependencies.Containers)
 	for _, property := range instructions.Exec.Environment["default"] {
 		s := strings.SplitN(property, "=", 2)
 		if len(s) == 2 {
-			buildData.SetEnv(s[0], s[1])
+			if err := buildData.SetEnv(exp, s[0], s[1]); err != nil {
+				log.Errorf(ctx, "%v", err)
+				return subcommands.ExitFailure
+			}
 		}
 	}
 
 	if b.environment != "default" {
 		for _, property := range instructions.Exec.Environment[b.environment] {
-			s := strings.Split(property, "=")
+			s := strings.SplitN(property, "=", 2)
 			if len(s) == 2 {
-				buildData.SetEnv(s[0], s[1])
+				if err := buildData.SetEnv(exp, s[0], s[1]); err != nil {
+					log.Errorf(ctx, "%v", err)
+					return subcommands.ExitFailure
+				}
 			}
 		}
 	}

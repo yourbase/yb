@@ -177,7 +177,7 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 			return subcommands.ExitFailure
 		}
 
-		buildData.Containers.ServiceContext = sc
+		buildData.containers.serviceContext = sc
 
 		if len(containers) > 0 && !b.NoSideContainer {
 			log.Infof(ctx, "Starting %d containers with context id %s...", len(containers), contextId)
@@ -190,26 +190,30 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 				}
 			}
 
-			for _, cd := range containers {
+			for label, cd := range containers {
 				c, err := sc.StartContainer(ctx, os.Stderr, cd.ToNarwhal())
 				if err != nil {
 					log.Errorf(ctx, "Couldn't start dependencies: %v", err)
 					return subcommands.ExitFailure
 				}
-				buildData.Containers.Containers[cd.Label] = c
+				buildData.containers.containers[label] = c
 			}
 
 		}
 	}
 
 	// Do this after the containers are up
+	exp, err := newConfigExpansion(ctx, buildData.containers, primaryTarget.Dependencies.Containers)
 	for _, envString := range primaryTarget.Environment {
 		parts := strings.SplitN(envString, "=", 2)
 		if len(parts) != 2 {
 			log.Warnf(ctx, "'%s' doesn't look like an environment variable", envString)
 			continue
 		}
-		buildData.SetEnv(parts[0], parts[1])
+		if err := buildData.SetEnv(exp, parts[0], parts[1]); err != nil {
+			log.Errorf(ctx, "%v", err)
+			return subcommands.ExitFailure
+		}
 	}
 
 	_, exists := os.LookupEnv("YB_NO_CONTAINER_BUILDS")
@@ -258,8 +262,12 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 		log.Infof(ctx, "")
 		log.Infof(ctx, "Available side containers:")
 		for label, c := range primaryTarget.Dependencies.Containers {
-			ipv4 := buildData.Containers.IP(ctx, label)
-			log.Infof(ctx, "  * %s (using %s) has IP address %s", label, c.ToNarwhal().ImageNameWithTag(), ipv4)
+			ipv4, err := buildData.containers.IP(ctx, label)
+			if err == nil {
+				log.Infof(ctx, "  * %s (using %s) has IP address %s", label, c.ToNarwhal().ImageNameWithTag(), ipv4)
+			} else {
+				log.Warnf(ctx, "  * %s (using %s) has unknown IP address: %v", label, c.ToNarwhal().ImageNameWithTag(), err)
+			}
 		}
 	}
 
@@ -339,19 +347,19 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 }
 
 func Cleanup(ctx context.Context, b BuildData) {
-	if b.Containers.ServiceContext != nil {
+	if b.containers.serviceContext != nil {
 		log.Infof(ctx, "Cleaning up containers...")
-		if err := b.Containers.ServiceContext.TearDown(ctx); err != nil {
+		if err := b.containers.serviceContext.TearDown(ctx); err != nil {
 			log.Warnf(ctx, "Problem tearing down containers: %v", err)
 		}
 	}
 }
 
 func (b *BuildCmd) BuildInsideContainer(ctx context.Context, dataDirs *ybdata.Dirs, target *types.BuildTarget, containerDef *narwhal.ContainerDefinition, buildData BuildData, execPrefix string, reuseOldContainer bool) error {
-	dockerClient := buildData.Containers.ServiceContext.DockerClient
+	dockerClient := buildData.containers.serviceContext.DockerClient
 	image := containerDef.Image
 	log.Infof(ctx, "Using container image: %s", image)
-	buildContainer, err := buildData.Containers.ServiceContext.FindContainer(ctx, containerDef)
+	buildContainer, err := buildData.containers.serviceContext.FindContainer(ctx, containerDef)
 	if err != nil && !narwhal.IsContainerNotFound(err) {
 		return err
 	}
@@ -375,7 +383,7 @@ func (b *BuildCmd) BuildInsideContainer(ctx context.Context, dataDirs *ybdata.Di
 	}
 	if buildContainer == nil {
 		log.Infof(ctx, "Creating a new build container...")
-		buildContainer, err = buildData.Containers.ServiceContext.StartContainer(ctx, os.Stderr, containerDef)
+		buildContainer, err = buildData.containers.serviceContext.StartContainer(ctx, os.Stderr, containerDef)
 		if err != nil {
 			return fmt.Errorf("Couldn't create a new build container: %v", err)
 		}
@@ -578,36 +586,77 @@ func UploadBuildLogsToAPI(ctx context.Context, buf *bytes.Buffer) {
 
 }
 
-// Build metadata; used for things like interpolation in environment variables
-type ContainerData struct {
-	ServiceContext *narwhal.ServiceContext
-	Containers     map[string]*narwhal.Container
+// configExpansion expands templated substitutions in parts of the
+// configuration file. The object itself is passed into text/template,
+// so its public fields are public API surface.
+type configExpansion struct {
+	// Containers holds the set of resources for the target.
+	// The field name is public API surface and must not change.
+	Containers containersExpansion
 }
 
-func (c ContainerData) IP(ctx context.Context, label string) string {
-	if buildContainer := c.Containers[label]; buildContainer != nil && c.ServiceContext != nil {
-		ip, err := narwhal.IPv4Address(ctx, c.ServiceContext.DockerClient, buildContainer.Id)
+type containersExpansion struct {
+	ips map[string]string
+}
+
+func newConfigExpansion(ctx context.Context, c containerData, containers map[string]*types.ContainerDefinition) (configExpansion, error) {
+	exp := configExpansion{
+		Containers: containersExpansion{
+			ips: make(map[string]string),
+		},
+	}
+	for label := range containers {
+		ip, err := c.IP(ctx, label)
 		if err != nil {
-			log.Warnf(ctx, "Obtaining address for %s container: %v", label, buildContainer)
-		} else {
-			return ip.String()
+			return configExpansion{}, err
 		}
+		exp.Containers.ips[label] = ip
+	}
+	return exp, nil
+}
+
+func (exp configExpansion) expand(value string) (string, error) {
+	return plumbing.TemplateToString(value, exp)
+}
+
+// IP returns the IP address of a particular container.
+// The signature of this method is public API surface and must not change.
+func (exp containersExpansion) IP(label string) (string, error) {
+	ip := exp.ips[label]
+	if ip == "" {
+		return "", fmt.Errorf("find IP for %s: unknown container", label)
+	}
+	return ip, nil
+}
+
+// Build metadata; used for things like interpolation in environment variables
+type containerData struct {
+	serviceContext *narwhal.ServiceContext
+	containers     map[string]*narwhal.Container
+}
+
+func (c containerData) IP(ctx context.Context, label string) (string, error) {
+	if buildContainer := c.containers[label]; buildContainer != nil && c.serviceContext != nil {
+		ip, err := narwhal.IPv4Address(ctx, c.serviceContext.DockerClient, buildContainer.Id)
+		if err != nil {
+			return "", fmt.Errorf("find IP for %s: %w", label, err)
+		}
+		return ip.String(), nil
 	}
 
 	// Look for environment variable (injected into containers)
-	envKey := fmt.Sprintf("YB_CONTAINER_%s_IP", strings.ToUpper(label))
-	if ip, exists := os.LookupEnv(envKey); exists {
-		return ip
+	ip := os.Getenv("YB_CONTAINER_" + strings.ToUpper(label) + "_IP")
+	if ip == "" {
+		return "", fmt.Errorf("find IP for %s: unknown container", label)
 	}
-
-	return ""
+	return ip, nil
 }
 
-func (c ContainerData) Environment(ctx context.Context) map[string]string {
+func (c containerData) Environment(ctx context.Context) map[string]string {
 	result := make(map[string]string)
-	if c.ServiceContext != nil {
-		for label, container := range c.Containers {
-			ipv4, err := narwhal.IPv4Address(ctx, c.ServiceContext.DockerClient, container.Id)
+	if c.serviceContext != nil {
+		for label, container := range c.containers {
+			ipv4, err := narwhal.IPv4Address(ctx, c.serviceContext.DockerClient, container.Id)
 			if err != nil {
 				log.Warnf(ctx, "Obtaining address for %s container: %v", label, err)
 				continue
@@ -620,8 +669,8 @@ func (c ContainerData) Environment(ctx context.Context) map[string]string {
 }
 
 type BuildData struct {
-	Containers  ContainerData
-	Environment map[string]string
+	containers  containerData
+	environment map[string]string
 	originalEnv map[string]string
 }
 
@@ -635,29 +684,29 @@ func NewBuildData() BuildData {
 		}
 	}
 	return BuildData{
-		Containers: ContainerData{
-			Containers: make(map[string]*narwhal.Container),
+		containers: containerData{
+			containers: make(map[string]*narwhal.Container),
 		},
-		Environment: make(map[string]string),
+		environment: make(map[string]string),
 		originalEnv: originalEnv,
 	}
 }
 
-func (b BuildData) SetEnv(key string, value string) {
-	interpolated, err := plumbing.TemplateToString(value, b)
+func (b BuildData) SetEnv(exp configExpansion, key string, value string) error {
+	interpolated, err := exp.expand(value)
 	if err != nil {
-		b.Environment[key] = value
-	} else {
-		b.Environment[key] = interpolated
+		return fmt.Errorf("set environment variable %s: %w", key, err)
 	}
+	b.environment[key] = interpolated
+	return nil
 }
 
 func (b BuildData) mergedEnvironment(ctx context.Context) map[string]string {
 	result := make(map[string]string)
-	for k, v := range b.Containers.Environment(ctx) {
+	for k, v := range b.containers.Environment(ctx) {
 		result[k] = v
 	}
-	for k, v := range b.Environment {
+	for k, v := range b.environment {
 		result[k] = v
 	}
 	return result
