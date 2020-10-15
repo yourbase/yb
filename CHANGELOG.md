@@ -4,7 +4,22 @@ The format is based on [Keep a Changelog][], and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
-[Unreleased]: https://github.com/yourbase/yb/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/yourbase/yb/compare/v0.4.1...HEAD
+
+## [Unreleased][]
+
+### Changed
+
+-  `yb run` now runs commands in the context of a build target, not an
+   exec environment.
+
+### Fixed
+
+-  `yb build` now builds dependency targets (specified with `build_after`)
+   with the same environment as if they were built directly. In particular,
+   container dependencies will be started for each target, whereas previous
+   versions would only start the container dependencies for the target named
+   on the command line.
 
 ## [0.4.1][] - 2020-10-13
 

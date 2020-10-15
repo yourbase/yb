@@ -25,11 +25,6 @@ import (
 	"zombiezen.com/go/log"
 )
 
-func ExecToStdoutWithExtraEnv(cmdString string, targetDir string, env []string) error {
-	env = append(os.Environ(), env...)
-	return ExecToStdoutWithEnv(cmdString, targetDir, env)
-}
-
 func ExecToStdoutWithEnv(cmdString string, targetDir string, env []string) error {
 	log.Infof(context.TODO(), "Running: %s in %s", cmdString, targetDir)
 	cmdArgs, err := shlex.Split(cmdString)
@@ -55,35 +50,6 @@ func ExecToStdoutWithEnv(cmdString string, targetDir string, env []string) error
 
 func ExecToStdout(cmdString string, targetDir string) error {
 	return ExecToStdoutWithEnv(cmdString, targetDir, os.Environ())
-}
-
-func ExecToLog(cmdString string, targetDir string, logPath string) error {
-	cmdArgs, err := shlex.Split(cmdString)
-	if err != nil {
-		return fmt.Errorf("Can't parse command string '%s': %v", cmdString, err)
-	}
-
-	logfile, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE, 0644)
-	if err != nil {
-		return fmt.Errorf("Couldn't open log file %s: %v", logPath, err)
-	}
-
-	defer logfile.Close()
-
-	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
-	cmd.Dir = targetDir
-	cmd.Stdout = logfile
-	cmd.Stdin = os.Stdin
-	cmd.Stderr = logfile
-
-	err = cmd.Run()
-
-	if err != nil {
-		return fmt.Errorf("Command '%s' failed to run with error -- see log for information: %s", cmdString, logPath)
-	}
-
-	return nil
-
 }
 
 func ExecSilently(cmdString string, targetDir string) error {

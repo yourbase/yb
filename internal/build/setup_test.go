@@ -14,9 +14,58 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package cli
+package build
 
-import "testing"
+import (
+	"context"
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/yourbase/yb/internal/buildcontext"
+	"zombiezen.com/go/log/testlog"
+)
+
+func TestSetup(t *testing.T) {
+	ctx := testlog.WithTB(context.Background(), t)
+	var gotEnv buildcontext.Environment
+	bctx := &buildcontext.Fake{
+		Separator: '/',
+		Descriptor: buildcontext.Descriptor{
+			OS:   "linux",
+			Arch: "amd64",
+		},
+		RunFunc: func(_ context.Context, invoke *buildcontext.Invocation) error {
+			gotEnv = invoke.Env
+			return nil
+		},
+	}
+	// Should not require Docker: no containers in dependencies.
+	g := G{Context: bctx}
+	gotContext, err := Setup(ctx, g, &PhaseDeps{
+		TargetName: "default",
+		EnvironmentTemplate: map[string]string{
+			"FOO": "BAR",
+		},
+	})
+	if err != nil {
+		t.Fatal("Setup:", err)
+	}
+	err = gotContext.Run(ctx, &buildcontext.Invocation{
+		Argv: []string{"env"},
+	})
+	if err != nil {
+		t.Error("Run:", err)
+	}
+	wantEnv := buildcontext.Environment{
+		Vars: map[string]string{
+			"FOO": "BAR",
+		},
+	}
+	if diff := cmp.Diff(wantEnv, gotEnv, cmpopts.EquateEmpty()); diff != "" {
+		t.Errorf("invoked environment (-want +got):\n%s", diff)
+	}
+}
 
 func TestConfigExpansion(t *testing.T) {
 	tests := []struct {
