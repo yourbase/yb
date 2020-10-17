@@ -32,6 +32,9 @@ type Fake struct {
 	// Descriptor is the descriptor that will be returned by Describe.
 	Descriptor Descriptor
 
+	// DirsResult is what will be returned by Dirs.
+	DirsResult Dirs
+
 	// RunFunc is called to handle the Run method.
 	RunFunc func(context.Context, *Invocation) error
 }
@@ -46,6 +49,11 @@ func (f *Fake) sep() rune {
 // Describe returns f.Descriptor.
 func (f *Fake) Describe() *Descriptor {
 	return &f.Descriptor
+}
+
+// Dirs returns f.DirsResult.
+func (f *Fake) Dirs() *Dirs {
+	return &f.DirsResult
 }
 
 // Run calls f.RunFunc. It returns an error if f.RunFunc is nil.
