@@ -44,8 +44,6 @@ type Context interface {
 
 	// Join joins any number of path elements into a single path.
 	// Empty elements are ignored. The result must be Cleaned.
-	// However, if the argument list is empty or all its elements are
-	// empty, Join returns an empty string.
 	Join(elem ...string) string
 
 	// Clean returns the shortest path name equivalent to path by purely
@@ -71,7 +69,7 @@ type Invocation struct {
 	// Argv is the argument list. Argv[0] is the name of the program to execute.
 	Argv []string
 
-	// Dir is directory to execute the program in. Paths are resolved relative to
+	// Dir is the directory to execute the program in. Paths are resolved relative to
 	// the package directory. If empty, then it should be executed in the package
 	// directory. It is separated by the context's path separator.
 	Dir string
@@ -163,7 +161,7 @@ type ExecPrefix struct {
 	Prefix []string
 }
 
-// Run runs a command with ep.Prefix prepended.
+// Run runs the result of prepending ep.Prefix to invoke.Argv.
 func (ep ExecPrefix) Run(ctx context.Context, invoke *Invocation) error {
 	if len(ep.Prefix) == 0 {
 		return ep.Context.Run(ctx, invoke)
