@@ -57,9 +57,6 @@ func (f *Fake) Run(ctx context.Context, invoke *Invocation) error {
 }
 
 // JoinPath joins any number of path elements into a single path.
-// Empty elements are ignored. The result must be Cleaned.
-// However, if the argument list is empty or all its elements are
-// empty, Join returns an empty string.
 func (f *Fake) JoinPath(elem ...string) string {
 	sb := new(strings.Builder)
 	for _, e := range elem {
