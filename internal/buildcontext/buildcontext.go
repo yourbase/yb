@@ -121,7 +121,7 @@ func (l Local) Run(ctx context.Context, invoke *Invocation) error {
 	if !invoke.Env.IsEmpty() {
 		c.Env = invoke.Env.Append(os.Environ(), os.Getenv("PATH"), filepath.ListSeparator)
 	}
-	if invoke.Dir != "" && filepath.IsAbs(invoke.Dir) {
+	if filepath.IsAbs(invoke.Dir) {
 		c.Dir = invoke.Dir
 	} else {
 		c.Dir = filepath.Join(l.PackageDir, invoke.Dir)
@@ -168,7 +168,7 @@ func (ep ExecPrefix) Run(ctx context.Context, invoke *Invocation) error {
 	}
 	invoke2 := new(Invocation)
 	*invoke2 = *invoke
-	invoke2.Argv = make([]string, 0, len(invoke.Argv))
+	invoke2.Argv = make([]string, 0, len(ep.Prefix) + len(invoke.Argv))
 	invoke2.Argv = append(invoke2.Argv, ep.Prefix...)
 	invoke2.Argv = append(invoke2.Argv, invoke.Argv...)
 	return ep.Context.Run(ctx, invoke2)
