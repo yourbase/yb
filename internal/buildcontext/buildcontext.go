@@ -42,20 +42,22 @@ type Context interface {
 	// retain them after Run returns.
 	Run(ctx context.Context, invoke *Invocation) error
 
-	// Join joins any number of path elements into a single path.
-	// Empty elements are ignored. The result must be Cleaned.
-	Join(elem ...string) string
+	// The following methods are analogous to the ones in the
+	// path/filepath package, but operate on the Context's filesystem paths.
 
-	// Clean returns the shortest path name equivalent to path by purely
+	// JoinPath joins any number of path elements into a single path.
+	JoinPath(elem ...string) string
+
+	// CleanPath returns the shortest path name equivalent to path by purely
 	// lexical processing.
-	Clean(path string) string
+	CleanPath(path string) string
 
-	// IsAbs reports whether the path is absolute.
-	IsAbs(path string) bool
+	// IsAbsPath reports whether the path is absolute.
+	IsAbsPath(path string) bool
 
-	// FromSlash returns the result of replacing each slash ('/')
+	// PathFromSlash returns the result of replacing each slash ('/')
 	// character in path with a separator character.
-	FromSlash(path string) string
+	PathFromSlash(path string) string
 }
 
 // A Descriptor describes various facets of a Context.
@@ -135,23 +137,23 @@ func (l Local) Run(ctx context.Context, invoke *Invocation) error {
 	return nil
 }
 
-// Join calls filepath.Join.
-func (l Local) Join(elem ...string) string {
+// JoinPath calls filepath.Join.
+func (l Local) JoinPath(elem ...string) string {
 	return filepath.Join(elem...)
 }
 
-// Clean calls filepath.Clean.
-func (l Local) Clean(path string) string {
+// CleanPath calls filepath.Clean.
+func (l Local) CleanPath(path string) string {
 	return filepath.Join(path)
 }
 
-// IsAbs calls filepath.IsAbs.
-func (l Local) IsAbs(path string) bool {
+// IsAbsPath calls filepath.IsAbs.
+func (l Local) IsAbsPath(path string) bool {
 	return filepath.IsAbs(path)
 }
 
-// FromSlash calls filepath.FromSlash.
-func (Local) FromSlash(path string) string {
+// PathFromSlash calls filepath.FromSlash.
+func (l Local) PathFromSlash(path string) string {
 	return filepath.FromSlash(path)
 }
 
@@ -168,7 +170,7 @@ func (ep ExecPrefix) Run(ctx context.Context, invoke *Invocation) error {
 	}
 	invoke2 := new(Invocation)
 	*invoke2 = *invoke
-	invoke2.Argv = make([]string, 0, len(ep.Prefix) + len(invoke.Argv))
+	invoke2.Argv = make([]string, 0, len(ep.Prefix)+len(invoke.Argv))
 	invoke2.Argv = append(invoke2.Argv, ep.Prefix...)
 	invoke2.Argv = append(invoke2.Argv, invoke.Argv...)
 	return ep.Context.Run(ctx, invoke2)

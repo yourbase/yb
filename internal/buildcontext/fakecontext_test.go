@@ -20,7 +20,7 @@ import "testing"
 
 var _ Context = new(Fake)
 
-func TestFakeJoin(t *testing.T) {
+func TestFakeJoinPath(t *testing.T) {
 	tests := []struct {
 		elem []string
 		sep  rune
@@ -42,14 +42,14 @@ func TestFakeJoin(t *testing.T) {
 		{elem: []string{"a", "b/c"}, sep: '\\', want: `a\b/c`},
 	}
 	for _, test := range tests {
-		got := (&Fake{Separator: test.sep}).Join(test.elem...)
+		got := (&Fake{Separator: test.sep}).JoinPath(test.elem...)
 		if got != test.want {
 			t.Errorf("(&Fake{Separator: %q}).Join(%q...) = %q; want %q", test.sep, test.elem, got, test.want)
 		}
 	}
 }
 
-func TestFakeClean(t *testing.T) {
+func TestFakeCleanPath(t *testing.T) {
 	tests := []struct {
 		path string
 		sep  rune
@@ -79,7 +79,7 @@ func TestFakeClean(t *testing.T) {
 		{path: "/../a/b/../././/c", sep: '\\', want: "/../a/b/../././/c"},
 	}
 	for _, test := range tests {
-		got := (&Fake{Separator: test.sep}).Clean(test.path)
+		got := (&Fake{Separator: test.sep}).CleanPath(test.path)
 		if got != test.want {
 			t.Errorf("(&Fake{Separator: %q}).Clean(%q) = %q; want %q", test.sep, test.path, got, test.want)
 		}

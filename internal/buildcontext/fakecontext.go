@@ -56,11 +56,11 @@ func (f *Fake) Run(ctx context.Context, invoke *Invocation) error {
 	return f.RunFunc(ctx, invoke)
 }
 
-// Join joins any number of path elements into a single path.
+// JoinPath joins any number of path elements into a single path.
 // Empty elements are ignored. The result must be Cleaned.
 // However, if the argument list is empty or all its elements are
 // empty, Join returns an empty string.
-func (f *Fake) Join(elem ...string) string {
+func (f *Fake) JoinPath(elem ...string) string {
 	sb := new(strings.Builder)
 	for _, e := range elem {
 		if e == "" {
@@ -74,12 +74,12 @@ func (f *Fake) Join(elem ...string) string {
 	if sb.Len() == 0 {
 		return ""
 	}
-	return f.Clean(sb.String())
+	return f.CleanPath(sb.String())
 }
 
-// Clean returns the shortest path name equivalent to path by purely
+// CleanPath returns the shortest path name equivalent to path by purely
 // lexical processing.
-func (f *Fake) Clean(path string) string {
+func (f *Fake) CleanPath(path string) string {
 	if f.sep() == '/' {
 		return slashpath.Clean(path)
 	}
@@ -88,14 +88,14 @@ func (f *Fake) Clean(path string) string {
 	return strings.NewReplacer("/", string(f.sep()), "\x00", "/").Replace(s)
 }
 
-// IsAbs reports whether the path is absolute.
-func (f *Fake) IsAbs(path string) bool {
+// IsAbsPath reports whether the path is absolute.
+func (f *Fake) IsAbsPath(path string) bool {
 	return strings.HasPrefix(path, string(f.sep()))
 }
 
-// FromSlash returns the result of replacing each slash ('/')
+// PathFromSlash returns the result of replacing each slash ('/')
 // character in path with a separator character.
-func (f *Fake) FromSlash(path string) string {
+func (f *Fake) PathFromSlash(path string) string {
 	if f.sep() == '/' {
 		return path
 	}
