@@ -72,13 +72,13 @@ type Invocation struct {
 	Argv []string
 
 	// Dir is the directory to execute the program in. Paths are resolved relative to
-	// the package directory. If empty, then it should be executed in the package
+	// the package directory. If empty, then it will be executed in the package
 	// directory. It is separated by the context's path separator.
 	Dir string
 
 	// Env specifies additional environment variables to send to the program.
 	// The Context may send additional environment variables to the program, but
-	// must not override the provided environment variables.
+	// will not override the provided environment variables.
 	Env Environment
 
 	// Stdin specifies the program's standard input.
