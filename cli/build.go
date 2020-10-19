@@ -212,8 +212,8 @@ func doTarget(ctx context.Context, pkg *packages.Package, target *types.BuildTar
 		return err
 	}
 	g.Context = buildcontext.ExecPrefix{
-		Context: execContext,
-		Prefix:  opts.execPrefix,
+		Context:     execContext,
+		PrependArgv: opts.execPrefix,
 	}
 	defer func() {
 		if err := execContext.Close(); err != nil {

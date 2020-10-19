@@ -157,21 +157,23 @@ func (l Local) PathFromSlash(path string) string {
 	return filepath.FromSlash(path)
 }
 
-// ExecPrefix wraps a Context to prepend arguments to any run commands.
+// ExecPrefix intercepts calls to Run and prepends elements to the Argv slice.
+// This can be used to invoke tools with a wrapping command like `time` or `sudo`.
 type ExecPrefix struct {
 	Context
-	Prefix []string
+	PrependArgv []string
 }
 
-// Run runs the result of prepending ep.Prefix to invoke.Argv.
+// Run calls ep.Context.Run with an invocation whose Argv is the result of
+// appending invoke.Argv to ep.PrependArgv.Argv.
 func (ep ExecPrefix) Run(ctx context.Context, invoke *Invocation) error {
-	if len(ep.Prefix) == 0 {
+	if len(ep.PrependArgv) == 0 {
 		return ep.Context.Run(ctx, invoke)
 	}
 	invoke2 := new(Invocation)
 	*invoke2 = *invoke
-	invoke2.Argv = make([]string, 0, len(ep.Prefix)+len(invoke.Argv))
-	invoke2.Argv = append(invoke2.Argv, ep.Prefix...)
+	invoke2.Argv = make([]string, 0, len(ep.PrependArgv)+len(invoke.Argv))
+	invoke2.Argv = append(invoke2.Argv, ep.PrependArgv...)
 	invoke2.Argv = append(invoke2.Argv, invoke.Argv...)
 	return ep.Context.Run(ctx, invoke2)
 }

@@ -31,10 +31,10 @@ var (
 
 func TestExecPrefix(t *testing.T) {
 	tests := []struct {
-		name   string
-		prefix []string
-		argv   []string
-		want   []string
+		name        string
+		prependArgv []string
+		argv        []string
+		want        []string
 	}{
 		{
 			name: "NoPrefix",
@@ -42,10 +42,10 @@ func TestExecPrefix(t *testing.T) {
 			want: []string{"echo", "Hello, World!"},
 		},
 		{
-			name:   "NoPrefix",
-			prefix: []string{"skipper", "--"},
-			argv:   []string{"echo", "Hello, World!"},
-			want:   []string{"skipper", "--", "echo", "Hello, World!"},
+			name:        "NoPrefix",
+			prependArgv: []string{"sudo", "--"},
+			argv:        []string{"echo", "Hello, World!"},
+			want:        []string{"sudo", "--", "echo", "Hello, World!"},
 		},
 	}
 	for _, test := range tests {
@@ -59,7 +59,7 @@ func TestExecPrefix(t *testing.T) {
 						return nil
 					},
 				},
-				Prefix: test.prefix,
+				PrependArgv: test.prependArgv,
 			}
 			argv := append([]string(nil), test.argv...)
 			err := bctx.Run(context.Background(), &Invocation{
