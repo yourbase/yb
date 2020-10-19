@@ -121,7 +121,7 @@ func (l Local) Run(ctx context.Context, invoke *Invocation) error {
 	// TODO(ch2744): This appends to os.Environ because the buildpacks
 	// depend on being able to set environment variables.
 	if !invoke.Env.IsEmpty() {
-		c.Env = invoke.Env.Append(os.Environ(), os.Getenv("PATH"), filepath.ListSeparator)
+		c.Env = invoke.Env.appendTo(os.Environ(), os.Getenv("PATH"), filepath.ListSeparator)
 	}
 	if filepath.IsAbs(invoke.Dir) {
 		c.Dir = invoke.Dir

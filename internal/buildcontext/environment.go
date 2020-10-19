@@ -83,9 +83,9 @@ func (env Environment) Merge(env2 Environment) Environment {
 
 const pathVar = "PATH"
 
-// Append appends a sorted list of variables in the form "key=value" to the
+// appendTo appends a sorted list of variables in the form "key=value" to the
 // string slice. If PATH is not present in env.Vars, then defaultPath is used.
-func (env Environment) Append(dst []string, defaultPath string, pathListSep rune) []string {
+func (env Environment) appendTo(dst []string, defaultPath string, pathListSep rune) []string {
 	keys := make([]string, 0, len(env.Vars)+1)
 	hasPATH := defaultPath != "" || env.hasPATH()
 	if hasPATH {
@@ -148,8 +148,9 @@ func (env Environment) computePATH(defaultPath string, pathListSep rune) string 
 }
 
 // String formats the environment variables one per line sorted by variable name.
+// This output is for debugging purposes only and should not be depended upon.
 func (env Environment) String() string {
-	parts := env.Append(nil, "", ':')
+	parts := env.appendTo(nil, "", ':')
 	return strings.Join(parts, "\n")
 }
 

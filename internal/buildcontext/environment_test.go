@@ -215,7 +215,7 @@ func TestEnvironmentAppend(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := test.env.Append(nil, test.defaultPath, test.pathListSep)
+			got := test.env.appendTo(nil, test.defaultPath, test.pathListSep)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("env.Append(...) (-want +got):\n%s", diff)
 			}
