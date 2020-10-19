@@ -69,7 +69,7 @@ func Setup(ctx context.Context, g G, phase *PhaseDeps) (_ ContextCloser, err err
 		span.End()
 	}()
 
-	expContainers, closeFunc, err := startContainers(ctx, g.DockerClient, g.Stderr, g.DockerNetworkID, phase.Resources)
+	expContainers, closeFunc, err := startContainers(ctx, g, phase.Resources)
 	if err != nil {
 		return nil, fmt.Errorf("setup %s: %w", phase.TargetName, err)
 	}
@@ -107,7 +107,9 @@ type container struct {
 	ip           net.IP
 }
 
-func startContainers(ctx context.Context, client *docker.Client, output io.Writer, networkID string, defs map[string]*narwhal.ContainerDefinition) (_ containersExpansion, _ func() error, err error) {
+// startContainers starts containers for the given set of container definitions,
+// returning a map of container IP addresses and function to stop the containers.
+func startContainers(ctx context.Context, g G, defs map[string]*narwhal.ContainerDefinition) (_ containersExpansion, closeFunc func() error, err error) {
 	exp := containersExpansion{
 		ips: make(map[string]string),
 	}
@@ -124,7 +126,7 @@ func startContainers(ctx context.Context, client *docker.Client, output io.Write
 	if len(containers) == 0 {
 		return containersExpansion{}, nil, nil
 	}
-	if client == nil {
+	if g.DockerClient == nil {
 		names := make([]string, 0, len(containers))
 		for name := range containers {
 			names = append(names, name)
@@ -136,11 +138,13 @@ func startContainers(ctx context.Context, client *docker.Client, output io.Write
 			strings.Join(names, ", "))
 	}
 	// Ping first to ensure that Docker is available before attempting anything.
-	if err := client.PingWithContext(ctx); err != nil {
+	if err := g.DockerClient.PingWithContext(ctx); err != nil {
 		return containersExpansion{}, nil, fmt.Errorf("%w\nTry installing Docker Desktop: https://hub.docker.com/search/?type=edition&offering=community", err)
 	}
 
-	closeFunc := func() error {
+	// This variable has a different name than "closeFunc" to avoid getting
+	// clobbered by returns, so it can be called in a defer on error.
+	origCloseFunc := func() error {
 		// This function can be called in an entirely different context,
 		// so use Background.
 		ctx := context.Background()
@@ -153,12 +157,12 @@ func startContainers(ctx context.Context, client *docker.Client, output io.Write
 	}
 	defer func() {
 		if err != nil {
-			closeFunc()
+			origCloseFunc()
 		}
 	}()
 
 	for name := range containers {
-		c, err := startContainer(ctx, client, output, networkID, name, defs[name])
+		c, err := startContainer(ctx, g, name, defs[name])
 		if err != nil {
 			return containersExpansion{}, nil, err
 		}
@@ -166,17 +170,18 @@ func startContainers(ctx context.Context, client *docker.Client, output io.Write
 		containers[name] = c
 		exp.ips[name] = c.ip.String()
 	}
-	return exp, closeFunc, nil
+	return exp, origCloseFunc, nil
 }
 
-func startContainer(ctx context.Context, client *docker.Client, output io.Writer, networkID string, resourceName string, cd *narwhal.ContainerDefinition) (_ *container, err error) {
+// startContainer starts a single container with the given definition.
+func startContainer(ctx context.Context, g G, resourceName string, cd *narwhal.ContainerDefinition) (_ *container, err error) {
 	log.Infof(ctx, "Starting container %s...", resourceName)
-	id, err := narwhal.CreateContainer(ctx, client, output, cd)
+	id, err := narwhal.CreateContainer(ctx, g.DockerClient, g.Stderr, cd)
 	if err != nil {
 		return nil, fmt.Errorf("start resource %s: %w", resourceName, err)
 	}
 	c := &container{
-		client:       client,
+		client:       g.DockerClient,
 		resourceName: resourceName,
 		id:           id,
 	}
@@ -185,20 +190,20 @@ func startContainer(ctx context.Context, client *docker.Client, output io.Writer
 			c.remove(xcontext.IgnoreDeadline(ctx))
 		}
 	}()
-	err = client.ConnectNetwork(networkID, docker.NetworkConnectionOptions{
+	err = g.DockerClient.ConnectNetwork(g.DockerNetworkID, docker.NetworkConnectionOptions{
 		Context:   ctx,
 		Container: id,
 		EndpointConfig: &docker.EndpointConfig{
-			NetworkID: networkID,
+			NetworkID: g.DockerNetworkID,
 		},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("start resource %s: connect %s to %s: %w", resourceName, id, networkID, err)
+		return nil, fmt.Errorf("start resource %s: connect %s to %s: %w", resourceName, id, g.DockerNetworkID, err)
 	}
-	if err := narwhal.StartContainer(ctx, client, id); err != nil {
+	if err := narwhal.StartContainer(ctx, g.DockerClient, id); err != nil {
 		return nil, fmt.Errorf("start resource %s: %w", resourceName, err)
 	}
-	c.ip, err = narwhal.IPv4Address(ctx, client, id)
+	c.ip, err = narwhal.IPv4Address(ctx, g.DockerClient, id)
 	if err != nil {
 		return nil, fmt.Errorf("start resource %s: %w", resourceName, err)
 	}
