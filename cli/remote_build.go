@@ -318,21 +318,26 @@ func (p *RemoteCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface
 	endTime = time.Now()
 	patchTime := endTime.Sub(startTime)
 	log.Infof(ctx, "Patch finished at %s, taking %s", endTime.Format(TIME_FORMAT), patchTime.Truncate(time.Millisecond))
-	if len(p.patchPath) > 0 && len(p.patchData) > 0 {
-		if err := p.savePatch(); err != nil {
-			log.Warnf(ctx, "Unable to save copy of generated patch: %v", err)
+	if len(p.patchPath) > 0 {
+		if len(p.patchData) == 0 {
+			log.Infof(ctx, "patch-path was given, but the patch would be empty, so refusing to write it")
+		} else {
+			if err := p.savePatch(); err != nil {
+				log.Warnf(ctx, "Unable to save copy of generated patch: %v", err)
+			}
 		}
 	}
 
-	if !p.dryRun {
-		err = p.submitBuild(ctx, project, target.Tags)
-
-		if err != nil {
-			log.Errorf(ctx, "Unable to submit build: %v", err)
-			return subcommands.ExitFailure
-		}
-	} else {
+	if p.dryRun {
 		log.Infof(ctx, "Dry run ended, build not submitted")
+		return subcommands.ExitSuccess
+	}
+
+	err = p.submitBuild(ctx, project, target.Tags)
+
+	if err != nil {
+		log.Errorf(ctx, "Unable to submit build: %v", err)
+		return subcommands.ExitFailure
 	}
 
 	return subcommands.ExitSuccess
