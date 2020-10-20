@@ -48,8 +48,12 @@ type BiomeCloser interface {
 // TODO(ch2285): This should be moved out of this package and into a separate
 // loader package.
 type PhaseDeps struct {
-	TargetName          string
-	Resources           map[string]*narwhal.ContainerDefinition
+	TargetName string
+	Resources  map[string]*narwhal.ContainerDefinition
+
+	// EnvironmentTemplate is the set of environment variables that should be set
+	// in the biome. These variables may include substitutions for container IP
+	// addresses in the form `{{ .Containers.IP "mycontainer" }}`.
 	EnvironmentTemplate map[string]string
 	// TODO(ch2744): Buildpacks
 }
