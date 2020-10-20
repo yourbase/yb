@@ -26,14 +26,14 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/yourbase/yb/internal/buildcontext"
+	"github.com/yourbase/yb/internal/biome"
 	"zombiezen.com/go/log/testlog"
 )
 
 func TestExecute(t *testing.T) {
 	type commandRecord struct {
 		argv []string
-		env  buildcontext.Environment
+		env  biome.Environment
 		dir  string
 	}
 	tests := []struct {
@@ -134,9 +134,9 @@ func TestExecute(t *testing.T) {
 			ctx := testlog.WithTB(context.Background(), t)
 			var mu sync.Mutex
 			var got []commandRecord
-			bctx := &buildcontext.Fake{
+			bio := &biome.Fake{
 				Separator: '/',
-				RunFunc: func(ctx context.Context, invoke *buildcontext.Invocation) error {
+				RunFunc: func(ctx context.Context, invoke *biome.Invocation) error {
 					mu.Lock()
 					defer mu.Unlock()
 					envCopy := make(map[string]string)
@@ -145,7 +145,7 @@ func TestExecute(t *testing.T) {
 					}
 					got = append(got, commandRecord{
 						argv: append([]string(nil), invoke.Argv...),
-						env: buildcontext.Environment{
+						env: biome.Environment{
 							Vars:        envCopy,
 							PrependPath: append([]string(nil), invoke.Env.PrependPath...),
 							AppendPath:  append([]string(nil), invoke.Env.AppendPath...),
@@ -161,7 +161,7 @@ func TestExecute(t *testing.T) {
 					return nil
 				},
 			}
-			err := Execute(ctx, G{Context: bctx}, test.phase)
+			err := Execute(ctx, G{Biome: bio}, test.phase)
 			if err != nil {
 				if test.wantError {
 					t.Logf("Build: %v (expected)", err)
@@ -181,7 +181,7 @@ func TestExecute(t *testing.T) {
 							path.Last().(cmp.StructField).Name() == "dir"
 					},
 					cmp.Comparer(func(dir1, dir2 string) bool {
-						return bctx.CleanPath(dir1) == bctx.CleanPath(dir2)
+						return bio.CleanPath(dir1) == bio.CleanPath(dir2)
 					}),
 				),
 			)

@@ -14,11 +14,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package buildcontext
+package biome
 
 import "testing"
 
-var _ Context = new(Fake)
+var _ Biome = new(Fake)
 
 func TestFakeJoinPath(t *testing.T) {
 	tests := []struct {

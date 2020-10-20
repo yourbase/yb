@@ -10,8 +10,8 @@ import (
 
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/yourbase/narwhal"
+	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/internal/build"
-	"github.com/yourbase/yb/internal/buildcontext"
 	"github.com/yourbase/yb/packages"
 	"github.com/yourbase/yb/types"
 	"zombiezen.com/go/log"
@@ -28,9 +28,9 @@ func connectDockerClient(useDocker bool) (*docker.Client, error) {
 	return dockerClient, nil
 }
 
-func newBuildContext(ctx context.Context, client *docker.Client, packageDir string) (buildcontext.Context, error) {
+func newBiome(ctx context.Context, client *docker.Client, packageDir string) (biome.Biome, error) {
 	// TODO(ch2743): Eventually also allow Docker container.
-	return buildcontext.Local{
+	return biome.Local{
 		PackageDir: packageDir,
 	}, nil
 }
@@ -41,7 +41,7 @@ func targetToPhaseDeps(target *types.BuildTarget) (*build.PhaseDeps, error) {
 		Resources:  narwhalContainerMap(target.Dependencies.Containers),
 	}
 	var err error
-	phaseDeps.EnvironmentTemplate, err = buildcontext.MapVars(target.Environment)
+	phaseDeps.EnvironmentTemplate, err = biome.MapVars(target.Environment)
 	if err != nil {
 		return nil, fmt.Errorf("target %s: %w", target.Name, err)
 	}

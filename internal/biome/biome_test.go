@@ -14,7 +14,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package buildcontext
+package biome
 
 import (
 	"context"
@@ -25,8 +25,8 @@ import (
 )
 
 var (
-	_ Context = Local{}
-	_ Context = ExecPrefix{}
+	_ Biome = Local{}
+	_ Biome = ExecPrefix{}
 )
 
 func TestExecPrefix(t *testing.T) {
@@ -51,8 +51,8 @@ func TestExecPrefix(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			var got []string
-			bctx := ExecPrefix{
-				Context: &Fake{
+			bio := ExecPrefix{
+				Biome: &Fake{
 					Separator: '/',
 					RunFunc: func(_ context.Context, invoke *Invocation) error {
 						got = append([]string(nil), invoke.Argv...)
@@ -62,7 +62,7 @@ func TestExecPrefix(t *testing.T) {
 				PrependArgv: test.prependArgv,
 			}
 			argv := append([]string(nil), test.argv...)
-			err := bctx.Run(context.Background(), &Invocation{
+			err := bio.Run(context.Background(), &Invocation{
 				Argv: argv,
 			})
 			if err != nil {

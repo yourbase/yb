@@ -14,7 +14,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package buildcontext
+package biome
 
 import (
 	"context"
@@ -23,7 +23,7 @@ import (
 	"strings"
 )
 
-// Fake is a Context that operates in-memory. It uses POSIX-style paths, but
+// Fake is a biome that operates in-memory. It uses POSIX-style paths, but
 // permits any character to be used as the separator.
 type Fake struct {
 	// Separator is the path separator character. If NUL, then slash '/' is used.

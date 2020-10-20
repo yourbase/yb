@@ -22,27 +22,27 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/yourbase/yb/internal/buildcontext"
+	"github.com/yourbase/yb/internal/biome"
 	"zombiezen.com/go/log/testlog"
 )
 
 func TestSetup(t *testing.T) {
 	ctx := testlog.WithTB(context.Background(), t)
-	var gotEnv buildcontext.Environment
-	bctx := &buildcontext.Fake{
+	var gotEnv biome.Environment
+	bio := &biome.Fake{
 		Separator: '/',
-		Descriptor: buildcontext.Descriptor{
+		Descriptor: biome.Descriptor{
 			OS:   "linux",
 			Arch: "amd64",
 		},
-		RunFunc: func(_ context.Context, invoke *buildcontext.Invocation) error {
+		RunFunc: func(_ context.Context, invoke *biome.Invocation) error {
 			gotEnv = invoke.Env
 			return nil
 		},
 	}
 	// Should not require Docker: no containers in dependencies.
-	g := G{Context: bctx}
-	gotContext, err := Setup(ctx, g, &PhaseDeps{
+	g := G{Biome: bio}
+	gotBiome, err := Setup(ctx, g, &PhaseDeps{
 		TargetName: "default",
 		EnvironmentTemplate: map[string]string{
 			"FOO": "BAR",
@@ -51,13 +51,13 @@ func TestSetup(t *testing.T) {
 	if err != nil {
 		t.Fatal("Setup:", err)
 	}
-	err = gotContext.Run(ctx, &buildcontext.Invocation{
+	err = gotBiome.Run(ctx, &biome.Invocation{
 		Argv: []string{"env"},
 	})
 	if err != nil {
 		t.Error("Run:", err)
 	}
-	wantEnv := buildcontext.Environment{
+	wantEnv := biome.Environment{
 		Vars: map[string]string{
 			"FOO": "BAR",
 		},

@@ -7,8 +7,8 @@ import (
 	"os"
 
 	"github.com/johnewart/subcommands"
+	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/internal/build"
-	"github.com/yourbase/yb/internal/buildcontext"
 	"github.com/yourbase/yb/internal/ybdata"
 	"zombiezen.com/go/log"
 )
@@ -76,13 +76,13 @@ func (b *RunCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{})
 
 	// Run command.
 	execTarget := targets[len(targets)-1]
-	bctx, err := newBuildContext(ctx, dockerClient, pkg.Path)
+	bio, err := newBiome(ctx, dockerClient, pkg.Path)
 	if err != nil {
 		log.Errorf(ctx, "%v", err)
 		return subcommands.ExitFailure
 	}
 	g := build.G{
-		Context:         bctx,
+		Biome:           bio,
 		DockerClient:    dockerClient,
 		DockerNetworkID: dockerNetworkID,
 		Stdout:          os.Stdout,
@@ -93,7 +93,7 @@ func (b *RunCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{})
 		log.Errorf(ctx, "%v", err)
 		return subcommands.ExitFailure
 	}
-	execContext, err := build.Setup(ctx, g, phaseDeps)
+	execBiome, err := build.Setup(ctx, g, phaseDeps)
 	if err != nil {
 		log.Errorf(ctx, "%v", err)
 		return subcommands.ExitFailure
@@ -105,7 +105,7 @@ func (b *RunCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{})
 		return subcommands.ExitFailure
 	}
 	// TODO(ch2725): Run the command from the subdirectory the process is in.
-	err = execContext.Run(ctx, &buildcontext.Invocation{
+	err = execBiome.Run(ctx, &biome.Invocation{
 		Argv:   f.Args(),
 		Stdin:  os.Stdin,
 		Stdout: os.Stdout,

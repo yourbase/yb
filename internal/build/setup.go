@@ -28,7 +28,7 @@ import (
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/yourbase/commons/xcontext"
 	"github.com/yourbase/narwhal"
-	"github.com/yourbase/yb/internal/buildcontext"
+	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/internal/ybtrace"
 	"github.com/yourbase/yb/plumbing"
 	"go.opentelemetry.io/otel/api/trace"
@@ -37,10 +37,9 @@ import (
 	"zombiezen.com/go/log"
 )
 
-// ContextCloser is a buildcontext.Context that has resources that need to be
-// cleaned up.
-type ContextCloser interface {
-	buildcontext.Context
+// BiomeCloser is a biome that has resources that need to be cleaned up.
+type BiomeCloser interface {
+	biome.Biome
 	io.Closer
 }
 
@@ -56,9 +55,9 @@ type PhaseDeps struct {
 }
 
 // Setup arranges for the phase's dependencies to be available, returning a new
-// build context that has the dependencies configured. It is the caller's
-// responsibility to call Close on the returned build context.
-func Setup(ctx context.Context, g G, phase *PhaseDeps) (_ ContextCloser, err error) {
+// biome that has the dependencies configured. It is the caller's responsibility
+// to call Close on the returned biome.
+func Setup(ctx context.Context, g G, phase *PhaseDeps) (_ BiomeCloser, err error) {
 	ctx, span := ybtrace.Start(ctx, "Setup "+phase.TargetName, trace.WithAttributes(
 		label.String("target", phase.TargetName),
 	))
@@ -81,7 +80,7 @@ func Setup(ctx context.Context, g G, phase *PhaseDeps) (_ ContextCloser, err err
 	exp := configExpansion{
 		Containers: expContainers,
 	}
-	env := buildcontext.Environment{
+	env := biome.Environment{
 		Vars: make(map[string]string),
 	}
 	for k, t := range phase.EnvironmentTemplate {
@@ -91,10 +90,10 @@ func Setup(ctx context.Context, g G, phase *PhaseDeps) (_ ContextCloser, err err
 		}
 		env.Vars[k] = v
 	}
-	return contextCloser{
-		Context: buildcontext.EnvContext{
-			Context: g.Context,
-			Env:     env,
+	return biomeCloser{
+		Biome: biome.EnvBiome{
+			Biome: g.Biome,
+			Env:   env,
 		},
 		closeFunc: closeFunc,
 	}, nil
@@ -291,14 +290,14 @@ func (exp containersExpansion) IP(label string) (string, error) {
 	return ip, nil
 }
 
-type contextCloser struct {
-	buildcontext.Context
+type biomeCloser struct {
+	biome.Biome
 	closeFunc func() error
 }
 
-func (cc contextCloser) Close() error {
-	if cc.closeFunc == nil {
+func (bc biomeCloser) Close() error {
+	if bc.closeFunc == nil {
 		return nil
 	}
-	return cc.closeFunc()
+	return bc.closeFunc()
 }

@@ -14,8 +14,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-// Package buildcontext provides an API for interacting with build environments.
-package buildcontext
+// Package biome provides an API for interacting with build environments.
+package biome
 
 import (
 	"context"
@@ -30,9 +30,9 @@ import (
 	"zombiezen.com/go/log"
 )
 
-// A Context is an environment that a target is built or run in.
+// A Biome is an environment that a target is built or run in.
 // Implementations must be safe to use from multiple goroutines.
-type Context interface {
+type Biome interface {
 	// Describe returns information about the execution environment.
 	// The caller must not modify the returned Descriptor.
 	Describe() *Descriptor
@@ -43,7 +43,7 @@ type Context interface {
 	Run(ctx context.Context, invoke *Invocation) error
 
 	// The following methods are analogous to the ones in the
-	// path/filepath package, but operate on the Context's filesystem paths.
+	// path/filepath package, but operate on the biome's filesystem paths.
 
 	// JoinPath joins any number of path elements into a single path.
 	JoinPath(elem ...string) string
@@ -60,7 +60,7 @@ type Context interface {
 	PathFromSlash(path string) string
 }
 
-// A Descriptor describes various facets of a Context.
+// A Descriptor describes various facets of a biome.
 type Descriptor struct {
 	OS   string
 	Arch string
@@ -73,11 +73,11 @@ type Invocation struct {
 
 	// Dir is the directory to execute the program in. Paths are resolved relative to
 	// the package directory. If empty, then it will be executed in the package
-	// directory. It is separated by the context's path separator.
+	// directory. It is separated by the biome's path separator.
 	Dir string
 
 	// Env specifies additional environment variables to send to the program.
-	// The Context may send additional environment variables to the program, but
+	// The biome may provide additional environment variables to the program, but
 	// will not override the provided environment variables.
 	Env Environment
 
@@ -95,7 +95,7 @@ type Invocation struct {
 	Stderr io.Writer
 }
 
-// Local is a Context that executes processes in a directory on the
+// Local is a biome that executes processes in a directory on the
 // local machine.
 type Local struct {
 	// PackageDir is a directory containing the source files of the package.
@@ -160,20 +160,20 @@ func (l Local) PathFromSlash(path string) string {
 // ExecPrefix intercepts calls to Run and prepends elements to the Argv slice.
 // This can be used to invoke tools with a wrapping command like `time` or `sudo`.
 type ExecPrefix struct {
-	Context
+	Biome
 	PrependArgv []string
 }
 
-// Run calls ep.Context.Run with an invocation whose Argv is the result of
+// Run calls ep.Biome.Run with an invocation whose Argv is the result of
 // appending invoke.Argv to ep.PrependArgv.Argv.
 func (ep ExecPrefix) Run(ctx context.Context, invoke *Invocation) error {
 	if len(ep.PrependArgv) == 0 {
-		return ep.Context.Run(ctx, invoke)
+		return ep.Biome.Run(ctx, invoke)
 	}
 	invoke2 := new(Invocation)
 	*invoke2 = *invoke
 	invoke2.Argv = make([]string, 0, len(ep.PrependArgv)+len(invoke.Argv))
 	invoke2.Argv = append(invoke2.Argv, ep.PrependArgv...)
 	invoke2.Argv = append(invoke2.Argv, invoke.Argv...)
-	return ep.Context.Run(ctx, invoke2)
+	return ep.Biome.Run(ctx, invoke2)
 }

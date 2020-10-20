@@ -25,7 +25,7 @@ import (
 
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/google/shlex"
-	"github.com/yourbase/yb/internal/buildcontext"
+	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/internal/ybtrace"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/codes"
@@ -34,9 +34,9 @@ import (
 
 // G contains system-controlled build settings.
 type G struct {
-	Context buildcontext.Context
-	Stdout  io.Writer
-	Stderr  io.Writer
+	Biome  biome.Biome
+	Stdout io.Writer
+	Stderr io.Writer
 
 	DockerClient    *docker.Client
 	DockerNetworkID string
@@ -53,7 +53,7 @@ type Phase struct {
 }
 
 // Execute runs the given phase. It assumes that the phase's dependencies are
-// already available in the build context.
+// already available in the biome.
 func Execute(ctx context.Context, g G, target *Phase) (err error) {
 	ctx, span := ybtrace.Start(ctx, "Build "+target.TargetName, trace.WithAttributes(
 		label.String("target", target.TargetName),
@@ -70,7 +70,7 @@ func Execute(ctx context.Context, g G, target *Phase) (err error) {
 		if isSlashAbs(target.Root) {
 			return fmt.Errorf("build %s: root %s is absolute", target.TargetName, target.Root)
 		}
-		workDir = g.Context.PathFromSlash(target.Root)
+		workDir = g.Biome.PathFromSlash(target.Root)
 	}
 	// Validate commands before running them.
 	for _, cmdString := range target.Commands {
@@ -121,14 +121,14 @@ func runCommand(ctx context.Context, g G, dir string, cmdString string) (newDir 
 
 	if newDir, ok := parseChdir(cmdString); ok {
 		// TODO(ch2195): What do we expect this to do in general?
-		return g.Context.JoinPath(dir, g.Context.PathFromSlash(newDir)), nil
+		return g.Biome.JoinPath(dir, g.Biome.PathFromSlash(newDir)), nil
 	}
 	argv, err := shlex.Split(cmdString)
 	if err != nil {
 		return dir, fmt.Errorf("run build command %q: %w", cmdString, err)
 	}
 
-	err = g.Context.Run(ctx, &buildcontext.Invocation{
+	err = g.Biome.Run(ctx, &biome.Invocation{
 		Argv:   argv,
 		Dir:    dir,
 		Stdout: g.Stdout,

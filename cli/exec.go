@@ -6,8 +6,8 @@ import (
 	"os"
 
 	"github.com/johnewart/subcommands"
+	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/internal/build"
-	"github.com/yourbase/yb/internal/buildcontext"
 	"github.com/yourbase/yb/internal/ybdata"
 	"zombiezen.com/go/log"
 )
@@ -55,19 +55,19 @@ func (b *ExecCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 		log.Errorf(ctx, "%v", err)
 		return subcommands.ExitFailure
 	}
-	bctx, err := newBuildContext(ctx, dockerClient, pkg.Path)
+	bio, err := newBiome(ctx, dockerClient, pkg.Path)
 	if err != nil {
 		log.Errorf(ctx, "%v", err)
 		return subcommands.ExitFailure
 	}
 	g := build.G{
-		Context:         bctx,
+		Biome:           bio,
 		DockerClient:    dockerClient,
 		DockerNetworkID: dockerNetworkID,
 		Stdout:          os.Stdout,
 		Stderr:          os.Stderr,
 	}
-	defaultEnv, err := buildcontext.MapVars(pkg.Manifest.Exec.Environment[defaultExecEnvironment])
+	defaultEnv, err := biome.MapVars(pkg.Manifest.Exec.Environment[defaultExecEnvironment])
 	if err != nil {
 		log.Errorf(ctx, "%v", err)
 		return subcommands.ExitFailure
@@ -78,7 +78,7 @@ func (b *ExecCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 		EnvironmentTemplate: defaultEnv,
 	}
 	if b.environment != defaultExecEnvironment {
-		overrideEnv, err := buildcontext.MapVars(pkg.Manifest.Exec.Environment[b.environment])
+		overrideEnv, err := biome.MapVars(pkg.Manifest.Exec.Environment[b.environment])
 		if err != nil {
 			log.Errorf(ctx, "%v", err)
 			return subcommands.ExitFailure
@@ -87,14 +87,14 @@ func (b *ExecCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 			deps.EnvironmentTemplate[k] = v
 		}
 	}
-	execContext, err := build.Setup(ctx, g, deps)
+	execBiome, err := build.Setup(ctx, g, deps)
 	if err != nil {
 		log.Errorf(ctx, "%v", err)
 		return subcommands.ExitFailure
 	}
-	g.Context = execContext
+	g.Biome = execBiome
 	defer func() {
-		if err := execContext.Close(); err != nil {
+		if err := execBiome.Close(); err != nil {
 			log.Errorf(ctx, "Clean up environment %s: %v", b.environment, err)
 		}
 	}()

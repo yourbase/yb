@@ -14,8 +14,8 @@ import (
 	"github.com/google/shlex"
 	"github.com/johnewart/subcommands"
 	"github.com/matishsiao/goInfo"
+	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/internal/build"
-	"github.com/yourbase/yb/internal/buildcontext"
 	"github.com/yourbase/yb/internal/ybdata"
 	"github.com/yourbase/yb/internal/ybtrace"
 	"github.com/yourbase/yb/packages"
@@ -192,12 +192,12 @@ func doTargetList(ctx context.Context, pkg *packages.Package, targets []*types.B
 }
 
 func doTarget(ctx context.Context, pkg *packages.Package, target *types.BuildTarget, opts *doOptions) error {
-	bctx, err := newBuildContext(ctx, opts.dockerClient, pkg.Path)
+	bio, err := newBiome(ctx, opts.dockerClient, pkg.Path)
 	if err != nil {
 		return fmt.Errorf("target %s: %w", target.Name, err)
 	}
 	g := build.G{
-		Context:         bctx,
+		Biome:           bio,
 		DockerClient:    opts.dockerClient,
 		DockerNetworkID: opts.dockerNetworkID,
 		Stdout:          os.Stdout,
@@ -207,16 +207,16 @@ func doTarget(ctx context.Context, pkg *packages.Package, target *types.BuildTar
 	if err != nil {
 		return err
 	}
-	execContext, err := build.Setup(ctx, g, phaseDeps)
+	execBiome, err := build.Setup(ctx, g, phaseDeps)
 	if err != nil {
 		return err
 	}
-	g.Context = buildcontext.ExecPrefix{
-		Context:     execContext,
+	g.Biome = biome.ExecPrefix{
+		Biome:       execBiome,
 		PrependArgv: opts.execPrefix,
 	}
 	defer func() {
-		if err := execContext.Close(); err != nil {
+		if err := execBiome.Close(); err != nil {
 			log.Errorf(ctx, "Clean up target %s: %v", target.Name, err)
 		}
 	}()

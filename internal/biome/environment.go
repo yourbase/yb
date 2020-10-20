@@ -14,7 +14,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package buildcontext
+package biome
 
 import (
 	"context"
@@ -154,20 +154,20 @@ func (env Environment) String() string {
 	return strings.Join(parts, "\n")
 }
 
-// EnvContext wraps a Context to add a base environment to any run commands.
-type EnvContext struct {
-	Context
+// EnvBiome wraps a biome to add a base environment to any run commands.
+type EnvBiome struct {
+	Biome
 	Env Environment
 }
 
 // Run runs a command with ec.Env as a base environment with invoke.Env
 // merged in.
-func (ec EnvContext) Run(ctx context.Context, invoke *Invocation) error {
+func (ec EnvBiome) Run(ctx context.Context, invoke *Invocation) error {
 	if ec.Env.IsEmpty() {
-		return ec.Context.Run(ctx, invoke)
+		return ec.Biome.Run(ctx, invoke)
 	}
 	invoke2 := new(Invocation)
 	*invoke2 = *invoke
 	invoke2.Env = ec.Env.Merge(invoke.Env)
-	return ec.Context.Run(ctx, invoke2)
+	return ec.Biome.Run(ctx, invoke2)
 }
