@@ -81,7 +81,7 @@ func (b *RunCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{})
 		log.Errorf(ctx, "%v", err)
 		return subcommands.ExitFailure
 	}
-	g := build.G{
+	sys := build.Sys{
 		Biome:           bio,
 		DockerClient:    dockerClient,
 		DockerNetworkID: dockerNetworkID,
@@ -93,7 +93,7 @@ func (b *RunCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{})
 		log.Errorf(ctx, "%v", err)
 		return subcommands.ExitFailure
 	}
-	execBiome, err := build.Setup(ctx, g, phaseDeps)
+	execBiome, err := build.Setup(ctx, sys, phaseDeps)
 	if err != nil {
 		log.Errorf(ctx, "%v", err)
 		return subcommands.ExitFailure

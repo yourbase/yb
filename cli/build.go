@@ -196,7 +196,7 @@ func doTarget(ctx context.Context, pkg *packages.Package, target *types.BuildTar
 	if err != nil {
 		return fmt.Errorf("target %s: %w", target.Name, err)
 	}
-	g := build.G{
+	sys := build.Sys{
 		Biome:           bio,
 		DockerClient:    opts.dockerClient,
 		DockerNetworkID: opts.dockerNetworkID,
@@ -207,11 +207,11 @@ func doTarget(ctx context.Context, pkg *packages.Package, target *types.BuildTar
 	if err != nil {
 		return err
 	}
-	execBiome, err := build.Setup(ctx, g, phaseDeps)
+	execBiome, err := build.Setup(ctx, sys, phaseDeps)
 	if err != nil {
 		return err
 	}
-	g.Biome = biome.ExecPrefix{
+	sys.Biome = biome.ExecPrefix{
 		Biome:       execBiome,
 		PrependArgv: opts.execPrefix,
 	}
@@ -231,7 +231,7 @@ func doTarget(ctx context.Context, pkg *packages.Package, target *types.BuildTar
 
 	subSection(fmt.Sprintf("Build target: %s", target.Name))
 	log.Infof(ctx, "Executing build steps...")
-	err = build.Execute(ctx, g, targetToPhase(target))
+	err = build.Execute(ctx, sys, targetToPhase(target))
 	if err != nil {
 		return err
 	}

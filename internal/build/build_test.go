@@ -161,7 +161,7 @@ func TestExecute(t *testing.T) {
 					return nil
 				},
 			}
-			err := Execute(ctx, G{Biome: bio}, test.phase)
+			err := Execute(ctx, Sys{Biome: bio}, test.phase)
 			if err != nil {
 				if test.wantError {
 					t.Logf("Build: %v (expected)", err)

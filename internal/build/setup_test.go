@@ -41,8 +41,8 @@ func TestSetup(t *testing.T) {
 		},
 	}
 	// Should not require Docker: no containers in dependencies.
-	g := G{Biome: bio}
-	gotBiome, err := Setup(ctx, g, &PhaseDeps{
+	sys := Sys{Biome: bio}
+	gotBiome, err := Setup(ctx, sys, &PhaseDeps{
 		TargetName: "default",
 		EnvironmentTemplate: map[string]string{
 			"FOO": "BAR",

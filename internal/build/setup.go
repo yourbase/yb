@@ -57,7 +57,7 @@ type PhaseDeps struct {
 // Setup arranges for the phase's dependencies to be available, returning a new
 // biome that has the dependencies configured. It is the caller's responsibility
 // to call Close on the returned biome.
-func Setup(ctx context.Context, g G, phase *PhaseDeps) (_ BiomeCloser, err error) {
+func Setup(ctx context.Context, sys Sys, phase *PhaseDeps) (_ BiomeCloser, err error) {
 	ctx, span := ybtrace.Start(ctx, "Setup "+phase.TargetName, trace.WithAttributes(
 		label.String("target", phase.TargetName),
 	))
@@ -68,7 +68,7 @@ func Setup(ctx context.Context, g G, phase *PhaseDeps) (_ BiomeCloser, err error
 		span.End()
 	}()
 
-	expContainers, closeFunc, err := startContainers(ctx, g, phase.Resources)
+	expContainers, closeFunc, err := startContainers(ctx, sys, phase.Resources)
 	if err != nil {
 		return nil, fmt.Errorf("setup %s: %w", phase.TargetName, err)
 	}
@@ -92,7 +92,7 @@ func Setup(ctx context.Context, g G, phase *PhaseDeps) (_ BiomeCloser, err error
 	}
 	return biomeCloser{
 		Biome: biome.EnvBiome{
-			Biome: g.Biome,
+			Biome: sys.Biome,
 			Env:   env,
 		},
 		closeFunc: closeFunc,
@@ -108,7 +108,7 @@ type container struct {
 
 // startContainers starts containers for the given set of container definitions,
 // returning a map of container IP addresses and function to stop the containers.
-func startContainers(ctx context.Context, g G, defs map[string]*narwhal.ContainerDefinition) (_ containersExpansion, closeFunc func() error, err error) {
+func startContainers(ctx context.Context, sys Sys, defs map[string]*narwhal.ContainerDefinition) (_ containersExpansion, closeFunc func() error, err error) {
 	exp := containersExpansion{
 		ips: make(map[string]string),
 	}
@@ -125,7 +125,7 @@ func startContainers(ctx context.Context, g G, defs map[string]*narwhal.Containe
 	if len(containers) == 0 {
 		return containersExpansion{}, nil, nil
 	}
-	if g.DockerClient == nil {
+	if sys.DockerClient == nil {
 		names := make([]string, 0, len(containers))
 		for name := range containers {
 			names = append(names, name)
@@ -137,7 +137,7 @@ func startContainers(ctx context.Context, g G, defs map[string]*narwhal.Containe
 			strings.Join(names, ", "))
 	}
 	// Ping first to ensure that Docker is available before attempting anything.
-	if err := g.DockerClient.PingWithContext(ctx); err != nil {
+	if err := sys.DockerClient.PingWithContext(ctx); err != nil {
 		return containersExpansion{}, nil, fmt.Errorf("%w\nTry installing Docker Desktop: https://hub.docker.com/search/?type=edition&offering=community", err)
 	}
 
@@ -161,7 +161,7 @@ func startContainers(ctx context.Context, g G, defs map[string]*narwhal.Containe
 	}()
 
 	for name := range containers {
-		c, err := startContainer(ctx, g, name, defs[name])
+		c, err := startContainer(ctx, sys, name, defs[name])
 		if err != nil {
 			return containersExpansion{}, nil, err
 		}
@@ -173,14 +173,14 @@ func startContainers(ctx context.Context, g G, defs map[string]*narwhal.Containe
 }
 
 // startContainer starts a single container with the given definition.
-func startContainer(ctx context.Context, g G, resourceName string, cd *narwhal.ContainerDefinition) (_ *container, err error) {
+func startContainer(ctx context.Context, sys Sys, resourceName string, cd *narwhal.ContainerDefinition) (_ *container, err error) {
 	log.Infof(ctx, "Starting container %s...", resourceName)
-	id, err := narwhal.CreateContainer(ctx, g.DockerClient, g.Stderr, cd)
+	id, err := narwhal.CreateContainer(ctx, sys.DockerClient, sys.Stderr, cd)
 	if err != nil {
 		return nil, fmt.Errorf("start resource %s: %w", resourceName, err)
 	}
 	c := &container{
-		client:       g.DockerClient,
+		client:       sys.DockerClient,
 		resourceName: resourceName,
 		id:           id,
 	}
@@ -189,20 +189,20 @@ func startContainer(ctx context.Context, g G, resourceName string, cd *narwhal.C
 			c.remove(xcontext.IgnoreDeadline(ctx))
 		}
 	}()
-	err = g.DockerClient.ConnectNetwork(g.DockerNetworkID, docker.NetworkConnectionOptions{
+	err = sys.DockerClient.ConnectNetwork(sys.DockerNetworkID, docker.NetworkConnectionOptions{
 		Context:   ctx,
 		Container: id,
 		EndpointConfig: &docker.EndpointConfig{
-			NetworkID: g.DockerNetworkID,
+			NetworkID: sys.DockerNetworkID,
 		},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("start resource %s: connect %s to %s: %w", resourceName, id, g.DockerNetworkID, err)
+		return nil, fmt.Errorf("start resource %s: connect %s to %s: %w", resourceName, id, sys.DockerNetworkID, err)
 	}
-	if err := narwhal.StartContainer(ctx, g.DockerClient, id); err != nil {
+	if err := narwhal.StartContainer(ctx, sys.DockerClient, id); err != nil {
 		return nil, fmt.Errorf("start resource %s: %w", resourceName, err)
 	}
-	c.ip, err = narwhal.IPv4Address(ctx, g.DockerClient, id)
+	c.ip, err = narwhal.IPv4Address(ctx, sys.DockerClient, id)
 	if err != nil {
 		return nil, fmt.Errorf("start resource %s: %w", resourceName, err)
 	}

@@ -60,7 +60,7 @@ func (b *ExecCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 		log.Errorf(ctx, "%v", err)
 		return subcommands.ExitFailure
 	}
-	g := build.G{
+	sys := build.Sys{
 		Biome:           bio,
 		DockerClient:    dockerClient,
 		DockerNetworkID: dockerNetworkID,
@@ -87,12 +87,12 @@ func (b *ExecCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 			deps.EnvironmentTemplate[k] = v
 		}
 	}
-	execBiome, err := build.Setup(ctx, g, deps)
+	execBiome, err := build.Setup(ctx, sys, deps)
 	if err != nil {
 		log.Errorf(ctx, "%v", err)
 		return subcommands.ExitFailure
 	}
-	g.Biome = execBiome
+	sys.Biome = execBiome
 	defer func() {
 		if err := execBiome.Close(); err != nil {
 			log.Errorf(ctx, "Clean up environment %s: %v", b.environment, err)
@@ -104,7 +104,7 @@ func (b *ExecCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 		return subcommands.ExitFailure
 	}
 
-	err = build.Execute(ctx, g, &build.Phase{
+	err = build.Execute(ctx, sys, &build.Phase{
 		TargetName: b.environment,
 		Commands:   pkg.Manifest.Exec.Commands,
 	})

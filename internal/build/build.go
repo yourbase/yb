@@ -32,8 +32,8 @@ import (
 	"go.opentelemetry.io/otel/label"
 )
 
-// G contains system-controlled build settings.
-type G struct {
+// Sys holds dependencies provided by the caller needed to run builds.
+type Sys struct {
 	Biome  biome.Biome
 	Stdout io.Writer
 	Stderr io.Writer
@@ -54,7 +54,7 @@ type Phase struct {
 
 // Execute runs the given phase. It assumes that the phase's dependencies are
 // already available in the biome.
-func Execute(ctx context.Context, g G, target *Phase) (err error) {
+func Execute(ctx context.Context, sys Sys, target *Phase) (err error) {
 	ctx, span := ybtrace.Start(ctx, "Build "+target.TargetName, trace.WithAttributes(
 		label.String("target", target.TargetName),
 	))
@@ -70,7 +70,7 @@ func Execute(ctx context.Context, g G, target *Phase) (err error) {
 		if isSlashAbs(target.Root) {
 			return fmt.Errorf("build %s: root %s is absolute", target.TargetName, target.Root)
 		}
-		workDir = g.Biome.PathFromSlash(target.Root)
+		workDir = sys.Biome.PathFromSlash(target.Root)
 	}
 	// Validate commands before running them.
 	for _, cmdString := range target.Commands {
@@ -79,7 +79,7 @@ func Execute(ctx context.Context, g G, target *Phase) (err error) {
 		}
 	}
 	for _, cmdString := range target.Commands {
-		newWorkDir, err := runCommand(ctx, g, workDir, cmdString)
+		newWorkDir, err := runCommand(ctx, sys, workDir, cmdString)
 		if err != nil {
 			return fmt.Errorf("build %s: %w", target.TargetName, err)
 		}
@@ -108,7 +108,7 @@ func validateCommand(cmdString string) error {
 	return nil
 }
 
-func runCommand(ctx context.Context, g G, dir string, cmdString string) (newDir string, err error) {
+func runCommand(ctx context.Context, sys Sys, dir string, cmdString string) (newDir string, err error) {
 	ctx, span := ybtrace.Start(ctx, "Run "+cmdString, trace.WithAttributes(
 		label.String("command", cmdString),
 	))
@@ -121,18 +121,18 @@ func runCommand(ctx context.Context, g G, dir string, cmdString string) (newDir 
 
 	if newDir, ok := parseChdir(cmdString); ok {
 		// TODO(ch2195): What do we expect this to do in general?
-		return g.Biome.JoinPath(dir, g.Biome.PathFromSlash(newDir)), nil
+		return sys.Biome.JoinPath(dir, sys.Biome.PathFromSlash(newDir)), nil
 	}
 	argv, err := shlex.Split(cmdString)
 	if err != nil {
 		return dir, fmt.Errorf("run build command %q: %w", cmdString, err)
 	}
 
-	err = g.Biome.Run(ctx, &biome.Invocation{
+	err = sys.Biome.Run(ctx, &biome.Invocation{
 		Argv:   argv,
 		Dir:    dir,
-		Stdout: g.Stdout,
-		Stderr: g.Stderr,
+		Stdout: sys.Stdout,
+		Stderr: sys.Stderr,
 	})
 	if err != nil {
 		return dir, fmt.Errorf("run build command %q: %w", cmdString, err)
