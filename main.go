@@ -5,6 +5,7 @@ import (
 	"flag"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -48,8 +49,21 @@ func main() {
 	cmdr.Register(&cli.VersionCmd{Version: version, Channel: channel, Date: date, CommitSHA: commitSHA}, "")
 
 	flag.Parse()
+
 	ctx := context.Background()
+	displayOldDirectoryWarning(ctx)
 	os.Exit(int(cmdr.Execute(ctx)))
+}
+
+func displayOldDirectoryWarning(ctx context.Context) {
+	home := os.Getenv("HOME")
+	if home == "" {
+		return
+	}
+	dir := filepath.Join(home, ".yourbase")
+	if _, err := os.Stat(dir); err == nil {
+		log.Warnf(ctx, "yb no longer uses %s to store files. You can remove this directory to save disk space.", dir)
+	}
 }
 
 type logger struct {

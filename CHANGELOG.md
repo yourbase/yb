@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 ## [Unreleased][]
 
+### Added
+
+-  yb will display a message on startup if the obsolete `$HOME/.yourbase`
+   directory exists, encouraging its deletion to save disk space.
+
 ### Changed
 
 -  `yb run` now runs commands in the context of a build target, not an
