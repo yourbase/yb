@@ -13,6 +13,10 @@ The format is based on [Keep a Changelog][], and this project adheres to
 -  yb will display a message on startup if the obsolete `$HOME/.yourbase`
    directory exists, encouraging its deletion to save disk space.
 
+### Fixed
+
+-  `yb remotebuild` no longer panics
+
 ## [0.4.1][] - 2020-10-13
 
 Version 0.4.1 fixes a regression introduced by 0.4.0.
