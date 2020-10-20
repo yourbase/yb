@@ -102,7 +102,9 @@ func (p *RemoteCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface
 			return subcommands.ExitFailure
 		}
 	} else {
-		if _, err := manifest.BuildTarget(p.target); err != nil {
+		var err error
+		target, err = manifest.BuildTarget(p.target)
+		if err != nil {
 			log.Errorf(ctx, "Build target %s specified but it doesn't exist!", p.target)
 			log.Infof(ctx, "Valid build targets: %s", strings.Join(manifest.BuildTargetList(), ", "))
 			return subcommands.ExitFailure

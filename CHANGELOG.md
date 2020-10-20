@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog][], and this project adheres to
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
 [Unreleased]: https://github.com/yourbase/yb/compare/v0.4.0...HEAD
 
+### Fixed
+
+-  `yb remotebuild` no longer panics
+
 ## [0.4.1][] - 2020-10-13
 
 Version 0.4.1 fixes a regression introduced by 0.4.0.
