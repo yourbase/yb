@@ -23,6 +23,13 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
+var _ interface {
+	Biome
+	fileWriter
+	dirMaker
+	symlinkEvaler
+} = EnvBiome{}
+
 func TestMapVars(t *testing.T) {
 	tests := []struct {
 		vars      []string

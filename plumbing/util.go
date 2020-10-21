@@ -7,21 +7,14 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"text/template"
 
 	"github.com/google/shlex"
 	"github.com/ulikunitz/xz"
-	"github.com/yourbase/yb/internal/ybdata"
-	"github.com/yourbase/yb/internal/ybtrace"
-	"go.opentelemetry.io/otel/api/trace"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/label"
 	"zombiezen.com/go/log"
 )
 
@@ -151,124 +144,6 @@ func RemoveWritePermissionRecursively(path string) bool {
 	}
 
 	return true
-}
-
-var cacheFilenameUnsafeChars = regexp.MustCompile(`[^a-zA-Z0-9.]+`)
-
-func cacheFilenameForURL(url string) string {
-	// TODO(light): Use a hash-based scheme.
-	return cacheFilenameUnsafeChars.ReplaceAllString(url, "")
-}
-
-func DownloadFileWithCache(ctx context.Context, client *http.Client, dataDirs *ybdata.Dirs, url string) (string, error) {
-	cacheFilename := filepath.Join(dataDirs.Downloads(), cacheFilenameForURL(url))
-	if err := os.MkdirAll(filepath.Dir(cacheFilename), 0777); err != nil {
-		return "", fmt.Errorf("download %s: %w", url, err)
-	}
-	err := validateDownloadCache(ctx, client, cacheFilename, url)
-	if err == nil {
-		log.Infof(ctx, "Reusing cached version of %s", url)
-		return cacheFilename, nil
-	}
-	log.Infof(ctx, "Not using cache for %s: %v", url, err)
-	err = DownloadFile(ctx, client, cacheFilename, url)
-	return cacheFilename, err
-}
-
-func validateDownloadCache(ctx context.Context, client *http.Client, cacheFilename string, url string) (err error) {
-	ctx, span := ybtrace.Start(ctx, "validateDownloadCache "+url,
-		trace.WithSpanKind(trace.SpanKindClient),
-		trace.WithAttributes(
-			label.String("http.method", http.MethodHead),
-			label.String("http.url", url),
-		),
-	)
-	defer func() {
-		if err != nil {
-			span.SetStatus(codes.Unknown, err.Error())
-		}
-		span.End()
-	}()
-
-	info, err := os.Stat(cacheFilename)
-	if err != nil {
-		return fmt.Errorf("validate %s download cache: %w", url, err)
-	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodHead, url, nil)
-	if err != nil {
-		return fmt.Errorf("validate %s download cache: %w", url, err)
-	}
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("validate %s download cache: %w", url, err)
-	}
-	resp.Body.Close()
-	span.SetAttribute("http.status_code", resp.StatusCode)
-	span.SetAttribute("http.response_content_length", resp.ContentLength)
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("validate %s download cache: HTTP %s", url, resp.Status)
-	}
-	if fileSize := info.Size(); fileSize != resp.ContentLength {
-		return fmt.Errorf("validate %s download cache: size %d does not match resource size %d", url, fileSize, resp.ContentLength)
-	}
-	return nil
-}
-
-func DownloadFile(ctx context.Context, client *http.Client, dst string, url string) (err error) {
-	ctx, span := ybtrace.Start(ctx, "DownloadFile "+url,
-		trace.WithSpanKind(trace.SpanKindClient),
-		trace.WithAttributes(
-			label.String("http.method", http.MethodGet),
-			label.String("http.url", url),
-		),
-	)
-	defer func() {
-		if err != nil {
-			span.SetStatus(codes.Unknown, err.Error())
-		}
-		span.End()
-	}()
-
-	// Create file first, since that requires less work to fail faster.
-	out, err := os.Create(dst)
-	if err != nil {
-		return fmt.Errorf("download %s: %w", url, err)
-	}
-	defer func() {
-		out.Close() // *os.File explicitly permits double-closes.
-		if err != nil {
-			if err := os.Remove(dst); err != nil {
-				log.Warnf(ctx, "Failed to clean up failed download: %v", err)
-			}
-		}
-	}()
-
-	// Make HTTP request.
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		out.Close()
-		return fmt.Errorf("download %s: %w", url, err)
-	}
-	log.Infof(ctx, "Downloading %s", url)
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("download %s: %w", url, err)
-	}
-	defer resp.Body.Close()
-	span.SetAttribute("http.status_code", resp.StatusCode)
-	span.SetAttribute("http.response_content_length", resp.ContentLength)
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("download %s: HTTP %s", url, resp.Status)
-	}
-
-	// Copy to file.
-	if _, err := io.Copy(out, resp.Body); err != nil {
-		return fmt.Errorf("download %s: %w", url, err)
-	}
-	if err := out.Close(); err != nil {
-		return fmt.Errorf("download %s: %w", url, err)
-	}
-	return nil
 }
 
 // Because, why not?

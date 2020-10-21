@@ -19,6 +19,7 @@ package biome
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -30,12 +31,23 @@ import (
 	"zombiezen.com/go/log"
 )
 
+// ErrUnsupported indicates that a request operation cannot be performed,
+// because it is unsupported.
+//
+// TODO(light): Replace with errors.ErrUnsupported when
+// https://golang.org/issue/41198 is resolved.
+var ErrUnsupported = errors.New("unsupported operation")
+
 // A Biome is an environment that a target is built or run in.
 // Implementations must be safe to use from multiple goroutines.
 type Biome interface {
 	// Describe returns information about the execution environment.
 	// The caller must not modify the returned Descriptor.
 	Describe() *Descriptor
+
+	// Dirs returns paths to special directories.
+	// The caller must not modify the returned Dirs.
+	Dirs() *Dirs
 
 	// Run runs a program specified by the given invocation and waits for
 	// it to complete. Run must not modify any fields in the Invocation or
@@ -64,6 +76,31 @@ type Biome interface {
 type Descriptor struct {
 	OS   string
 	Arch string
+}
+
+// Operating systems. Values are based off GOOS.
+const (
+	Linux   = "linux"
+	MacOS   = "darwin"
+	Windows = "windows"
+)
+
+// CPU Architectures. Values are based off GOARCH.
+const (
+	Intel64 = "amd64"
+	Intel32 = "386"
+)
+
+// Dirs holds paths to special directories in a Context.
+type Dirs struct {
+	// Package is the absolute path of the package directory.
+	// Contexts must guarantee this directory exists.
+	Package string
+
+	// Tools is the absolute path of a directory where helper tools can be
+	// installed. It is not shared with other contexts. It may have to be
+	// created.
+	Tools string
 }
 
 // An Invocation holds the parameters for a single command.
@@ -98,7 +135,8 @@ type Invocation struct {
 // Local is a biome that executes processes in a directory on the
 // local machine.
 type Local struct {
-	// PackageDir is a directory containing the source files of the package.
+	// PackageDir is the absolute path to a directory containing the source files
+	// of the package.
 	PackageDir string
 }
 
@@ -107,6 +145,16 @@ func (l Local) Describe() *Descriptor {
 	return &Descriptor{
 		OS:   runtime.GOOS,
 		Arch: runtime.GOARCH,
+	}
+}
+
+// Dirs returns special directories.
+func (l Local) Dirs() *Dirs {
+	if !filepath.IsAbs(l.PackageDir) {
+		panic("Local.PackageDir is not absolute")
+	}
+	return &Dirs{
+		Package: l.PackageDir,
 	}
 }
 
@@ -176,6 +224,33 @@ func (l Local) PathFromSlash(path string) string {
 	return filepath.FromSlash(path)
 }
 
+// WriteFile writes the data from src to the gven path with the mode 0666.
+func (l Local) WriteFile(ctx context.Context, path string, src io.Reader) error {
+	f, err := os.Create(AbsPath(l, path))
+	if err != nil {
+		return err
+	}
+	_, writeErr := io.Copy(f, src)
+	closeErr := f.Close()
+	if writeErr != nil {
+		return fmt.Errorf("write file %s: %w", path, writeErr)
+	}
+	if closeErr != nil {
+		return fmt.Errorf("write file %s: %w", path, closeErr)
+	}
+	return nil
+}
+
+// MkdirAll calls os.MkdirAll(path, 0777).
+func (l Local) MkdirAll(ctx context.Context, path string) error {
+	return os.MkdirAll(AbsPath(l, path), 0777)
+}
+
+// EvalSymlinks calls filepath.EvalSymlinks.
+func (l Local) EvalSymlinks(ctx context.Context, path string) (string, error) {
+	return filepath.EvalSymlinks(AbsPath(l, path))
+}
+
 // ExecPrefix intercepts calls to Run and prepends elements to the Argv slice.
 // This can be used to invoke tools with a wrapping command like `time` or `sudo`.
 type ExecPrefix struct {
@@ -195,4 +270,19 @@ func (ep ExecPrefix) Run(ctx context.Context, invoke *Invocation) error {
 	invoke2.Argv = append(invoke2.Argv, ep.PrependArgv...)
 	invoke2.Argv = append(invoke2.Argv, invoke.Argv...)
 	return ep.Biome.Run(ctx, invoke2)
+}
+
+// WriteFile calls ep.Context.WriteFile or returns ErrUnsupported if not present.
+func (ep ExecPrefix) WriteFile(ctx context.Context, path string, src io.Reader) error {
+	return forwardWriteFile(ctx, ep.Biome, path, src)
+}
+
+// MkdirAll calls ep.Context.MkdirAll or returns ErrUnsupported if not present.
+func (ep ExecPrefix) MkdirAll(ctx context.Context, path string) error {
+	return forwardMkdirAll(ctx, ep.Biome, path)
+}
+
+// EvalSymlinks calls ep.Context.EvalSymlinks or returns ErrUnsupported if not present.
+func (ep ExecPrefix) EvalSymlinks(ctx context.Context, path string) (string, error) {
+	return forwardEvalSymlinks(ctx, ep.Biome, path)
 }

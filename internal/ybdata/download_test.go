@@ -14,7 +14,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package plumbing
+package ybdata
 
 import (
 	"context"
@@ -28,9 +28,10 @@ import (
 	"testing"
 
 	"github.com/yourbase/commons/http/headers"
+	"zombiezen.com/go/log/testlog"
 )
 
-func TestDownloadFile(t *testing.T) {
+func TestDownload(t *testing.T) {
 	tests := []struct {
 		name      string
 		handle    http.HandlerFunc
@@ -59,27 +60,30 @@ func TestDownloadFile(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			srv := httptest.NewServer(test.handle)
 			t.Cleanup(srv.Close)
-			dir := t.TempDir()
-			dst := filepath.Join(dir, "download.out")
+			dataDirs := NewDirs(t.TempDir())
 
-			err := DownloadFile(context.Background(), srv.Client(), dst, srv.URL)
-
+			f, err := Download(context.Background(), srv.Client(), dataDirs, srv.URL)
 			if err != nil {
-				t.Logf("DownloadFile: %v", err)
+				t.Logf("download: %v", err)
 				if !test.wantError {
 					t.Fail()
 				}
-				if _, err := os.Stat(dst); err == nil {
-					t.Errorf("DownloadFile left %s on disk", err)
-				} else if !os.IsNotExist(err) {
+				files, err := ioutil.ReadDir(dataDirs.Downloads())
+				if err != nil && !os.IsNotExist(err) {
 					t.Error(err)
+				}
+				if len(files) > 0 {
+					t.Errorf("download left %s on disk", files)
 				}
 				return
 			}
+			defer f.Close()
+
 			if test.wantError {
-				t.Errorf("DownloadFile did not return an error")
+				t.Errorf("download did not return an error")
+				return
 			}
-			data, err := ioutil.ReadFile(dst)
+			data, err := ioutil.ReadAll(f)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -151,25 +155,32 @@ func TestValidateDownloadCache(t *testing.T) {
 			srv := httptest.NewServer(test.handle)
 			t.Cleanup(srv.Close)
 			dir := t.TempDir()
-			cacheFilename := filepath.Join(dir, "cached.dat")
-			if test.cacheData != "" {
-				if err := ioutil.WriteFile(cacheFilename, []byte(test.cacheData), 0666); err != nil {
-					t.Fatal(err)
-				}
+			f, err := os.Create(filepath.Join(dir, "cached.dat"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := f.WriteString(test.cacheData); err != nil {
+				t.Fatal(err)
 			}
 
-			err := validateDownloadCache(context.Background(), srv.Client(), cacheFilename, srv.URL)
-
+			err = validateDownloadCache(context.Background(), srv.Client(), f, srv.URL)
 			if err != nil {
-				t.Logf("DownloadFile: %v", err)
+				t.Logf("validateDownloadCache: %v", err)
 				if !test.wantError {
 					t.Fail()
 				}
 				return
 			}
+			defer f.Close()
+
 			if test.wantError {
-				t.Errorf("DownloadFile did not return an error")
+				t.Errorf("validateDownloadCache did not return an error")
 			}
 		})
 	}
+}
+
+func TestMain(m *testing.M) {
+	testlog.Main(nil)
+	os.Exit(m.Run())
 }

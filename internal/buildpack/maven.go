@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/johnewart/archiver"
-	"github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/internal/ybdata"
 	"zombiezen.com/go/log"
 )
 
@@ -79,7 +79,7 @@ func (bt mavenBuildTool) install(ctx context.Context) error {
 		downloadURL := bt.downloadURL()
 
 		log.Infof(ctx, "Downloading Maven from URL %s...", downloadURL)
-		localFile, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, bt.spec.dataDirs, downloadURL)
+		localFile, err := ybdata.DownloadFileWithCache(ctx, http.DefaultClient, bt.spec.dataDirs, downloadURL)
 		if err != nil {
 			log.Errorf(ctx, "Unable to download: %v", err)
 			return err

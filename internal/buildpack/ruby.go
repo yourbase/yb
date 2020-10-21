@@ -12,6 +12,7 @@ import (
 	"github.com/johnewart/archiver"
 	"github.com/matishsiao/goInfo"
 
+	"github.com/yourbase/yb/internal/ybdata"
 	"github.com/yourbase/yb/plumbing"
 	"gopkg.in/src-d/go-git.v4"
 	"zombiezen.com/go/log"
@@ -121,7 +122,7 @@ func (bt rubyBuildTool) install(ctx context.Context) error {
 			downloadURL := bt.downloadURL(ctx)
 			log.Infof(ctx, "Will download pre-built Ruby from %s", downloadURL)
 
-			localFile, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, bt.spec.dataDirs, downloadURL)
+			localFile, err := ybdata.DownloadFileWithCache(ctx, http.DefaultClient, bt.spec.dataDirs, downloadURL)
 			if err != nil {
 				log.Errorf(ctx, "Unable to download: %v", err)
 				return err

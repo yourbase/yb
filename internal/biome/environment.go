@@ -19,6 +19,7 @@ package biome
 import (
 	"context"
 	"fmt"
+	"io"
 	"sort"
 	"strings"
 )
@@ -160,14 +161,29 @@ type EnvBiome struct {
 	Env Environment
 }
 
-// Run runs a command with ec.Env as a base environment with invoke.Env
+// Run runs a command with eb.Env as a base environment with invoke.Env
 // merged in.
-func (ec EnvBiome) Run(ctx context.Context, invoke *Invocation) error {
-	if ec.Env.IsEmpty() {
-		return ec.Biome.Run(ctx, invoke)
+func (eb EnvBiome) Run(ctx context.Context, invoke *Invocation) error {
+	if eb.Env.IsEmpty() {
+		return eb.Biome.Run(ctx, invoke)
 	}
 	invoke2 := new(Invocation)
 	*invoke2 = *invoke
-	invoke2.Env = ec.Env.Merge(invoke.Env)
-	return ec.Biome.Run(ctx, invoke2)
+	invoke2.Env = eb.Env.Merge(invoke.Env)
+	return eb.Biome.Run(ctx, invoke2)
+}
+
+// WriteFile calls eb.Context.WriteFile or returns ErrUnsupported if not present.
+func (eb EnvBiome) WriteFile(ctx context.Context, path string, src io.Reader) error {
+	return forwardWriteFile(ctx, eb.Biome, path, src)
+}
+
+// MkdirAll calls eb.Context.MkdirAll or returns ErrUnsupported if not present.
+func (eb EnvBiome) MkdirAll(ctx context.Context, path string) error {
+	return forwardMkdirAll(ctx, eb.Biome, path)
+}
+
+// EvalSymlinks calls eb.Context.EvalSymlinks or returns ErrUnsupported if not present.
+func (eb EnvBiome) EvalSymlinks(ctx context.Context, path string) (string, error) {
+	return forwardEvalSymlinks(ctx, eb.Biome, path)
 }

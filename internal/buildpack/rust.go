@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/yourbase/yb/internal/ybdata"
 	"github.com/yourbase/yb/plumbing"
 	"zombiezen.com/go/log"
 )
@@ -69,9 +70,7 @@ func (bt rustBuildTool) install(ctx context.Context) error {
 		downloadURL := fmt.Sprintf("%s/%s-%s/%s", rustDistMirror, arch, operatingSystem, installerFile)
 
 		downloadDir := bt.spec.cacheDir
-		localFile := filepath.Join(downloadDir, installerFile)
-		log.Infof(ctx, "Downloading from URL %s to local file %s", downloadURL, localFile)
-		err := plumbing.DownloadFile(ctx, http.DefaultClient, localFile, downloadURL)
+		localFile, err := ybdata.DownloadFileWithCache(ctx, http.DefaultClient, bt.spec.dataDirs, downloadURL)
 		if err != nil {
 			log.Errorf(ctx, "Unable to download: %v", err)
 			return err
