@@ -149,6 +149,10 @@ func TestEvalSymlinks(t *testing.T) {
 	if err := ioutil.WriteFile(filepath.Join(dir, fname), nil, 0666); err != nil {
 		t.Fatal(err)
 	}
+	// Don't fail test if we can't create the symlink. We're probably on Windows.
+	// We'll bubble up the failure by skipping the Symlink tests below.
+	const linkName = "mylink.txt"
+	symlinkErr := os.Symlink(fname, filepath.Join(dir, linkName))
 
 	tests := []struct {
 		name string
@@ -196,12 +200,10 @@ func TestEvalSymlinks(t *testing.T) {
 				}
 			})
 			t.Run("Symlink", func(t *testing.T) {
-				ctx := testlog.WithTB(context.Background(), t)
-				const linkName = "mylink.txt"
-				if err := os.Symlink(fname, filepath.Join(dir, linkName)); err != nil {
-					// Probably Windows.
-					t.Skip("Could not symlink:", err)
+				if symlinkErr != nil {
+					t.Skip("Could not symlink:", symlinkErr)
 				}
+				ctx := testlog.WithTB(context.Background(), t)
 				got, err := EvalSymlinks(ctx, test.bio, linkName)
 				if err != nil {
 					t.Fatal("EvalSymlinks:", err)
