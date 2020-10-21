@@ -18,15 +18,28 @@ package biome
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"zombiezen.com/go/log/testlog"
 )
 
 var (
-	_ Biome = Local{}
-	_ Biome = ExecPrefix{}
+	_ interface {
+		Biome
+		fileWriter
+		dirMaker
+		symlinkEvaler
+	} = Local{}
+
+	_ interface {
+		Biome
+		fileWriter
+		dirMaker
+		symlinkEvaler
+	} = ExecPrefix{}
 )
 
 func TestExecPrefix(t *testing.T) {
@@ -76,4 +89,9 @@ func TestExecPrefix(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestMain(m *testing.M) {
+	testlog.Main(nil)
+	os.Exit(m.Run())
 }
