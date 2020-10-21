@@ -18,24 +18,24 @@ func (b BuildManifest) BuildDependenciesChecksum() string {
 	return fmt.Sprintf("%x", sum[:DependencyChecksumLength])
 }
 
-// XXX: Support more than one level? Intuitively that seems like it will breed un-needed complexity
-func (b BuildManifest) ResolveBuildTargets(targetName string) ([]*BuildTarget, error) {
+// BuildOrder returns a topological sort of the targets needed to build the
+// given target. On success, the last element in the slice is always the target
+// with the given name.
+func (b BuildManifest) BuildOrder(targetName string) ([]*BuildTarget, error) {
 	target, err := b.BuildTarget(targetName)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("determine build order for %s: %w", targetName, err)
 	}
 
+	// TODO(ch2750): This only handles direct dependencies.
 	var targetList []*BuildTarget
-	if len(target.BuildAfter) > 0 {
-		for _, depName := range target.BuildAfter {
-			depTarget, err := b.BuildTarget(depName)
-			if err != nil {
-				return nil, err
-			}
-			targetList = append(targetList, depTarget)
+	for _, depName := range target.BuildAfter {
+		depTarget, err := b.BuildTarget(depName)
+		if err != nil {
+			return nil, fmt.Errorf("determine build order for %s: %w", targetName, err)
 		}
+		targetList = append(targetList, depTarget)
 	}
-
 	targetList = append(targetList, target)
 	return targetList, nil
 }
@@ -55,7 +55,7 @@ func (b BuildManifest) BuildTarget(targetName string) (*BuildTarget, error) {
 			return target, nil
 		}
 	}
-	return nil, fmt.Errorf("no such target '%s' in build manifest", targetName)
+	return nil, fmt.Errorf("%s: no such target", targetName)
 }
 
 func (b BuildManifest) BuildTargetList() []string {

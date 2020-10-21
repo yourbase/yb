@@ -13,6 +13,19 @@ The format is based on [Keep a Changelog][], and this project adheres to
 -  yb will display a message on startup if the obsolete `$HOME/.yourbase`
    directory exists, encouraging its deletion to save disk space.
 
+### Changed
+
+-  `yb run` now runs commands in the context of a build target, not an
+   exec environment.
+
+### Fixed
+
+-  `yb build` now builds dependency targets (specified with `build_after`)
+   with the same environment as if they were built directly. In particular,
+   container dependencies will be started for each target, whereas previous
+   versions would only start the container dependencies for the target named
+   on the command line.
+
 ## [0.4.2][] - 2020-10-20
 
 Version 0.4.2 fixes an issue with `yb remotebuild`.

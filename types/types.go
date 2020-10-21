@@ -5,9 +5,8 @@ import (
 )
 
 const (
-	MANIFEST_FILE        = ".yourbase.yml"
-	DOCS_URL             = "https://docs.yourbase.io"
-	DEFAULT_YB_CONTAINER = "yourbase/yb_ubuntu:18.04"
+	MANIFEST_FILE = ".yourbase.yml"
+	DOCS_URL      = "https://docs.yourbase.io"
 )
 
 type BuildManifest struct {
@@ -127,11 +126,7 @@ func (b ExecDependencies) ContainerList() []*narwhal.ContainerDefinition {
 type BuildTarget struct {
 	Name         string               `yaml:"name"`
 	Container    *ContainerDefinition `yaml:"container"`
-	Tools        []string             `yaml:"tools"`
 	Commands     []string             `yaml:"commands"`
-	Artifacts    []string             `yaml:"artifacts"`
-	CachePaths   []string             `yaml:"cache_paths"`
-	Sandbox      bool                 `yaml:"sandbox"`
 	HostOnly     bool                 `yaml:"host_only"`
 	Root         string               `yaml:"root"`
 	Environment  []string             `yaml:"environment"`

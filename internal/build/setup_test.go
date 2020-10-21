@@ -14,9 +14,58 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package cli
+package build
 
-import "testing"
+import (
+	"context"
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/yourbase/yb/internal/biome"
+	"zombiezen.com/go/log/testlog"
+)
+
+func TestSetup(t *testing.T) {
+	ctx := testlog.WithTB(context.Background(), t)
+	var gotEnv biome.Environment
+	bio := &biome.Fake{
+		Separator: '/',
+		Descriptor: biome.Descriptor{
+			OS:   "linux",
+			Arch: "amd64",
+		},
+		RunFunc: func(_ context.Context, invoke *biome.Invocation) error {
+			gotEnv = invoke.Env
+			return nil
+		},
+	}
+	// Should not require Docker: no containers in dependencies.
+	sys := Sys{Biome: bio}
+	gotBiome, err := Setup(ctx, sys, &PhaseDeps{
+		TargetName: "default",
+		EnvironmentTemplate: map[string]string{
+			"FOO": "BAR",
+		},
+	})
+	if err != nil {
+		t.Fatal("Setup:", err)
+	}
+	err = gotBiome.Run(ctx, &biome.Invocation{
+		Argv: []string{"env"},
+	})
+	if err != nil {
+		t.Error("Run:", err)
+	}
+	wantEnv := biome.Environment{
+		Vars: map[string]string{
+			"FOO": "BAR",
+		},
+	}
+	if diff := cmp.Diff(wantEnv, gotEnv, cmpopts.EquateEmpty()); diff != "" {
+		t.Errorf("invoked environment (-want +got):\n%s", diff)
+	}
+}
 
 func TestConfigExpansion(t *testing.T) {
 	tests := []struct {

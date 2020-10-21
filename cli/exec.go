@@ -4,16 +4,15 @@ import (
 	"context"
 	"flag"
 	"os"
-	"path/filepath"
-	"strings"
 
-	docker "github.com/fsouza/go-dockerclient"
 	"github.com/johnewart/subcommands"
-	"github.com/yourbase/narwhal"
+	"github.com/yourbase/yb/internal/biome"
+	"github.com/yourbase/yb/internal/build"
 	"github.com/yourbase/yb/internal/ybdata"
-	"github.com/yourbase/yb/plumbing"
 	"zombiezen.com/go/log"
 )
+
+const defaultExecEnvironment = "default"
 
 type ExecCmd struct {
 	environment string
@@ -30,119 +29,84 @@ Execute a project in the workspace, as specified by .yourbase.yml's exec block.
 }
 
 func (p *ExecCmd) SetFlags(f *flag.FlagSet) {
-	f.StringVar(&p.environment, "e", "", "Environment to run as")
+	f.StringVar(&p.environment, "e", defaultExecEnvironment, "Environment to run as")
 }
 
-/*
-Executing the target involves:
-1. Map source into the target container
-2. Run any dependent components
-3. Start target
-*/
 func (b *ExecCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	dataDirs, err := ybdata.DirsFromEnv()
 	if err != nil {
 		log.Errorf(ctx, "%v", err)
 		return subcommands.ExitFailure
 	}
-
-	targetPackage, err := GetTargetPackage()
+	const useDocker = true
+	dockerClient, err := connectDockerClient(useDocker)
 	if err != nil {
 		log.Errorf(ctx, "%v", err)
 		return subcommands.ExitFailure
 	}
-
-	if err := targetPackage.SetupRuntimeDependencies(ctx, dataDirs); err != nil {
-		log.Infof(ctx, "Couldn't configure dependencies: %v\n", err)
+	dockerNetworkID, removeNetwork, err := newDockerNetwork(ctx, dockerClient)
+	if err != nil {
+		log.Errorf(ctx, "%v", err)
+		return subcommands.ExitFailure
+	}
+	defer removeNetwork()
+	pkg, err := GetTargetPackage()
+	if err != nil {
+		log.Errorf(ctx, "%v", err)
+		return subcommands.ExitFailure
+	}
+	bio, err := newBiome(ctx, dockerClient, pkg.Path)
+	if err != nil {
+		log.Errorf(ctx, "%v", err)
+		return subcommands.ExitFailure
+	}
+	sys := build.Sys{
+		Biome:           bio,
+		DockerClient:    dockerClient,
+		DockerNetworkID: dockerNetworkID,
+		Stdout:          os.Stdout,
+		Stderr:          os.Stderr,
+	}
+	defaultEnv, err := biome.MapVars(pkg.Manifest.Exec.Environment[defaultExecEnvironment])
+	if err != nil {
+		log.Errorf(ctx, "%v", err)
+		return subcommands.ExitFailure
+	}
+	deps := &build.PhaseDeps{
+		TargetName:          b.environment,
+		Resources:           narwhalContainerMap(pkg.Manifest.Exec.Dependencies.Containers),
+		EnvironmentTemplate: defaultEnv,
+	}
+	if b.environment != defaultExecEnvironment {
+		overrideEnv, err := biome.MapVars(pkg.Manifest.Exec.Environment[b.environment])
+		if err != nil {
+			log.Errorf(ctx, "%v", err)
+			return subcommands.ExitFailure
+		}
+		for k, v := range overrideEnv {
+			deps.EnvironmentTemplate[k] = v
+		}
+	}
+	execBiome, err := build.Setup(ctx, sys, deps)
+	if err != nil {
+		log.Errorf(ctx, "%v", err)
+		return subcommands.ExitFailure
+	}
+	sys.Biome = execBiome
+	defer func() {
+		if err := execBiome.Close(); err != nil {
+			log.Errorf(ctx, "Clean up environment %s: %v", b.environment, err)
+		}
+	}()
+	// TODO(ch2744): Move this into build.Setup.
+	if err := pkg.SetupRuntimeDependencies(ctx, dataDirs); err != nil {
+		log.Errorf(ctx, "%v", err)
 		return subcommands.ExitFailure
 	}
 
-	instructions := targetPackage.Manifest
-	containers := instructions.Exec.Dependencies.Containers
-
-	buildData := NewBuildData()
-
-	if len(containers) > 0 {
-		dockerClient, err := docker.NewVersionedClient("unix:///var/run/docker.sock", "1.39")
-		if err != nil {
-			log.Errorf(ctx, "%v", err)
-			return subcommands.ExitFailure
-		}
-
-		buildRoot, err := targetPackage.BuildRoot(dataDirs)
-		if err != nil {
-			log.Errorf(ctx, "%v", err)
-			return subcommands.ExitFailure
-		}
-		localContainerWorkDir := filepath.Join(buildRoot, "containers")
-		if err := os.MkdirAll(localContainerWorkDir, 0777); err != nil {
-			log.Errorf(ctx, "Couldn't create directory: %v", err)
-			return subcommands.ExitFailure
-		}
-
-		log.Infof(ctx, "Will use %s as the dependency work dir", localContainerWorkDir)
-		log.Infof(ctx, "Starting %d dependencies...", len(containers))
-		sc, err := narwhal.NewServiceContextWithId(ctx, dockerClient, "exec", buildRoot)
-		if err != nil {
-			log.Errorf(ctx, "Couldn't create service context for dependencies: %v", err)
-			return subcommands.ExitFailure
-		}
-
-		for label, cd := range containers {
-			ncd := cd.ToNarwhal()
-			// TODO: avoid setting these here
-			ncd.LocalWorkDir = localContainerWorkDir
-			c, err := sc.StartContainer(ctx, os.Stderr, ncd)
-			if err != nil {
-				log.Errorf(ctx, "Couldn't start dependencies: %v\n", err)
-				return subcommands.ExitFailure
-			}
-			buildData.containers.containers[label] = c
-		}
-
-		buildData.containers.serviceContext = sc
-	}
-
-	log.Infof(ctx, "Setting environment variables...")
-	exp, err := newConfigExpansion(ctx, buildData.containers, instructions.Exec.Dependencies.Containers)
-	for _, property := range instructions.Exec.Environment["default"] {
-		s := strings.SplitN(property, "=", 2)
-		if len(s) == 2 {
-			if err := buildData.SetEnv(exp, s[0], s[1]); err != nil {
-				log.Errorf(ctx, "%v", err)
-				return subcommands.ExitFailure
-			}
-		}
-	}
-
-	if b.environment != "default" {
-		for _, property := range instructions.Exec.Environment[b.environment] {
-			s := strings.SplitN(property, "=", 2)
-			if len(s) == 2 {
-				if err := buildData.SetEnv(exp, s[0], s[1]); err != nil {
-					log.Errorf(ctx, "%v", err)
-					return subcommands.ExitFailure
-				}
-			}
-		}
-	}
-
-	buildData.ExportEnvironmentPublicly(ctx)
-
-	log.Infof(ctx, "Execing target package %s...\n", targetPackage.Name)
-
-	execDir := targetPackage.Path
-
-	for _, logFile := range instructions.Exec.LogFiles {
-		log.Infof(ctx, "Will tail %s...\n", logFile)
-	}
-
-	for _, cmdString := range instructions.Exec.Commands {
-		if err := plumbing.ExecToStdout(cmdString, execDir); err != nil {
-			log.Errorf(ctx, "Failed to run %s: %v", cmdString, err)
-			return subcommands.ExitFailure
-		}
-	}
-
+	err = build.Execute(ctx, sys, &build.Phase{
+		TargetName: b.environment,
+		Commands:   pkg.Manifest.Exec.Commands,
+	})
 	return subcommands.ExitSuccess
 }
