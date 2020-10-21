@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/johnewart/archiver"
+	"github.com/yourbase/yb/internal/ybdata"
 	"github.com/yourbase/yb/plumbing"
 	"zombiezen.com/go/log"
 )
@@ -70,7 +71,7 @@ func (bt glideBuildTool) install(ctx context.Context) error {
 		}
 
 		log.Infof(ctx, "Downloading from URL %s ...", downloadURL)
-		localFile, err := plumbing.DownloadFileWithCache(ctx, http.DefaultClient, bt.spec.dataDirs, downloadURL)
+		localFile, err := ybdata.DownloadFileWithCache(ctx, http.DefaultClient, bt.spec.dataDirs, downloadURL)
 		if err != nil {
 			log.Errorf(ctx, "Unable to download: %v", err)
 			return err
