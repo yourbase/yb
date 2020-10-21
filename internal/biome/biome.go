@@ -117,7 +117,12 @@ func (l Local) Run(ctx context.Context, invoke *Invocation) error {
 	}
 	log.Infof(ctx, "Run: %s", strings.Join(invoke.Argv, " "))
 	log.Debugf(ctx, "Environment:\n%v", invoke.Env)
-	c := exec.CommandContext(ctx, invoke.Argv[0], invoke.Argv[1:]...)
+	program, err := lookPath(invoke.Env, invoke.Argv[0])
+	if err != nil {
+		return fmt.Errorf("local run: %w", err)
+	}
+	log.Debugf(ctx, "Program = %s", program)
+	c := exec.CommandContext(ctx, program, invoke.Argv[1:]...)
 	// TODO(ch2744): This appends to os.Environ because the buildpacks
 	// depend on being able to set environment variables.
 	if !invoke.Env.IsEmpty() {
@@ -135,6 +140,20 @@ func (l Local) Run(ctx context.Context, invoke *Invocation) error {
 		return fmt.Errorf("local run: %w", err)
 	}
 	return nil
+}
+
+func lookPath(env Environment, program string) (string, error) {
+	if strings.Contains(program, string(filepath.Separator)) {
+		return exec.LookPath(program)
+	}
+	envPATH := env.computePATH(os.Getenv("PATH"), filepath.ListSeparator)
+	envPATH = envPATH[len("PATH="):]
+	for _, p := range filepath.SplitList(envPATH) {
+		if found, err := exec.LookPath(filepath.Join(p, program)); err == nil {
+			return found, nil
+		}
+	}
+	return "", &exec.Error{Name: program, Err: exec.ErrNotFound}
 }
 
 // JoinPath calls filepath.Join.
