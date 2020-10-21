@@ -45,31 +45,6 @@ func ExecToStdout(cmdString string, targetDir string) error {
 	return ExecToStdoutWithEnv(cmdString, targetDir, os.Environ())
 }
 
-func ExecSilently(cmdString string, targetDir string) error {
-	return ExecSilentlyToWriter(cmdString, targetDir, ioutil.Discard)
-}
-func ExecSilentlyToWriter(cmdString string, targetDir string, writer io.Writer) error {
-	cmdArgs, err := shlex.Split(cmdString)
-	if err != nil {
-		return fmt.Errorf("Can't parse command string '%s': %v", cmdString, err)
-	}
-
-	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
-	cmd.Dir = targetDir
-	cmd.Stdout = writer
-	cmd.Stdin = os.Stdin
-	cmd.Stderr = writer
-
-	err = cmd.Run()
-
-	if err != nil {
-		return fmt.Errorf("Command '%s' failed to run with error %v", cmdString, err)
-	}
-
-	return nil
-
-}
-
 func PrependToPath(dir string) {
 	currentPath := os.Getenv("PATH")
 	// Only prepend if it's not already the head; presume that
