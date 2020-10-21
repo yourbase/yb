@@ -140,7 +140,10 @@ func TestMkdirAll(t *testing.T) {
 
 func TestEvalSymlinks(t *testing.T) {
 	// Set up directory.
-	dir := t.TempDir()
+	dir, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
 	const fname = "foo.txt"
 	const missingFile = "bork.txt"
 	if err := ioutil.WriteFile(filepath.Join(dir, fname), nil, 0666); err != nil {
