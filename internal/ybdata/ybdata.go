@@ -19,10 +19,13 @@
 package ybdata
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"path/filepath"
 
+	"github.com/yourbase/yb/internal/biome"
 	"go4.org/xdgdir"
 )
 
@@ -68,11 +71,16 @@ func (dirs *Dirs) Downloads() string {
 	return filepath.Join(dirs.cache, "downloads")
 }
 
-// Workspaces returns the top-level directory to store cached data for each
-// package. This directory may not exist yet.
+// BuildHome finds or creates a directory to store cached data for a target.
 //
-// TODO(light): This should get moved to a directory physically in the package
+// TODO(ch2755): This should get moved to a directory physically in the package
 // directory.
-func (dirs *Dirs) Workspaces() string {
-	return dirs.workspaces
+func (dirs *Dirs) BuildHome(packageDir, target string, desc *biome.Descriptor) (string, error) {
+	h := sha256.Sum256([]byte(packageDir))
+	workspaceHash := hex.EncodeToString(h[:hex.DecodedLen(12)])
+	path := filepath.Join(dirs.workspaces, workspaceHash, target, desc.OS, desc.Arch)
+	if err := os.MkdirAll(path, 0777); err != nil {
+		return "", fmt.Errorf("create build home: %w", err)
+	}
+	return path, nil
 }

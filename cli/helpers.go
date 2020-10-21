@@ -5,14 +5,12 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/yourbase/narwhal"
 	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/internal/build"
-	"github.com/yourbase/yb/packages"
+	"github.com/yourbase/yb/internal/ybdata"
 	"github.com/yourbase/yb/types"
 	"zombiezen.com/go/log"
 )
@@ -28,17 +26,30 @@ func connectDockerClient(useDocker bool) (*docker.Client, error) {
 	return dockerClient, nil
 }
 
-func newBiome(ctx context.Context, client *docker.Client, packageDir string) (biome.Biome, error) {
+func newBiome(ctx context.Context, client *docker.Client, dataDirs *ybdata.Dirs, packageDir, target string) (biome.Biome, error) {
 	// TODO(ch2743): Eventually also allow Docker container.
-	return biome.Local{
+	l := biome.Local{
 		PackageDir: packageDir,
-	}, nil
+	}
+	var err error
+	l.HomeDir, err = dataDirs.BuildHome(packageDir, target, l.Describe())
+	if err != nil {
+		return nil, fmt.Errorf("create build context for target %s: %w", target, err)
+	}
+	return l, nil
 }
 
 func targetToPhaseDeps(target *types.BuildTarget) (*build.PhaseDeps, error) {
 	phaseDeps := &build.PhaseDeps{
 		TargetName: target.Name,
 		Resources:  narwhalContainerMap(target.Dependencies.Containers),
+	}
+	for _, dep := range target.Dependencies.Build {
+		spec, err := types.ParseBuildpackSpec(dep)
+		if err != nil {
+			return nil, fmt.Errorf("target %s: %w", target.Name, err)
+		}
+		phaseDeps.Buildpacks = append(phaseDeps.Buildpacks, spec)
 	}
 	var err error
 	phaseDeps.EnvironmentTemplate, err = biome.MapVars(target.Environment)
@@ -94,22 +105,8 @@ func newDockerNetwork(ctx context.Context, client *docker.Client) (string, func(
 	}, nil
 }
 
-func GetTargetPackageNamed(file string) (*packages.Package, error) {
-	if _, err := os.Stat(file); err != nil {
-		return nil, fmt.Errorf("could not find configuration: %w\n\nTry running in the package root dir or writing the YML config file (%s) if it is missing. See %s", err, file, types.DOCS_URL)
-	}
-	currentPath, err := os.Getwd()
-	if err != nil {
-		return nil, fmt.Errorf("could not find configuration: %w", err)
-	}
-	pkgName := filepath.Base(currentPath)
-	pkg, err := packages.LoadPackage(pkgName, currentPath)
-	if err != nil {
-		return nil, fmt.Errorf("loading package %s: %w\n\nSee %s\n", pkgName, err, types.DOCS_URL)
-	}
-	return pkg, nil
-}
+const packageConfigFileName = ".yourbase.yml"
 
-func GetTargetPackage() (*packages.Package, error) {
-	return GetTargetPackageNamed(types.MANIFEST_FILE)
+func GetTargetPackage() (*types.Package, error) {
+	return types.LoadPackage(packageConfigFileName)
 }

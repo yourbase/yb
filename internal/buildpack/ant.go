@@ -3,100 +3,30 @@ package buildpack
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"os"
-	"path/filepath"
-	"strings"
 
-	"github.com/johnewart/archiver"
-	"github.com/yourbase/yb/internal/ybdata"
-	"github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/internal/biome"
+	"github.com/yourbase/yb/types"
 	"zombiezen.com/go/log"
 )
 
-//http://apache.mirrors.lucidnetworks.net//ant/binaries/apache-ant-1.10.6-bin.tar.gz
-const antDistMirror = "http://apache.mirrors.lucidnetworks.net/ant/binaries/apache-ant-{{.Version}}-bin.zip"
-
-type antBuildTool struct {
-	version string
-	spec    buildToolSpec
-}
-
-func newAntBuildTool(toolSpec buildToolSpec) antBuildTool {
-
-	tool := antBuildTool{
-		version: toolSpec.version,
-		spec:    toolSpec,
+func installAnt(ctx context.Context, sys Sys, spec types.BuildpackSpec) (biome.Environment, error) {
+	antDir := sys.Biome.JoinPath(sys.Biome.Dirs().Tools, "ant", "apache-ant-"+spec.Version())
+	env := biome.Environment{
+		PrependPath: []string{
+			sys.Biome.JoinPath(antDir, "bin"),
+		},
 	}
 
-	return tool
-}
-
-func (bt antBuildTool) archiveFile() string {
-	return fmt.Sprintf("apache-ant-%s-bin.zip", bt.version)
-}
-
-func (bt antBuildTool) downloadURL() string {
-	data := struct {
-		Version string
-	}{
-		bt.version,
+	// If directory already exists, then use it.
+	if _, err := biome.EvalSymlinks(ctx, sys.Biome, antDir); err == nil {
+		log.Infof(ctx, "Ant v%s located in %s", spec.Version(), antDir)
+		return env, nil
 	}
 
-	url, _ := plumbing.TemplateToString(antDistMirror, data)
-
-	return url
-}
-
-func (bt antBuildTool) majorVersion() string {
-	parts := strings.Split(bt.version, ".")
-	return parts[0]
-}
-
-func (bt antBuildTool) antDir() string {
-	return filepath.Join(bt.installDir(), fmt.Sprintf("apache-ant-%s", bt.version))
-}
-
-func (bt antBuildTool) installDir() string {
-	return filepath.Join(bt.spec.cacheDir, "ant")
-}
-
-func (bt antBuildTool) setup(ctx context.Context) error {
-	antDir := bt.antDir()
-
-	cmdPath := filepath.Join(antDir, "bin")
-	currentPath := os.Getenv("PATH")
-	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
-	log.Infof(ctx, "Setting PATH to %s", newPath)
-	os.Setenv("PATH", newPath)
-
-	return nil
-}
-
-// TODO, generalize downloader
-func (bt antBuildTool) install(ctx context.Context) error {
-	antDir := bt.antDir()
-	installDir := bt.installDir()
-
-	if _, err := os.Stat(antDir); err == nil {
-		log.Infof(ctx, "Ant v%s located in %s!", bt.version, antDir)
-	} else {
-		log.Infof(ctx, "Will install Ant v%s into %s", bt.version, antDir)
-		downloadURL := bt.downloadURL()
-
-		log.Infof(ctx, "Downloading Ant from URL %s...", downloadURL)
-		localFile, err := ybdata.DownloadFileWithCache(ctx, http.DefaultClient, bt.spec.dataDirs, downloadURL)
-		if err != nil {
-			log.Errorf(ctx, "Unable to download: %v", err)
-			return err
-		}
-		err = archiver.Unarchive(localFile, installDir)
-		if err != nil {
-			log.Errorf(ctx, "Unable to decompress: %v", err)
-			return err
-		}
-
+	log.Infof(ctx, "Installing Ant v%s in %s", spec.Version(), antDir)
+	downloadURL := fmt.Sprintf("https://mirrors.sonic.net/apache/ant/binaries/apache-ant-%s-bin.zip", spec.Version())
+	if err := extract(ctx, sys, antDir, downloadURL, stripTopDirectory); err != nil {
+		return biome.Environment{}, err
 	}
-
-	return nil
+	return env, nil
 }

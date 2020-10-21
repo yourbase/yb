@@ -22,12 +22,12 @@ Validate the local YourBase config file, .yourbase.yml by default.
 }
 
 func (b *CheckConfigCmd) SetFlags(f *flag.FlagSet) {
-	f.StringVar(&b.file, "file", types.MANIFEST_FILE, "YAML file to check")
+	f.StringVar(&b.file, "file", packageConfigFileName, "YAML file to check")
 }
 
 func (b *CheckConfigCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 
-	targetPackage, err := GetTargetPackageNamed(b.file)
+	targetPackage, err := types.LoadPackage(b.file)
 	if err != nil {
 		log.Errorf(ctx, "%v", err)
 		return subcommands.ExitFailure

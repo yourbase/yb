@@ -3,93 +3,62 @@ package buildpack
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"os"
-	"path/filepath"
 
-	"github.com/johnewart/archiver"
-	"github.com/yourbase/yb/internal/ybdata"
+	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/types"
 	"zombiezen.com/go/log"
 )
 
-const nodeDistMirror = "https://nodejs.org/dist"
-
-type nodeBuildTool struct {
-	version string
-	spec    buildToolSpec
-}
-
-func newNodeBuildTool(toolSpec buildToolSpec) nodeBuildTool {
-	tool := nodeBuildTool{
-		version: toolSpec.version,
-		spec:    toolSpec,
+func installNode(ctx context.Context, sys Sys, spec types.BuildpackSpec) (biome.Environment, error) {
+	contextDirs := sys.Biome.Dirs()
+	nodeDir := sys.Biome.JoinPath(contextDirs.Tools, "nodejs", "node-"+spec.Version())
+	env := biome.Environment{
+		Vars: map[string]string{
+			// TODO: Fix this to be the package cache?
+			"NODE_PATH": contextDirs.Package,
+		},
+		PrependPath: []string{
+			sys.Biome.JoinPath(contextDirs.Package, "node_modules", ".bin"),
+			sys.Biome.JoinPath(nodeDir, "bin"),
+		},
 	}
 
-	return tool
-}
-
-func (bt nodeBuildTool) packageString() string {
-	version := bt.version
-	arch := Arch()
-
-	if arch == "amd64" {
-		arch = "x64"
+	// If directory already exists, then use it.
+	if _, err := biome.EvalSymlinks(ctx, sys.Biome, nodeDir); err == nil {
+		log.Infof(ctx, "Node v%s located in %s", spec.Version(), nodeDir)
+		return env, nil
 	}
 
-	osName := OS()
-
-	return fmt.Sprintf("node-v%s-%s-%s", version, osName, arch)
-}
-
-func (bt nodeBuildTool) nodeDir() string {
-	return filepath.Join(bt.installDir(), bt.packageString())
-}
-
-func (bt nodeBuildTool) installDir() string {
-	return filepath.Join(bt.spec.cacheDir, "nodejs")
-}
-
-func (bt nodeBuildTool) install(ctx context.Context) error {
-
-	nodeDir := bt.nodeDir()
-	installDir := bt.installDir()
-	nodePkgString := bt.packageString()
-
-	if _, err := os.Stat(nodeDir); err == nil {
-		log.Infof(ctx, "Node v%s located in %s!", bt.version, nodeDir)
-	} else {
-		log.Infof(ctx, "Would install Node v%s into %s", bt.version, installDir)
-		archiveFile := fmt.Sprintf("%s.tar.gz", nodePkgString)
-		downloadURL := fmt.Sprintf("%s/v%s/%s", nodeDistMirror, bt.version, archiveFile)
-		log.Infof(ctx, "Downloading from URL %s...", downloadURL)
-		localFile, err := ybdata.DownloadFileWithCache(ctx, http.DefaultClient, bt.spec.dataDirs, downloadURL)
-		if err != nil {
-			log.Errorf(ctx, "Unable to download: %v", err)
-			return err
-		}
-
-		err = archiver.Unarchive(localFile, installDir)
-		if err != nil {
-			log.Errorf(ctx, "Unable to decompress: %v", err)
-			return err
-		}
+	log.Infof(ctx, "Installing Node v%s in %s", spec.Version(), nodeDir)
+	const template = "https://nodejs.org/dist/v{{.Version}}/node-v{{.Version}}-{{.OS}}-{{.Arch}}.tar.gz"
+	desc := sys.Biome.Describe()
+	data := struct {
+		Version string
+		OS      string
+		Arch    string
+	}{
+		spec.Version(),
+		map[string]string{
+			biome.Linux: "linux",
+			biome.MacOS: "darwin",
+		}[desc.OS],
+		map[string]string{
+			biome.Intel64: "x64",
+		}[desc.Arch],
 	}
-
-	return nil
-}
-
-func (bt nodeBuildTool) setup(ctx context.Context) error {
-	nodeDir := bt.nodeDir()
-	cmdPath := filepath.Join(nodeDir, "bin")
-	plumbing.PrependToPath(cmdPath)
-	// TODO: Fix this to be the package cache?
-	nodePath := bt.spec.packageDir
-	log.Infof(ctx, "Setting NODE_PATH to %s", nodePath)
-	os.Setenv("NODE_PATH", nodePath)
-
-	npmBinPath := filepath.Join(nodePath, "node_modules", ".bin")
-	plumbing.PrependToPath(npmBinPath)
-
-	return nil
+	if data.OS == "" {
+		return biome.Environment{}, fmt.Errorf("unsupported os %s", desc.OS)
+	}
+	if data.Arch == "" {
+		return biome.Environment{}, fmt.Errorf("unsupported architecture %s", desc.Arch)
+	}
+	downloadURL, err := plumbing.TemplateToString(template, data)
+	if err != nil {
+		return biome.Environment{}, err
+	}
+	if err := extract(ctx, sys, nodeDir, downloadURL, stripTopDirectory); err != nil {
+		return biome.Environment{}, err
+	}
+	return env, nil
 }

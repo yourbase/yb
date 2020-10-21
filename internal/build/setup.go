@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math/rand"
 	"net"
 	"os"
 	"strings"
@@ -29,8 +30,10 @@ import (
 	"github.com/yourbase/commons/xcontext"
 	"github.com/yourbase/narwhal"
 	"github.com/yourbase/yb/internal/biome"
+	"github.com/yourbase/yb/internal/buildpack"
 	"github.com/yourbase/yb/internal/ybtrace"
 	"github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/types"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/label"
@@ -49,13 +52,13 @@ type BiomeCloser interface {
 // loader package.
 type PhaseDeps struct {
 	TargetName string
+	Buildpacks []types.BuildpackSpec
 	Resources  map[string]*narwhal.ContainerDefinition
 
 	// EnvironmentTemplate is the set of environment variables that should be set
 	// in the biome. These variables may include substitutions for container IP
 	// addresses in the form `{{ .Containers.IP "mycontainer" }}`.
 	EnvironmentTemplate map[string]string
-	// TODO(ch2744): Buildpacks
 }
 
 // Setup arranges for the phase's dependencies to be available, returning a new
@@ -72,6 +75,28 @@ func Setup(ctx context.Context, sys Sys, phase *PhaseDeps) (_ BiomeCloser, err e
 		span.End()
 	}()
 
+	// Randomize pack setup order to surface unexpected data dependencies.
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	packs := append([]types.BuildpackSpec(nil), phase.Buildpacks...)
+	if len(packs) > 0 {
+		for i := range packs[:len(packs)-1] {
+			j := i + rng.Intn(len(phase.Buildpacks)-i)
+			packs[i], packs[j] = packs[j], packs[i]
+		}
+	}
+
+	// Install all buildpacks.
+	newEnv := biome.Environment{
+		Vars: make(map[string]string),
+	}
+	for _, pack := range packs {
+		packEnv, err := buildpack.Install(ctx, sys, pack)
+		if err != nil {
+			return nil, fmt.Errorf("setup %s: %w", phase.TargetName, err)
+		}
+		newEnv = newEnv.Merge(packEnv)
+	}
+
 	expContainers, closeFunc, err := startContainers(ctx, sys, phase.Resources)
 	if err != nil {
 		return nil, fmt.Errorf("setup %s: %w", phase.TargetName, err)
@@ -84,20 +109,17 @@ func Setup(ctx context.Context, sys Sys, phase *PhaseDeps) (_ BiomeCloser, err e
 	exp := configExpansion{
 		Containers: expContainers,
 	}
-	env := biome.Environment{
-		Vars: make(map[string]string),
-	}
 	for k, t := range phase.EnvironmentTemplate {
 		v, err := exp.expand(t)
 		if err != nil {
 			return nil, fmt.Errorf("setup %s: expand %s: %w", phase.TargetName, k, err)
 		}
-		env.Vars[k] = v
+		newEnv.Vars[k] = v
 	}
 	return biomeCloser{
 		Biome: biome.EnvBiome{
 			Biome: sys.Biome,
-			Env:   env,
+			Env:   newEnv,
 		},
 		closeFunc: closeFunc,
 	}, nil

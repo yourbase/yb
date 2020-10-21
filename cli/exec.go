@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"flag"
+	"net/http"
 	"os"
 
 	"github.com/johnewart/subcommands"
@@ -55,13 +56,15 @@ func (b *ExecCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 		log.Errorf(ctx, "%v", err)
 		return subcommands.ExitFailure
 	}
-	bio, err := newBiome(ctx, dockerClient, pkg.Path)
+	bio, err := newBiome(ctx, dockerClient, dataDirs, pkg.Path, b.environment)
 	if err != nil {
 		log.Errorf(ctx, "%v", err)
 		return subcommands.ExitFailure
 	}
 	sys := build.Sys{
 		Biome:           bio,
+		DataDirs:        dataDirs,
+		HTTPClient:      http.DefaultClient,
 		DockerClient:    dockerClient,
 		DockerNetworkID: dockerNetworkID,
 		Stdout:          os.Stdout,
@@ -98,11 +101,6 @@ func (b *ExecCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}
 			log.Errorf(ctx, "Clean up environment %s: %v", b.environment, err)
 		}
 	}()
-	// TODO(ch2744): Move this into build.Setup.
-	if err := pkg.SetupRuntimeDependencies(ctx, dataDirs); err != nil {
-		log.Errorf(ctx, "%v", err)
-		return subcommands.ExitFailure
-	}
 
 	err = build.Execute(ctx, sys, &build.Phase{
 		TargetName: b.environment,

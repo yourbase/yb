@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/johnewart/subcommands"
@@ -76,13 +77,15 @@ func (b *RunCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{})
 
 	// Run command.
 	execTarget := targets[len(targets)-1]
-	bio, err := newBiome(ctx, dockerClient, pkg.Path)
+	bio, err := newBiome(ctx, dockerClient, dataDirs, pkg.Path, execTarget.Name)
 	if err != nil {
 		log.Errorf(ctx, "%v", err)
 		return subcommands.ExitFailure
 	}
 	sys := build.Sys{
 		Biome:           bio,
+		DataDirs:        dataDirs,
+		HTTPClient:      http.DefaultClient,
 		DockerClient:    dockerClient,
 		DockerNetworkID: dockerNetworkID,
 		Stdout:          os.Stdout,
@@ -94,12 +97,6 @@ func (b *RunCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{})
 		return subcommands.ExitFailure
 	}
 	execBiome, err := build.Setup(ctx, sys, phaseDeps)
-	if err != nil {
-		log.Errorf(ctx, "%v", err)
-		return subcommands.ExitFailure
-	}
-	// TODO(ch2744): Move this into build.Setup.
-	err = pkg.SetupBuildDependencies(ctx, dataDirs, execTarget)
 	if err != nil {
 		log.Errorf(ctx, "%v", err)
 		return subcommands.ExitFailure

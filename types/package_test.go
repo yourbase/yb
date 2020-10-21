@@ -1,4 +1,4 @@
-package packages
+package types
 
 import (
 	"reflect"
@@ -6,41 +6,40 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/yourbase/yb/types"
 )
 
 func TestMergeDeps(t *testing.T) {
 	const dummyGoToolSpec = "go:1.14.6"
 	tests := []struct {
 		name string
-		b    *types.BuildManifest
-		want *types.BuildManifest
+		b    *BuildManifest
+		want *BuildManifest
 	}{
 		{
 			name: "Empty",
-			b:    &types.BuildManifest{},
-			want: &types.BuildManifest{},
+			b:    &BuildManifest{},
+			want: &BuildManifest{},
 		},
 		{
 			name: "Global",
-			b: &types.BuildManifest{
-				Dependencies: types.DependencySet{
+			b: &BuildManifest{
+				Dependencies: DependencySet{
 					Build: []string{dummyGoToolSpec},
 				},
-				BuildTargets: []*types.BuildTarget{
+				BuildTargets: []*BuildTarget{
 					{
 						Name: "default",
 					},
 				},
 			},
-			want: &types.BuildManifest{
-				Dependencies: types.DependencySet{
+			want: &BuildManifest{
+				Dependencies: DependencySet{
 					Build: []string{dummyGoToolSpec},
 				},
-				BuildTargets: []*types.BuildTarget{
+				BuildTargets: []*BuildTarget{
 					{
 						Name: "default",
-						Dependencies: types.BuildDependencies{
+						Dependencies: BuildDependencies{
 							Build: []string{dummyGoToolSpec},
 						},
 					},
@@ -49,27 +48,27 @@ func TestMergeDeps(t *testing.T) {
 		},
 		{
 			name: "OverrideVersionLocally",
-			b: &types.BuildManifest{
-				Dependencies: types.DependencySet{
+			b: &BuildManifest{
+				Dependencies: DependencySet{
 					Build: []string{"go:1.13"},
 				},
-				BuildTargets: []*types.BuildTarget{
+				BuildTargets: []*BuildTarget{
 					{
 						Name: "default",
-						Dependencies: types.BuildDependencies{
+						Dependencies: BuildDependencies{
 							Build: []string{"go:1.14"},
 						},
 					},
 				},
 			},
-			want: &types.BuildManifest{
-				Dependencies: types.DependencySet{
+			want: &BuildManifest{
+				Dependencies: DependencySet{
 					Build: []string{"go:1.13"},
 				},
-				BuildTargets: []*types.BuildTarget{
+				BuildTargets: []*BuildTarget{
 					{
 						Name: "default",
-						Dependencies: types.BuildDependencies{
+						Dependencies: BuildDependencies{
 							Build: []string{"go:1.14"},
 						},
 					},
@@ -78,27 +77,27 @@ func TestMergeDeps(t *testing.T) {
 		},
 		{
 			name: "AddNewDepInTarget",
-			b: &types.BuildManifest{
-				Dependencies: types.DependencySet{
+			b: &BuildManifest{
+				Dependencies: DependencySet{
 					Build: []string{dummyGoToolSpec},
 				},
-				BuildTargets: []*types.BuildTarget{
+				BuildTargets: []*BuildTarget{
 					{
 						Name: "default",
-						Dependencies: types.BuildDependencies{
+						Dependencies: BuildDependencies{
 							Build: []string{"java:1.8"},
 						},
 					},
 				},
 			},
-			want: &types.BuildManifest{
-				Dependencies: types.DependencySet{
+			want: &BuildManifest{
+				Dependencies: DependencySet{
 					Build: []string{dummyGoToolSpec},
 				},
-				BuildTargets: []*types.BuildTarget{
+				BuildTargets: []*BuildTarget{
 					{
 						Name: "default",
-						Dependencies: types.BuildDependencies{
+						Dependencies: BuildDependencies{
 							Build: []string{"java:1.8", dummyGoToolSpec},
 						},
 					},
@@ -120,7 +119,7 @@ func TestMergeDeps(t *testing.T) {
 					if !ok {
 						return false
 					}
-					return path.Index(-2).Type() == reflect.TypeOf(types.BuildDependencies{}) &&
+					return path.Index(-2).Type() == reflect.TypeOf(BuildDependencies{}) &&
 						f.Name() == "Build"
 				}, cmpopts.SortSlices(func(s1, s2 string) bool {
 					return s1 < s2

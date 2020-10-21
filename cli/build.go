@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"strings"
 	"sync"
@@ -18,7 +19,6 @@ import (
 	"github.com/yourbase/yb/internal/build"
 	"github.com/yourbase/yb/internal/ybdata"
 	"github.com/yourbase/yb/internal/ybtrace"
-	"github.com/yourbase/yb/packages"
 	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/types"
 	"go.opentelemetry.io/otel/api/global"
@@ -158,7 +158,7 @@ type doOptions struct {
 	setupOnly       bool
 }
 
-func doTargetList(ctx context.Context, pkg *packages.Package, targets []*types.BuildTarget, opts *doOptions) error {
+func doTargetList(ctx context.Context, pkg *types.Package, targets []*types.BuildTarget, opts *doOptions) error {
 	if len(targets) == 0 {
 		return nil
 	}
@@ -191,13 +191,15 @@ func doTargetList(ctx context.Context, pkg *packages.Package, targets []*types.B
 	return nil
 }
 
-func doTarget(ctx context.Context, pkg *packages.Package, target *types.BuildTarget, opts *doOptions) error {
-	bio, err := newBiome(ctx, opts.dockerClient, pkg.Path)
+func doTarget(ctx context.Context, pkg *types.Package, target *types.BuildTarget, opts *doOptions) error {
+	bio, err := newBiome(ctx, opts.dockerClient, opts.dataDirs, pkg.Path, target.Name)
 	if err != nil {
 		return fmt.Errorf("target %s: %w", target.Name, err)
 	}
 	sys := build.Sys{
 		Biome:           bio,
+		DataDirs:        opts.dataDirs,
+		HTTPClient:      http.DefaultClient,
 		DockerClient:    opts.dockerClient,
 		DockerNetworkID: opts.dockerNetworkID,
 		Stdout:          os.Stdout,
@@ -220,11 +222,6 @@ func doTarget(ctx context.Context, pkg *packages.Package, target *types.BuildTar
 			log.Errorf(ctx, "Clean up target %s: %v", target.Name, err)
 		}
 	}()
-	// TODO(ch2744): Move this into build.Setup.
-	err = pkg.SetupBuildDependencies(ctx, opts.dataDirs, target)
-	if err != nil {
-		return err
-	}
 	if opts.setupOnly {
 		return nil
 	}

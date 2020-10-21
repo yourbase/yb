@@ -8,6 +8,13 @@ import (
 	"github.com/johnewart/archiver"
 )
 
+type WorktreeSave struct {
+	Hash    string
+	Path    string
+	Files   []string
+	Enabled bool
+}
+
 func pathExists(path string) bool {
 	if _, err := os.Lstat(path); os.IsNotExist(err) {
 		return false

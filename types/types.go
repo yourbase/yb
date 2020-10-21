@@ -1,23 +1,13 @@
 package types
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/yourbase/narwhal"
 )
 
-const (
-	MANIFEST_FILE = ".yourbase.yml"
-	DOCS_URL      = "https://docs.yourbase.io"
-)
-
-type BuildManifest struct {
-	Dependencies DependencySet  `yaml:"dependencies"`
-	Sandbox      bool           `yaml:"sandbox"`
-	BuildTargets []*BuildTarget `yaml:"build_targets"`
-	Build        *BuildTarget   `yaml:"build"`
-	Exec         *ExecPhase     `yaml:"exec"`
-	Package      *PackagePhase  `yaml:"package"`
-	CI           *CIInfo        `yaml:"ci"`
-}
+const DOCS_URL = "https://docs.yourbase.io"
 
 type CIInfo struct {
 	CIBuilds []*CIBuild `yaml:"builds"`
@@ -148,9 +138,30 @@ type TokenResponse struct {
 	TokenOK bool `json:"token_ok"`
 }
 
-type WorktreeSave struct {
-	Hash    string
-	Path    string
-	Files   []string
-	Enabled bool
+// BuildpackSpec is a buildpack specifier, consisting of a name and a version.
+type BuildpackSpec string
+
+// ParseBuildpackSpec validates a buildpack specifier string.
+func ParseBuildpackSpec(s string) (BuildpackSpec, error) {
+	i := strings.IndexByte(s, ':')
+	if i == -1 {
+		return "", fmt.Errorf("parse buildpack %q: no version specified (missing ':')", s)
+	}
+	return BuildpackSpec(s), nil
+}
+
+func (spec BuildpackSpec) Name() string {
+	i := strings.IndexByte(string(spec), ':')
+	if i == -1 {
+		panic("Name() called on invalid spec: " + string(spec))
+	}
+	return string(spec[:i])
+}
+
+func (spec BuildpackSpec) Version() string {
+	i := strings.IndexByte(string(spec), ':')
+	if i == -1 {
+		panic("Version() called on invalid spec: " + string(spec))
+	}
+	return string(spec[i+1:])
 }

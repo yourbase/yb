@@ -1,134 +1,288 @@
 package buildpack
 
 import (
+	"archive/zip"
 	"context"
 	"fmt"
+	"io"
+	"net/http"
 	"strings"
 
+	docker "github.com/fsouza/go-dockerclient"
+	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/internal/ybdata"
 	"github.com/yourbase/yb/internal/ybtrace"
+	"github.com/yourbase/yb/types"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/label"
 	"zombiezen.com/go/log"
 )
 
+// Sys holds dependencies provided by the caller needed to run builds.
+type Sys struct {
+	Biome    biome.Biome
+	Stdout   io.Writer
+	Stderr   io.Writer
+	DataDirs *ybdata.Dirs
+
+	HTTPClient *http.Client
+
+	DockerClient    *docker.Client
+	DockerNetworkID string
+}
+
+var packs = map[string]func(context.Context, Sys, types.BuildpackSpec) (biome.Environment, error){
+	"anaconda2":  installAnaconda2,
+	"anaconda3":  installAnaconda3,
+	"android":    installAndroidSDK,
+	"androidndk": installAndroidNDK,
+	"ant":        installAnt,
+	"dart":       installDart,
+	"flutter":    installFlutter,
+	"glide":      installGlide,
+	"go":         installGo,
+	"gradle":     installGradle,
+	"heroku":     installHeroku,
+	"java":       installJava,
+	"maven":      installMaven,
+	"node":       installNode,
+	"protoc":     installProtoc,
+	"python":     installPython,
+	"r":          installR,
+	"ruby":       installRuby,
+	"rust":       installRust,
+	"yarn":       installYarn,
+}
+
 type buildToolSpec struct {
-	tool       string
-	version    string
+	tool       types.BuildpackSpec
 	dataDirs   *ybdata.Dirs
 	cacheDir   string
 	packageDir string
 }
 
-// Install installs the buildpack given by spec.
-func Install(ctx context.Context, dataDirs *ybdata.Dirs, pkgCacheDir string, pkgDir string, spec string) error {
-	buildpackName, versionString, err := SplitToolSpec(spec)
+// Install installs the buildpack given by spec into the build context.
+func Install(ctx context.Context, sys Sys, spec types.BuildpackSpec) (_ biome.Environment, err error) {
+	ctx, span := ybtrace.Start(ctx, "Buildpack "+string(spec), trace.WithAttributes(
+		label.String("buildpack", spec.Name()),
+		label.String("spec", string(spec)),
+	))
+	defer func() {
+		if err != nil {
+			span.SetStatus(codes.Unknown, err.Error())
+		}
+		span.End()
+	}()
+	log.Infof(ctx, "Configuring build tool %s...", spec)
+	f := packs[spec.Name()]
+	if f == nil {
+		return biome.Environment{}, fmt.Errorf("install buildpack %s: no such buildpack", spec)
+	}
+	env, err := f(ctx, sys, spec)
 	if err != nil {
-		return fmt.Errorf("load build packs: %w", err)
+		return biome.Environment{}, fmt.Errorf("install buildpack %s: %w", spec, err)
+	}
+	log.Debugf(ctx, "Build tool %s environment:\n%v", spec, env)
+	return env, nil
+}
+
+// Extract modes.
+const (
+	// Archive does not contain a top-level directory.
+	tarbomb = false
+	// Remove the archive's top-level directory.
+	stripTopDirectory = true
+)
+
+// extract downloads the given URL and extracts it to the given directory in
+// the build context.
+func extract(ctx context.Context, sys Sys, dstDir, url string, extractMode bool) (err error) {
+	const (
+		zipExt    = ".zip"
+		tarXZExt  = ".tar.xz"
+		tarGZExt  = ".tar.gz"
+		tarBZ2Ext = ".tar.bz2"
+	)
+	exts := []string{
+		zipExt,
+		tarXZExt,
+		tarGZExt,
+		tarBZ2Ext,
+	}
+	var ext string
+	for _, testExt := range exts {
+		if strings.HasSuffix(url, testExt) {
+			ext = testExt
+			break
+		}
+	}
+	if ext == "" {
+		return fmt.Errorf("extract %s in %s: unknown extension", url, dstDir)
 	}
 
-	parsed := buildToolSpec{
-		tool:       buildpackName,
-		version:    versionString,
-		dataDirs:   dataDirs,
-		cacheDir:   pkgCacheDir,
-		packageDir: pkgDir,
+	f, err := ybdata.Download(ctx, sys.HTTPClient, sys.DataDirs, url)
+	if err != nil {
+		return fmt.Errorf("extract %s in %s: %w", url, dstDir, err)
+	}
+	defer f.Close()
+
+	defer func() {
+		// Attempt to clean up if unarchive fails.
+		if err != nil {
+			rmErr := sys.Biome.Run(ctx, &biome.Invocation{
+				Argv:   []string{"rm", "-rf", dstDir},
+				Stdout: sys.Stdout,
+				Stderr: sys.Stderr,
+			})
+			if rmErr != nil {
+				log.Warnf(ctx, "Failed to clean up %s: %v", dstDir, rmErr)
+			}
+		}
+	}()
+	err = biome.MkdirAll(ctx, sys.Biome, dstDir)
+	if err != nil {
+		return fmt.Errorf("extract %s in %s: %w", url, dstDir, err)
+	}
+	dstFile := dstDir + ext
+	defer func() {
+		rmErr := sys.Biome.Run(ctx, &biome.Invocation{
+			Argv:   []string{"rm", "-f", dstFile},
+			Stdout: sys.Stdout,
+			Stderr: sys.Stderr,
+		})
+		if rmErr != nil {
+			log.Warnf(ctx, "Failed to clean up %s: %v", dstFile, rmErr)
+		}
+	}()
+	err = biome.WriteFile(ctx, sys.Biome, dstFile, f)
+	if err != nil {
+		return fmt.Errorf("extract %s in %s: %w", url, dstDir, err)
 	}
 
-	var bt interface {
-		// install downloads the tool into the build environment.
-		install(ctx context.Context) error
-
-		// Setup sets environment variables in the current process (to be inherited by
-		// subprocesses) from the build tool.
-		//
-		// TODO(light): This should return environment variables from Install rather
-		// than modify global state.
-		setup(ctx context.Context) error
+	invoke := &biome.Invocation{
+		Dir:    biome.AbsPath(sys.Biome, dstDir),
+		Stdout: sys.Stdout,
+		Stderr: sys.Stderr,
 	}
-	log.Infof(ctx, "Configuring build tool: %s", spec)
-
-	switch buildpackName {
-	case "anaconda2":
-		bt = newAnaconda2BuildTool(parsed)
-	case "anaconda3":
-		bt = newAnaconda3BuildTool(parsed)
-	case "ant":
-		bt = newAntBuildTool(parsed)
-	case "r":
-		bt = newRLangBuildTool(parsed)
-	case "heroku":
-		bt = newHerokuBuildTool(parsed)
-	case "node":
-		bt = newNodeBuildTool(parsed)
-	case "yarn":
-		bt = newYarnBuildTool(parsed)
-	case "glide":
-		bt = newGlideBuildTool(parsed)
-	case "androidndk":
-		bt = newAndroidNDKBuildTool(parsed)
-	case "android":
-		bt = newAndroidBuildTool(parsed)
-	case "gradle":
-		bt = newGradleBuildTool(parsed)
-	case "flutter":
-		bt = newFlutterBuildTool(parsed)
-	case "dart":
-		bt = newDartBuildTool(parsed)
-	case "rust":
-		bt = newRustBuildTool(parsed)
-	case "java":
-		bt = newJavaBuildTool(ctx, parsed)
-	case "maven":
-		bt = newMavenBuildTool(parsed)
-	case "go":
-		bt = newGolangBuildTool(parsed)
-	case "python":
-		bt = newPythonBuildTool(parsed)
-	case "ruby":
-		bt = newRubyBuildTool(parsed)
-	case "homebrew":
-		bt = newHomebrewBuildTool(parsed)
-	case "protoc":
-		bt = newProtocBuildTool(parsed)
+	absDstFile := biome.AbsPath(sys.Biome, dstFile)
+	switch ext {
+	case zipExt:
+		invoke.Argv = []string{"unzip", "-q", absDstFile}
+	case tarXZExt:
+		invoke.Argv = []string{
+			"tar",
+			"-x", // extract
+			"-J", // xz
+			"-f", absDstFile,
+		}
+		if extractMode == stripTopDirectory {
+			invoke.Argv = append(invoke.Argv, "--strip-components", "1")
+		}
+	case tarGZExt:
+		invoke.Argv = []string{
+			"tar",
+			"-x", // extract
+			"-z", // gzip
+			"-f", absDstFile,
+		}
+		if extractMode == stripTopDirectory {
+			invoke.Argv = append(invoke.Argv, "--strip-components", "1")
+		}
+	case tarBZ2Ext:
+		invoke.Argv = []string{
+			"tar",
+			"-x", // extract
+			"-j", // bzip2
+			"-f", absDstFile,
+		}
+		if extractMode == stripTopDirectory {
+			invoke.Argv = append(invoke.Argv, "--strip-components", "1")
+		}
 	default:
-		return fmt.Errorf("Unknown build tool: %s\n", spec)
+		panic("unreachable")
 	}
-
-	// Install if needed
-	_, installSpan := ybtrace.Start(ctx, spec+" [install]", trace.WithAttributes(
-		label.String("buildpack", buildpackName),
-		label.String("tool", spec),
-	))
-	err = bt.install(ctx)
-	installSpan.End()
-	if err != nil {
-		installSpan.SetStatus(codes.Unknown, err.Error())
-		return fmt.Errorf("Unable to install tool %s: %v", spec, err)
+	if err := sys.Biome.Run(ctx, invoke); err != nil {
+		return fmt.Errorf("extract %s in %s: %w", url, dstDir, err)
 	}
+	if ext == zipExt && extractMode == stripTopDirectory {
+		// There's no convenient way of stripping the top-level directory from an
+		// unzip invocation, but we can move the files ourselves.
+		size, err := f.Seek(0, io.SeekCurrent)
+		if err != nil {
+			return fmt.Errorf("extract %s in %s: determine archive size: %w", url, dstDir, err)
+		}
+		zr, err := zip.NewReader(f, size)
+		if err != nil {
+			return fmt.Errorf("extract %s in %s: %w", url, dstDir, err)
+		}
+		root, names, err := topLevelZipFilenames(zr.File)
+		if err != nil {
+			return fmt.Errorf("extract %s in %s: %w", url, dstDir, err)
+		}
 
-	// Setup build tool (paths, env, etc)
-	_, setupSpan := ybtrace.Start(ctx, spec+" [setup]", trace.WithAttributes(
-		label.String("buildpack", buildpackName),
-		label.String("tool", spec),
-	))
-	err = bt.setup(ctx)
-	setupSpan.End()
-	if err != nil {
-		setupSpan.SetStatus(codes.Unknown, err.Error())
-		return fmt.Errorf("Unable to setup tool %s: %v", spec, err)
+		mvArgv := []string{"mv"}
+		for _, name := range names {
+			mvArgv = append(mvArgv, sys.Biome.JoinPath(root, name))
+		}
+		mvArgv = append(mvArgv, ".")
+		err = sys.Biome.Run(ctx, &biome.Invocation{
+			Argv:   mvArgv,
+			Dir:    biome.AbsPath(sys.Biome, dstDir),
+			Stdout: sys.Stdout,
+			Stderr: sys.Stderr,
+		})
+		if err != nil {
+			return fmt.Errorf("extract %s in %s: %w", url, dstDir, err)
+		}
+		err = sys.Biome.Run(ctx, &biome.Invocation{
+			Argv:   []string{"rmdir", root},
+			Dir:    biome.AbsPath(sys.Biome, dstDir),
+			Stdout: sys.Stdout,
+			Stderr: sys.Stderr,
+		})
+		if err != nil {
+			return fmt.Errorf("extract %s in %s: %w", url, dstDir, err)
+		}
 	}
-
 	return nil
 }
 
-func SplitToolSpec(dep string) (tool, version string, _ error) {
-	parts := strings.SplitN(dep, ":", 2)
-	if len(parts) != 2 {
-		return "", "", fmt.Errorf("malformed build pack definition: %s", dep)
+// topLevelZipFilenames returns the names of the direct children of the root zip
+// file directory.
+func topLevelZipFilenames(files []*zip.File) (root string, names []string, _ error) {
+	if len(files) == 0 {
+		return "", nil, nil
 	}
-	tool = parts[0]
-	version = parts[1]
+	i := strings.IndexByte(files[0].Name, '/')
+	if i == -1 {
+		return "", nil, fmt.Errorf("find zip root directory: %q not in a directory", files[0].Name)
+	}
+	root = files[0].Name[:i]
+	prefix := files[0].Name[:i+1]
+	for _, f := range files {
+		if !strings.HasPrefix(f.Name, prefix) {
+			return "", nil, fmt.Errorf("find zip root directory: %q not in directory %q", f.Name, root)
+		}
+		name := f.Name[i+1:]
+		if nameEnd := strings.IndexByte(name, '/'); nameEnd != -1 {
+			name = name[:nameEnd]
+		}
+		if name == root {
+			return "", nil, fmt.Errorf("strip zip root directory: %q contains a file %q", name, name)
+		}
+		if name != "" && !stringInSlice(names, name) {
+			names = append(names, name)
+		}
+	}
 	return
+}
+
+func stringInSlice(slice []string, s string) bool {
+	for _, elem := range slice {
+		if elem == s {
+			return true
+		}
+	}
+	return false
 }

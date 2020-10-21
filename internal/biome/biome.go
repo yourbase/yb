@@ -94,11 +94,15 @@ const (
 // Dirs holds paths to special directories in a Context.
 type Dirs struct {
 	// Package is the absolute path of the package directory.
-	// Contexts must guarantee this directory exists.
+	// Biomes guarantee this directory exists.
 	Package string
 
+	// Home is the absolute path of the build HOME directory.
+	// Biomes guarantee this directory exists.
+	Home string
+
 	// Tools is the absolute path of a directory where helper tools can be
-	// installed. It is not shared with other contexts. It may have to be
+	// installed. It is not shared with other biomes. It may have to be
 	// created.
 	Tools string
 }
@@ -138,6 +142,12 @@ type Local struct {
 	// PackageDir is the absolute path to a directory containing the source files
 	// of the package.
 	PackageDir string
+
+	// HomeDir is the absolute path to a directory that should be used as HOME.
+	// This directory may or may not exist. It SHOULD NOT be the user's actual
+	// home directory. It's meant for storing configuration and intermediate files
+	// that any build tools need.
+	HomeDir string
 }
 
 // Describe returns the values of GOOS/GOARCH.
@@ -153,8 +163,13 @@ func (l Local) Dirs() *Dirs {
 	if !filepath.IsAbs(l.PackageDir) {
 		panic("Local.PackageDir is not absolute")
 	}
+	if !filepath.IsAbs(l.HomeDir) {
+		panic("Local.HomeDir is not absolute")
+	}
 	return &Dirs{
 		Package: l.PackageDir,
+		Home:    l.HomeDir,
+		Tools:   filepath.Join(l.HomeDir, ".cache", "yb", "tools"),
 	}
 }
 
@@ -171,11 +186,13 @@ func (l Local) Run(ctx context.Context, invoke *Invocation) error {
 	}
 	log.Debugf(ctx, "Program = %s", program)
 	c := exec.CommandContext(ctx, program, invoke.Argv[1:]...)
-	// TODO(ch2744): This appends to os.Environ because the buildpacks
-	// depend on being able to set environment variables.
-	if !invoke.Env.IsEmpty() {
-		c.Env = invoke.Env.appendTo(os.Environ(), os.Getenv("PATH"), filepath.ListSeparator)
+	c.Env = []string{
+		"HOME=" + l.HomeDir,
+		"LOGNAME=" + os.Getenv("LOGNAME"),
+		"USER=" + os.Getenv("USER"),
+		"TZ=UTC",
 	}
+	c.Env = invoke.Env.appendTo(c.Env, os.Getenv("PATH"), filepath.ListSeparator)
 	if filepath.IsAbs(invoke.Dir) {
 		c.Dir = invoke.Dir
 	} else {

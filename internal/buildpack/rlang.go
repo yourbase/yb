@@ -3,109 +3,91 @@ package buildpack
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
+	"time"
 
-	"github.com/johnewart/archiver"
-	"github.com/yourbase/yb/internal/ybdata"
+	"github.com/yourbase/commons/xcontext"
+	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/types"
 	"zombiezen.com/go/log"
 )
 
-const rLangDistMirror = "https://cloud.r-project.org/src/base"
+func installR(ctx context.Context, sys Sys, spec types.BuildpackSpec) (_ biome.Environment, err error) {
+	version := spec.Version()
+	dotIndex := strings.IndexByte(version, '.')
+	if dotIndex == -1 {
+		return biome.Environment{}, fmt.Errorf("invalid version %q", version)
+	}
+	majorVersion := version[:dotIndex]
 
-type rLangBuildTool struct {
-	version string
-	spec    buildToolSpec
-}
-
-func newRLangBuildTool(toolSpec buildToolSpec) rLangBuildTool {
-	tool := rLangBuildTool{
-		version: toolSpec.version,
-		spec:    toolSpec,
+	rlangDir := sys.Biome.JoinPath(sys.Biome.Dirs().Tools, "R", "R-"+version)
+	env := biome.Environment{
+		PrependPath: []string{
+			sys.Biome.JoinPath(rlangDir, "bin"),
+		},
 	}
 
-	return tool
-}
+	// If directory already exists, then use it.
+	if _, err := biome.EvalSymlinks(ctx, sys.Biome, rlangDir); err == nil {
+		log.Infof(ctx, "R v%s located in %s", version, rlangDir)
+		return env, nil
+	}
 
-func (bt rLangBuildTool) archiveFile() string {
-	return fmt.Sprintf("R-%s.tar.gz", bt.version)
-}
-
-func (bt rLangBuildTool) downloadURL() string {
-	return fmt.Sprintf(
-		"%s/R-%s/%s",
-		rLangDistMirror,
-		bt.majorVersion(),
-		bt.archiveFile(),
-	)
-}
-
-func (bt rLangBuildTool) majorVersion() string {
-	parts := strings.Split(bt.version, ".")
-	return parts[0]
-}
-
-func (bt rLangBuildTool) installDir() string {
-	return filepath.Join(bt.spec.cacheDir, "R")
-}
-
-func (bt rLangBuildTool) rLangDir() string {
-	return filepath.Join(bt.installDir(), fmt.Sprintf("R-%s", bt.version))
-}
-
-func (bt rLangBuildTool) setup(ctx context.Context) error {
-	rlangDir := bt.rLangDir()
-
-	cmdPath := fmt.Sprintf("%s/bin", rlangDir)
-	currentPath := os.Getenv("PATH")
-	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
-	log.Infof(ctx, "Setting PATH to %s", newPath)
-	os.Setenv("PATH", newPath)
-
-	return nil
-}
-
-// TODO, generalize downloader
-func (bt rLangBuildTool) install(ctx context.Context) error {
-	installDir := bt.installDir()
-	rlangDir := bt.rLangDir()
-
-	if _, err := os.Stat(rlangDir); err == nil {
-		log.Infof(ctx, "R v%s located in %s!", bt.version, rlangDir)
-	} else {
-		log.Infof(ctx, "Will install R v%s into %s", bt.version, installDir)
-		downloadURL := bt.downloadURL()
-
-		log.Infof(ctx, "Downloading from URL %s ...", downloadURL)
-		localFile, err := ybdata.DownloadFileWithCache(ctx, http.DefaultClient, bt.spec.dataDirs, downloadURL)
+	srcDir := sys.Biome.JoinPath(rlangDir, "src")
+	log.Infof(ctx, "Downloading R v%s to %s...", version, srcDir)
+	const template = "https://cloud.r-project.org/src/base/R-{{.MajorVersion}}/R-{{.Version}}.tar.gz"
+	data := struct {
+		Version      string
+		MajorVersion string
+	}{
+		Version:      version,
+		MajorVersion: majorVersion,
+	}
+	downloadURL, err := plumbing.TemplateToString(template, data)
+	if err != nil {
+		return biome.Environment{}, err
+	}
+	if err := extract(ctx, sys, srcDir, downloadURL, stripTopDirectory); err != nil {
+		return biome.Environment{}, err
+	}
+	defer func() {
+		// Remove build directory on failure to prevent subsequent invocations from
+		// using a corrupt installation.
 		if err != nil {
-			log.Errorf(ctx, "Unable to download: %v", err)
-			return err
-		}
-
-		tmpDir := filepath.Join(installDir, "src")
-		srcDir := filepath.Join(tmpDir, fmt.Sprintf("R-%s", bt.version))
-
-		if !plumbing.DirectoryExists(srcDir) {
-			err = archiver.Unarchive(localFile, tmpDir)
-			if err != nil {
-				log.Errorf(ctx, "Unable to decompress: %v", err)
-				return err
+			rmCtx, cancel := context.WithTimeout(xcontext.IgnoreDeadline(ctx), 10*time.Second)
+			defer cancel()
+			rmErr := sys.Biome.Run(rmCtx, &biome.Invocation{
+				Argv:   []string{"rm", "-rf", rlangDir},
+				Stdout: sys.Stdout,
+				Stderr: sys.Stderr,
+			})
+			if rmErr != nil {
+				log.Warnf(ctx, "Cleaning up failed R install: %v", rmErr)
 			}
 		}
+	}()
 
-		if err := os.MkdirAll(rlangDir, 0777); err != nil {
-			return fmt.Errorf("install R: %w", err)
-		}
-		configCmd := fmt.Sprintf("./configure --with-x=no --prefix=%s", rlangDir)
-		plumbing.ExecToStdout(configCmd, srcDir)
-
-		plumbing.ExecToStdout("make", srcDir)
-		plumbing.ExecToStdout("make install", srcDir)
+	log.Infof(ctx, "Compiling R v%s in %s...", version, srcDir)
+	commands := [][]string{
+		{
+			sys.Biome.JoinPath(srcDir, "configure"),
+			"--with-x=no",
+			"--prefix=" + rlangDir,
+		},
+		{"make", "--jobs=2"},
+		{"make", "install"},
 	}
-
-	return nil
+	for _, argv := range commands {
+		err := sys.Biome.Run(ctx, &biome.Invocation{
+			Argv:   argv,
+			Dir:    srcDir,
+			Stdout: sys.Stdout,
+			Stderr: sys.Stderr,
+		})
+		if err != nil {
+			return biome.Environment{}, fmt.Errorf("compiling R: %s: %w", argv[0], err)
+		}
+	}
+	return env, nil
 }

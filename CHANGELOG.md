@@ -15,8 +15,21 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 ### Changed
 
--  `yb run` now runs commands in the context of a build target, not an
+-  `yb run` now runs commands in the environment of a build target, not an
    exec environment.
+-  To increase isolation in local builds, yb now sets `HOME` to a directory
+   cached between builds of the same target instead of using the user's `HOME`
+   directory.
+-  The `TZ` environment variable is set to the value `UTC` by default for all
+   builds to increase reproducibility.
+-  yb build commands no longer inherit environment variables for greater
+   reproducibility.
+
+### Removed
+
+-  The `homebrew` buildpack has been removed due to its complexity and
+   low usage. Please [file an issue](https://github.com/yourbase/yb/issues/new)
+   if your build needs Homebrew specifically.
 
 ### Fixed
 
@@ -25,6 +38,11 @@ The format is based on [Keep a Changelog][], and this project adheres to
    container dependencies will be started for each target, whereas previous
    versions would only start the container dependencies for the target named
    on the command line.
+
+### Security
+
+-  The Ant buildpack now downloads over HTTPS from the sonic.net mirror because
+   the lucidnetworks.net mirror was HTTP-only.
 
 ## [0.4.2][] - 2020-10-20
 
