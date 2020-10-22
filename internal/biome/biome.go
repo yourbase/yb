@@ -165,7 +165,7 @@ func (l Local) Run(ctx context.Context, invoke *Invocation) error {
 	}
 	log.Infof(ctx, "Run: %s", strings.Join(invoke.Argv, " "))
 	log.Debugf(ctx, "Environment:\n%v", invoke.Env)
-	program, err := lookPath(invoke.Env, invoke.Argv[0])
+	program, err := l.lookPath(invoke.Env, invoke.Argv[0])
 	if err != nil {
 		return fmt.Errorf("local run: %w", err)
 	}
@@ -190,8 +190,8 @@ func (l Local) Run(ctx context.Context, invoke *Invocation) error {
 	return nil
 }
 
-func lookPath(env Environment, program string) (string, error) {
-	if strings.Contains(program, string(filepath.Separator)) {
+func (l Local) lookPath(env Environment, program string) (string, error) {
+	if strings.ContainsRune(program, filepath.Separator) {
 		return exec.LookPath(program)
 	}
 	envPATH := env.computePATH(os.Getenv("PATH"), filepath.ListSeparator)
