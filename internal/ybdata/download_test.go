@@ -33,10 +33,11 @@ import (
 
 func TestDownload(t *testing.T) {
 	tests := []struct {
-		name      string
-		handle    http.HandlerFunc
-		want      string
-		wantError bool
+		name         string
+		handle       http.HandlerFunc
+		want         string
+		wantError    bool
+		wantNotFound bool
 	}{
 		{
 			name: "Success",
@@ -51,9 +52,17 @@ func TestDownload(t *testing.T) {
 			name: "404",
 			handle: func(w http.ResponseWriter, r *http.Request) {
 				http.NotFound(w, r)
-				io.WriteString(w, "bork")
 			},
-			wantError: true,
+			wantError:    true,
+			wantNotFound: true,
+		},
+		{
+			name: "500",
+			handle: func(w http.ResponseWriter, r *http.Request) {
+				http.Error(w, "bork", http.StatusInternalServerError)
+			},
+			wantError:    true,
+			wantNotFound: false,
 		},
 	}
 	for _, test := range tests {
@@ -67,6 +76,9 @@ func TestDownload(t *testing.T) {
 				t.Logf("download: %v", err)
 				if !test.wantError {
 					t.Fail()
+				}
+				if got := IsNotFound(err); got != test.wantNotFound {
+					t.Errorf("is not found error = %t; want %t", got, test.wantNotFound)
 				}
 				files, err := ioutil.ReadDir(dataDirs.Downloads())
 				if err != nil && !os.IsNotExist(err) {
@@ -96,10 +108,11 @@ func TestDownload(t *testing.T) {
 
 func TestValidateDownloadCache(t *testing.T) {
 	tests := []struct {
-		name      string
-		cacheData string
-		handle    http.HandlerFunc
-		wantError bool
+		name         string
+		cacheData    string
+		handle       http.HandlerFunc
+		wantError    bool
+		wantNotFound bool
 	}{
 		{
 			name: "NoFile",
@@ -145,9 +158,18 @@ func TestValidateDownloadCache(t *testing.T) {
 			cacheData: "i haz a bucket",
 			handle: func(w http.ResponseWriter, r *http.Request) {
 				http.NotFound(w, r)
-				io.WriteString(w, "bork")
 			},
-			wantError: true,
+			wantError:    true,
+			wantNotFound: true,
+		},
+		{
+			name:      "500",
+			cacheData: "i haz a bucket",
+			handle: func(w http.ResponseWriter, r *http.Request) {
+				http.Error(w, "bork", http.StatusInternalServerError)
+			},
+			wantError:    true,
+			wantNotFound: false,
 		},
 	}
 	for _, test := range tests {
@@ -168,6 +190,9 @@ func TestValidateDownloadCache(t *testing.T) {
 				t.Logf("validateDownloadCache: %v", err)
 				if !test.wantError {
 					t.Fail()
+				}
+				if got := IsNotFound(err); got != test.wantNotFound {
+					t.Errorf("is not found error = %t; want %t", got, test.wantNotFound)
 				}
 				return
 			}
