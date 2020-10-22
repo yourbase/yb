@@ -18,6 +18,7 @@ package ybdata
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -61,7 +62,10 @@ func download(ctx context.Context, client *http.Client, dst io.Writer, url strin
 	span.SetAttribute("http.status_code", resp.StatusCode)
 	span.SetAttribute("http.response_content_length", resp.ContentLength)
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("download %s: HTTP %s", url, resp.Status)
+		return fmt.Errorf("download %s: %w", url, httpError{
+			status:     resp.Status,
+			statusCode: resp.StatusCode,
+		})
 	}
 
 	// Copy to file.
@@ -71,8 +75,29 @@ func download(ctx context.Context, client *http.Client, dst io.Writer, url strin
 	return nil
 }
 
+// IsNotFound reports whether e indicates an HTTP 404 Not Found or
+// 410 Gone response.
+func IsNotFound(e error) bool {
+	var httpErr httpError
+	if !errors.As(e, &httpErr) {
+		return false
+	}
+	return httpErr.statusCode == http.StatusNotFound ||
+		httpErr.statusCode == http.StatusGone
+}
+
+type httpError struct {
+	status     string
+	statusCode int
+}
+
+func (e httpError) Error() string {
+	return "http " + e.status
+}
+
 // Download downloads a URL to the local filesystem and returns a handle to
-// the file. Download maintains a cache in dataDirs.
+// the file. Download maintains a cache in dataDirs. If the URL could not be
+// found on the server, then IsNotFound(err) will return true.
 func Download(ctx context.Context, client *http.Client, dataDirs *Dirs, url string) (_ *os.File, err error) {
 	cacheFilename := filepath.Join(dataDirs.Downloads(), cacheFilenameForURL(url))
 	if err := os.MkdirAll(filepath.Dir(cacheFilename), 0777); err != nil {
@@ -83,17 +108,14 @@ func Download(ctx context.Context, client *http.Client, dataDirs *Dirs, url stri
 	if err != nil {
 		return nil, fmt.Errorf("download %s: %w", url, err)
 	}
-	written := false
 	defer func() {
 		if err != nil {
 			f.Close()
-
-			if written {
-				// If there's an error, the cache has been made inconsistent because
-				// we've truncated the file. Remove the file to force a download later.
-				if err := os.Remove(cacheFilename); err != nil {
-					log.Warnf(ctx, "Failed to clean up failed download: %v", err)
-				}
+			// If there's an error, the cache has been made inconsistent because
+			// we've truncated or created the file. Remove the file to force a
+			// download later.
+			if err := os.Remove(cacheFilename); err != nil {
+				log.Warnf(ctx, "Failed to clean up failed download: %v", err)
 			}
 		}
 	}()
@@ -103,8 +125,11 @@ func Download(ctx context.Context, client *http.Client, dataDirs *Dirs, url stri
 		log.Infof(ctx, "Reusing cached version of %s", url)
 		return f, nil
 	}
-	log.Infof(ctx, "Not using cache for %s: %v", url, cacheErr)
-	written = true
+	if IsNotFound(cacheErr) {
+		return nil, fmt.Errorf("download %s: %w", url, cacheErr)
+	}
+	log.Debugf(ctx, "Cache error: %v", cacheErr)
+	log.Infof(ctx, "Not using cache for %s", url)
 	if err := f.Truncate(0); err != nil {
 		return nil, fmt.Errorf("download %s: %w", url, err)
 	}
@@ -162,7 +187,10 @@ func validateDownloadCache(ctx context.Context, client *http.Client, statter int
 	span.SetAttribute("http.status_code", resp.StatusCode)
 	span.SetAttribute("http.response_content_length", resp.ContentLength)
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("validate %s download cache: HTTP %s", url, resp.Status)
+		return fmt.Errorf("validate %s download cache: %w", url, httpError{
+			status:     resp.Status,
+			statusCode: resp.StatusCode,
+		})
 	}
 	if fileSize := info.Size(); fileSize != resp.ContentLength {
 		return fmt.Errorf("validate %s download cache: size %d does not match resource size %d", url, fileSize, resp.ContentLength)
