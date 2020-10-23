@@ -41,8 +41,8 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 ### Security
 
--  The Ant buildpack now downloads over HTTPS from the sonic.net mirror because
-   the lucidnetworks.net mirror was HTTP-only.
+-  The Ant buildpack now downloads over HTTPS from the sonic.net mirror. It was
+   previously using the lucidnetworks.net mirror over HTTP.
 
 ## [0.4.2][] - 2020-10-20
 
