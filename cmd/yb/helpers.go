@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 
@@ -37,22 +38,56 @@ type newBiomeOptions struct {
 	dataDirs   *ybdata.Dirs
 	baseEnv    biome.Environment
 
-	dockerClient *docker.Client
+	dockerClient    *docker.Client
+	targetContainer *narwhal.ContainerDefinition
+	dockerNetworkID string
 }
 
 func newBiome(ctx context.Context, opts newBiomeOptions) (biome.BiomeCloser, error) {
-	// TODO(ch2743): Eventually also allow Docker container.
-	l := biome.Local{
+	if opts.dockerClient == nil {
+		l := biome.Local{
+			PackageDir: opts.packageDir,
+		}
+		var err error
+		l.HomeDir, err = opts.dataDirs.BuildHome(opts.packageDir, opts.target, l.Describe())
+		if err != nil {
+			return nil, fmt.Errorf("set up environment for target %s: %w", opts.target, err)
+		}
+		log.Debugf(ctx, "Home located at %s", l.HomeDir)
+		bio, err := injectNetrc(ctx, l)
+		if err != nil {
+			return nil, fmt.Errorf("set up environment for target %s: %w", opts.target, err)
+		}
+		return biome.EnvBiome{
+			Biome: bio,
+			Env:   opts.baseEnv,
+		}, nil
+	}
+
+	home, err := opts.dataDirs.BuildHome(opts.packageDir, opts.target, biome.DockerDescriptor())
+	if err != nil {
+		return nil, fmt.Errorf("set up environment for target %s: %w", opts.target, err)
+	}
+	log.Debugf(ctx, "Home located at %s", home)
+	tiniFile, err := ybdata.Download(ctx, http.DefaultClient, opts.dataDirs, biome.TiniURL)
+	if err != nil {
+		return nil, fmt.Errorf("set up environment for target %s: %w", opts.target, err)
+	}
+	defer tiniFile.Close()
+	c, err := biome.CreateContainer(ctx, opts.dockerClient, &biome.ContainerOptions{
 		PackageDir: opts.packageDir,
-	}
-	var err error
-	l.HomeDir, err = opts.dataDirs.BuildHome(opts.packageDir, opts.target, l.Describe())
+		HomeDir:    home,
+		TiniExe:    tiniFile,
+		Definition: opts.targetContainer,
+		NetworkID:  opts.dockerNetworkID,
+		PullOutput: os.Stderr,
+	})
 	if err != nil {
-		return nil, fmt.Errorf("create build context for target %s: %w", opts.target, err)
+		return nil, fmt.Errorf("set up environment for target %s: %w", opts.target, err)
 	}
-	bio, err := injectNetrc(ctx, l)
+	bio, err := injectNetrc(ctx, c)
 	if err != nil {
-		return nil, fmt.Errorf("create build context for target %s: %w", opts.target, err)
+		return nil, fmt.Errorf("set up environment for target %s: %w", opts.target, err)
 	}
 	return biome.EnvBiome{
 		Biome: bio,

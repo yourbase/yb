@@ -79,11 +79,13 @@ func (b *runCmd) run(ctx context.Context, args []string) error {
 	// Run command.
 	execTarget := targets[len(targets)-1]
 	bio, err := newBiome(ctx, newBiomeOptions{
-		packageDir:   pkg.Path,
-		target:       execTarget.Name,
-		dataDirs:     dataDirs,
-		baseEnv:      baseEnv,
-		dockerClient: dockerClient,
+		packageDir:      pkg.Path,
+		target:          execTarget.Name,
+		dataDirs:        dataDirs,
+		baseEnv:         baseEnv,
+		dockerClient:    dockerClient,
+		targetContainer: execTarget.Container.ToNarwhal(),
+		dockerNetworkID: dockerNetworkID,
 	})
 	if err != nil {
 		return err
@@ -117,9 +119,10 @@ func (b *runCmd) run(ctx context.Context, args []string) error {
 	}()
 	// TODO(ch2725): Run the command from the subdirectory the process is in.
 	return execBiome.Run(ctx, &biome.Invocation{
-		Argv:   args,
-		Stdin:  os.Stdin,
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
+		Argv:        args,
+		Stdin:       os.Stdin,
+		Stdout:      os.Stdout,
+		Stderr:      os.Stderr,
+		Interactive: true,
 	})
 }
