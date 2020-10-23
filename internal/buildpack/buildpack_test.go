@@ -40,7 +40,7 @@ import (
 	"zombiezen.com/go/log/testlog"
 )
 
-// testInstall installs the specified buildpacks in a temporary context that is
+// testInstall installs the specified buildpacks in a temporary biome that is
 // cleaned up after the test finishes.
 //
 // testInstall must be called from the goroutine running the test or benchmark function.

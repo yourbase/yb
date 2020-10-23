@@ -28,9 +28,9 @@ import (
 func TestPython(t *testing.T) {
 	const version = "3.7.7"
 	ctx := testlog.WithTB(context.Background(), t)
-	pyContext, _ := testInstall(ctx, t, "python:"+version)
+	pyBiome, _ := testInstall(ctx, t, "python:"+version)
 	versionOutput := new(strings.Builder)
-	err := pyContext.Run(ctx, &biome.Invocation{
+	err := pyBiome.Run(ctx, &biome.Invocation{
 		Argv:   []string{"python", "--version"},
 		Stdout: versionOutput,
 		Stderr: versionOutput,

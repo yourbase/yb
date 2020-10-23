@@ -11,15 +11,15 @@ import (
 )
 
 func installNode(ctx context.Context, sys Sys, spec types.BuildpackSpec) (biome.Environment, error) {
-	contextDirs := sys.Biome.Dirs()
-	nodeDir := sys.Biome.JoinPath(contextDirs.Tools, "nodejs", "node-"+spec.Version())
+	biomeDirs := sys.Biome.Dirs()
+	nodeDir := sys.Biome.JoinPath(biomeDirs.Tools, "nodejs", "node-"+spec.Version())
 	env := biome.Environment{
 		Vars: map[string]string{
 			// TODO: Fix this to be the package cache?
-			"NODE_PATH": contextDirs.Package,
+			"NODE_PATH": biomeDirs.Package,
 		},
 		PrependPath: []string{
-			sys.Biome.JoinPath(contextDirs.Package, "node_modules", ".bin"),
+			sys.Biome.JoinPath(biomeDirs.Package, "node_modules", ".bin"),
 			sys.Biome.JoinPath(nodeDir, "bin"),
 		},
 	}

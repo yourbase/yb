@@ -28,9 +28,9 @@ import (
 func TestDart(t *testing.T) {
 	const version = "2.10.2"
 	ctx := testlog.WithTB(context.Background(), t)
-	dartContext, _ := testInstall(ctx, t, "dart:"+version)
+	dartBiome, _ := testInstall(ctx, t, "dart:"+version)
 	versionOutput := new(strings.Builder)
-	err := dartContext.Run(ctx, &biome.Invocation{
+	err := dartBiome.Run(ctx, &biome.Invocation{
 		Argv:   []string{"dart", "--version"},
 		Stdout: versionOutput,
 		Stderr: versionOutput,

@@ -29,9 +29,9 @@ func TestYarn(t *testing.T) {
 	const version = "1.22.10"
 	ctx := testlog.WithTB(context.Background(), t)
 	// TODO(light): Yarn depends on Node but won't install it by itself.
-	yarnContext, _ := testInstall(ctx, t, "node:12.19.0", "yarn:"+version)
+	yarnBiome, _ := testInstall(ctx, t, "node:12.19.0", "yarn:"+version)
 	versionOutput := new(strings.Builder)
-	err := yarnContext.Run(ctx, &biome.Invocation{
+	err := yarnBiome.Run(ctx, &biome.Invocation{
 		Argv:   []string{"yarn", "--version"},
 		Stdout: versionOutput,
 		Stderr: versionOutput,

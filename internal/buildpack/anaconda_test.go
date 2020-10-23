@@ -44,9 +44,9 @@ func TestAnaconda(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := testlog.WithTB(context.Background(), t)
-			anacondaCtx, _ := testInstall(ctx, t, test.spec)
+			anacondaBiome, _ := testInstall(ctx, t, test.spec)
 			infoOutput := new(strings.Builder)
-			err := anacondaCtx.Run(ctx, &biome.Invocation{
+			err := anacondaBiome.Run(ctx, &biome.Invocation{
 				Argv:   []string{"conda", "info"},
 				Stdout: infoOutput,
 				Stderr: infoOutput,

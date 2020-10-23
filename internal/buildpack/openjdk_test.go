@@ -14,10 +14,10 @@ func TestJava(t *testing.T) {
 	const majorVersion = "15"
 	const version = "15+36"
 	ctx := testlog.WithTB(context.Background(), t)
-	javaCtx, _ := testInstall(ctx, t, "java:"+version)
+	javaBiome, _ := testInstall(ctx, t, "java:"+version)
 
 	versionOutput := new(strings.Builder)
-	err := javaCtx.Run(ctx, &biome.Invocation{
+	err := javaBiome.Run(ctx, &biome.Invocation{
 		Argv:   []string{"java", "--version"},
 		Stdout: versionOutput,
 		Stderr: versionOutput,
@@ -31,7 +31,7 @@ func TestJava(t *testing.T) {
 	}
 
 	versionOutput = new(strings.Builder)
-	err = javaCtx.Run(ctx, &biome.Invocation{
+	err = javaBiome.Run(ctx, &biome.Invocation{
 		Argv:   []string{"javac", "--version"},
 		Stdout: versionOutput,
 		Stderr: versionOutput,

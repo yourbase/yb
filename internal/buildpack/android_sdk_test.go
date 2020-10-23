@@ -29,11 +29,11 @@ func TestAndroidSDK(t *testing.T) {
 	ctx := testlog.WithTB(context.Background(), t)
 	// TODO(light): The Android SDK depends on very specific versions of Java
 	// and won't install them by itself.
-	androidContext, _ := testInstall(ctx, t, "java:8.265+01", "android:"+latestAndroidVersion)
+	androidBiome, _ := testInstall(ctx, t, "java:8.265+01", "android:"+latestAndroidVersion)
 	installOutput := new(strings.Builder)
 	// TODO(light): There isn't a great "get current version" command AFAICT.
 	// I've found that this is typically the first command that gets run by users.
-	err := androidContext.Run(ctx, &biome.Invocation{
+	err := androidBiome.Run(ctx, &biome.Invocation{
 		Argv:   []string{"sdkmanager", "--install", "tools"},
 		Stdout: installOutput,
 		Stderr: installOutput,

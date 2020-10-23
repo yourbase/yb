@@ -13,9 +13,9 @@ import (
 func TestFlutter(t *testing.T) {
 	const version = "1.22.2"
 	ctx := testlog.WithTB(context.Background(), t)
-	flutterCtx, _ := testInstall(ctx, t, "flutter:"+version)
+	flutterBiome, _ := testInstall(ctx, t, "flutter:"+version)
 	versionOutput := new(strings.Builder)
-	err := flutterCtx.Run(ctx, &biome.Invocation{
+	err := flutterBiome.Run(ctx, &biome.Invocation{
 		Argv:   []string{"flutter", "--version"},
 		Stdout: versionOutput,
 		Stderr: versionOutput,

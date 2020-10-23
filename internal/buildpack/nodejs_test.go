@@ -28,9 +28,9 @@ import (
 func TestNode(t *testing.T) {
 	const version = "12.19.0"
 	ctx := testlog.WithTB(context.Background(), t)
-	antContext, _ := testInstall(ctx, t, "node:"+version)
+	nodeBiome, _ := testInstall(ctx, t, "node:"+version)
 	versionOutput := new(strings.Builder)
-	err := antContext.Run(ctx, &biome.Invocation{
+	err := nodeBiome.Run(ctx, &biome.Invocation{
 		Argv:   []string{"node", "--version"},
 		Stdout: versionOutput,
 		Stderr: versionOutput,

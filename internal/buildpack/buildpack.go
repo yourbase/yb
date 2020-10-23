@@ -62,7 +62,7 @@ type buildToolSpec struct {
 	packageDir string
 }
 
-// Install installs the buildpack given by spec into the build context.
+// Install installs the buildpack given by spec into the biome.
 func Install(ctx context.Context, sys Sys, spec types.BuildpackSpec) (_ biome.Environment, err error) {
 	ctx, span := ybtrace.Start(ctx, "Buildpack "+string(spec), trace.WithAttributes(
 		label.String("buildpack", spec.Name()),
@@ -95,8 +95,7 @@ const (
 	stripTopDirectory = true
 )
 
-// extract downloads the given URL and extracts it to the given directory in
-// the build context.
+// extract downloads the given URL and extracts it to the given directory in the biome.
 func extract(ctx context.Context, sys Sys, dstDir, url string, extractMode bool) (err error) {
 	const (
 		zipExt    = ".zip"

@@ -27,12 +27,12 @@ import (
 func TestAndroidNDK(t *testing.T) {
 	const version = "r21d"
 	ctx := testlog.WithTB(context.Background(), t)
-	ndkContext, ndkEnv := testInstall(ctx, t, "androidndk:"+version)
+	ndkBiome, ndkEnv := testInstall(ctx, t, "androidndk:"+version)
 	ndkHome := ndkEnv.Vars["ANDROID_NDK_HOME"]
 	if ndkHome == "" {
 		t.Fatal("ANDROID_NDK_HOME empty")
 	}
-	if _, err := biome.EvalSymlinks(ctx, ndkContext, ndkContext.JoinPath(ndkHome, "ndk-build")); err != nil {
+	if _, err := biome.EvalSymlinks(ctx, ndkBiome, ndkBiome.JoinPath(ndkHome, "ndk-build")); err != nil {
 		t.Error("Find ndk-build:", err)
 	}
 }

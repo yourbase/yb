@@ -28,9 +28,9 @@ import (
 func TestGlide(t *testing.T) {
 	const version = "0.13.3"
 	ctx := testlog.WithTB(context.Background(), t)
-	antContext, _ := testInstall(ctx, t, "glide:"+version)
+	glideBiome, _ := testInstall(ctx, t, "glide:"+version)
 	versionOutput := new(strings.Builder)
-	err := antContext.Run(ctx, &biome.Invocation{
+	err := glideBiome.Run(ctx, &biome.Invocation{
 		Argv:   []string{"glide", "--version"},
 		Stdout: versionOutput,
 		Stderr: versionOutput,

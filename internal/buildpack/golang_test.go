@@ -28,9 +28,9 @@ import (
 func TestGo(t *testing.T) {
 	const version = "1.15.2"
 	ctx := testlog.WithTB(context.Background(), t)
-	goContext, _ := testInstall(ctx, t, "go:"+version)
+	goBiome, _ := testInstall(ctx, t, "go:"+version)
 	versionOutput := new(strings.Builder)
-	err := goContext.Run(ctx, &biome.Invocation{
+	err := goBiome.Run(ctx, &biome.Invocation{
 		Argv:   []string{"go", "version"},
 		Stdout: versionOutput,
 		Stderr: versionOutput,
