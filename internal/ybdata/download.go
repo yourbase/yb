@@ -142,20 +142,6 @@ func Download(ctx context.Context, client *http.Client, dataDirs *Dirs, url stri
 	return f, nil
 }
 
-// DownloadFileWithCache downloads a URL to the local filesystem and returns
-// the path to the downloaded copy.
-//
-// Deprecated: Use Download to avoid closing and reopening file.
-func DownloadFileWithCache(ctx context.Context, client *http.Client, dataDirs *Dirs, url string) (string, error) {
-	f, err := Download(ctx, client, dataDirs, url)
-	if err != nil {
-		return "", err
-	}
-	path := f.Name()
-	f.Close()
-	return path, nil
-}
-
 func validateDownloadCache(ctx context.Context, client *http.Client, statter interface{ Stat() (os.FileInfo, error) }, url string) (err error) {
 	ctx, span := ybtrace.Start(ctx, "Validate cache for "+url,
 		trace.WithSpanKind(trace.SpanKindClient),
