@@ -12,7 +12,6 @@ import (
 
 	"github.com/johnewart/subcommands"
 	"github.com/yourbase/commons/envvar"
-	"github.com/yourbase/yb/cli"
 	ybconfig "github.com/yourbase/yb/config"
 	"zombiezen.com/go/log"
 )
@@ -37,16 +36,16 @@ func main() {
 	cmdr.Register(cmdr.HelpCommand(), "")
 	cmdr.Register(cmdr.FlagsCommand(), "")
 	cmdr.Register(cmdr.CommandsCommand(), "")
-	cmdr.Register(&cli.BuildCmd{}, "")
-	cmdr.Register(&cli.CheckConfigCmd{}, "")
-	cmdr.Register(&cli.ConfigCmd{}, "")
-	cmdr.Register(&cli.ExecCmd{}, "")
-	cmdr.Register(&cli.LoginCmd{}, "")
-	cmdr.Register(&cli.PlatformCmd{}, "")
-	cmdr.Register(&cli.RemoteCmd{}, "")
-	cmdr.Register(&cli.RunCmd{}, "")
-	cmdr.Register(&cli.TokenCmd{}, "")
-	cmdr.Register(&cli.VersionCmd{Version: version, Channel: channel, Date: date, CommitSHA: commitSHA}, "")
+	cmdr.Register(&BuildCmd{}, "")
+	cmdr.Register(&CheckConfigCmd{}, "")
+	cmdr.Register(&ConfigCmd{}, "")
+	cmdr.Register(&ExecCmd{}, "")
+	cmdr.Register(&LoginCmd{}, "")
+	cmdr.Register(&PlatformCmd{}, "")
+	cmdr.Register(&RemoteCmd{}, "")
+	cmdr.Register(&RunCmd{}, "")
+	cmdr.Register(&TokenCmd{}, "")
+	cmdr.Register(&VersionCmd{Version: version, Channel: channel, Date: date, CommitSHA: commitSHA}, "")
 
 	flag.Parse()
 

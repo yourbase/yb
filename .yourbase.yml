@@ -6,7 +6,7 @@ build_targets:
   - name: default
     commands:
       - go test ./...
-      - go build
+      - release/build.sh yb
 
   - name: integration
     build_after:
