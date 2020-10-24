@@ -14,12 +14,12 @@ import (
 	"github.com/google/shlex"
 	"github.com/matishsiao/goInfo"
 	"github.com/spf13/cobra"
+	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/internal/build"
 	"github.com/yourbase/yb/internal/ybdata"
 	"github.com/yourbase/yb/internal/ybtrace"
 	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/types"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/codes"
@@ -151,7 +151,7 @@ type doOptions struct {
 	setupOnly       bool
 }
 
-func doTargetList(ctx context.Context, pkg *types.Package, targets []*types.BuildTarget, opts *doOptions) error {
+func doTargetList(ctx context.Context, pkg *yb.Package, targets []*yb.BuildTarget, opts *doOptions) error {
 	if len(targets) == 0 {
 		return nil
 	}
@@ -184,7 +184,7 @@ func doTargetList(ctx context.Context, pkg *types.Package, targets []*types.Buil
 	return nil
 }
 
-func doTarget(ctx context.Context, pkg *types.Package, target *types.BuildTarget, opts *doOptions) error {
+func doTarget(ctx context.Context, pkg *yb.Package, target *yb.BuildTarget, opts *doOptions) error {
 	bio, err := newBiome(ctx, opts.dockerClient, opts.dataDirs, pkg.Path, target.Name)
 	if err != nil {
 		return fmt.Errorf("target %s: %w", target.Name, err)

@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/types"
 	"zombiezen.com/go/log"
 )
 
-func installProtoc(ctx context.Context, sys Sys, spec types.BuildpackSpec) (biome.Environment, error) {
+func installProtoc(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (biome.Environment, error) {
 	protocDir := sys.Biome.JoinPath(sys.Biome.Dirs().Tools, "protoc", "protoc-"+spec.Version())
 	env := biome.Environment{
 		PrependPath: []string{

@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/internal/ybdata"
 	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/types"
 	"zombiezen.com/go/log"
 )
 
 // TODO: Install libssl-dev (or equivalent / warn) and zlib-dev based on platform
 
-func installRuby(ctx context.Context, sys Sys, spec types.BuildpackSpec) (biome.Environment, error) {
+func installRuby(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (biome.Environment, error) {
 	rbenvDir := sys.Biome.JoinPath(sys.Biome.Dirs().Tools, "rbenv")
 	rubyDir := sys.Biome.JoinPath(rbenvDir, "versions", spec.Version())
 	gemsDir := sys.Biome.JoinPath(sys.Biome.Dirs().Home, "rubygems")

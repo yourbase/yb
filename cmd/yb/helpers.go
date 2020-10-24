@@ -8,10 +8,10 @@ import (
 
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/yourbase/narwhal"
+	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/internal/build"
 	"github.com/yourbase/yb/internal/ybdata"
-	"github.com/yourbase/yb/types"
 	"zombiezen.com/go/log"
 )
 
@@ -39,13 +39,13 @@ func newBiome(ctx context.Context, client *docker.Client, dataDirs *ybdata.Dirs,
 	return l, nil
 }
 
-func targetToPhaseDeps(target *types.BuildTarget) (*build.PhaseDeps, error) {
+func targetToPhaseDeps(target *yb.BuildTarget) (*build.PhaseDeps, error) {
 	phaseDeps := &build.PhaseDeps{
 		TargetName: target.Name,
 		Resources:  narwhalContainerMap(target.Dependencies.Containers),
 	}
 	for _, dep := range target.Dependencies.Build {
-		spec, err := types.ParseBuildpackSpec(dep)
+		spec, err := yb.ParseBuildpackSpec(dep)
 		if err != nil {
 			return nil, fmt.Errorf("target %s: %w", target.Name, err)
 		}
@@ -59,7 +59,7 @@ func targetToPhaseDeps(target *types.BuildTarget) (*build.PhaseDeps, error) {
 	return phaseDeps, nil
 }
 
-func narwhalContainerMap(defs map[string]*types.ContainerDefinition) map[string]*narwhal.ContainerDefinition {
+func narwhalContainerMap(defs map[string]*yb.ContainerDefinition) map[string]*narwhal.ContainerDefinition {
 	if len(defs) == 0 {
 		return nil
 	}
@@ -70,7 +70,7 @@ func narwhalContainerMap(defs map[string]*types.ContainerDefinition) map[string]
 	return nmap
 }
 
-func targetToPhase(target *types.BuildTarget) *build.Phase {
+func targetToPhase(target *yb.BuildTarget) *build.Phase {
 	return &build.Phase{
 		TargetName: target.Name,
 		Commands:   target.Commands,
@@ -107,6 +107,6 @@ func newDockerNetwork(ctx context.Context, client *docker.Client) (string, func(
 
 const packageConfigFileName = ".yourbase.yml"
 
-func GetTargetPackage() (*types.Package, error) {
-	return types.LoadPackage(packageConfigFileName)
+func GetTargetPackage() (*yb.Package, error) {
+	return yb.LoadPackage(packageConfigFileName)
 }

@@ -7,13 +7,13 @@ import (
 	"time"
 
 	"github.com/yourbase/commons/xcontext"
+	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/types"
 	"zombiezen.com/go/log"
 )
 
-func installR(ctx context.Context, sys Sys, spec types.BuildpackSpec) (_ biome.Environment, err error) {
+func installR(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (_ biome.Environment, err error) {
 	version := spec.Version()
 	dotIndex := strings.IndexByte(version, '.')
 	if dotIndex == -1 {

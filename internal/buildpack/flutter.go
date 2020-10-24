@@ -7,13 +7,13 @@ import (
 
 	"golang.org/x/mod/semver"
 
+	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/types"
 	"zombiezen.com/go/log"
 )
 
-func installFlutter(ctx context.Context, sys Sys, spec types.BuildpackSpec) (_ biome.Environment, err error) {
+func installFlutter(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (_ biome.Environment, err error) {
 	dir := sys.Biome.JoinPath(sys.Biome.Dirs().Tools, "flutter", "flutter-"+spec.Version())
 	env := biome.Environment{
 		PrependPath: []string{sys.Biome.JoinPath(dir, "bin")},

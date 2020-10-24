@@ -4,15 +4,15 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/types"
 	"zombiezen.com/go/log"
 )
 
 const androidNDKDistMirror = "https://dl.google.com/android/repository/android-ndk-{{.Version}}-{{.OS}}-{{.Arch}}.zip"
 
-func installAndroidNDK(ctx context.Context, sys Sys, spec types.BuildpackSpec) (biome.Environment, error) {
+func installAndroidNDK(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (biome.Environment, error) {
 	ndkDir := sys.Biome.JoinPath(sys.Biome.Dirs().Tools, "android-ndk", "android-ndk-"+spec.Version())
 	env := biome.Environment{
 		Vars: map[string]string{

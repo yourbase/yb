@@ -22,15 +22,15 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
-	"github.com/yourbase/yb/types"
 	"zombiezen.com/go/log/testlog"
 )
 
 func TestAnaconda(t *testing.T) {
 	tests := []struct {
 		name string
-		spec types.BuildpackSpec
+		spec yb.BuildpackSpec
 	}{
 		{
 			name: "Python2",

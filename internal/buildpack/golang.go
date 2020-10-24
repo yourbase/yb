@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
-	"github.com/yourbase/yb/types"
 	"zombiezen.com/go/log"
 )
 
-func installGo(ctx context.Context, sys Sys, spec types.BuildpackSpec) (biome.Environment, error) {
+func installGo(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (biome.Environment, error) {
 	golangRoot := sys.Biome.JoinPath(sys.Biome.Dirs().Tools, "go")
 	golangDir := sys.Biome.JoinPath(golangRoot, "go"+spec.Version())
 	gopathDir := sys.Biome.JoinPath(golangRoot, "gopath")

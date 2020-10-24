@@ -5,21 +5,21 @@ import (
 	"fmt"
 
 	"github.com/blang/semver"
+	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/internal/ybdata"
 	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/types"
 	"zombiezen.com/go/log"
 )
 
 const anacondaDistMirrorTemplate = "https://repo.continuum.io/miniconda/Miniconda{{.PyMajor}}-{{.Version}}-{{.OS}}-{{.Arch}}.sh"
 const anacondaNewerDistMirrorTemplate = "https://repo.continuum.io/miniconda/Miniconda{{.PyMajor}}-py{{.PyMajor}}{{.PyMinor}}_{{.Version}}-{{.OS}}-{{.Arch}}.sh"
 
-func installAnaconda2(ctx context.Context, sys Sys, spec types.BuildpackSpec) (biome.Environment, error) {
+func installAnaconda2(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (biome.Environment, error) {
 	return installAnaconda(ctx, sys, 2, spec.Version())
 }
 
-func installAnaconda3(ctx context.Context, sys Sys, spec types.BuildpackSpec) (biome.Environment, error) {
+func installAnaconda3(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (biome.Environment, error) {
 	return installAnaconda(ctx, sys, 3, spec.Version())
 }
 
