@@ -12,7 +12,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/yourbase/yb"
-	ybconfig "github.com/yourbase/yb/config"
+	ybconfig "github.com/yourbase/yb/internal/config"
 	"zombiezen.com/go/log"
 )
 

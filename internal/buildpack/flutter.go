@@ -9,7 +9,7 @@ import (
 
 	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
-	"github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/internal/plumbing"
 	"zombiezen.com/go/log"
 )
 
