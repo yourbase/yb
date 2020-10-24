@@ -13,7 +13,7 @@ import (
 	"zombiezen.com/go/log"
 )
 
-func fastFindAncestor(ctx context.Context, r *git.Repository) (h plumbing.Hash, c int, branchName string) {
+func fastFindAncestor(ctx context.Context, r *git.Repository) (h plumbing.Hash, c int, branchName string, err error) {
 	/*
 		go doc gopkg.in/src-d/go-git.v4/plumbing/object Commit.MergeBase
 
@@ -26,7 +26,7 @@ func fastFindAncestor(ctx context.Context, r *git.Repository) (h plumbing.Hash, 
 
 	ref, err := r.Head()
 	if err != nil {
-		log.Errorf(ctx, "%v", err)
+		err = fmt.Errorf("find ancestor: %w", err)
 		return
 	}
 
@@ -35,13 +35,13 @@ func fastFindAncestor(ctx context.Context, r *git.Repository) (h plumbing.Hash, 
 	if remoteBranch == nil {
 		if branchName == "master" {
 			// Well, we don't need to try it again
-			log.Errorf(ctx, "Unable to find remote master branch")
+			err = fmt.Errorf("find ancestor: unable to find remote master branch")
 			return
 		}
 		//Search again, on master
 		ref, err = r.Reference(plumbing.NewBranchReferenceName("master"), false)
 		if err != nil {
-			log.Errorf(ctx, "%v", err)
+			err = fmt.Errorf("find ancestor: %w", err)
 			return
 		}
 		remoteBranch = findRemoteBranch(ctx, ref, r)
@@ -50,17 +50,17 @@ func fastFindAncestor(ctx context.Context, r *git.Repository) (h plumbing.Hash, 
 
 	headCommit, err := r.CommitObject(ref.Hash())
 	if err != nil {
-		log.Errorf(ctx, "%v", err)
+		err = fmt.Errorf("find ancestor: %w", err)
 		return
 	}
 	remoteCommit, err := r.CommitObject(remoteBranch.Hash())
 	if err != nil {
-		log.Errorf(ctx, "%v", err)
+		err = fmt.Errorf("find ancestor: %w", err)
 		return
 	}
 	commonAncestors, err := remoteCommit.MergeBase(headCommit)
 	if err != nil {
-		log.Errorf(ctx, "%v", err)
+		err = fmt.Errorf("find ancestor: %w", err)
 		return
 	}
 
@@ -91,20 +91,21 @@ func fastFindAncestor(ctx context.Context, r *git.Repository) (h plumbing.Hash, 
 	}
 
 	// Count commits between head and 'h'
-	if commitIter, err := r.Log(&git.LogOptions{}); err != nil {
+	commitIter, err := r.Log(&git.LogOptions{})
+	if err != nil {
+		err = fmt.Errorf("find ancestor: %w", err)
 		return
-	} else {
-		x := 0
-		_ = commitIter.ForEach(func(cmt *object.Commit) error {
-			x++
-			if cmt.Hash.String() == h.String() {
-				// Stop here
-				c = x
-				return storer.ErrStop
-			}
-			return nil
-		})
 	}
+	x := 0
+	err = commitIter.ForEach(func(cmt *object.Commit) error {
+		x++
+		if cmt.Hash.String() == h.String() {
+			// Stop here
+			c = x
+			return storer.ErrStop
+		}
+		return nil
+	})
 
 	return
 }

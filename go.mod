@@ -22,7 +22,6 @@ require (
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/gopherjs/gopherjs v0.0.0-20190915194858-d3ddacdb130f // indirect
 	github.com/johnewart/archiver v3.1.4+incompatible
-	github.com/johnewart/subcommands v0.0.0-20181012225330-46f0354f6315
 	github.com/matishsiao/goInfo v0.0.0-20200404012835-b5f882ee2288
 	github.com/moby/sys/mount v0.1.1 // indirect
 	github.com/moby/term v0.0.0-20200915141129-7f0af18e79f2 // indirect
@@ -31,7 +30,7 @@ require (
 	github.com/pierrec/lz4 v2.5.2+incompatible // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/smartystreets/assertions v1.0.1 // indirect
-	github.com/smartystreets/goconvey v0.0.0-20190731233626-505e41936337 // indirect
+	github.com/spf13/cobra v1.1.1
 	github.com/ulikunitz/xz v0.5.8
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	github.com/yourbase/commons v0.6.0

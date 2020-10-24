@@ -2,38 +2,40 @@ package main
 
 import (
 	"context"
-	"flag"
 
-	"github.com/johnewart/subcommands"
+	"github.com/spf13/cobra"
 	"github.com/yourbase/yb/types"
 	"zombiezen.com/go/log"
 )
 
-type CheckConfigCmd struct {
+type checkConfigCmd struct {
 	file string
 }
 
-func (*CheckConfigCmd) Name() string     { return "checkconfig" }
-func (*CheckConfigCmd) Synopsis() string { return "Check the config file syntax" }
-func (*CheckConfigCmd) Usage() string {
-	return `checkconfig [-file FILE]
-Validate the local YourBase config file, .yourbase.yml by default.
-`
+func newCheckConfigCmd() *cobra.Command {
+	b := new(checkConfigCmd)
+	c := &cobra.Command{
+		Use:                   "checkconfig [-file FILE]",
+		Short:                 "Check the config file syntax",
+		Long:                  `Validate the local YourBase config file, .yourbase.yml by default.`,
+		Args:                  cobra.NoArgs,
+		DisableFlagsInUseLine: true,
+		SilenceErrors:         true,
+		SilenceUsage:          true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return b.run(cmd.Context())
+		},
+	}
+	c.Flags().StringVar(&b.file, "file", types.MANIFEST_FILE, "YAML file to check")
+	return c
 }
 
-func (b *CheckConfigCmd) SetFlags(f *flag.FlagSet) {
-	f.StringVar(&b.file, "file", types.MANIFEST_FILE, "YAML file to check")
-}
-
-func (b *CheckConfigCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-
+func (b *checkConfigCmd) run(ctx context.Context) error {
 	targetPackage, err := GetTargetPackageNamed(b.file)
 	if err != nil {
-		log.Errorf(ctx, "%v", err)
-		return subcommands.ExitFailure
+		return err
 	}
 
-	log.Infof(ctx, "Config syntax for package '%s' is OK: your package is yourbased!", targetPackage.Name)
-
-	return subcommands.ExitSuccess
+	log.Infof(ctx, "Syntax for package '%s' is OK: your package is YourBase'd!", targetPackage.Name)
+	return nil
 }

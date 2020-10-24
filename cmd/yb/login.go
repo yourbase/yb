@@ -4,39 +4,42 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
 
-	"github.com/johnewart/subcommands"
+	"github.com/spf13/cobra"
 	ybconfig "github.com/yourbase/yb/config"
 	"github.com/yourbase/yb/types"
 	"zombiezen.com/go/log"
 )
 
-type LoginCmd struct {
+type loginCmd struct {
 }
 
-func (*LoginCmd) Name() string     { return "login" }
-func (*LoginCmd) Synopsis() string { return "Log into YB" }
-func (*LoginCmd) Usage() string {
-	return `Usage: login
-Configure yb to act as you in the YourBase API.
-`
+func newLoginCmd() *cobra.Command {
+	b := new(loginCmd)
+	c := &cobra.Command{
+		Use:           "login",
+		Short:         "Log into YourBase",
+		Long:          `Configure yb to act as you in the YourBase service.`,
+		Args:          cobra.NoArgs,
+		SilenceErrors: true,
+		SilenceUsage:  true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return b.run(cmd.Context())
+		},
+	}
+	return c
 }
 
-func (p *LoginCmd) SetFlags(f *flag.FlagSet) {
-}
-
-func (p *LoginCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (p *loginCmd) run(ctx context.Context) error {
 	reader := bufio.NewReader(os.Stdin)
 	tokenURL, err := ybconfig.UserSettingsURL()
 	if err != nil {
-		log.Errorf(ctx, "Couldn't determine login URL: %v\n", err)
-		return subcommands.ExitFailure
+		return err
 	}
 
 	tokenPrompt := fmt.Sprintf("Open up %s and then paste the token here.", tokenURL)
@@ -46,54 +49,38 @@ func (p *LoginCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 	apiToken = strings.TrimSuffix(apiToken, "\n")
 
 	validationURL, err := ybconfig.TokenValidationURL(apiToken)
-
 	if err != nil {
-		log.Errorf(ctx, "Unable to get token validation URL: %v\n", err)
-		return subcommands.ExitFailure
+		return err
 	}
 
 	resp, err := http.Get(validationURL)
-
 	if err != nil {
-		log.Errorf(ctx, "Couldn't make validation request: %v\n", err)
-		return subcommands.ExitFailure
+		return fmt.Errorf("make validation request: %v", err)
 	}
-
 	defer resp.Body.Close()
-
-	if resp.StatusCode == 404 || resp.StatusCode == 401 {
-		log.Errorf(ctx, "Invalid token provided, please check it\n")
-		return subcommands.ExitFailure
-	}
-
-	if resp.StatusCode != 200 {
-		log.Errorf(ctx, "Oops: HTTP Status %d that's us, not you, please try again later", resp.StatusCode)
-		return subcommands.ExitFailure
+	switch resp.StatusCode {
+	case http.StatusOK:
+		// Keep going!
+	case http.StatusNotFound, http.StatusUnauthorized:
+		return fmt.Errorf("invalid token provided, please check it")
+	default:
+		return fmt.Errorf("http %s (that's us, not you, please try again later)", resp.Status)
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Errorf(ctx, "Couldn't parse response body: %s\n", err)
-		return subcommands.ExitFailure
+		return fmt.Errorf("parse response body: %w", err)
 	}
 	var tokenResponse types.TokenResponse
-	err = json.Unmarshal(body, &tokenResponse)
-
-	if err != nil {
-		log.Errorf(ctx, "Couldn't parse response body: %s\n", err)
-		return subcommands.ExitFailure
+	if err := json.Unmarshal(body, &tokenResponse); err != nil {
+		return fmt.Errorf("parse response body: %w", err)
 	}
-
 	if !tokenResponse.TokenOK {
-		log.Errorf(ctx, "Token provided is invalid, please check it\n")
-		return subcommands.ExitFailure
+		return fmt.Errorf("invalid token provided, please check it")
 	}
-
-	if err = ybconfig.Set("user", "api_key", apiToken); err != nil {
-		log.Errorf(ctx, "Cannot store API token: %v\n", err)
-		return subcommands.ExitFailure
+	if err := ybconfig.Set("user", "api_key", apiToken); err != nil {
+		return fmt.Errorf("store token: %w", err)
 	}
-
 	log.Infof(ctx, "API token saved to the config file")
-	return subcommands.ExitSuccess
+	return nil
 }

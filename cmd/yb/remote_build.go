@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -21,7 +20,7 @@ import (
 	ggit "gg-scm.io/pkg/git"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
-	"github.com/johnewart/subcommands"
+	"github.com/spf13/cobra"
 	ybconfig "github.com/yourbase/yb/config"
 	"github.com/yourbase/yb/plumbing"
 	"github.com/yourbase/yb/types"
@@ -36,7 +35,7 @@ var (
 	gitStatusCmd string = "%s status --porcelain"
 )
 
-type RemoteCmd struct {
+type remoteCmd struct {
 	target         string
 	baseCommit     string
 	branch         string
@@ -55,40 +54,43 @@ type RemoteCmd struct {
 	remotes        []*url.URL
 }
 
-func (*RemoteCmd) Name() string     { return "remotebuild" }
-func (*RemoteCmd) Synopsis() string { return "Build remotely" }
-func (*RemoteCmd) Usage() string {
-	return `Usage: remotebuild [TARGET] [OPTIONS]
-Build remotely using YourBase infrastructure. Defaults to the "default" target.
-`
-}
-
-func (p *RemoteCmd) SetFlags(f *flag.FlagSet) {
-	f.StringVar(&p.baseCommit, "base-commit", "", "Base commit hash as common ancestor")
-	f.StringVar(&p.branch, "branch", "", "Branch name")
-	f.StringVar(&p.patchPath, "patch-path", "", "Path to save the patch")
-	f.BoolVar(&p.noAcceleration, "no-accel", false, "Disable acceleration")
-	f.BoolVar(&p.disableCache, "disable-cache", false, "Disable cache acceleration")
-	f.BoolVar(&p.disableSkipper, "disable-skipper", false, "Disable skipping steps acceleration")
-	f.BoolVar(&p.dryRun, "dry-run", false, "Pretend to remote build")
-	f.BoolVar(&p.committed, "committed", false, "Only remote build committed changes")
-	f.BoolVar(&p.printStatus, "print-status", false, "Print result of `git status` used to grab untracked/unstaged changes")
-	f.BoolVar(&p.goGitStatus, "go-git-status", false, "Use internal go-git.v4 status instead of calling `git status`, can be slow")
-	f.BoolVar(&p.backupWorktree, "backup-worktree", false, "Saves uncommitted work into a tarball")
-}
-
-func (p *RemoteCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-
-	// Consistent with how the `build` cmd works
-	p.target = "default"
-	if len(f.Args()) > 0 {
-		p.target = f.Args()[0]
+func newRemoteCmd() *cobra.Command {
+	p := new(remoteCmd)
+	c := &cobra.Command{
+		Use:   "remotebuild [options] [TARGET]",
+		Short: "Build a target remotely",
+		Long: `Builds a target using YourBase infrastructure. If no argument is given, ` +
+			`uses the target named "default", if there is one.`,
+		Args:                  cobra.MaximumNArgs(1),
+		DisableFlagsInUseLine: true,
+		SilenceErrors:         true,
+		SilenceUsage:          true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			p.target = "default"
+			if len(args) > 0 {
+				p.target = args[0]
+			}
+			return p.run(cmd.Context())
+		},
 	}
+	c.Flags().StringVar(&p.baseCommit, "base-commit", "", "Base commit hash as common ancestor")
+	c.Flags().StringVar(&p.branch, "branch", "", "Branch name")
+	c.Flags().StringVar(&p.patchPath, "patch-path", "", "Path to save the patch")
+	c.Flags().BoolVar(&p.noAcceleration, "no-accel", false, "Disable acceleration")
+	c.Flags().BoolVar(&p.disableCache, "disable-cache", false, "Disable cache acceleration")
+	c.Flags().BoolVar(&p.disableSkipper, "disable-skipper", false, "Disable skipping steps acceleration")
+	c.Flags().BoolVarP(&p.dryRun, "dry-run", "n", false, "Pretend to remote build")
+	c.Flags().BoolVar(&p.committed, "committed", false, "Only remote build committed changes")
+	c.Flags().BoolVar(&p.printStatus, "print-status", false, "Print result of `git status` used to grab untracked/unstaged changes")
+	c.Flags().BoolVar(&p.goGitStatus, "go-git-status", false, "Use internal go-git.v4 status instead of calling `git status`, can be slow")
+	c.Flags().BoolVar(&p.backupWorktree, "backup-worktree", false, "Saves uncommitted work into a tarball")
+	return c
+}
 
+func (p *remoteCmd) run(ctx context.Context) error {
 	targetPackage, err := GetTargetPackage()
 	if err != nil {
-		log.Errorf(ctx, "%v", err)
-		return subcommands.ExitFailure
+		return err
 	}
 
 	manifest := targetPackage.Manifest
@@ -98,16 +100,14 @@ func (p *RemoteCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface
 	if len(manifest.BuildTargets) == 0 {
 		target = manifest.Build
 		if len(target.Commands) == 0 {
-			log.Errorf(ctx, "Default build command has no steps and no targets described")
-			return subcommands.ExitFailure
+			return fmt.Errorf("default build command has no steps and no targets described")
 		}
 	} else {
 		var err error
 		target, err = manifest.BuildTarget(p.target)
 		if err != nil {
-			log.Errorf(ctx, "Build target %s specified but it doesn't exist!", p.target)
-			log.Infof(ctx, "Valid build targets: %s", strings.Join(manifest.BuildTargetList(), ", "))
-			return subcommands.ExitFailure
+			return fmt.Errorf("build target %s specified but it doesn't exist!\nValid build targets: %s",
+				p.target, strings.Join(manifest.BuildTargetList(), ", "))
 		}
 	}
 
@@ -115,8 +115,7 @@ func (p *RemoteCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface
 	workRepo, err := git.PlainOpen(p.repoDir)
 
 	if err != nil {
-		log.Errorf(ctx, "Error opening repository %s: %v", p.repoDir, err)
-		return subcommands.ExitFailure
+		return fmt.Errorf("opening repository %s: %w", p.repoDir, err)
 	}
 
 	if !p.goGitStatus && !p.committed {
@@ -144,8 +143,7 @@ func (p *RemoteCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface
 	list, err := workRepo.Remotes()
 
 	if err != nil {
-		log.Errorf(ctx, "Error getting remotes for %s: %v", p.repoDir, err)
-		return subcommands.ExitFailure
+		return fmt.Errorf("getting remotes for %s: %w", p.repoDir, err)
 	}
 
 	var repoUrls []string
@@ -157,19 +155,16 @@ func (p *RemoteCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface
 
 	project, err := p.fetchProject(ctx, repoUrls)
 	if err != nil {
-		log.Errorf(ctx, "%v", err)
-		return subcommands.ExitFailure
+		return err
 	}
 
 	if project.Repository == "" {
 		projectURL, err := ybconfig.UIURL(fmt.Sprintf("%s/%s", project.OrgSlug, project.Label))
 		if err != nil {
-			log.Errorf(ctx, "Unable to generate project URL: %v", err)
-			return subcommands.ExitFailure
+			return err
 		}
 
-		log.Errorf(ctx, "Empty repository for project %s, please check your project settings at %s", project.Label, projectURL)
-		return subcommands.ExitFailure
+		return fmt.Errorf("empty repository for project %s. Please check your project settings at %s", project.Label, projectURL)
 	}
 
 	// First things first:
@@ -181,27 +176,24 @@ func (p *RemoteCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface
 	//    3.3. Save the patch and compress it
 	// 4. Submit build!
 
-	ancestorRef, commitCount, branch := fastFindAncestor(ctx, workRepo)
-	if commitCount == -1 { // Error
-		return subcommands.ExitFailure
+	ancestorRef, commitCount, branch, err := fastFindAncestor(ctx, workRepo)
+	if err != nil { // Error
+		return err
 	}
 	p.branch = branch
 	p.baseCommit = ancestorRef.String()
 
 	head, err := workRepo.Head()
 	if err != nil {
-		log.Errorf(ctx, "Couldn't find HEAD commit: %v", err)
-		return subcommands.ExitFailure
+		return fmt.Errorf("couldn't find HEAD commit: %w", err)
 	}
 	headCommit, err := workRepo.CommitObject(head.Hash())
 	if err != nil {
-		log.Errorf(ctx, "Couldn't find HEAD commit: %v", err)
-		return subcommands.ExitFailure
+		return fmt.Errorf("couldn't find HEAD commit: %w", err)
 	}
 	ancestorCommit, err := workRepo.CommitObject(ancestorRef)
 	if err != nil {
-		log.Errorf(ctx, "Couldn't find merge-base commit: %v", err)
-		return subcommands.ExitFailure
+		return fmt.Errorf("couldn't find merge-base commit: %w", err)
 	}
 
 	// Show feedback: end of bootstrap
@@ -217,8 +209,7 @@ func (p *RemoteCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface
 
 		patch, err := ancestorCommit.Patch(headCommit)
 		if err != nil {
-			log.Errorf(ctx, "Patch generation failed: %v", err)
-			return subcommands.ExitFailure
+			return fmt.Errorf("patch generation failed: %w", err)
 		}
 		// This is where the patch is actually generated see #278
 		go func(ch chan<- bool) {
@@ -231,8 +222,7 @@ func (p *RemoteCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface
 		// Apply changes that weren't committed yet
 		worktree, err := workRepo.Worktree() // current worktree
 		if err != nil {
-			log.Errorf(ctx, "Couldn't get current worktree: %v", err)
-			return subcommands.ExitFailure
+			return fmt.Errorf("couldn't get current worktree: %w", err)
 		}
 
 		log.Infof(ctx, "Generating patch for local changes...")
@@ -240,8 +230,7 @@ func (p *RemoteCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface
 		log.Debugf(ctx, "Start backing up the worktree-save")
 		saver, err := types.NewWorktreeSave(targetPackage.Path, headCommit.Hash.String(), p.backupWorktree)
 		if err != nil {
-			log.Errorf(ctx, "%v", err)
-			return subcommands.ExitFailure
+			return err
 		}
 
 		// TODO When go-git worktree.Status() get faster use this instead:
@@ -249,8 +238,7 @@ func (p *RemoteCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface
 		//if err = worktree.AddGlob("."); err != nil {
 		skippedBinaries, err := p.traverseChanges(ctx, worktree, saver)
 		if err != nil {
-			log.Errorf(ctx, "%v", err)
-			return subcommands.ExitFailure
+			return err
 		}
 		if len(skippedBinaries) > 0 {
 			log.Infof(ctx, "Skipped binaries:\n  %s", strings.Join(skippedBinaries, "\n  "))
@@ -260,43 +248,39 @@ func (p *RemoteCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface
 		if p.backupWorktree && len(saver.Files) > 0 {
 			log.Debugf(ctx, "Saving a tarball  with all the worktree changes made")
 			// Save them before committing
-			if saveFile, err := saver.Save(); err != nil {
-				log.Errorf(ctx, "Unable to keep worktree changes, won't commit: %v", err)
-				return subcommands.ExitFailure
-			} else {
-				defer func(s string) {
-					if !resetDone {
-						log.Debugf(ctx, "Reset failed, restoring the tarball")
-						if err := saver.Restore(s); err != nil {
-							log.Errorf(ctx, "Unable to restore kept files at %v: %v\n     Please consider unarchiving that package", saveFile, err)
-						} else {
-							_ = os.Remove(s)
-						}
+			saveFile, err := saver.Save()
+			if err != nil {
+				return fmt.Errorf("unable to keep worktree changes, won't commit: %w", err)
+			}
+			defer func(s string) {
+				if !resetDone {
+					log.Debugf(ctx, "Reset failed, restoring the tarball")
+					if err := saver.Restore(s); err != nil {
+						log.Errorf(ctx, "Unable to restore kept files at %v: %v\n     Please consider unarchiving that package", saveFile, err)
 					} else {
 						_ = os.Remove(s)
 					}
-				}(saveFile)
-			}
+				} else {
+					_ = os.Remove(s)
+				}
+			}(saveFile)
 		}
 
 		log.Debugf(ctx, "Committing temporary changes")
 		latest, err := commitTempChanges(worktree, headCommit)
 		if err != nil {
-			log.Errorf(ctx, "Commit to temporary cloned repository failed: %v", err)
-			return subcommands.ExitFailure
+			return fmt.Errorf("commit to temporary cloned repository failed: %w", err)
 		}
 
 		tempCommit, err := workRepo.CommitObject(latest)
 		if err != nil {
-			log.Errorf(ctx, "Can't find commit '%v': %v", latest, err)
-			return subcommands.ExitFailure
+			return fmt.Errorf("can't find commit %q: %w", latest, err)
 		}
 
 		log.Debugf(ctx, "Starting the actual patch generation...")
 		patch, err := ancestorCommit.Patch(tempCommit)
 		if err != nil {
-			log.Errorf(ctx, "Patch generation failed: %v", err)
-			return subcommands.ExitFailure
+			return fmt.Errorf("patch generation failed: %w", err)
 		}
 
 		// This is where the patch is actually generated see #278
@@ -327,17 +311,14 @@ func (p *RemoteCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface
 	}
 
 	if !p.dryRun {
-		err = p.submitBuild(ctx, project, target.Tags)
-
-		if err != nil {
-			log.Errorf(ctx, "Unable to submit build: %v", err)
-			return subcommands.ExitFailure
-		}
-	} else {
 		log.Infof(ctx, "Dry run ended, build not submitted")
+		return nil
 	}
 
-	return subcommands.ExitSuccess
+	if err := p.submitBuild(ctx, project, target.Tags); err != nil {
+		return fmt.Errorf("unable to submit build: %w", err)
+	}
+	return nil
 }
 
 func commitTempChanges(w *git.Worktree, c *object.Commit) (latest gitplumbing.Hash, err error) {
@@ -358,7 +339,7 @@ func commitTempChanges(w *git.Worktree, c *object.Commit) (latest gitplumbing.Ha
 	return
 }
 
-func (p *RemoteCmd) traverseChanges(ctx context.Context, worktree *git.Worktree, saver *types.WorktreeSave) (skipped []string, err error) {
+func (p *remoteCmd) traverseChanges(ctx context.Context, worktree *git.Worktree, saver *types.WorktreeSave) (skipped []string, err error) {
 	if p.goGitStatus {
 		log.Debugf(ctx, "Decided to use Go-Git")
 		skipped, err = p.libTraverseChanges(ctx, worktree, saver)
@@ -403,7 +384,7 @@ func shouldSkip(ctx context.Context, file string, worktree *git.Worktree) bool {
 	return false
 }
 
-func (p *RemoteCmd) commandTraverseChanges(ctx context.Context, worktree *git.Worktree, saver *types.WorktreeSave) (skipped []string, err error) {
+func (p *remoteCmd) commandTraverseChanges(ctx context.Context, worktree *git.Worktree, saver *types.WorktreeSave) (skipped []string, err error) {
 	// TODO When go-git worktree.Status() works faster, we'll disable this
 	// Get worktree path
 	repoDir := worktree.Filesystem.Root()
@@ -461,7 +442,7 @@ func (p *RemoteCmd) commandTraverseChanges(ctx context.Context, worktree *git.Wo
 	}
 	return
 }
-func (p *RemoteCmd) libTraverseChanges(ctx context.Context, worktree *git.Worktree, saver *types.WorktreeSave) (skipped []string, err error) {
+func (p *remoteCmd) libTraverseChanges(ctx context.Context, worktree *git.Worktree, saver *types.WorktreeSave) (skipped []string, err error) {
 	// This could get real slow, check https://github.com/src-d/go-git/issues/844
 	status, err := worktree.Status()
 	if err != nil {
@@ -562,7 +543,7 @@ func buildIDFromLogURL(u *url.URL) (string, error) {
 	return id, nil
 }
 
-func (p *RemoteCmd) fetchProject(ctx context.Context, urls []string) (*types.Project, error) {
+func (p *remoteCmd) fetchProject(ctx context.Context, urls []string) (*types.Project, error) {
 	v := url.Values{}
 	fmt.Println()
 	log.Infof(ctx, "URLs used to search: %s", urls)
@@ -614,7 +595,7 @@ func (p *RemoteCmd) fetchProject(ctx context.Context, urls []string) (*types.Pro
 	return &project, nil
 }
 
-func (cmd *RemoteCmd) savePatch() error {
+func (cmd *remoteCmd) savePatch() error {
 
 	err := ioutil.WriteFile(cmd.patchPath, cmd.patchData, 0644)
 
@@ -625,7 +606,7 @@ func (cmd *RemoteCmd) savePatch() error {
 	return nil
 }
 
-func (cmd *RemoteCmd) submitBuild(ctx context.Context, project *types.Project, tagMap map[string]string) error {
+func (cmd *remoteCmd) submitBuild(ctx context.Context, project *types.Project, tagMap map[string]string) error {
 
 	startTime := time.Now()
 
