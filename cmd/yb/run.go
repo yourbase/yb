@@ -1,66 +1,60 @@
-package cli
+package main
 
 import (
 	"context"
-	"flag"
-	"fmt"
 	"net/http"
 	"os"
 
-	"github.com/johnewart/subcommands"
+	"github.com/spf13/cobra"
 	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/internal/build"
 	"github.com/yourbase/yb/internal/ybdata"
-	"zombiezen.com/go/log"
 )
 
-type RunCmd struct {
+type runCmd struct {
 	target      string
 	noContainer bool
 }
 
-func (*RunCmd) Name() string     { return "run" }
-func (*RunCmd) Synopsis() string { return "Run an arbitrary command" }
-func (*RunCmd) Usage() string {
-	return `run [-t TARGET] <COMMAND>
-Run a command in the project container.
-`
-}
-
-func (p *RunCmd) SetFlags(f *flag.FlagSet) {
-	f.StringVar(&p.target, "t", "default", "The target to run the command in")
-	f.BoolVar(&p.noContainer, "no-container", false, "Avoid using Docker if possible")
-}
-
-func (b *RunCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	if len(f.Args()) == 0 {
-		fmt.Println(b.Usage())
-		return subcommands.ExitFailure
+func newRunCmd() *cobra.Command {
+	b := new(runCmd)
+	c := &cobra.Command{
+		Use:                   "run [options] COMMAND [ARG [...]]",
+		Short:                 "Run an arbitrary command",
+		Long:                  `Run a command in the target container.`,
+		Args:                  cobra.MinimumNArgs(1),
+		DisableFlagsInUseLine: true,
+		SilenceErrors:         true,
+		SilenceUsage:          true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return b.run(cmd.Context(), args)
+		},
 	}
+	c.Flags().StringVarP(&b.target, "target", "t", "default", "The target to run the command in")
+	c.Flags().BoolVar(&b.noContainer, "no-container", false, "Avoid using Docker if possible")
+	return c
+}
+
+func (b *runCmd) run(ctx context.Context, args []string) error {
 	dataDirs, err := ybdata.DirsFromEnv()
 	if err != nil {
-		log.Errorf(ctx, "%v", err)
-		return subcommands.ExitFailure
+		return err
 	}
 	dockerClient, err := connectDockerClient(!b.noContainer)
 	if err != nil {
-		log.Errorf(ctx, "%v", err)
-		return subcommands.ExitFailure
+		return err
 	}
 	pkg, err := GetTargetPackage()
 	if err != nil {
-		log.Errorf(ctx, "%v", err)
-		return subcommands.ExitFailure
+		return err
 	}
 	targets, err := pkg.Manifest.BuildOrder(b.target)
 	if err != nil {
-		log.Errorf(ctx, "%v", err)
-		return subcommands.ExitFailure
+		return err
 	}
 	dockerNetworkID, removeNetwork, err := newDockerNetwork(ctx, dockerClient)
 	if err != nil {
-		log.Errorf(ctx, "%v", err)
-		return subcommands.ExitFailure
+		return err
 	}
 	defer removeNetwork()
 
@@ -71,16 +65,14 @@ func (b *RunCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{})
 		dataDirs:        dataDirs,
 	})
 	if err != nil {
-		log.Errorf(ctx, "%v", err)
-		return subcommands.ExitFailure
+		return err
 	}
 
 	// Run command.
 	execTarget := targets[len(targets)-1]
 	bio, err := newBiome(ctx, dockerClient, dataDirs, pkg.Path, execTarget.Name)
 	if err != nil {
-		log.Errorf(ctx, "%v", err)
-		return subcommands.ExitFailure
+		return err
 	}
 	sys := build.Sys{
 		Biome:           bio,
@@ -93,24 +85,17 @@ func (b *RunCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{})
 	}
 	phaseDeps, err := targetToPhaseDeps(execTarget)
 	if err != nil {
-		log.Errorf(ctx, "%v", err)
-		return subcommands.ExitFailure
+		return err
 	}
 	execBiome, err := build.Setup(ctx, sys, phaseDeps)
 	if err != nil {
-		log.Errorf(ctx, "%v", err)
-		return subcommands.ExitFailure
+		return err
 	}
 	// TODO(ch2725): Run the command from the subdirectory the process is in.
-	err = execBiome.Run(ctx, &biome.Invocation{
-		Argv:   f.Args(),
+	return execBiome.Run(ctx, &biome.Invocation{
+		Argv:   args,
 		Stdin:  os.Stdin,
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	})
-	if err != nil {
-		log.Errorf(ctx, "%v", err)
-		return subcommands.ExitFailure
-	}
-	return subcommands.ExitSuccess
 }

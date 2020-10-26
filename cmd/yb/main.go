@@ -2,17 +2,16 @@ package main
 
 import (
 	"context"
-	"flag"
+	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
 
-	"github.com/johnewart/subcommands"
+	"github.com/matishsiao/goInfo"
+	"github.com/spf13/cobra"
 	"github.com/yourbase/commons/envvar"
-	"github.com/yourbase/yb/cli"
 	ybconfig "github.com/yourbase/yb/config"
 	"zombiezen.com/go/log"
 )
@@ -24,35 +23,71 @@ var (
 	commitSHA string
 )
 
+func versionString() string {
+	sb := new(strings.Builder)
+	fmt.Fprintln(sb, version)
+	fmt.Fprintln(sb, "Channel:", channel)
+	if date != "" {
+		fmt.Fprintln(sb, "Date:", date)
+	}
+	if commitSHA != "" {
+		fmt.Fprintln(sb, "Commit:", commitSHA)
+	}
+	return strings.TrimSuffix(sb.String(), "\n")
+}
+
 func main() {
-	log.SetDefault(&log.LevelFilter{
-		Min: configuredLogLevel(),
-		Output: &logger{
-			color:      colorLogs(),
-			showLevels: showLogLevels(),
+	rootCmd := &cobra.Command{
+		Use:           "yb",
+		Short:         "Build tool optimized for local + remote development",
+		SilenceErrors: true,
+		SilenceUsage:  true,
+		Version:       versionString(),
+	}
+	showDebug := rootCmd.PersistentFlags().Bool("debug", false, "show debug logs")
+	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+		initLog(*showDebug)
+		displayOldDirectoryWarning(cmd.Context())
+	}
+
+	rootCmd.AddCommand(
+		newBuildCmd(),
+		newCheckConfigCmd(),
+		newConfigCmd(),
+		newExecCmd(),
+		newLoginCmd(),
+		newRemoteCmd(),
+		newRunCmd(),
+		newTokenCmd(),
+	)
+	rootCmd.AddCommand(&cobra.Command{
+		Use:           "platform",
+		Short:         "Show platform information",
+		SilenceErrors: true,
+		SilenceUsage:  true,
+		Args:          cobra.NoArgs,
+		Run: func(cmd *cobra.Command, args []string) {
+			gi := goInfo.GetInfo()
+			gi.VarDump()
+		},
+	})
+	rootCmd.AddCommand(&cobra.Command{
+		Use:           "version",
+		Short:         "Show version info",
+		SilenceErrors: true,
+		SilenceUsage:  true,
+		Args:          cobra.NoArgs,
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println("yb version", rootCmd.Version)
 		},
 	})
 
-	cmdr := subcommands.NewCommander(flag.CommandLine, path.Base(os.Args[0]))
-	cmdr.Register(cmdr.HelpCommand(), "")
-	cmdr.Register(cmdr.FlagsCommand(), "")
-	cmdr.Register(cmdr.CommandsCommand(), "")
-	cmdr.Register(&cli.BuildCmd{}, "")
-	cmdr.Register(&cli.CheckConfigCmd{}, "")
-	cmdr.Register(&cli.ConfigCmd{}, "")
-	cmdr.Register(&cli.ExecCmd{}, "")
-	cmdr.Register(&cli.LoginCmd{}, "")
-	cmdr.Register(&cli.PlatformCmd{}, "")
-	cmdr.Register(&cli.RemoteCmd{}, "")
-	cmdr.Register(&cli.RunCmd{}, "")
-	cmdr.Register(&cli.TokenCmd{}, "")
-	cmdr.Register(&cli.VersionCmd{Version: version, Channel: channel, Date: date, CommitSHA: commitSHA}, "")
-
-	flag.Parse()
-
 	ctx := context.Background()
-	displayOldDirectoryWarning(ctx)
-	os.Exit(int(cmdr.Execute(ctx)))
+	if err := rootCmd.ExecuteContext(ctx); err != nil {
+		initLog(false)
+		log.Errorf(ctx, "%v", err)
+		os.Exit(1)
+	}
 }
 
 func displayOldDirectoryWarning(ctx context.Context) {
@@ -72,6 +107,20 @@ type logger struct {
 
 	mu  sync.Mutex
 	buf []byte
+}
+
+var logInitOnce sync.Once
+
+func initLog(showDebug bool) {
+	logInitOnce.Do(func() {
+		log.SetDefault(&log.LevelFilter{
+			Min: configuredLogLevel(showDebug),
+			Output: &logger{
+				color:      colorLogs(),
+				showLevels: showLogLevels(),
+			},
+		})
+	})
 }
 
 func (l *logger) Log(ctx context.Context, entry log.Entry) {
@@ -117,7 +166,10 @@ func (l *logger) LogEnabled(entry log.Entry) bool {
 	return true
 }
 
-func configuredLogLevel() log.Level {
+func configuredLogLevel(showDebug bool) log.Level {
+	if showDebug {
+		return log.Debug
+	}
 	l, _ := ybconfig.Get("defaults", "log-level")
 	switch strings.ToLower(l) {
 	case "debug":
