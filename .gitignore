@@ -1,7 +1,8 @@
 **/*.tar
 **/*.swp
 **/*.vim
-yb
+/yb
+/cmd/yb/yb
 .DS_Store
 /yb_*_*_*.zip
 /yb-*-*-*.tgz

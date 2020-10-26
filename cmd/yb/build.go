@@ -1,8 +1,7 @@
-package cli
+package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -12,8 +11,8 @@ import (
 
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/google/shlex"
-	"github.com/johnewart/subcommands"
 	"github.com/matishsiao/goInfo"
+	"github.com/spf13/cobra"
 	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/internal/build"
 	"github.com/yourbase/yb/internal/ybdata"
@@ -31,56 +30,58 @@ import (
 
 const TIME_FORMAT = "15:04:05 MST"
 
-type BuildCmd struct {
+type buildCmd struct {
 	execPrefix       string
 	noContainer      bool
 	dependenciesOnly bool
 }
 
-func (*BuildCmd) Name() string     { return "build" }
-func (*BuildCmd) Synopsis() string { return "Build the workspace" }
-func (*BuildCmd) Usage() string {
-	return `Usage: build [OPTIONS] [TARGET]
-Build the project in the current directory. Defaults to the "default" target.
-`
-}
-
-func (b *BuildCmd) SetFlags(f *flag.FlagSet) {
-	f.BoolVar(&b.noContainer, "no-container", false, "Avoid using Docker if possible")
-	f.BoolVar(&b.dependenciesOnly, "deps-only", false, "Install only dependencies, don't do anything else")
-	f.StringVar(&b.execPrefix, "exec-prefix", "", "Add a prefix to all executed commands (useful for timing or wrapping things)")
-}
-
-func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	if f.NArg() > 1 {
-		log.Errorf(ctx, "usage: yb build takes at most one target")
-		return subcommands.ExitUsageError
+func newBuildCmd() *cobra.Command {
+	b := new(buildCmd)
+	c := &cobra.Command{
+		Use:   "build [options] [TARGET]",
+		Short: "Build a target",
+		Long: `Builds a target in the current package. If no argument is given, ` +
+			`uses the target named "default", if there is one.`,
+		Args:                  cobra.MaximumNArgs(1),
+		DisableFlagsInUseLine: true,
+		SilenceErrors:         true,
+		SilenceUsage:          true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			target := "default"
+			if len(args) > 0 {
+				target = args[0]
+			}
+			return b.run(cmd.Context(), target)
+		},
 	}
+	c.Flags().BoolVar(&b.noContainer, "no-container", false, "Avoid using Docker if possible")
+	c.Flags().BoolVar(&b.dependenciesOnly, "deps-only", false, "Install only dependencies, don't do anything else")
+	c.Flags().StringVar(&b.execPrefix, "exec-prefix", "", "Add a prefix to all executed commands (useful for timing or wrapping things)")
+	return c
+}
 
+func (b *buildCmd) run(ctx context.Context, buildTargetName string) error {
 	// Set up trace sink.
 	buildTraces := new(traceSink)
 	tp, err := sdktrace.NewProvider(sdktrace.WithSyncer(buildTraces))
 	if err != nil {
-		log.Errorf(ctx, "%v", err)
-		return subcommands.ExitFailure
+		return err
 	}
 	global.SetTraceProvider(tp)
 
 	// Obtain global dependencies.
 	dataDirs, err := ybdata.DirsFromEnv()
 	if err != nil {
-		log.Errorf(ctx, "%v", err)
-		return subcommands.ExitFailure
+		return err
 	}
 	execPrefix, err := shlex.Split(b.execPrefix)
 	if err != nil {
-		log.Errorf(ctx, "Parse --exec-prefix: %v", err)
-		return subcommands.ExitFailure
+		return fmt.Errorf("parse --exec-prefix: %w", err)
 	}
 	dockerClient, err := connectDockerClient(!b.noContainer)
 	if err != nil {
-		log.Errorf(ctx, "%v", err)
-		return subcommands.ExitFailure
+		return err
 	}
 
 	startTime := time.Now()
@@ -100,20 +101,13 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 
 	targetPackage, err := GetTargetPackage()
 	if err != nil {
-		log.Errorf(ctx, "%v", err)
-		return subcommands.ExitFailure
+		return err
 	}
 
 	// Determine targets to build.
-	buildTargetName := "default"
-	if f.NArg() > 0 {
-		buildTargetName = f.Arg(0)
-	}
 	buildTargets, err := targetPackage.Manifest.BuildOrder(buildTargetName)
 	if err != nil {
-		log.Errorf(ctx, "%v", err)
-		log.Infof(ctx, "Valid build targets: %s", strings.Join(targetPackage.Manifest.BuildTargetList(), ", "))
-		return subcommands.ExitFailure
+		return fmt.Errorf("%w\nValid build targets: %s", err, strings.Join(targetPackage.Manifest.BuildTargetList(), ", "))
 	}
 
 	// Do the build!
@@ -142,12 +136,11 @@ func (b *BuildCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{
 
 	if buildError != nil {
 		subSection("BUILD FAILED")
-		log.Errorf(ctx, "Build terminated with the following error: %v", buildError)
-		return subcommands.ExitFailure
+		return err
 	}
 
 	subSection("BUILD SUCCEEDED")
-	return subcommands.ExitSuccess
+	return nil
 }
 
 type doOptions struct {
