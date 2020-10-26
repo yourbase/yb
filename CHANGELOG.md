@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 -  yb will display a message on startup if the obsolete `$HOME/.yourbase`
    directory exists, encouraging its deletion to save disk space.
+-  A new `--debug` flag shows debug logs for any command.
 
 ### Changed
 
