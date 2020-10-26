@@ -43,7 +43,7 @@ jobs:
         GO111MODULE: on
     - name: Download Linux buildpack dependencies
       run: sudo apt-get install libcurl4-openssl-dev
-      if: startsWith(matrix.os, "ubuntu-")
+      if: startsWith(matrix.os, 'ubuntu-')
     - name: Run tests
       run: go test -mod=readonly -race -timeout=30m ./...
       env:
