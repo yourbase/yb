@@ -37,12 +37,15 @@ jobs:
         go-version: "^1.15"
     - name: Check out code
       uses: actions/checkout@v2
-    - name: Download dependencies
+    - name: Download Go dependencies
       run: go mod download
       env:
         GO111MODULE: on
+    - name: Download Linux buildpack dependencies
+      run: sudo apt-get install libcurl4-openssl-dev
+      if: startsWith(matrix.os, "ubuntu-")
     - name: Run tests
-      run: go test -mod=readonly -race ./...
+      run: go test -mod=readonly -race -timeout=30m ./...
       env:
         GO111MODULE: on
     - name: Build binary
