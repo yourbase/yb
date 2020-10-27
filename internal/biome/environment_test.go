@@ -24,7 +24,7 @@ import (
 )
 
 var _ interface {
-	Biome
+	BiomeCloser
 	fileWriter
 	dirMaker
 	symlinkEvaler

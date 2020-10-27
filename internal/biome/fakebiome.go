@@ -106,3 +106,8 @@ func (f *Fake) PathFromSlash(path string) string {
 	}
 	return strings.ReplaceAll(path, "/", string(f.sep()))
 }
+
+// Close does nothing and returns nil.
+func (f *Fake) Close() error {
+	return nil
+}

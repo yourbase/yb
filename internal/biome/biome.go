@@ -70,6 +70,9 @@ type Biome interface {
 	// PathFromSlash returns the result of replacing each slash ('/')
 	// character in path with a separator character.
 	PathFromSlash(path string) string
+
+	// Close cleans up any resources associated with the biome.
+	Close() error
 }
 
 // A Descriptor describes various facets of a biome.
@@ -268,6 +271,11 @@ func (l Local) EvalSymlinks(ctx context.Context, path string) (string, error) {
 	return filepath.EvalSymlinks(AbsPath(l, path))
 }
 
+// Close does nothing and returns nil.
+func (l Local) Close() error {
+	return nil
+}
+
 // ExecPrefix intercepts calls to Run and prepends elements to the Argv slice.
 // This can be used to invoke tools with a wrapping command like `time` or `sudo`.
 type ExecPrefix struct {
@@ -302,4 +310,12 @@ func (ep ExecPrefix) MkdirAll(ctx context.Context, path string) error {
 // EvalSymlinks calls ep.Context.EvalSymlinks or returns ErrUnsupported if not present.
 func (ep ExecPrefix) EvalSymlinks(ctx context.Context, path string) (string, error) {
 	return forwardEvalSymlinks(ctx, ep.Biome, path)
+}
+
+// Close calls ep.Biome.Close if such a method exists or returns nil if not present.
+func (ep ExecPrefix) Close() error {
+	if c, ok := ep.Biome.(io.Closer); ok {
+		return c.Close()
+	}
+	return nil
 }

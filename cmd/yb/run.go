@@ -9,6 +9,7 @@ import (
 	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/internal/build"
 	"github.com/yourbase/yb/internal/ybdata"
+	"zombiezen.com/go/log"
 )
 
 type runCmd struct {
@@ -91,6 +92,11 @@ func (b *runCmd) run(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if err := execBiome.Close(); err != nil {
+			log.Warnf(ctx, "Clean up environment: %v", err)
+		}
+	}()
 	// TODO(ch2725): Run the command from the subdirectory the process is in.
 	return execBiome.Run(ctx, &biome.Invocation{
 		Argv:   args,

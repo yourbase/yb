@@ -187,3 +187,11 @@ func (eb EnvBiome) MkdirAll(ctx context.Context, path string) error {
 func (eb EnvBiome) EvalSymlinks(ctx context.Context, path string) (string, error) {
 	return forwardEvalSymlinks(ctx, eb.Biome, path)
 }
+
+// Close calls eb.Biome.Close if such a method exists or returns nil if not present.
+func (eb EnvBiome) Close() error {
+	if c, ok := eb.Biome.(io.Closer); ok {
+		return c.Close()
+	}
+	return nil
+}

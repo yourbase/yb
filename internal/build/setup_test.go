@@ -51,6 +51,11 @@ func TestSetup(t *testing.T) {
 	if err != nil {
 		t.Fatal("Setup:", err)
 	}
+	defer func() {
+		if err := gotBiome.Close(); err != nil {
+			t.Error("Close:", err)
+		}
+	}()
 	err = gotBiome.Run(ctx, &biome.Invocation{
 		Argv: []string{"env"},
 	})

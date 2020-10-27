@@ -19,7 +19,6 @@ package build
 import (
 	"context"
 	"fmt"
-	"io"
 	"math/rand"
 	"net"
 	"os"
@@ -40,12 +39,6 @@ import (
 	"zombiezen.com/go/log"
 )
 
-// BiomeCloser is a biome that has resources that need to be cleaned up.
-type BiomeCloser interface {
-	biome.Biome
-	io.Closer
-}
-
 // PhaseDeps defines the dependencies for a build target phase.
 //
 // TODO(ch2285): This should be moved out of this package and into a separate
@@ -64,7 +57,7 @@ type PhaseDeps struct {
 // Setup arranges for the phase's dependencies to be available, returning a new
 // biome that has the dependencies configured. It is the caller's responsibility
 // to call Close on the returned biome.
-func Setup(ctx context.Context, sys Sys, phase *PhaseDeps) (_ BiomeCloser, err error) {
+func Setup(ctx context.Context, sys Sys, phase *PhaseDeps) (_ biome.BiomeCloser, err error) {
 	ctx, span := ybtrace.Start(ctx, "Setup "+phase.TargetName, trace.WithAttributes(
 		label.String("target", phase.TargetName),
 	))
@@ -116,13 +109,13 @@ func Setup(ctx context.Context, sys Sys, phase *PhaseDeps) (_ BiomeCloser, err e
 		}
 		newEnv.Vars[k] = v
 	}
-	return biomeCloser{
-		Biome: biome.EnvBiome{
-			Biome: sys.Biome,
+	return biome.WithClose(
+		biome.EnvBiome{
+			Biome: biome.NopCloser(sys.Biome),
 			Env:   newEnv,
 		},
-		closeFunc: closeFunc,
-	}, nil
+		closeFunc,
+	), nil
 }
 
 type container struct {
@@ -314,16 +307,4 @@ func (exp containersExpansion) IP(label string) (string, error) {
 		return "", fmt.Errorf("find IP for %s: unknown container", label)
 	}
 	return ip, nil
-}
-
-type biomeCloser struct {
-	biome.Biome
-	closeFunc func() error
-}
-
-func (bc biomeCloser) Close() error {
-	if bc.closeFunc == nil {
-		return nil
-	}
-	return bc.closeFunc()
 }
