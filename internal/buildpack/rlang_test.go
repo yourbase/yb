@@ -31,15 +31,15 @@ func TestR(t *testing.T) {
 	rBiome, _ := testInstall(ctx, t, "r:"+version)
 	versionOutput := new(strings.Builder)
 	err := rBiome.Run(ctx, &biome.Invocation{
-		Argv:   []string{"r", "--version"},
+		Argv:   []string{"R", "--version"},
 		Stdout: versionOutput,
 		Stderr: versionOutput,
 	})
-	t.Logf("r --version output:\n%s", versionOutput)
+	t.Logf("R --version output:\n%s", versionOutput)
 	if err != nil {
-		t.Errorf("r --version: %v", err)
+		t.Errorf("R --version: %v", err)
 	}
 	if got := versionOutput.String(); !strings.Contains(got, version) {
-		t.Errorf("r --version output does not include %q", version)
+		t.Errorf("R --version output does not include %q", version)
 	}
 }
