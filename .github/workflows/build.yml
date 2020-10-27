@@ -44,6 +44,9 @@ jobs:
     - name: Download Linux buildpack dependencies
       run: sudo apt-get install libcurl4-openssl-dev
       if: startsWith(matrix.os, 'ubuntu-')
+    - name: Download macOS buildpack dependencies
+      run: brew install gfortran
+      if: startsWith(matrix.os, 'macOS-')
     - name: Run tests
       run: go test -mod=readonly -race -timeout=30m ./...
       env:
