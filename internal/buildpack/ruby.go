@@ -187,7 +187,10 @@ func (bt rubyBuildTool) install(ctx context.Context) error {
 		plumbing.PrependToPath(filepath.Join(rbenvDir, "bin"))
 
 		installCmd := fmt.Sprintf("rbenv install %s", bt.version)
-		plumbing.ExecToStdout(installCmd, rbenvDir)
+		if err := plumbing.ExecToStdout(installCmd, rbenvDir); err != nil {
+			log.Errorf(ctx, "Unable to install ruby!")
+			return fmt.Errorf("Couldn't install ruby: %v", err)
+		}
 	}
 
 	return nil
