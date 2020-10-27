@@ -13,6 +13,9 @@ The format is based on [Keep a Changelog][], and this project adheres to
 -  yb will display a message on startup if the obsolete `$HOME/.yourbase`
    directory exists, encouraging its deletion to save disk space.
 -  A new `--debug` flag shows debug logs for any command.
+-  If the `YB_GH_TOKEN` environment variable is set, the environment variable
+   will be available in the build commands' environment and in a temporary
+   [.netrc file](https://ec.haxx.se/usingcurl/usingcurl-netrc).
 
 ### Changed
 
