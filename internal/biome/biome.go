@@ -70,9 +70,6 @@ type Biome interface {
 	// PathFromSlash returns the result of replacing each slash ('/')
 	// character in path with a separator character.
 	PathFromSlash(path string) string
-
-	// Close cleans up any resources associated with the biome.
-	Close() error
 }
 
 // A Descriptor describes various facets of a biome.

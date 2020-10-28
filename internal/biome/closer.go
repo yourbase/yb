@@ -63,7 +63,7 @@ func (n nopCloser) EvalSymlinks(ctx context.Context, path string) (string, error
 // function at the beginning of Close, before the underlying biome's Close
 // method is called. If the function returns an error, it will be returned from
 // Close, but the underlying biome's Close method will still be called.
-func WithClose(bio BiomeCloser, closeFunc func() error) Biome {
+func WithClose(bio BiomeCloser, closeFunc func() error) BiomeCloser {
 	if bio == nil {
 		panic("biome.WithClose called with nil biome")
 	}
