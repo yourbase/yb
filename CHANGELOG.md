@@ -18,6 +18,12 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 -  `yb run` now runs commands in the context of a build target, not an
    exec environment.
+-  `yb remotebuild` will now always use the locally installed Git to determine
+   the changed files.
+
+### Removed
+
+-  `yb remotebuild` no longer has the `--print-status` or `--go-git-status` flags.
 
 ### Fixed
 

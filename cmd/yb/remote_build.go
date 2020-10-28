@@ -12,7 +12,7 @@ import (
 	"net/url"
 	"os"
 	"path"
-	"runtime"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -30,11 +30,6 @@ import (
 	"zombiezen.com/go/log"
 )
 
-var (
-	gitExe       string = "git" // UNIX
-	gitStatusCmd string = "%s status --porcelain"
-)
-
 type remoteCmd struct {
 	target         string
 	baseCommit     string
@@ -42,8 +37,6 @@ type remoteCmd struct {
 	patchData      []byte
 	patchPath      string
 	repoDir        string
-	printStatus    bool
-	goGitStatus    bool
 	noAcceleration bool
 	disableCache   bool
 	disableSkipper bool
@@ -81,8 +74,6 @@ func newRemoteCmd() *cobra.Command {
 	c.Flags().BoolVar(&p.disableSkipper, "disable-skipper", false, "Disable skipping steps acceleration")
 	c.Flags().BoolVarP(&p.dryRun, "dry-run", "n", false, "Pretend to remote build")
 	c.Flags().BoolVar(&p.committed, "committed", false, "Only remote build committed changes")
-	c.Flags().BoolVar(&p.printStatus, "print-status", false, "Print result of `git status` used to grab untracked/unstaged changes")
-	c.Flags().BoolVar(&p.goGitStatus, "go-git-status", false, "Use internal go-git.v4 status instead of calling `git status`, can be slow")
 	c.Flags().BoolVar(&p.backupWorktree, "backup-worktree", false, "Saves uncommitted work into a tarball")
 	return c
 }
@@ -118,21 +109,14 @@ func (p *remoteCmd) run(ctx context.Context) error {
 		return fmt.Errorf("opening repository %s: %w", p.repoDir, err)
 	}
 
-	if !p.goGitStatus && !p.committed {
-		// Need to check if `git` binary exists and works
-		if runtime.GOOS == "windows" {
-			gitExe = "git.exe"
-		}
-		cmdString := fmt.Sprintf("%s --version", gitExe)
-		if err := plumbing.ExecSilently(cmdString, p.repoDir); err != nil {
-			if strings.Contains(err.Error(), "executable file not found in $PATH") {
-				log.Warnf(ctx, "The flag -go-git-status wasn't specified and '%s' wasn't found in PATH", gitExe)
-			} else {
-				log.Warnf(ctx, "The flag -go-git-status wasn't specified but calling '%s' gives: %v", cmdString, err)
-			}
-			log.Warnf(ctx, "Switching to using internal go-git status to detect local changes, it can be slower")
-			p.goGitStatus = true
-		}
+	g, err := ggit.New(ggit.Options{
+		Dir: targetPackage.Path,
+		LogHook: func(ctx context.Context, args []string) {
+			log.Debugf(ctx, "running git %s", strings.Join(args, " "))
+		},
+	})
+	if err != nil {
+		return err
 	}
 
 	// Show timing feedback and start tracking spent time
@@ -233,15 +217,8 @@ func (p *remoteCmd) run(ctx context.Context) error {
 			return err
 		}
 
-		// TODO When go-git worktree.Status() get faster use this instead:
-		// There's also the problem detecting CRLF in Windows text/source files
-		//if err = worktree.AddGlob("."); err != nil {
-		skippedBinaries, err := p.traverseChanges(ctx, worktree, saver)
-		if err != nil {
+		if err := p.traverseChanges(ctx, g, saver); err != nil {
 			return err
-		}
-		if len(skippedBinaries) > 0 {
-			log.Infof(ctx, "Skipped binaries:\n  %s", strings.Join(skippedBinaries, "\n  "))
 		}
 
 		resetDone := false
@@ -310,7 +287,7 @@ func (p *remoteCmd) run(ctx context.Context) error {
 		}
 	}
 
-	if !p.dryRun {
+	if p.dryRun {
 		log.Infof(ctx, "Dry run ended, build not submitted")
 		return nil
 	}
@@ -339,164 +316,85 @@ func commitTempChanges(w *git.Worktree, c *object.Commit) (latest gitplumbing.Ha
 	return
 }
 
-func (p *remoteCmd) traverseChanges(ctx context.Context, worktree *git.Worktree, saver *types.WorktreeSave) (skipped []string, err error) {
-	if p.goGitStatus {
-		log.Debugf(ctx, "Decided to use Go-Git")
-		skipped, err = p.libTraverseChanges(ctx, worktree, saver)
-	} else {
-		log.Debugf(ctx, "Decided to use `%s`", gitStatusCmd)
-		skipped, err = p.commandTraverseChanges(ctx, worktree, saver)
-	}
-	return
-}
-
-func shouldSkip(ctx context.Context, file string, worktree *git.Worktree) bool {
-	filePath := path.Join(worktree.Filesystem.Root(), file)
-	fi, err := os.Stat(filePath)
+func (p *remoteCmd) traverseChanges(ctx context.Context, g *ggit.Git, saver *types.WorktreeSave) error {
+	workTree, err := g.WorkTree(ctx)
 	if err != nil {
-		return true
+		return fmt.Errorf("traverse changes: %w", err)
+	}
+	status, err := g.Status(ctx, ggit.StatusOptions{
+		DisableRenames: true,
+	})
+	if err != nil {
+		return fmt.Errorf("traverse changes: %w", err)
 	}
 
-	if fi.IsDir() {
-		log.Debugf(ctx, "Added a dir, checking it's contents: %s", file)
-		f, err := os.Open(filePath)
+	var addList []ggit.Pathspec
+	for _, ent := range status {
+		if ent.Code[1] == ' ' {
+			// If file is already staged, then skip.
+			continue
+		}
+		var err error
+		addList, err = findFilesToAdd(ctx, g, workTree, addList, ent.Name)
 		if err != nil {
-			return true
+			return fmt.Errorf("traverse changes: %w", err)
 		}
-		dir, err := f.Readdir(0)
-		log.Debugf(ctx, "Ls dir %s", filePath)
-		for _, f := range dir {
-			child := path.Join(file, f.Name())
-			log.Debugf(ctx, "Shoud skip child '%s'?", child)
-			if shouldSkip(ctx, child, worktree) {
-				continue
-			} else {
-				worktree.Add(child)
-			}
-		}
-		return true
-	} else {
-		log.Debugf(ctx, "Should skip '%s'?", filePath)
-		if is, _ := plumbing.IsBinary(filePath); is {
-			return true
-		}
-	}
-	return false
-}
 
-func (p *remoteCmd) commandTraverseChanges(ctx context.Context, worktree *git.Worktree, saver *types.WorktreeSave) (skipped []string, err error) {
-	// TODO When go-git worktree.Status() works faster, we'll disable this
-	// Get worktree path
-	repoDir := worktree.Filesystem.Root()
-	cmdString := fmt.Sprintf(gitStatusCmd, gitExe)
-	buf := bytes.NewBuffer(nil)
-	log.Debugf(ctx, "Executing '%v'...", cmdString)
-	if err = plumbing.ExecSilentlyToWriter(cmdString, repoDir, buf); err != nil {
-		return skipped, fmt.Errorf("When running git status: %v", err)
-	}
-
-	if buf.Len() > 0 {
-		if p.printStatus {
-			fmt.Println()
-			fmt.Print(buf.String())
-		}
-		for {
-			if line, err := buf.ReadString('\n'); len(line) > 4 && err == nil { // Line should have at least 4 chars
-				line = strings.Trim(line, "\n")
-				log.Debugf(ctx, "Processing git status line:\n%s", line)
-				mode := line[:2]
-				file := line[3:]
-				modUnstagedMap := map[byte]bool{'?': true, 'M': true, 'D': true, 'R': true} // 'R' isn't really found at mode[1], but...
-
-				// Unstaged modifications of any kind
-				if modUnstagedMap[mode[1]] {
-					if shouldSkip(ctx, file, worktree) {
-						skipped = append(skipped, file)
-						continue
-					}
-					log.Debugf(ctx, "Adding %s to the index", file)
-					// Add each detected change
-					if _, err = worktree.Add(file); err != nil {
-						return skipped, fmt.Errorf("Unable to add %s: %v", file, err)
-					}
-
-					if mode[1] != 'D' {
-						// No need to add deletion to the saver, right?
-						log.Debugf(ctx, "Saving %s to the tarball", file)
-						if err = saver.Add(file); err != nil {
-							return skipped, fmt.Errorf("Need to save state, but couldn't: %v", err)
-						}
-					}
-
-				}
-				// discard len(line) bytes
-				//discard := make([]byte, len(line))
-				//_, _ = buf.Read(discard)
-
-			} else if err == io.EOF {
-				break
-			} else if err != nil {
-				return skipped, fmt.Errorf("When running git status: %v", err)
+		if !ent.Code.IsMissing() { // No need to add deletion to the saver, right?
+			log.Debugf(ctx, "Saving %s to the tarball", ent.Name)
+			if err = saver.Add(filepath.FromSlash(string(ent.Name))); err != nil {
+				return fmt.Errorf("traverse changes: %w", err)
 			}
 		}
 	}
-	return
-}
-func (p *remoteCmd) libTraverseChanges(ctx context.Context, worktree *git.Worktree, saver *types.WorktreeSave) (skipped []string, err error) {
-	// This could get real slow, check https://github.com/src-d/go-git/issues/844
-	status, err := worktree.Status()
+
+	err = g.Add(ctx, addList, ggit.AddOptions{
+		IncludeIgnored: true,
+	})
 	if err != nil {
-		log.Errorf(ctx, "Couldn't get current worktree status: %v", err)
-		return
+		return fmt.Errorf("traverse changes: %w", err)
+	}
+	return nil
+}
+
+// findFilesToAdd finds files to stage in Git, recursing into directories and
+// ignoring any non-text files.
+func findFilesToAdd(ctx context.Context, g *ggit.Git, workTree string, dst []ggit.Pathspec, file ggit.TopPath) ([]ggit.Pathspec, error) {
+	realPath := filepath.Join(workTree, filepath.FromSlash(string(file)))
+	fi, err := os.Stat(realPath)
+	if os.IsNotExist(err) {
+		return dst, nil
+	}
+	if err != nil {
+		return dst, fmt.Errorf("find files to git add: %w", err)
 	}
 
-	if p.printStatus {
-		fmt.Println()
-		fmt.Print(status.String())
+	if !fi.IsDir() {
+		binary, err := plumbing.IsBinary(realPath)
+		if err != nil {
+			return dst, fmt.Errorf("find files to git add: %w", err)
+		}
+		log.Debugf(ctx, "%s is binary = %t", file, binary)
+		if binary {
+			log.Infof(ctx, "Skipping binary file %s", realPath)
+			return dst, nil
+		}
+		return append(dst, file.Pathspec()), nil
 	}
-	for n, s := range status {
-		log.Debugf(ctx, "Checking status %v", n)
-		// Deleted (staged removal or not)
-		if s.Worktree == git.Deleted {
 
-			if _, err = worktree.Remove(n); err != nil {
-				err = fmt.Errorf("Unable to remove %s: %v", n, err)
-				return
-			}
-		} else if s.Staging == git.Deleted {
-			// Ignore it
-		} else if s.Worktree == git.Renamed || s.Staging == git.Renamed {
-
-			log.Debugf(ctx, "Saving %s to the tarball", n)
-			if err = saver.Add(n); err != nil {
-				err = fmt.Errorf("Need to save state, but couldn't: %v", err)
-				return
-			}
-
-			if _, err = worktree.Move(s.Extra, n); err != nil {
-				err = fmt.Errorf("Unable to move %s -> %s: %v", s.Extra, n, err)
-				return
-			}
-		} else {
-			if shouldSkip(ctx, n, worktree) {
-				skipped = append(skipped, n)
-				continue
-			}
-			log.Debugf(ctx, "Saving %s to the tarball", n)
-			if err = saver.Add(n); err != nil {
-				err = fmt.Errorf("Need to save state, but couldn't: %v", err)
-				return
-			}
-
-			// Add each detected change
-			if _, err = worktree.Add(n); err != nil {
-				err = fmt.Errorf("Unable to add %s: %v", n, err)
-				return
-			}
+	log.Debugf(ctx, "Added a dir, checking its contents: %s", file)
+	dir, err := ioutil.ReadDir(realPath)
+	if err != nil {
+		return dst, fmt.Errorf("find files to git add: %w", err)
+	}
+	for _, f := range dir {
+		var err error
+		dst, err = findFilesToAdd(ctx, g, workTree, dst, ggit.TopPath(path.Join(string(file), f.Name())))
+		if err != nil {
+			return dst, err
 		}
 	}
-	return
-
+	return dst, nil
 }
 
 func postToApi(path string, formData url.Values) (*http.Response, error) {
