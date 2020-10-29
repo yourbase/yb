@@ -1,0 +1,4 @@
+# For biome replay files:
+# 1. don't show diffs in GitHub, and
+# 2. don't try to merge files (they should be re-recorded)
+/internal/buildpack/testdata/**/*.json linguist-generated=true -merge

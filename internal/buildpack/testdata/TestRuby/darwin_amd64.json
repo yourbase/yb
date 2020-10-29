@@ -1,0 +1,455 @@
+{
+	"Descriptor": {
+		"OS": "darwin",
+		"Arch": "amd64"
+	},
+	"Dirs": {
+		"Package": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/001",
+		"Home": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002",
+		"Tools": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools"
+	},
+	"JoinedPaths": [
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools",
+				"rbenv"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv",
+				"versions",
+				"2.6.3"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv/versions/2.6.3"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002",
+				"rubygems"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/rubygems"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/rubygems",
+				"bin"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/rubygems/bin"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv/versions/2.6.3",
+				"bin"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv/versions/2.6.3/bin"
+		},
+		{
+			"Elems": [
+				"rbenv-master",
+				".github"
+			],
+			"Result": "rbenv-master/.github"
+		},
+		{
+			"Elems": [
+				"rbenv-master",
+				".gitignore"
+			],
+			"Result": "rbenv-master/.gitignore"
+		},
+		{
+			"Elems": [
+				"rbenv-master",
+				".vimrc"
+			],
+			"Result": "rbenv-master/.vimrc"
+		},
+		{
+			"Elems": [
+				"rbenv-master",
+				"CODE_OF_CONDUCT.md"
+			],
+			"Result": "rbenv-master/CODE_OF_CONDUCT.md"
+		},
+		{
+			"Elems": [
+				"rbenv-master",
+				"LICENSE"
+			],
+			"Result": "rbenv-master/LICENSE"
+		},
+		{
+			"Elems": [
+				"rbenv-master",
+				"README.md"
+			],
+			"Result": "rbenv-master/README.md"
+		},
+		{
+			"Elems": [
+				"rbenv-master",
+				"bin"
+			],
+			"Result": "rbenv-master/bin"
+		},
+		{
+			"Elems": [
+				"rbenv-master",
+				"completions"
+			],
+			"Result": "rbenv-master/completions"
+		},
+		{
+			"Elems": [
+				"rbenv-master",
+				"libexec"
+			],
+			"Result": "rbenv-master/libexec"
+		},
+		{
+			"Elems": [
+				"rbenv-master",
+				"rbenv.d"
+			],
+			"Result": "rbenv-master/rbenv.d"
+		},
+		{
+			"Elems": [
+				"rbenv-master",
+				"src"
+			],
+			"Result": "rbenv-master/src"
+		},
+		{
+			"Elems": [
+				"rbenv-master",
+				"test"
+			],
+			"Result": "rbenv-master/test"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv",
+				"plugins",
+				"ruby-build"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv/plugins/ruby-build"
+		},
+		{
+			"Elems": [
+				"ruby-build-master",
+				".github"
+			],
+			"Result": "ruby-build-master/.github"
+		},
+		{
+			"Elems": [
+				"ruby-build-master",
+				".gitignore"
+			],
+			"Result": "ruby-build-master/.gitignore"
+		},
+		{
+			"Elems": [
+				"ruby-build-master",
+				".travis.yml"
+			],
+			"Result": "ruby-build-master/.travis.yml"
+		},
+		{
+			"Elems": [
+				"ruby-build-master",
+				"CODE_OF_CONDUCT.md"
+			],
+			"Result": "ruby-build-master/CODE_OF_CONDUCT.md"
+		},
+		{
+			"Elems": [
+				"ruby-build-master",
+				"LICENSE"
+			],
+			"Result": "ruby-build-master/LICENSE"
+		},
+		{
+			"Elems": [
+				"ruby-build-master",
+				"README.md"
+			],
+			"Result": "ruby-build-master/README.md"
+		},
+		{
+			"Elems": [
+				"ruby-build-master",
+				"bin"
+			],
+			"Result": "ruby-build-master/bin"
+		},
+		{
+			"Elems": [
+				"ruby-build-master",
+				"install.sh"
+			],
+			"Result": "ruby-build-master/install.sh"
+		},
+		{
+			"Elems": [
+				"ruby-build-master",
+				"script"
+			],
+			"Result": "ruby-build-master/script"
+		},
+		{
+			"Elems": [
+				"ruby-build-master",
+				"share"
+			],
+			"Result": "ruby-build-master/share"
+		},
+		{
+			"Elems": [
+				"ruby-build-master",
+				"test"
+			],
+			"Result": "ruby-build-master/test"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv",
+				"bin"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv/bin"
+		}
+	],
+	"CleanedPaths": {
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv",
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv.zip": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv.zip",
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv/plugins/ruby-build": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv/plugins/ruby-build",
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv/plugins/ruby-build.zip": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv/plugins/ruby-build.zip"
+	},
+	"AbsPaths": {
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv": true,
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv.zip": true,
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv/plugins/ruby-build": true,
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv/plugins/ruby-build.zip": true
+	},
+	"Invocations": [
+		{
+			"Argv": [
+				"python",
+				"-c",
+				"import os, sys; os.stat(sys.argv[1]); sys.stdout.write(os.path.realpath(sys.argv[1]))",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv/versions/2.6.3"
+			],
+			"Output": {
+				"Stdout": "",
+				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0UnVieTI4NDQ1NTk0MC8wMDIvLmNhY2hlL3liL3Rvb2xzL3JiZW52L3ZlcnNpb25zLzIuNi4zJwo="
+			},
+			"Error": "local run: exit status 1"
+		},
+		{
+			"Argv": [
+				"python",
+				"-c",
+				"import os, sys; os.stat(sys.argv[1]); sys.stdout.write(os.path.realpath(sys.argv[1]))",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv"
+			],
+			"Output": {
+				"Stdout": "",
+				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0UnVieTI4NDQ1NTk0MC8wMDIvLmNhY2hlL3liL3Rvb2xzL3JiZW52Jwo="
+			},
+			"Error": "local run: exit status 1"
+		},
+		{
+			"Argv": [
+				"mkdir",
+				"-p",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv"
+			],
+			"Output": {
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"tee",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv.zip"
+			],
+			"StdinSHA256": "33f838ac3999a7078ca5709dee237afa7e3ec7c75dfdb92f2f0f54fe7fa8ecb1",
+			"Output": {
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"unzip",
+				"-q",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv.zip"
+			],
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv",
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"mv",
+				"rbenv-master/.github",
+				"rbenv-master/.gitignore",
+				"rbenv-master/.vimrc",
+				"rbenv-master/CODE_OF_CONDUCT.md",
+				"rbenv-master/LICENSE",
+				"rbenv-master/README.md",
+				"rbenv-master/bin",
+				"rbenv-master/completions",
+				"rbenv-master/libexec",
+				"rbenv-master/rbenv.d",
+				"rbenv-master/src",
+				"rbenv-master/test",
+				"."
+			],
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv",
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"rmdir",
+				"rbenv-master"
+			],
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv",
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"rm",
+				"-f",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv.zip"
+			],
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"python",
+				"-c",
+				"import os, sys; os.stat(sys.argv[1]); sys.stdout.write(os.path.realpath(sys.argv[1]))",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv/plugins/ruby-build"
+			],
+			"Output": {
+				"Stdout": "",
+				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0UnVieTI4NDQ1NTk0MC8wMDIvLmNhY2hlL3liL3Rvb2xzL3JiZW52L3BsdWdpbnMvcnVieS1idWlsZCcK"
+			},
+			"Error": "local run: exit status 1"
+		},
+		{
+			"Argv": [
+				"mkdir",
+				"-p",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv/plugins/ruby-build"
+			],
+			"Output": {
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"tee",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv/plugins/ruby-build.zip"
+			],
+			"StdinSHA256": "164943fbc761f036ee97f41a7861d894306a23a73be81509de548259b612e240",
+			"Output": {
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"unzip",
+				"-q",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv/plugins/ruby-build.zip"
+			],
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv/plugins/ruby-build",
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"mv",
+				"ruby-build-master/.github",
+				"ruby-build-master/.gitignore",
+				"ruby-build-master/.travis.yml",
+				"ruby-build-master/CODE_OF_CONDUCT.md",
+				"ruby-build-master/LICENSE",
+				"ruby-build-master/README.md",
+				"ruby-build-master/bin",
+				"ruby-build-master/install.sh",
+				"ruby-build-master/script",
+				"ruby-build-master/share",
+				"ruby-build-master/test",
+				"."
+			],
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv/plugins/ruby-build",
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"rmdir",
+				"ruby-build-master"
+			],
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv/plugins/ruby-build",
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"rm",
+				"-f",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv/plugins/ruby-build.zip"
+			],
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"rbenv",
+				"install",
+				"2.6.3"
+			],
+			"EnvVars": {
+				"RBENV_ROOT": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv"
+			},
+			"PrependPath": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv/bin"
+			],
+			"Output": {
+				"Combined": "RG93bmxvYWRpbmcgb3BlbnNzbC0xLjEuMWgudGFyLmd6Li4uCi0+IGh0dHBzOi8vZHF3OG5tamNxcGpuNy5jbG91ZGZyb250Lm5ldC81YzljYTg3NzRiZDdiMDNlNTc4NGYyNmFlOWU5ZTZkNzQ5YzlkYTI0Mzg1NDUwNzdlNmIzZDc1NWEwNjU5NWQ5Ckluc3RhbGxpbmcgb3BlbnNzbC0xLjEuMWguLi4KSW5zdGFsbGVkIG9wZW5zc2wtMS4xLjFoIHRvIC92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0UnVieTI4NDQ1NTk0MC8wMDIvLmNhY2hlL3liL3Rvb2xzL3JiZW52L3ZlcnNpb25zLzIuNi4zCgpEb3dubG9hZGluZyBydWJ5LTIuNi4zLnRhci5iejIuLi4KLT4gaHR0cHM6Ly9jYWNoZS5ydWJ5LWxhbmcub3JnL3B1Yi9ydWJ5LzIuNi9ydWJ5LTIuNi4zLnRhci5iejIKSW5zdGFsbGluZyBydWJ5LTIuNi4zLi4uCkluc3RhbGxlZCBydWJ5LTIuNi4zIHRvIC92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0UnVieTI4NDQ1NTk0MC8wMDIvLmNhY2hlL3liL3Rvb2xzL3JiZW52L3ZlcnNpb25zLzIuNi4zCgo="
+			}
+		},
+		{
+			"Argv": [
+				"ruby",
+				"--version"
+			],
+			"EnvVars": {
+				"GEM_HOME": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/rubygems"
+			},
+			"PrependPath": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/rubygems/bin",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestRuby284455940/002/.cache/yb/tools/rbenv/versions/2.6.3/bin"
+			],
+			"Output": {
+				"Combined": "cnVieSAyLjYuM3A2MiAoMjAxOS0wNC0xNiByZXZpc2lvbiA2NzU4MCkgW3g4Nl82NC1kYXJ3aW4xOV0K"
+			}
+		}
+	]
+}

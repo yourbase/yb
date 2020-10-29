@@ -1,0 +1,108 @@
+{
+	"Descriptor": {
+		"OS": "linux",
+		"Arch": "amd64"
+	},
+	"Dirs": {
+		"Package": "/tmp/TestFlutter681904504/001",
+		"Home": "/tmp/TestFlutter681904504/002",
+		"Tools": "/tmp/TestFlutter681904504/002/.cache/yb/tools"
+	},
+	"JoinedPaths": [
+		{
+			"Elems": [
+				"/tmp/TestFlutter681904504/002/.cache/yb/tools",
+				"flutter",
+				"flutter-1.22.2"
+			],
+			"Result": "/tmp/TestFlutter681904504/002/.cache/yb/tools/flutter/flutter-1.22.2"
+		},
+		{
+			"Elems": [
+				"/tmp/TestFlutter681904504/002/.cache/yb/tools/flutter/flutter-1.22.2",
+				"bin"
+			],
+			"Result": "/tmp/TestFlutter681904504/002/.cache/yb/tools/flutter/flutter-1.22.2/bin"
+		}
+	],
+	"CleanedPaths": {
+		"/tmp/TestFlutter681904504/002/.cache/yb/tools/flutter/flutter-1.22.2": "/tmp/TestFlutter681904504/002/.cache/yb/tools/flutter/flutter-1.22.2",
+		"/tmp/TestFlutter681904504/002/.cache/yb/tools/flutter/flutter-1.22.2.tar.xz": "/tmp/TestFlutter681904504/002/.cache/yb/tools/flutter/flutter-1.22.2.tar.xz"
+	},
+	"AbsPaths": {
+		"/tmp/TestFlutter681904504/002/.cache/yb/tools/flutter/flutter-1.22.2": true,
+		"/tmp/TestFlutter681904504/002/.cache/yb/tools/flutter/flutter-1.22.2.tar.xz": true
+	},
+	"Invocations": [
+		{
+			"Argv": [
+				"readlink",
+				"--canonicalize-existing",
+				"--no-newline",
+				"/tmp/TestFlutter681904504/002/.cache/yb/tools/flutter/flutter-1.22.2"
+			],
+			"Output": {
+				"Stdout": "",
+				"Stderr": ""
+			},
+			"Error": "local run: exit status 1"
+		},
+		{
+			"Argv": [
+				"mkdir",
+				"-p",
+				"/tmp/TestFlutter681904504/002/.cache/yb/tools/flutter/flutter-1.22.2"
+			],
+			"Output": {
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"tee",
+				"/tmp/TestFlutter681904504/002/.cache/yb/tools/flutter/flutter-1.22.2.tar.xz"
+			],
+			"StdinSHA256": "21d42ce985a34584e7796171ed3c4eb63fb76596f72476bb7c6ae850c4423761",
+			"Output": {
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"tar",
+				"-x",
+				"-J",
+				"-f",
+				"/tmp/TestFlutter681904504/002/.cache/yb/tools/flutter/flutter-1.22.2.tar.xz",
+				"--strip-components",
+				"1"
+			],
+			"Dir": "/tmp/TestFlutter681904504/002/.cache/yb/tools/flutter/flutter-1.22.2",
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"rm",
+				"-f",
+				"/tmp/TestFlutter681904504/002/.cache/yb/tools/flutter/flutter-1.22.2.tar.xz"
+			],
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"flutter",
+				"--version"
+			],
+			"PrependPath": [
+				"/tmp/TestFlutter681904504/002/.cache/yb/tools/flutter/flutter-1.22.2/bin"
+			],
+			"Output": {
+				"Combined": "Rmx1dHRlciAxLjIyLjIg4oCiIGNoYW5uZWwgc3RhYmxlIOKAoiBodHRwczovL2dpdGh1Yi5jb20vZmx1dHRlci9mbHV0dGVyLmdpdApGcmFtZXdvcmsg4oCiIHJldmlzaW9uIDg0ZjNkMjg1NTUgKDEzIGRheXMgYWdvKSDigKIgMjAyMC0xMC0xNSAxNjoyNjoxOSAtMDcwMApFbmdpbmUg4oCiIHJldmlzaW9uIGI4NzUyYmJmZmYKVG9vbHMg4oCiIERhcnQgMi4xMC4yCgogIOKVlOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVlwogIOKVkSAgICAgICAgICAgICAgICAgV2VsY29tZSB0byBGbHV0dGVyISAtIGh0dHBzOi8vZmx1dHRlci5kZXYgICAgICAgICAgICAgICAgICDilZEKICDilZEgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg4pWRCiAg4pWRIFRoZSBGbHV0dGVyIHRvb2wgdXNlcyBHb29nbGUgQW5hbHl0aWNzIHRvIGFub255bW91c2x5IHJlcG9ydCBmZWF0dXJlIHVzYWdlIOKVkQogIOKVkSBzdGF0aXN0aWNzIGFuZCBiYXNpYyBjcmFzaCByZXBvcnRzLiBUaGlzIGRhdGEgaXMgdXNlZCB0byBoZWxwIGltcHJvdmUgICAgICDilZEKICDilZEgRmx1dHRlciB0b29scyBvdmVyIHRpbWUuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg4pWRCiAg4pWRICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIOKVkQogIOKVkSBGbHV0dGVyIHRvb2wgYW5hbHl0aWNzIGFyZSBub3Qgc2VudCBvbiB0aGUgdmVyeSBmaXJzdCBydW4uIFRvIGRpc2FibGUgICAgICDilZEKICDilZEgcmVwb3J0aW5nLCB0eXBlICdmbHV0dGVyIGNvbmZpZyAtLW5vLWFuYWx5dGljcycuIFRvIGRpc3BsYXkgdGhlIGN1cnJlbnQgICAg4pWRCiAg4pWRIHNldHRpbmcsIHR5cGUgJ2ZsdXR0ZXIgY29uZmlnJy4gSWYgeW91IG9wdCBvdXQgb2YgYW5hbHl0aWNzLCBhbiBvcHQtb3V0ICAgIOKVkQogIOKVkSBldmVudCB3aWxsIGJlIHNlbnQsIGFuZCB0aGVuIG5vIGZ1cnRoZXIgaW5mb3JtYXRpb24gd2lsbCBiZSBzZW50IGJ5IHRoZSAgICDilZEKICDilZEgRmx1dHRlciB0b29sLiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg4pWRCiAg4pWRICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIOKVkQogIOKVkSBCeSBkb3dubG9hZGluZyB0aGUgRmx1dHRlciBTREssIHlvdSBhZ3JlZSB0byB0aGUgR29vZ2xlIFRlcm1zIG9mIFNlcnZpY2UuICDilZEKICDilZEgTm90ZTogVGhlIEdvb2dsZSBQcml2YWN5IFBvbGljeSBkZXNjcmliZXMgaG93IGRhdGEgaXMgaGFuZGxlZCBpbiB0aGlzICAgICAg4pWRCiAg4pWRIHNlcnZpY2UuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIOKVkQogIOKVkSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICDilZEKICDilZEgTW9yZW92ZXIsIEZsdXR0ZXIgaW5jbHVkZXMgdGhlIERhcnQgU0RLLCB3aGljaCBtYXkgc2VuZCB1c2FnZSBtZXRyaWNzIGFuZCAg4pWRCiAg4pWRIGNyYXNoIHJlcG9ydHMgdG8gR29vZ2xlLiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIOKVkQogIOKVkSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICDilZEKICDilZEgUmVhZCBhYm91dCBkYXRhIHdlIHNlbmQgd2l0aCBjcmFzaCByZXBvcnRzOiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg4pWRCiAg4pWRIGh0dHBzOi8vZmx1dHRlci5kZXYvZG9jcy9yZWZlcmVuY2UvY3Jhc2gtcmVwb3J0aW5nICAgICAgICAgICAgICAgICAgICAgICAgIOKVkQogIOKVkSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICDilZEKICDilZEgU2VlIEdvb2dsZSdzIHByaXZhY3kgcG9saWN5OiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg4pWRCiAg4pWRIGh0dHBzOi8vcG9saWNpZXMuZ29vZ2xlLmNvbS9wcml2YWN5ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIOKVkQogIOKVmuKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVnQoK"
+			}
+		}
+	]
+}

@@ -29,9 +29,22 @@ import (
 
 func TestHeroku(t *testing.T) {
 	ctx := testlog.WithTB(context.Background(), t)
-	herokuBiome, _ := testInstall(ctx, t, "heroku:latest")
+
+	// TODO(light): This test is not reproducible, since there's no ability to pin
+	// to a specific Heroku version. Instead, we just always run this test without
+	// record/replay.
+	bio := newLocalTestBiome(t)
+	herokuEnv, err := runTestInstall(ctx, t, bio, "heroku:latest")
+	if err != nil {
+		t.Fatal(err)
+	}
+	herokuBiome := biome.EnvBiome{
+		Biome: bio,
+		Env:   herokuEnv,
+	}
+
 	versionOutput := new(strings.Builder)
-	err := herokuBiome.Run(ctx, &biome.Invocation{
+	err = herokuBiome.Run(ctx, &biome.Invocation{
 		Argv:   []string{"heroku", "--version"},
 		Stdout: versionOutput,
 		Stderr: versionOutput,

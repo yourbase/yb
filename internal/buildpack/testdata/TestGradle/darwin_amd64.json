@@ -1,0 +1,269 @@
+{
+	"Descriptor": {
+		"OS": "darwin",
+		"Arch": "amd64"
+	},
+	"Dirs": {
+		"Package": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/001",
+		"Home": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002",
+		"Tools": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools"
+	},
+	"JoinedPaths": [
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools",
+				"java",
+				"openjdk8.265+01"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/java/openjdk8.265+01"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/java/openjdk8.265+01",
+				"Contents",
+				"Home"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home",
+				"bin"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home/bin"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools",
+				"gradle",
+				"gradle-6.7"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/gradle/gradle-6.7"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002",
+				".gradle"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.gradle"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/gradle/gradle-6.7",
+				"bin"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/gradle/gradle-6.7/bin"
+		},
+		{
+			"Elems": [
+				"gradle-6.7",
+				"LICENSE"
+			],
+			"Result": "gradle-6.7/LICENSE"
+		},
+		{
+			"Elems": [
+				"gradle-6.7",
+				"NOTICE"
+			],
+			"Result": "gradle-6.7/NOTICE"
+		},
+		{
+			"Elems": [
+				"gradle-6.7",
+				"README"
+			],
+			"Result": "gradle-6.7/README"
+		},
+		{
+			"Elems": [
+				"gradle-6.7",
+				"init.d"
+			],
+			"Result": "gradle-6.7/init.d"
+		},
+		{
+			"Elems": [
+				"gradle-6.7",
+				"bin"
+			],
+			"Result": "gradle-6.7/bin"
+		},
+		{
+			"Elems": [
+				"gradle-6.7",
+				"lib"
+			],
+			"Result": "gradle-6.7/lib"
+		}
+	],
+	"CleanedPaths": {
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/gradle/gradle-6.7": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/gradle/gradle-6.7",
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/gradle/gradle-6.7.zip": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/gradle/gradle-6.7.zip",
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/java/openjdk8.265+01": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/java/openjdk8.265+01",
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
+	},
+	"AbsPaths": {
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/gradle/gradle-6.7": true,
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/gradle/gradle-6.7.zip": true,
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/java/openjdk8.265+01": true,
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz": true
+	},
+	"Invocations": [
+		{
+			"Argv": [
+				"python",
+				"-c",
+				"import os, sys; os.stat(sys.argv[1]); sys.stdout.write(os.path.realpath(sys.argv[1]))",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home"
+			],
+			"Output": {
+				"Stdout": "",
+				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0R3JhZGxlNjgxMDY3MjI4LzAwMi8uY2FjaGUveWIvdG9vbHMvamF2YS9vcGVuamRrOC4yNjUrMDEvQ29udGVudHMvSG9tZScK"
+			},
+			"Error": "local run: exit status 1"
+		},
+		{
+			"Argv": [
+				"mkdir",
+				"-p",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/java/openjdk8.265+01"
+			],
+			"Output": {
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"tee",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
+			],
+			"StdinSHA256": "f316b154e8c4a99b95bc3d07add3c9b19609c541a2f297112f274c1abce1efb4",
+			"Output": {
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"tar",
+				"-x",
+				"-z",
+				"-f",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz",
+				"--strip-components",
+				"1"
+			],
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/java/openjdk8.265+01",
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"rm",
+				"-f",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
+			],
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"python",
+				"-c",
+				"import os, sys; os.stat(sys.argv[1]); sys.stdout.write(os.path.realpath(sys.argv[1]))",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/gradle/gradle-6.7"
+			],
+			"Output": {
+				"Stdout": "",
+				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0R3JhZGxlNjgxMDY3MjI4LzAwMi8uY2FjaGUveWIvdG9vbHMvZ3JhZGxlL2dyYWRsZS02LjcnCg=="
+			},
+			"Error": "local run: exit status 1"
+		},
+		{
+			"Argv": [
+				"mkdir",
+				"-p",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/gradle/gradle-6.7"
+			],
+			"Output": {
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"tee",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/gradle/gradle-6.7.zip"
+			],
+			"StdinSHA256": "8ad57759019a9233dc7dc4d1a530cefe109dc122000d57f7e623f8cf4ba9dfc4",
+			"Output": {
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"unzip",
+				"-q",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/gradle/gradle-6.7.zip"
+			],
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/gradle/gradle-6.7",
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"mv",
+				"gradle-6.7/LICENSE",
+				"gradle-6.7/NOTICE",
+				"gradle-6.7/README",
+				"gradle-6.7/init.d",
+				"gradle-6.7/bin",
+				"gradle-6.7/lib",
+				"."
+			],
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/gradle/gradle-6.7",
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"rmdir",
+				"gradle-6.7"
+			],
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/gradle/gradle-6.7",
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"rm",
+				"-f",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/gradle/gradle-6.7.zip"
+			],
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"gradle",
+				"-version"
+			],
+			"EnvVars": {
+				"GRADLE_USER_HOME": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.gradle",
+				"JAVA_HOME": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home"
+			},
+			"PrependPath": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/gradle/gradle-6.7/bin",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGradle681067228/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home/bin"
+			],
+			"Output": {
+				"Combined": "CldlbGNvbWUgdG8gR3JhZGxlIDYuNyEKCkhlcmUgYXJlIHRoZSBoaWdobGlnaHRzIG9mIHRoaXMgcmVsZWFzZToKIC0gRmlsZSBzeXN0ZW0gd2F0Y2hpbmcgaXMgcmVhZHkgZm9yIHByb2R1Y3Rpb24gdXNlCiAtIERlY2xhcmUgdGhlIHZlcnNpb24gb2YgSmF2YSB5b3VyIGJ1aWxkIHJlcXVpcmVzCiAtIEphdmEgMTUgc3VwcG9ydAoKRm9yIG1vcmUgZGV0YWlscyBzZWUgaHR0cHM6Ly9kb2NzLmdyYWRsZS5vcmcvNi43L3JlbGVhc2Utbm90ZXMuaHRtbAoKCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQpHcmFkbGUgNi43Ci0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQoKQnVpbGQgdGltZTogICAyMDIwLTEwLTE0IDE2OjEzOjEyIFVUQwpSZXZpc2lvbjogICAgIDMxMmJhOWUwZjRmOGEwMmQwMTg1NGQxZWQ3NDNiNzllZDk5NmRmZDMKCktvdGxpbjogICAgICAgMS4zLjcyCkdyb292eTogICAgICAgMi41LjEyCkFudDogICAgICAgICAgQXBhY2hlIEFudChUTSkgdmVyc2lvbiAxLjEwLjggY29tcGlsZWQgb24gTWF5IDEwIDIwMjAKSlZNOiAgICAgICAgICAxLjguMF8yNjUgKEFkb3B0T3BlbkpESyAyNS4yNjUtYjAxKQpPUzogICAgICAgICAgIE1hYyBPUyBYIDEwLjE1LjcgeDg2XzY0Cgo="
+			}
+		}
+	]
+}

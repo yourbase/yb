@@ -1,0 +1,316 @@
+{
+	"Descriptor": {
+		"OS": "darwin",
+		"Arch": "amd64"
+	},
+	"Dirs": {
+		"Package": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestFlutter805709415/001",
+		"Home": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestFlutter805709415/002",
+		"Tools": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestFlutter805709415/002/.cache/yb/tools"
+	},
+	"JoinedPaths": [
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestFlutter805709415/002/.cache/yb/tools",
+				"flutter",
+				"flutter-1.22.2"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestFlutter805709415/002/.cache/yb/tools/flutter/flutter-1.22.2"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestFlutter805709415/002/.cache/yb/tools/flutter/flutter-1.22.2",
+				"bin"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestFlutter805709415/002/.cache/yb/tools/flutter/flutter-1.22.2/bin"
+		},
+		{
+			"Elems": [
+				"flutter",
+				"CODE_OF_CONDUCT.md"
+			],
+			"Result": "flutter/CODE_OF_CONDUCT.md"
+		},
+		{
+			"Elems": [
+				"flutter",
+				".codecov.yml"
+			],
+			"Result": "flutter/.codecov.yml"
+		},
+		{
+			"Elems": [
+				"flutter",
+				"LICENSE"
+			],
+			"Result": "flutter/LICENSE"
+		},
+		{
+			"Elems": [
+				"flutter",
+				"bin"
+			],
+			"Result": "flutter/bin"
+		},
+		{
+			"Elems": [
+				"flutter",
+				"AUTHORS"
+			],
+			"Result": "flutter/AUTHORS"
+		},
+		{
+			"Elems": [
+				"flutter",
+				"flutter_root.iml"
+			],
+			"Result": "flutter/flutter_root.iml"
+		},
+		{
+			"Elems": [
+				"flutter",
+				"CODEOWNERS"
+			],
+			"Result": "flutter/CODEOWNERS"
+		},
+		{
+			"Elems": [
+				"flutter",
+				"flutter_console.bat"
+			],
+			"Result": "flutter/flutter_console.bat"
+		},
+		{
+			"Elems": [
+				"flutter",
+				".pub-cache"
+			],
+			"Result": "flutter/.pub-cache"
+		},
+		{
+			"Elems": [
+				"flutter",
+				"README.md"
+			],
+			"Result": "flutter/README.md"
+		},
+		{
+			"Elems": [
+				"flutter",
+				".gitignore"
+			],
+			"Result": "flutter/.gitignore"
+		},
+		{
+			"Elems": [
+				"flutter",
+				"version"
+			],
+			"Result": "flutter/version"
+		},
+		{
+			"Elems": [
+				"flutter",
+				"CONTRIBUTING.md"
+			],
+			"Result": "flutter/CONTRIBUTING.md"
+		},
+		{
+			"Elems": [
+				"flutter",
+				"examples"
+			],
+			"Result": "flutter/examples"
+		},
+		{
+			"Elems": [
+				"flutter",
+				"packages"
+			],
+			"Result": "flutter/packages"
+		},
+		{
+			"Elems": [
+				"flutter",
+				".github"
+			],
+			"Result": "flutter/.github"
+		},
+		{
+			"Elems": [
+				"flutter",
+				".gitattributes"
+			],
+			"Result": "flutter/.gitattributes"
+		},
+		{
+			"Elems": [
+				"flutter",
+				".cirrus.yml"
+			],
+			"Result": "flutter/.cirrus.yml"
+		},
+		{
+			"Elems": [
+				"flutter",
+				"dev"
+			],
+			"Result": "flutter/dev"
+		},
+		{
+			"Elems": [
+				"flutter",
+				"analysis_options.yaml"
+			],
+			"Result": "flutter/analysis_options.yaml"
+		},
+		{
+			"Elems": [
+				"flutter",
+				"dartdoc_options.yaml"
+			],
+			"Result": "flutter/dartdoc_options.yaml"
+		},
+		{
+			"Elems": [
+				"flutter",
+				".git"
+			],
+			"Result": "flutter/.git"
+		},
+		{
+			"Elems": [
+				"flutter",
+				"PATENT_GRANT"
+			],
+			"Result": "flutter/PATENT_GRANT"
+		},
+		{
+			"Elems": [
+				"flutter",
+				".idea"
+			],
+			"Result": "flutter/.idea"
+		}
+	],
+	"CleanedPaths": {
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestFlutter805709415/002/.cache/yb/tools/flutter/flutter-1.22.2": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestFlutter805709415/002/.cache/yb/tools/flutter/flutter-1.22.2",
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestFlutter805709415/002/.cache/yb/tools/flutter/flutter-1.22.2.zip": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestFlutter805709415/002/.cache/yb/tools/flutter/flutter-1.22.2.zip"
+	},
+	"AbsPaths": {
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestFlutter805709415/002/.cache/yb/tools/flutter/flutter-1.22.2": true,
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestFlutter805709415/002/.cache/yb/tools/flutter/flutter-1.22.2.zip": true
+	},
+	"Invocations": [
+		{
+			"Argv": [
+				"python",
+				"-c",
+				"import os, sys; os.stat(sys.argv[1]); sys.stdout.write(os.path.realpath(sys.argv[1]))",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestFlutter805709415/002/.cache/yb/tools/flutter/flutter-1.22.2"
+			],
+			"Output": {
+				"Stdout": "",
+				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0Rmx1dHRlcjgwNTcwOTQxNS8wMDIvLmNhY2hlL3liL3Rvb2xzL2ZsdXR0ZXIvZmx1dHRlci0xLjIyLjInCg=="
+			},
+			"Error": "local run: exit status 1"
+		},
+		{
+			"Argv": [
+				"mkdir",
+				"-p",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestFlutter805709415/002/.cache/yb/tools/flutter/flutter-1.22.2"
+			],
+			"Output": {
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"tee",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestFlutter805709415/002/.cache/yb/tools/flutter/flutter-1.22.2.zip"
+			],
+			"StdinSHA256": "1b749721d4e9c9d6712ae1701972a87c69743c25cf369b966dc2626af165db84",
+			"Output": {
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"unzip",
+				"-q",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestFlutter805709415/002/.cache/yb/tools/flutter/flutter-1.22.2.zip"
+			],
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestFlutter805709415/002/.cache/yb/tools/flutter/flutter-1.22.2",
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"mv",
+				"flutter/CODE_OF_CONDUCT.md",
+				"flutter/.codecov.yml",
+				"flutter/LICENSE",
+				"flutter/bin",
+				"flutter/AUTHORS",
+				"flutter/flutter_root.iml",
+				"flutter/CODEOWNERS",
+				"flutter/flutter_console.bat",
+				"flutter/.pub-cache",
+				"flutter/README.md",
+				"flutter/.gitignore",
+				"flutter/version",
+				"flutter/CONTRIBUTING.md",
+				"flutter/examples",
+				"flutter/packages",
+				"flutter/.github",
+				"flutter/.gitattributes",
+				"flutter/.cirrus.yml",
+				"flutter/dev",
+				"flutter/analysis_options.yaml",
+				"flutter/dartdoc_options.yaml",
+				"flutter/.git",
+				"flutter/PATENT_GRANT",
+				"flutter/.idea",
+				"."
+			],
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestFlutter805709415/002/.cache/yb/tools/flutter/flutter-1.22.2",
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"rmdir",
+				"flutter"
+			],
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestFlutter805709415/002/.cache/yb/tools/flutter/flutter-1.22.2",
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"rm",
+				"-f",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestFlutter805709415/002/.cache/yb/tools/flutter/flutter-1.22.2.zip"
+			],
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"flutter",
+				"--version"
+			],
+			"PrependPath": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestFlutter805709415/002/.cache/yb/tools/flutter/flutter-1.22.2/bin"
+			],
+			"Output": {
+				"Combined": "ICDilZTilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZcKICDilZEgQSBuZXcgdmVyc2lvbiBvZiBGbHV0dGVyIGlzIGF2YWlsYWJsZSEgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg4pWRCiAg4pWRICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIOKVkQogIOKVkSBUbyB1cGRhdGUgdG8gdGhlIGxhdGVzdCB2ZXJzaW9uLCBydW4gImZsdXR0ZXIgdXBncmFkZSIuICAgICAgICAgICAgICAgICAgICDilZEKICDilZrilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZ0KCkZsdXR0ZXIgMS4yMi4yIOKAoiBjaGFubmVsIHN0YWJsZSDigKIgaHR0cHM6Ly9naXRodWIuY29tL2ZsdXR0ZXIvZmx1dHRlci5naXQKRnJhbWV3b3JrIOKAoiByZXZpc2lvbiA4NGYzZDI4NTU1ICgzIHdlZWtzIGFnbykg4oCiIDIwMjAtMTAtMTUgMTY6MjY6MTkgLTA3MDAKRW5naW5lIOKAoiByZXZpc2lvbiBiODc1MmJiZmZmClRvb2xzIOKAoiBEYXJ0IDIuMTAuMgoKICDilZTilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZcKICDilZEgICAgICAgICAgICAgICAgIFdlbGNvbWUgdG8gRmx1dHRlciEgLSBodHRwczovL2ZsdXR0ZXIuZGV2ICAgICAgICAgICAgICAgICAg4pWRCiAg4pWRICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIOKVkQogIOKVkSBUaGUgRmx1dHRlciB0b29sIHVzZXMgR29vZ2xlIEFuYWx5dGljcyB0byBhbm9ueW1vdXNseSByZXBvcnQgZmVhdHVyZSB1c2FnZSDilZEKICDilZEgc3RhdGlzdGljcyBhbmQgYmFzaWMgY3Jhc2ggcmVwb3J0cy4gVGhpcyBkYXRhIGlzIHVzZWQgdG8gaGVscCBpbXByb3ZlICAgICAg4pWRCiAg4pWRIEZsdXR0ZXIgdG9vbHMgb3ZlciB0aW1lLiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIOKVkQogIOKVkSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICDilZEKICDilZEgRmx1dHRlciB0b29sIGFuYWx5dGljcyBhcmUgbm90IHNlbnQgb24gdGhlIHZlcnkgZmlyc3QgcnVuLiBUbyBkaXNhYmxlICAgICAg4pWRCiAg4pWRIHJlcG9ydGluZywgdHlwZSAnZmx1dHRlciBjb25maWcgLS1uby1hbmFseXRpY3MnLiBUbyBkaXNwbGF5IHRoZSBjdXJyZW50ICAgIOKVkQogIOKVkSBzZXR0aW5nLCB0eXBlICdmbHV0dGVyIGNvbmZpZycuIElmIHlvdSBvcHQgb3V0IG9mIGFuYWx5dGljcywgYW4gb3B0LW91dCAgICDilZEKICDilZEgZXZlbnQgd2lsbCBiZSBzZW50LCBhbmQgdGhlbiBubyBmdXJ0aGVyIGluZm9ybWF0aW9uIHdpbGwgYmUgc2VudCBieSB0aGUgICAg4pWRCiAg4pWRIEZsdXR0ZXIgdG9vbC4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIOKVkQogIOKVkSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICDilZEKICDilZEgQnkgZG93bmxvYWRpbmcgdGhlIEZsdXR0ZXIgU0RLLCB5b3UgYWdyZWUgdG8gdGhlIEdvb2dsZSBUZXJtcyBvZiBTZXJ2aWNlLiAg4pWRCiAg4pWRIE5vdGU6IFRoZSBHb29nbGUgUHJpdmFjeSBQb2xpY3kgZGVzY3JpYmVzIGhvdyBkYXRhIGlzIGhhbmRsZWQgaW4gdGhpcyAgICAgIOKVkQogIOKVkSBzZXJ2aWNlLiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICDilZEKICDilZEgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg4pWRCiAg4pWRIE1vcmVvdmVyLCBGbHV0dGVyIGluY2x1ZGVzIHRoZSBEYXJ0IFNESywgd2hpY2ggbWF5IHNlbmQgdXNhZ2UgbWV0cmljcyBhbmQgIOKVkQogIOKVkSBjcmFzaCByZXBvcnRzIHRvIEdvb2dsZS4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICDilZEKICDilZEgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg4pWRCiAg4pWRIFJlYWQgYWJvdXQgZGF0YSB3ZSBzZW5kIHdpdGggY3Jhc2ggcmVwb3J0czogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIOKVkQogIOKVkSBodHRwczovL2ZsdXR0ZXIuZGV2L2RvY3MvcmVmZXJlbmNlL2NyYXNoLXJlcG9ydGluZyAgICAgICAgICAgICAgICAgICAgICAgICDilZEKICDilZEgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg4pWRCiAg4pWRIFNlZSBHb29nbGUncyBwcml2YWN5IHBvbGljeTogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIOKVkQogIOKVkSBodHRwczovL3BvbGljaWVzLmdvb2dsZS5jb20vcHJpdmFjeSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICDilZEKICDilZrilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZ0KCg=="
+			}
+		}
+	]
+}
