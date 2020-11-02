@@ -18,8 +18,10 @@ package buildpack
 
 import (
 	"context"
+	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/yourbase/yb/internal/biome"
 	"zombiezen.com/go/log/testlog"
@@ -37,5 +39,17 @@ func TestHeroku(t *testing.T) {
 	t.Logf("heroku --version output:\n%s", versionOutput)
 	if err != nil {
 		t.Errorf("heroku --version: %v", err)
+	}
+
+	if runtime.GOOS == "darwin" {
+		// The Heroku CLI seems to daemonize a version cache on macOS that races
+		// with the `rm -rf TEMPDIR`. Wait until that settles before ending the test.
+		versionPath := herokuBiome.JoinPath(herokuBiome.Dirs().Home, "Library", "Caches", "heroku", "version")
+		for {
+			if _, err := biome.EvalSymlinks(ctx, herokuBiome, versionPath); err == nil {
+				break
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
 	}
 }
