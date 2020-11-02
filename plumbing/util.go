@@ -8,39 +8,12 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"strings"
 	"text/template"
 
-	"github.com/google/shlex"
 	"github.com/ulikunitz/xz"
 	"zombiezen.com/go/log"
 )
-
-func ExecSilently(cmdString string, targetDir string) error {
-	return ExecSilentlyToWriter(cmdString, targetDir, ioutil.Discard)
-}
-func ExecSilentlyToWriter(cmdString string, targetDir string, writer io.Writer) error {
-	cmdArgs, err := shlex.Split(cmdString)
-	if err != nil {
-		return fmt.Errorf("Can't parse command string '%s': %v", cmdString, err)
-	}
-
-	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
-	cmd.Dir = targetDir
-	cmd.Stdout = writer
-	cmd.Stdin = os.Stdin
-	cmd.Stderr = writer
-
-	err = cmd.Run()
-
-	if err != nil {
-		return fmt.Errorf("Command '%s' failed to run with error %v", cmdString, err)
-	}
-
-	return nil
-
-}
 
 func TemplateToString(templateText string, data interface{}) (string, error) {
 	t, err := template.New("generic").Parse(templateText)

@@ -25,12 +25,15 @@ The format is based on [Keep a Changelog][], and this project adheres to
    builds to increase reproducibility.
 -  yb build commands no longer inherit environment variables for greater
    reproducibility.
+-  `yb remotebuild` will now always use the locally installed Git to determine
+   the changed files.
 
 ### Removed
 
 -  The `homebrew` buildpack has been removed due to its complexity and
    low usage. Please [file an issue](https://github.com/yourbase/yb/issues/new)
    if your build needs Homebrew specifically.
+-  `yb remotebuild` no longer has the `--print-status` or `--go-git-status` flags.
 
 ### Fixed
 
