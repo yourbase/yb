@@ -20,12 +20,11 @@ package build
 import (
 	"context"
 	"fmt"
-	"io"
 	"strings"
 
-	docker "github.com/fsouza/go-dockerclient"
 	"github.com/google/shlex"
 	"github.com/yourbase/yb/internal/biome"
+	"github.com/yourbase/yb/internal/buildpack"
 	"github.com/yourbase/yb/internal/ybtrace"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/codes"
@@ -33,14 +32,7 @@ import (
 )
 
 // Sys holds dependencies provided by the caller needed to run builds.
-type Sys struct {
-	Biome  biome.Biome
-	Stdout io.Writer
-	Stderr io.Writer
-
-	DockerClient    *docker.Client
-	DockerNetworkID string
-}
+type Sys = buildpack.Sys
 
 // Phase is a sequence of commands to run to accomplish an outcome.
 //

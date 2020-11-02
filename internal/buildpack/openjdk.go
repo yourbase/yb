@@ -3,31 +3,47 @@ package buildpack
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 
-	"github.com/johnewart/archiver"
-	"github.com/yourbase/yb/internal/ybdata"
+	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/types"
 	"zombiezen.com/go/log"
 )
 
-type javaBuildTool struct {
-	version      string
-	spec         buildToolSpec
-	majorVersion int64
-	minorVersion int64
-	patchVersion int64
-	subVersion   string
+func installJava(ctx context.Context, sys Sys, spec types.BuildpackSpec) (_ biome.Environment, err error) {
+	installDir := sys.Biome.JoinPath(sys.Biome.Dirs().Tools, "java", "openjdk"+spec.Version())
+	desc := sys.Biome.Describe()
+	home := installDir
+	if desc.OS == biome.MacOS {
+		home = sys.Biome.JoinPath(installDir, "Contents", "Home")
+	}
+	env := biome.Environment{
+		Vars: map[string]string{
+			"JAVA_HOME": home,
+		},
+		PrependPath: []string{sys.Biome.JoinPath(home, "bin")},
+	}
+
+	// If directory already exists, then use it.
+	if _, err := biome.EvalSymlinks(ctx, sys.Biome, home); err == nil {
+		log.Infof(ctx, "OpenJDK v%s located in %s", spec.Version(), installDir)
+		return env, nil
+	}
+
+	log.Infof(ctx, "Installing OpenJDK v%s in %s", spec.Version(), installDir)
+	downloadURL, err := javaDownloadURL(spec.Version(), desc)
+	if err != nil {
+		return biome.Environment{}, err
+	}
+	if err := extract(ctx, sys, installDir, downloadURL, stripTopDirectory); err != nil {
+		return biome.Environment{}, err
+	}
+	return env, nil
 }
 
-func newJavaBuildTool(ctx context.Context, toolSpec buildToolSpec) javaBuildTool {
-
-	version := toolSpec.version
-
+func javaDownloadURL(version string, desc *biome.Descriptor) (string, error) {
 	vparts := strings.SplitN(version, "+", 2)
 	subVersion := ""
 	if len(vparts) > 1 {
@@ -39,15 +55,15 @@ func newJavaBuildTool(ctx context.Context, toolSpec buildToolSpec) javaBuildTool
 
 	majorVersion, err := convertVersionPiece(parts, 0)
 	if err != nil {
-		log.Debugf(ctx, "Error when parsing majorVersion %d: %v", majorVersion, err)
+		return "", fmt.Errorf("parse jdk version %q: major: %w", version, err)
 	}
 	minorVersion, err := convertVersionPiece(parts, 1)
 	if err != nil {
-		log.Debugf(ctx, "Error when parsing minorVersion %d: %v", minorVersion, err)
+		return "", fmt.Errorf("parse jdk version %q: minor: %w", version, err)
 	}
 	patchVersion, err := convertVersionPiece(parts, 2)
 	if err != nil {
-		log.Debugf(ctx, "Error when parsing patchVersion %d: %v", patchVersion, err)
+		return "", fmt.Errorf("parse jdk version %q: patch: %w", version, err)
 	}
 
 	// Sometimes a patchVersion can represent a subVersion
@@ -55,9 +71,6 @@ func newJavaBuildTool(ctx context.Context, toolSpec buildToolSpec) javaBuildTool
 	if majorVersion != 11 && majorVersion != 14 && subVersion == "" && patchVersion > 0 && patchVersion < 100 {
 		subVersion = fmt.Sprintf("%02d", patchVersion)
 	}
-
-	log.Debugf(ctx, "majorVersion: %d, minorVersion: %d, patchVersion: %d, subVersion: %s",
-		majorVersion, minorVersion, patchVersion, subVersion)
 
 	// Maybe we just require people format it with the build number?
 	// Alternatively we can have a table of defaults somewhere
@@ -82,156 +95,57 @@ func newJavaBuildTool(ctx context.Context, toolSpec buildToolSpec) javaBuildTool
 		}
 	}
 
-	tool := javaBuildTool{
-		version:      toolSpec.version,
-		majorVersion: majorVersion,
-		minorVersion: minorVersion,
-		patchVersion: patchVersion,
-		subVersion:   subVersion,
-		spec:         toolSpec,
-	}
-
-	return tool
-}
-
-func (bt javaBuildTool) installDir() string {
-	return filepath.Join(bt.spec.cacheDir, "java")
-}
-
-func (bt javaBuildTool) javaDir() string {
-	opsys := OS()
-	// Versions..
-	archiveDir := ""
-	if bt.majorVersion == 8 {
-		archiveDir = fmt.Sprintf("jdk%du%d-b%s", bt.majorVersion, bt.minorVersion, bt.subVersion)
-	} else {
-		archiveDir = fmt.Sprintf("jdk-%d.%d.%d+%s", bt.majorVersion, bt.minorVersion, bt.patchVersion, bt.subVersion)
-	}
-
-	basePath := filepath.Join(bt.installDir(), archiveDir)
-
-	if opsys == "darwin" {
-		basePath = filepath.Join(basePath, "Contents", "Home")
-
-	}
-	return basePath
-}
-
-func convertVersionPiece(parts []string, index int) (piece int64, err error) {
-	if len(parts) >= index+1 {
-		trimmed := strings.TrimLeft(parts[index], "0")
-		piece, err = strconv.ParseInt(trimmed, 0, 64)
-		if err != nil {
-			err = fmt.Errorf("failed to parse %s: %v", parts[index], err)
-		}
-	}
-	return
-}
-
-func (bt javaBuildTool) setup(ctx context.Context) error {
-	javaDir := bt.javaDir()
-	cmdPath := fmt.Sprintf("%s/bin", javaDir)
-	currentPath := os.Getenv("PATH")
-	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
-	log.Infof(ctx, "Setting PATH to %s", newPath)
-	os.Setenv("PATH", newPath)
-	log.Infof(ctx, "Setting JAVA_HOME to %s", javaDir)
-	os.Setenv("JAVA_HOME", javaDir)
-
-	return nil
-}
-
-func (bt javaBuildTool) downloadURL(ctx context.Context) string {
-
 	// This changes pretty dramatically depending on major version :~(
 	// Using HotSpot version, we should consider an OpenJ9 option
-	urlPattern := ""
-	if bt.majorVersion < 9 {
+	var urlPattern string
+	if majorVersion < 9 {
 		// TODO add openjdk8 OpenJ9 support
-		urlPattern = "https://github.com/AdoptOpenJDK/openjdk{{.MajorVersion}}-binaries/releases/download/jdk{{.MajorVersion}}u{{.MinorVersion}}-b{{.SubVersion}}/OpenJDK{{.MajorVersion}}U-jdk_{{.Arch}}_{{.OS}}_hotspot_{{.MajorVersion}}u{{.MinorVersion}}b{{.SubVersion}}.{{.Extension}}"
+		urlPattern = "https://github.com/AdoptOpenJDK/openjdk{{.MajorVersion}}-binaries/releases/download/jdk{{.MajorVersion}}u{{.MinorVersion}}-b{{.SubVersion}}/OpenJDK{{.MajorVersion}}U-jdk_{{.Arch}}_{{.OS}}_hotspot_{{.MajorVersion}}u{{.MinorVersion}}b{{.SubVersion}}.tar.gz"
 	} else {
-		if bt.majorVersion < 14 {
+		if majorVersion < 14 {
 			// OpenJDK 9 has a whole other scheme
-			if bt.majorVersion == 9 && bt.subVersion == "181" {
-				urlPattern = "https://github.com/AdoptOpenJDK/openjdk{{ .MajorVersion }}-binaries/releases/download/jdk-{{ .MajorVersion }}%2B{{ .SubVersion }}/OpenJDK{{ .MajorVersion }}U-jdk_{{.Arch}}_{{.OS}}_hotspot_{{ .MajorVersion }}_{{ .SubVersion }}.{{ .Extension }}"
+			if majorVersion == 9 && subVersion == "181" {
+				urlPattern = "https://github.com/AdoptOpenJDK/openjdk{{ .MajorVersion }}-binaries/releases/download/jdk-{{ .MajorVersion }}%2B{{ .SubVersion }}/OpenJDK{{ .MajorVersion }}U-jdk_{{.Arch}}_{{.OS}}_hotspot_{{ .MajorVersion }}_{{ .SubVersion }}.tar.gz"
 			} else {
-				urlPattern = "https://github.com/AdoptOpenJDK/openjdk{{ .MajorVersion }}-binaries/releases/download/jdk-{{ .MajorVersion }}.{{ .MinorVersion }}.{{ .PatchVersion }}%2B{{ .SubVersion }}/OpenJDK{{ .MajorVersion }}U-jdk_{{.Arch}}_{{.OS}}_hotspot_{{ .MajorVersion }}.{{ .MinorVersion }}.{{ .PatchVersion }}_{{ .SubVersion }}.{{ .Extension }}"
+				urlPattern = "https://github.com/AdoptOpenJDK/openjdk{{ .MajorVersion }}-binaries/releases/download/jdk-{{ .MajorVersion }}.{{ .MinorVersion }}.{{ .PatchVersion }}%2B{{ .SubVersion }}/OpenJDK{{ .MajorVersion }}U-jdk_{{.Arch}}_{{.OS}}_hotspot_{{ .MajorVersion }}.{{ .MinorVersion }}.{{ .PatchVersion }}_{{ .SubVersion }}.tar.gz"
 			}
 		} else {
 			// 14: https://github.com/AdoptOpenJDK/openjdk14-binaries/releases/download/jdk-14%2B36/OpenJDK14U-jdk_aarch64_linux_hotspot_14_36.tar.gz
-			urlPattern = "https://github.com/AdoptOpenJDK/openjdk{{ .MajorVersion }}-binaries/releases/download/jdk-{{ .MajorVersion }}%2B{{ .SubVersion }}/OpenJDK{{ .MajorVersion }}U-jdk_{{.Arch}}_{{.OS}}_hotspot_{{ .MajorVersion }}_{{ .SubVersion }}.{{ .Extension }}"
+			urlPattern = "https://github.com/AdoptOpenJDK/openjdk{{ .MajorVersion }}-binaries/releases/download/jdk-{{ .MajorVersion }}%2B{{ .SubVersion }}/OpenJDK{{ .MajorVersion }}U-jdk_{{.Arch}}_{{.OS}}_hotspot_{{ .MajorVersion }}_{{ .SubVersion }}.tar.gz"
 		}
 	}
 
-	arch := "x64"
-	extension := "tar.gz"
-
-	operatingSystem := OS()
-	if operatingSystem == "darwin" {
-		operatingSystem = "mac"
-	}
-
-	if operatingSystem == "windows" {
-		extension = "zip"
-	}
-
-	data := struct {
+	var data struct {
 		OS           string
 		Arch         string
 		MajorVersion int64
 		MinorVersion int64
 		PatchVersion int64
 		SubVersion   string // not always an int, sometimes a float
-		Extension    string
-	}{
-		operatingSystem,
-		arch,
-		bt.majorVersion,
-		bt.minorVersion,
-		bt.patchVersion,
-		bt.subVersion,
-		extension,
 	}
-
-	log.Debugf(ctx, "URL params: %#v", data)
-
-	url, err := plumbing.TemplateToString(urlPattern, data)
-
-	if err != nil {
-		log.Errorf(ctx, "Error generating download URL: %v", err)
+	data.OS = map[string]string{
+		biome.Linux: "linux",
+		biome.MacOS: "mac",
+	}[desc.OS]
+	if data.OS == "" {
+		return "", fmt.Errorf("unsupported os %s", desc.OS)
 	}
-
-	return url
+	data.Arch = map[string]string{
+		biome.Intel64: "x64",
+	}[desc.Arch]
+	if data.Arch == "" {
+		return "", fmt.Errorf("unsupported architecture %s", desc.Arch)
+	}
+	data.MajorVersion = majorVersion
+	data.MinorVersion = minorVersion
+	data.PatchVersion = patchVersion
+	data.SubVersion = subVersion
+	return plumbing.TemplateToString(urlPattern, data)
 }
 
-func (bt javaBuildTool) install(ctx context.Context) error {
-	javaInstallDir := bt.installDir()
-	javaPath := bt.javaDir()
-
-	if err := os.MkdirAll(javaInstallDir, 0777); err != nil {
-		return fmt.Errorf("install Java: %w", err)
+func convertVersionPiece(parts []string, index int) (int64, error) {
+	if index >= len(parts) {
+		return 0, nil
 	}
-
-	if _, err := os.Stat(javaPath); err == nil {
-		log.Infof(ctx, "Java v%s located in %s!", bt.version, javaPath)
-	} else {
-		log.Infof(ctx, "Will install Java v%s into %s", bt.version, javaInstallDir)
-		downloadURL := bt.downloadURL(ctx)
-
-		log.Infof(ctx, "Downloading from URL %s ", downloadURL)
-		localFile, err := ybdata.DownloadFileWithCache(ctx, http.DefaultClient, bt.spec.dataDirs, downloadURL)
-		if err != nil {
-			log.Errorf(ctx, "Unable to download: %v", err)
-			return err
-		}
-		err = archiver.Unarchive(localFile, javaInstallDir)
-		if err != nil {
-			log.Errorf(ctx, "Unable to decompress: %v", err)
-			return err
-		}
-
-	}
-
-	return nil
-
+	return strconv.ParseInt(parts[index], 10, 64)
 }

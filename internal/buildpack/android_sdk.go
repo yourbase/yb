@@ -3,90 +3,75 @@ package buildpack
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 
-	"github.com/johnewart/archiver"
-	"github.com/yourbase/yb/internal/ybdata"
+	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/types"
 	"zombiezen.com/go/log"
 )
 
-const (
-	latestAndroidVersion = "4333796"
-	androidDistMirror    = "https://dl.google.com/android/repository/sdk-tools-{{.OS}}-{{.Version}}.zip"
-)
+const latestAndroidVersion = "4333796"
 
-type androidBuildTool struct {
-	version string
-	spec    buildToolSpec
-}
-
-func newAndroidBuildTool(toolSpec buildToolSpec) androidBuildTool {
-	version := toolSpec.version
-
+func installAndroidSDK(ctx context.Context, sys Sys, spec types.BuildpackSpec) (biome.Environment, error) {
+	version := spec.Version()
 	if version == "latest" {
 		version = latestAndroidVersion
 	}
-
-	tool := androidBuildTool{
-		version: version,
-		spec:    toolSpec,
+	sdkRoot := sys.Biome.JoinPath(sys.Biome.Dirs().Tools, "android", "android-"+version)
+	sdkToolsDir := sys.Biome.JoinPath(sdkRoot, "tools")
+	env := biome.Environment{
+		Vars: map[string]string{
+			"ANDROID_SDK_ROOT": sdkRoot,
+			"ANDROID_HOME":     sdkRoot,
+		},
+		PrependPath: []string{
+			sys.Biome.JoinPath(sdkRoot, "tools", "bin"),
+			sys.Biome.JoinPath(sdkRoot, "tools"),
+		},
 	}
 
-	return tool
-}
-
-func (bt androidBuildTool) downloadURL() string {
-	opsys := OS()
-	arch := Arch()
-	extension := "zip"
-
-	if arch == "amd64" {
-		arch = "x64"
+	// If directory already exists, then use it.
+	if _, err := biome.EvalSymlinks(ctx, sys.Biome, sdkToolsDir); err == nil {
+		log.Infof(ctx, "Android SDK v%s located in %s", version, sdkRoot)
+		return env, nil
 	}
 
-	version := bt.version
-
+	log.Infof(ctx, "Installing Android SDK v%s in %s", version, sdkRoot)
+	desc := sys.Biome.Describe()
+	const template = "https://dl.google.com/android/repository/sdk-tools-{{.OS}}-{{.Version}}.zip"
 	data := struct {
-		OS        string
-		Arch      string
-		Version   string
-		Extension string
+		OS      string
+		Version string
 	}{
-		opsys,
-		arch,
+		map[string]string{
+			biome.Linux: "linux",
+			biome.MacOS: "darwin",
+		}[desc.OS],
 		version,
-		extension,
 	}
-
-	url, _ := plumbing.TemplateToString(androidDistMirror, data)
-
-	return url
-}
-
-func (bt androidBuildTool) majorVersion() string {
-	parts := strings.Split(bt.version, ".")
-	return parts[0]
-}
-
-func (bt androidBuildTool) installDir() string {
-	return filepath.Join(bt.spec.cacheDir, "android", fmt.Sprintf("android-%s", bt.version))
-}
-
-func (bt androidBuildTool) androidDir() string {
-	return filepath.Join(bt.installDir())
-}
-
-func (bt androidBuildTool) writeAgreements(ctx context.Context) error {
-	licensesDir := filepath.Join(bt.androidDir(), "licenses")
-	if err := os.MkdirAll(licensesDir, 0777); err != nil {
-		return fmt.Errorf("create agreement files: %w", err)
+	if data.OS == "" {
+		return biome.Environment{}, fmt.Errorf("unsupported os %s", desc.OS)
 	}
+	downloadURL, err := plumbing.TemplateToString(template, data)
+	if err != nil {
+		return biome.Environment{}, err
+	}
+	if err := extract(ctx, sys, sdkToolsDir, downloadURL, stripTopDirectory); err != nil {
+		return biome.Environment{}, err
+	}
+	if err := writeAndroidAgreements(ctx, sys.Biome, sdkRoot); err != nil {
+		return biome.Environment{}, err
+	}
+	return env, nil
+}
 
+func writeAndroidAgreements(ctx context.Context, bio biome.Biome, androidDir string) error {
+	licensesDir := bio.JoinPath(androidDir, "licenses")
+	err := biome.MkdirAll(ctx, bio, licensesDir)
+	if err != nil {
+		return fmt.Errorf("write agreement files: %w", err)
+	}
 	agreements := map[string]string{
 		"android-googletv-license":      "601085b94cd77f0b54ff86406957099ebe79c4d6",
 		"android-sdk-license":           "24333f8a63b6825ea9c5514f83c2829b004d1fee",
@@ -96,65 +81,11 @@ func (bt androidBuildTool) writeAgreements(ctx context.Context) error {
 		"mips-android-sysimage-license": "e9acab5b5fbb560a72cfaecce8946896ff6aab9d",
 	}
 	for filename, hash := range agreements {
-		agreementFile := filepath.Join(licensesDir, filename)
-		if err := ioutil.WriteFile(agreementFile, []byte(hash), 0666); err != nil {
-			return fmt.Errorf("create agreement file %s: %w", filename, err)
-		}
-		log.Infof(ctx, "Wrote hash for agreement: %s", agreementFile)
-	}
-	return nil
-}
-
-func (bt androidBuildTool) setup(ctx context.Context) error {
-	androidDir := bt.androidDir()
-
-	binPath := fmt.Sprintf("%s/tools/bin", androidDir)
-	toolsPath := fmt.Sprintf("%s/tools", androidDir)
-	currentPath := os.Getenv("PATH")
-	newPath := fmt.Sprintf("%s:%s", binPath, currentPath)
-	newPath = fmt.Sprintf("%s:%s", toolsPath, newPath)
-	log.Infof(ctx, "Setting PATH to %s", newPath)
-	os.Setenv("PATH", newPath)
-
-	//fmt.Printf("Setting ANDROID_HOME to %s\n", androidHomeDir)
-	//os.Setenv("ANDROID_HOME", androidHomeDir)
-
-	log.Infof(ctx, "Setting ANDROID_SDK_ROOT to %s", androidDir)
-	os.Setenv("ANDROID_SDK_ROOT", androidDir)
-	os.Setenv("ANDROID_HOME", androidDir)
-
-	log.Infof(ctx, "Writing agreement hashes...")
-	if err := bt.writeAgreements(ctx); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// TODO, generalize downloader
-func (bt androidBuildTool) install(ctx context.Context) error {
-	androidDir := bt.androidDir()
-	installDir := bt.installDir()
-
-	if _, err := os.Stat(androidDir); err == nil {
-		log.Infof(ctx, "Android v%s located in %s!", bt.version, androidDir)
-	} else {
-		log.Infof(ctx, "Will install Android v%s into %s", bt.version, androidDir)
-		downloadURL := bt.downloadURL()
-
-		log.Infof(ctx, "Downloading Android from URL %s...", downloadURL)
-		localFile, err := ybdata.DownloadFileWithCache(ctx, http.DefaultClient, bt.spec.dataDirs, downloadURL)
+		dst := bio.JoinPath(licensesDir, filename)
+		err := biome.WriteFile(ctx, bio, dst, strings.NewReader(hash))
 		if err != nil {
-			log.Errorf(ctx, "Unable to download: %v", err)
-			return err
+			return fmt.Errorf("write agreement files: %s: %w", filename, err)
 		}
-		err = archiver.Unarchive(localFile, installDir)
-		if err != nil {
-			log.Errorf(ctx, "Unable to decompress: %v", err)
-			return err
-		}
-
 	}
-
 	return nil
 }

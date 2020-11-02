@@ -3,103 +3,54 @@ package buildpack
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"os"
-	"path/filepath"
 
-	"github.com/johnewart/archiver"
-	"github.com/yourbase/yb/internal/ybdata"
+	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/types"
 	"zombiezen.com/go/log"
 )
 
 const androidNDKDistMirror = "https://dl.google.com/android/repository/android-ndk-{{.Version}}-{{.OS}}-{{.Arch}}.zip"
 
-type androidNDKBuildTool struct {
-	version string
-	spec    buildToolSpec
-}
-
-func newAndroidNDKBuildTool(toolSpec buildToolSpec) androidNDKBuildTool {
-	version := toolSpec.version
-
-	tool := androidNDKBuildTool{
-		version: version,
-		spec:    toolSpec,
+func installAndroidNDK(ctx context.Context, sys Sys, spec types.BuildpackSpec) (biome.Environment, error) {
+	ndkDir := sys.Biome.JoinPath(sys.Biome.Dirs().Tools, "android-ndk", "android-ndk-"+spec.Version())
+	env := biome.Environment{
+		Vars: map[string]string{
+			"ANDROID_NDK_HOME": ndkDir,
+		},
 	}
 
-	return tool
-}
-
-func (bt androidNDKBuildTool) downloadURL() string {
-	opsys := OS()
-	arch := Arch()
-	extension := "zip"
-
-	if arch == "amd64" {
-		arch = "x86_64"
+	if _, err := biome.EvalSymlinks(ctx, sys.Biome, ndkDir); err == nil {
+		log.Infof(ctx, "Found Android NDK at %s", ndkDir)
+		return env, nil
 	}
 
-	version := bt.version
-
+	desc := sys.Biome.Describe()
 	data := struct {
-		OS        string
-		Arch      string
-		Version   string
-		Extension string
+		OS      string
+		Arch    string
+		Version string
 	}{
-		opsys,
-		arch,
-		version,
-		extension,
+		map[string]string{
+			biome.Linux: "linux",
+			biome.MacOS: "darwin",
+		}[desc.OS],
+		map[string]string{
+			biome.Intel64: "x86_64",
+		}[desc.Arch],
+		spec.Version(),
+	}
+	if data.OS == "" || data.Arch == "" {
+		return biome.Environment{}, fmt.Errorf("unsupported os/arch %s/%s", desc.OS, desc.Arch)
+	}
+	downloadURL, err := plumbing.TemplateToString(androidNDKDistMirror, data)
+	if err != nil {
+		return biome.Environment{}, err
 	}
 
-	url, _ := plumbing.TemplateToString(androidNDKDistMirror, data)
-
-	return url
-}
-
-func (bt androidNDKBuildTool) installDir() string {
-	return filepath.Join(bt.spec.cacheDir, "android-ndk")
-}
-
-func (bt androidNDKBuildTool) ndkDir() string {
-	return filepath.Join(bt.installDir(), fmt.Sprintf("android-ndk-%s", bt.version))
-}
-
-func (bt androidNDKBuildTool) setup(ctx context.Context) error {
-	ndkDir := bt.ndkDir()
-
-	log.Infof(ctx, "Setting ANDROID_NDK_HOME to %s", ndkDir)
-	os.Setenv("ANDROID_NDK_HOME", ndkDir)
-
-	return nil
-}
-
-// TODO, generalize downloader
-func (bt androidNDKBuildTool) install(ctx context.Context) error {
-	ndkDir := bt.ndkDir()
-	installDir := bt.installDir()
-
-	if _, err := os.Stat(ndkDir); err == nil {
-		log.Infof(ctx, "Android NDK v%s located in %s!", bt.version, ndkDir)
-	} else {
-		log.Infof(ctx, "Will install Android NDK v%s into %s", bt.version, ndkDir)
-		downloadURL := bt.downloadURL()
-
-		log.Infof(ctx, "Downloading Android NDK v%s from URL %s...", bt.version, downloadURL)
-		localFile, err := ybdata.DownloadFileWithCache(ctx, http.DefaultClient, bt.spec.dataDirs, downloadURL)
-		if err != nil {
-			log.Errorf(ctx, "Unable to download: %v", err)
-			return err
-		}
-		err = archiver.Unarchive(localFile, installDir)
-		if err != nil {
-			log.Errorf(ctx, "Unable to decompress: %v", err)
-			return err
-		}
-
+	log.Infof(ctx, "Installing Android NDK v%s in %s...", spec.Version(), ndkDir)
+	if err := extract(ctx, sys, ndkDir, downloadURL, stripTopDirectory); err != nil {
+		return biome.Environment{}, err
 	}
-
-	return nil
+	return env, nil
 }

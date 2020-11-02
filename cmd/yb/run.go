@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
+	"net/http"
 	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/internal/build"
 	"github.com/yourbase/yb/internal/ybdata"
+	"zombiezen.com/go/log"
 )
 
 type runCmd struct {
@@ -69,12 +71,14 @@ func (b *runCmd) run(ctx context.Context, args []string) error {
 
 	// Run command.
 	execTarget := targets[len(targets)-1]
-	bio, err := newBiome(ctx, dockerClient, pkg.Path)
+	bio, err := newBiome(ctx, dockerClient, dataDirs, pkg.Path, execTarget.Name)
 	if err != nil {
 		return err
 	}
 	sys := build.Sys{
 		Biome:           bio,
+		DataDirs:        dataDirs,
+		HTTPClient:      http.DefaultClient,
 		DockerClient:    dockerClient,
 		DockerNetworkID: dockerNetworkID,
 		Stdout:          os.Stdout,
@@ -88,11 +92,11 @@ func (b *runCmd) run(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	// TODO(ch2744): Move this into build.Setup.
-	err = pkg.SetupBuildDependencies(ctx, dataDirs, execTarget)
-	if err != nil {
-		return err
-	}
+	defer func() {
+		if err := execBiome.Close(); err != nil {
+			log.Warnf(ctx, "Clean up environment: %v", err)
+		}
+	}()
 	// TODO(ch2725): Run the command from the subdirectory the process is in.
 	return execBiome.Run(ctx, &biome.Invocation{
 		Argv:   args,

@@ -2,110 +2,57 @@ package buildpack
 
 import (
 	"context"
-	"net/http"
-	"os"
-	"path/filepath"
-	"strings"
+	"fmt"
 
-	"github.com/johnewart/archiver"
-	"github.com/yourbase/yb/internal/ybdata"
+	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/types"
 	"zombiezen.com/go/log"
 )
 
-//https://archive.apache.org/dist/dart/dart-3/3.3.3/binaries/apache-dart-3.3.3-bin.tar.gz
-const dartDistMirror = "https://storage.googleapis.com/dart-archive/channels/stable/release/{{.Version}}/sdk/dartsdk-{{.OS}}-{{.Arch}}-release.zip"
-
-type dartBuildTool struct {
-	version string
-	spec    buildToolSpec
-}
-
-func newDartBuildTool(toolSpec buildToolSpec) dartBuildTool {
-	tool := dartBuildTool{
-		version: toolSpec.version,
-		spec:    toolSpec,
+func installDart(ctx context.Context, sys Sys, spec types.BuildpackSpec) (biome.Environment, error) {
+	dartDir := sys.Biome.JoinPath(sys.Biome.Dirs().Tools, "dart", "dart-sdk-"+spec.Version())
+	env := biome.Environment{
+		PrependPath: []string{
+			sys.Biome.JoinPath(dartDir, "bin"),
+		},
 	}
 
-	return tool
-}
-
-func (bt dartBuildTool) downloadURL() string {
-	opsys := OS()
-	arch := Arch()
-	extension := "zip"
-
-	if arch == "amd64" {
-		arch = "x64"
+	// If directory already exists, then use it.
+	if _, err := biome.EvalSymlinks(ctx, sys.Biome, dartDir); err == nil {
+		log.Infof(ctx, "Dart v%s located in %s", spec.Version(), dartDir)
+		return env, nil
 	}
 
-	if opsys == "darwin" {
-		opsys = "macos"
-	}
-
-	version := bt.version
-
+	log.Infof(ctx, "Installing Dart v%s in %s", spec.Version(), dartDir)
+	desc := sys.Biome.Describe()
+	const template = "https://storage.googleapis.com/dart-archive/channels/stable/release/{{.Version}}/sdk/dartsdk-{{.OS}}-{{.Arch}}-release.zip"
 	data := struct {
-		OS        string
-		Arch      string
-		Version   string
-		Extension string
+		Version string
+		OS      string
+		Arch    string
 	}{
-		opsys,
-		arch,
-		version,
-		extension,
+		spec.Version(),
+		map[string]string{
+			biome.Linux: "linux",
+			biome.MacOS: "macos",
+		}[desc.OS],
+		map[string]string{
+			biome.Intel64: "x64",
+		}[desc.Arch],
 	}
-
-	url, _ := plumbing.TemplateToString(dartDistMirror, data)
-
-	return url
-}
-
-func (bt dartBuildTool) majorVersion() string {
-	parts := strings.Split(bt.version, ".")
-	return parts[0]
-}
-
-func (bt dartBuildTool) installDir() string {
-	return filepath.Join(bt.spec.cacheDir, "dart", bt.version)
-}
-
-func (bt dartBuildTool) dartDir() string {
-	return filepath.Join(bt.installDir(), "dart-sdk")
-}
-
-func (bt dartBuildTool) setup(ctx context.Context) error {
-	dartDir := bt.dartDir()
-	cmdPath := filepath.Join(dartDir, "bin")
-	plumbing.PrependToPath(cmdPath)
-
-	return nil
-}
-
-// TODO, generalize downloader
-func (bt dartBuildTool) install(ctx context.Context) error {
-	dartDir := bt.dartDir()
-	installDir := bt.installDir()
-
-	if _, err := os.Stat(dartDir); err == nil {
-		log.Infof(ctx, "Dart v%s located in %s!", bt.version, dartDir)
-	} else {
-		log.Infof(ctx, "Will install Dart v%s into %s", bt.version, dartDir)
-		downloadURL := bt.downloadURL()
-
-		log.Infof(ctx, "Downloading Dart from URL %s...", downloadURL)
-		localFile, err := ybdata.DownloadFileWithCache(ctx, http.DefaultClient, bt.spec.dataDirs, downloadURL)
-		if err != nil {
-			log.Errorf(ctx, "Unable to download: %v", err)
-			return err
-		}
-		err = archiver.Unarchive(localFile, installDir)
-		if err != nil {
-			log.Errorf(ctx, "Unable to decompress: %v", err)
-			return err
-		}
+	if data.OS == "" {
+		return biome.Environment{}, fmt.Errorf("unsupported os %s", desc.OS)
 	}
-
-	return nil
+	if data.OS == "" {
+		return biome.Environment{}, fmt.Errorf("unsupported architecture %s", desc.Arch)
+	}
+	downloadURL, err := plumbing.TemplateToString(template, data)
+	if err != nil {
+		return biome.Environment{}, err
+	}
+	if err := extract(ctx, sys, dartDir, downloadURL, stripTopDirectory); err != nil {
+		return biome.Environment{}, err
+	}
+	return env, nil
 }

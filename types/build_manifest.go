@@ -6,7 +6,17 @@ import (
 	"fmt"
 )
 
-const DependencyChecksumLength = 12
+type BuildManifest struct {
+	Dependencies DependencySet  `yaml:"dependencies"`
+	Sandbox      bool           `yaml:"sandbox"`
+	BuildTargets []*BuildTarget `yaml:"build_targets"`
+	Build        *BuildTarget   `yaml:"build"`
+	Exec         *ExecPhase     `yaml:"exec"`
+	Package      *PackagePhase  `yaml:"package"`
+	CI           *CIInfo        `yaml:"ci"`
+}
+
+const dependencyChecksumLength = 12
 
 func (b BuildManifest) BuildDependenciesChecksum() string {
 	buf := bytes.Buffer{}
@@ -15,7 +25,7 @@ func (b BuildManifest) BuildDependenciesChecksum() string {
 	}
 
 	sum := sha256.Sum256(buf.Bytes())
-	return fmt.Sprintf("%x", sum[:DependencyChecksumLength])
+	return fmt.Sprintf("%x", sum[:dependencyChecksumLength])
 }
 
 // BuildOrder returns a topological sort of the targets needed to build the

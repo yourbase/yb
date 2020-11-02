@@ -26,12 +26,12 @@ func newCheckConfigCmd() *cobra.Command {
 			return b.run(cmd.Context())
 		},
 	}
-	c.Flags().StringVar(&b.file, "file", types.MANIFEST_FILE, "YAML file to check")
+	c.Flags().StringVar(&b.file, "file", packageConfigFileName, "YAML file to check")
 	return c
 }
 
 func (b *checkConfigCmd) run(ctx context.Context) error {
-	targetPackage, err := GetTargetPackageNamed(b.file)
+	targetPackage, err := types.LoadPackage(b.file)
 	if err != nil {
 		return err
 	}

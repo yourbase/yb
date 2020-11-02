@@ -30,6 +30,7 @@ import (
 )
 
 func TestWriteFile(t *testing.T) {
+	junkHome := t.TempDir()
 	tests := []struct {
 		name     string
 		newBiome func(dir string) Biome
@@ -39,6 +40,7 @@ func TestWriteFile(t *testing.T) {
 			newBiome: func(dir string) Biome {
 				return Local{
 					PackageDir: dir,
+					HomeDir:    junkHome,
 				}
 			},
 		},
@@ -47,6 +49,7 @@ func TestWriteFile(t *testing.T) {
 			newBiome: func(dir string) Biome {
 				return forceFallback{Local{
 					PackageDir: dir,
+					HomeDir:    junkHome,
 				}}
 			},
 		},
@@ -55,6 +58,7 @@ func TestWriteFile(t *testing.T) {
 			newBiome: func(dir string) Biome {
 				return unsupported{Local{
 					PackageDir: dir,
+					HomeDir:    junkHome,
 				}}
 			},
 		},
@@ -85,6 +89,7 @@ func TestWriteFile(t *testing.T) {
 }
 
 func TestMkdirAll(t *testing.T) {
+	junkHome := t.TempDir()
 	tests := []struct {
 		name     string
 		newBiome func(dir string) Biome
@@ -94,6 +99,7 @@ func TestMkdirAll(t *testing.T) {
 			newBiome: func(dir string) Biome {
 				return Local{
 					PackageDir: dir,
+					HomeDir:    junkHome,
 				}
 			},
 		},
@@ -102,6 +108,7 @@ func TestMkdirAll(t *testing.T) {
 			newBiome: func(dir string) Biome {
 				return forceFallback{Local{
 					PackageDir: dir,
+					HomeDir:    junkHome,
 				}}
 			},
 		},
@@ -110,6 +117,7 @@ func TestMkdirAll(t *testing.T) {
 			newBiome: func(dir string) Biome {
 				return unsupported{Local{
 					PackageDir: dir,
+					HomeDir:    junkHome,
 				}}
 			},
 		},
@@ -144,6 +152,7 @@ func TestEvalSymlinks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	home := t.TempDir()
 	const fname = "foo.txt"
 	const missingFile = "bork.txt"
 	if err := ioutil.WriteFile(filepath.Join(dir, fname), nil, 0666); err != nil {
@@ -162,18 +171,21 @@ func TestEvalSymlinks(t *testing.T) {
 			name: "Local",
 			bio: Local{
 				PackageDir: dir,
+				HomeDir:    home,
 			},
 		},
 		{
 			name: "Fallback",
 			bio: forceFallback{Local{
 				PackageDir: dir,
+				HomeDir:    home,
 			}},
 		},
 		{
 			name: "Unsupported",
 			bio: unsupported{Local{
 				PackageDir: dir,
+				HomeDir:    home,
 			}},
 		},
 	}

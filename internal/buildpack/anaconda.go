@@ -3,111 +3,125 @@ package buildpack
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"os"
-	"path/filepath"
 
 	"github.com/blang/semver"
+	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/internal/ybdata"
 	"github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/types"
 	"zombiezen.com/go/log"
 )
-
-type anacondaBuildTool struct {
-	version         string
-	spec            buildToolSpec
-	pyCompatibleNum int
-}
 
 const anacondaDistMirrorTemplate = "https://repo.continuum.io/miniconda/Miniconda{{.PyMajor}}-{{.Version}}-{{.OS}}-{{.Arch}}.sh"
 const anacondaNewerDistMirrorTemplate = "https://repo.continuum.io/miniconda/Miniconda{{.PyMajor}}-py{{.PyMajor}}{{.PyMinor}}_{{.Version}}-{{.OS}}-{{.Arch}}.sh"
 
-func newAnaconda2BuildTool(toolSpec buildToolSpec) anacondaBuildTool {
-	tool := anacondaBuildTool{
-		version:         toolSpec.version,
-		spec:            toolSpec,
-		pyCompatibleNum: 2,
-	}
-
-	return tool
+func installAnaconda2(ctx context.Context, sys Sys, spec types.BuildpackSpec) (biome.Environment, error) {
+	return installAnaconda(ctx, sys, 2, spec.Version())
 }
 
-func newAnaconda3BuildTool(toolSpec buildToolSpec) anacondaBuildTool {
-	tool := anacondaBuildTool{
-		version:         toolSpec.version,
-		spec:            toolSpec,
-		pyCompatibleNum: 3,
-	}
-
-	return tool
+func installAnaconda3(ctx context.Context, sys Sys, spec types.BuildpackSpec) (biome.Environment, error) {
+	return installAnaconda(ctx, sys, 3, spec.Version())
 }
 
-func (bt anacondaBuildTool) installDir() string {
-	return filepath.Join(bt.spec.cacheDir, "miniconda", fmt.Sprintf("miniconda-%s", bt.version))
-}
+func installAnaconda(ctx context.Context, sys Sys, pyMajor int, version string) (biome.Environment, error) {
+	anacondaRoot := sys.Biome.JoinPath(sys.Biome.Dirs().Tools, "miniconda")
+	anacondaDir := sys.Biome.JoinPath(anacondaRoot, fmt.Sprintf("miniconda-py%d-%s", pyMajor, version))
 
-func (bt anacondaBuildTool) install(ctx context.Context) error {
-	anacondaDir := bt.installDir()
-	setupDir := bt.spec.packageDir
-
-	if _, err := os.Stat(anacondaDir); err == nil {
+	if _, err := biome.EvalSymlinks(ctx, sys.Biome, anacondaDir); err == nil {
 		log.Infof(ctx, "anaconda installed in %s", anacondaDir)
 	} else {
-		log.Infof(ctx, "Installing anaconda")
+		log.Infof(ctx, "Installing anaconda in %s", anacondaDir)
 
 		// Just so happens that for right now, Python 2.7 and 3.7
 		// are the ones used for Miniconda.
 		const pyMinor = 7
-		downloadURL, err := anacondaDownloadURL(bt.version, bt.pyCompatibleNum, pyMinor)
+		downloadURL, err := anacondaDownloadURL(version, pyMajor, pyMinor, sys.Biome.Describe())
 		if err != nil {
-			return fmt.Errorf("anaconda buildpack: %w", err)
+			return biome.Environment{}, err
 		}
 
-		log.Infof(ctx, "Downloading Miniconda from URL %s...", downloadURL)
-		localFile, err := ybdata.DownloadFileWithCache(ctx, http.DefaultClient, bt.spec.dataDirs, downloadURL)
+		localScript, err := ybdata.Download(ctx, sys.HTTPClient, sys.DataDirs, downloadURL)
 		if err != nil {
-			log.Errorf(ctx, "Unable to download: %v\n", err)
-			return err
+			return biome.Environment{}, err
 		}
-		for _, cmd := range []string{
-			fmt.Sprintf("chmod +x %s", localFile),
-			fmt.Sprintf("bash %s -b -p %s", localFile, anacondaDir),
-		} {
-			log.Infof(ctx, "Running: '%v' ", cmd)
-			plumbing.ExecToStdout(cmd, setupDir)
+		defer localScript.Close()
+		err = biome.MkdirAll(ctx, sys.Biome, anacondaRoot)
+		if err != nil {
+			return biome.Environment{}, err
 		}
-
+		scriptPath := anacondaDir + ".sh"
+		err = biome.WriteFile(ctx, sys.Biome, scriptPath, localScript)
+		if err != nil {
+			return biome.Environment{}, err
+		}
+		err = sys.Biome.Run(ctx, &biome.Invocation{
+			// -b: batch mode
+			// -p: installation prefix
+			Argv:   []string{"bash", scriptPath, "-b", "-p", anacondaDir},
+			Stdout: sys.Stdout,
+			Stderr: sys.Stderr,
+		})
+		if err != nil {
+			return biome.Environment{}, fmt.Errorf("miniconda installer: %w", err)
+		}
 	}
 
-	return nil
+	env := biome.Environment{
+		PrependPath: []string{sys.Biome.JoinPath(anacondaDir, "bin")},
+	}
+	err := sys.Biome.Run(ctx, &biome.Invocation{
+		Argv:   []string{"conda", "config", "--set", "always_yes", "yes"},
+		Env:    env,
+		Stdout: sys.Stdout,
+		Stderr: sys.Stderr,
+	})
+	if err != nil {
+		return biome.Environment{}, fmt.Errorf("configure miniconda: %w", err)
+	}
+	err = sys.Biome.Run(ctx, &biome.Invocation{
+		Argv:   []string{"conda", "config", "--set", "changeps1", "no"},
+		Env:    env,
+		Stdout: sys.Stdout,
+		Stderr: sys.Stderr,
+	})
+	if err != nil {
+		return biome.Environment{}, fmt.Errorf("configure miniconda: %w", err)
+	}
+	err = sys.Biome.Run(ctx, &biome.Invocation{
+		Argv:   []string{"conda", "update", "--quiet", "conda"},
+		Env:    env,
+		Stdout: sys.Stdout,
+		Stderr: sys.Stderr,
+	})
+	if err != nil {
+		return biome.Environment{}, fmt.Errorf("configure miniconda: %w", err)
+	}
+	return env, nil
 }
 
-// TODO(light): Only being shared for testing. Once OS/Arch is able to be set in
-// test, we can have fixed constant strings as expected outputs.
-var (
-	anacondaOSMap = map[string]string{
-		"darwin": "MacOSX",
-		"linux":  "Linux",
-		// TODO(light): Omitting Windows, since the extension also needs to change to .exe.
-	}
-	anacondaArchMap = map[string]string{
-		"amd64": "x86_64",
-		"386":   "x86",
-	}
-)
-
-func anacondaDownloadURL(version string, pyMajor, pyMinor int) (string, error) {
+func anacondaDownloadURL(version string, pyMajor, pyMinor int, desc *biome.Descriptor) (string, error) {
+	var (
+		anacondaOSMap = map[string]string{
+			biome.MacOS: "MacOSX",
+			biome.Linux: "Linux",
+			// TODO(light): Omitting Windows, since the extension also needs to change to .exe.
+		}
+		anacondaArchMap = map[string]string{
+			biome.Intel64: "x86_64",
+			biome.Intel32: "x86",
+		}
+	)
 	v, err := semver.Parse(version)
 	if err != nil {
 		return "", fmt.Errorf("compute anaconda %s download url: %w", version, err)
 	}
-	opsys := anacondaOSMap[OS()]
+	opsys := anacondaOSMap[desc.OS]
 	if opsys == "" {
-		return "", fmt.Errorf("compute anaconda %s download url: not found for OS %s", version, OS())
+		return "", fmt.Errorf("compute anaconda %s download url: not found for OS %s", version, desc.OS)
 	}
-	arch := anacondaArchMap[Arch()]
+	arch := anacondaArchMap[desc.Arch]
 	if arch == "" {
-		return "", fmt.Errorf("compute anaconda %s download url: not found for architecture %s", version, Arch())
+		return "", fmt.Errorf("compute anaconda %s download url: not found for architecture %s", version, desc.Arch)
 	}
 
 	data := struct {
@@ -136,22 +150,4 @@ func anacondaDownloadURL(version string, pyMajor, pyMinor int) (string, error) {
 		return "", fmt.Errorf("compute anaconda %s download url: %w", version, err)
 	}
 	return url, nil
-}
-
-func (bt anacondaBuildTool) setup(ctx context.Context) error {
-	installDir := bt.installDir()
-	plumbing.PrependToPath(filepath.Join(installDir, "bin"))
-	setupDir := bt.spec.packageDir
-
-	for _, cmd := range []string{
-		"conda config --set always_yes yes",
-		"conda config --set changeps1 no",
-		"conda update -q conda",
-	} {
-		log.Infof(ctx, "Running: '%v' ", cmd)
-		plumbing.ExecToStdout(cmd, setupDir)
-	}
-
-	return nil
-
 }

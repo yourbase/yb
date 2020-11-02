@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"net/http"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -53,12 +54,14 @@ func (b *execCmd) run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	bio, err := newBiome(ctx, dockerClient, pkg.Path)
+	bio, err := newBiome(ctx, dockerClient, dataDirs, pkg.Path, b.environment)
 	if err != nil {
 		return err
 	}
 	sys := build.Sys{
 		Biome:           bio,
+		DataDirs:        dataDirs,
+		HTTPClient:      http.DefaultClient,
 		DockerClient:    dockerClient,
 		DockerNetworkID: dockerNetworkID,
 		Stdout:          os.Stdout,
@@ -92,10 +95,6 @@ func (b *execCmd) run(ctx context.Context) error {
 			log.Errorf(ctx, "Clean up environment %s: %v", b.environment, err)
 		}
 	}()
-	// TODO(ch2744): Move this into build.Setup.
-	if err := pkg.SetupRuntimeDependencies(ctx, dataDirs); err != nil {
-		return err
-	}
 
 	return build.Execute(ctx, sys, &build.Phase{
 		TargetName: b.environment,

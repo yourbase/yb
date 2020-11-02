@@ -3,101 +3,67 @@ package buildpack
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"os"
-	"strings"
 
-	"github.com/johnewart/archiver"
-	"github.com/yourbase/yb/internal/ybdata"
+	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/types"
 	"zombiezen.com/go/log"
 )
 
-//https://archive.apache.org/dist/heroku/heroku-3/3.3.3/binaries/apache-heroku-3.3.3-bin.tar.gz
-const herokuDistMirror = "https://cli-assets.heroku.com/heroku-{{.OS}}-{{.Arch}}.tar.gz"
-
-type herokuBuildTool struct {
-	version string
-	spec    buildToolSpec
-}
-
-func newHerokuBuildTool(toolSpec buildToolSpec) herokuBuildTool {
-	tool := herokuBuildTool{
-		version: toolSpec.version,
-		spec:    toolSpec,
+func installHeroku(ctx context.Context, sys Sys, spec types.BuildpackSpec) (biome.Environment, error) {
+	if spec.Version() != "latest" {
+		return biome.Environment{}, fmt.Errorf("'latest' is the only allowed version")
+	}
+	herokuDir := sys.Biome.JoinPath(sys.Biome.Dirs().Tools, "heroku")
+	env := biome.Environment{
+		PrependPath: []string{
+			sys.Biome.JoinPath(herokuDir, "bin"),
+		},
 	}
 
-	return tool
-}
-
-func (bt herokuBuildTool) archiveFile() string {
-	return fmt.Sprintf("apache-heroku-%s-bin.tar.gz", bt.version)
-}
-
-func (bt herokuBuildTool) downloadURL() string {
-	opsys := OS()
-	arch := Arch()
-
-	if arch == "amd64" {
-		arch = "x64"
-	}
-
-	data := struct {
-		OS   string
-		Arch string
-	}{
-		opsys,
-		arch,
-	}
-
-	url, _ := plumbing.TemplateToString(herokuDistMirror, data)
-
-	return url
-}
-
-func (bt herokuBuildTool) majorVersion() string {
-	parts := strings.Split(bt.version, ".")
-	return parts[0]
-}
-
-func (bt herokuBuildTool) herokuDir() string {
-	return fmt.Sprintf("%s/heroku-%s", bt.spec.cacheDir, bt.version)
-}
-
-func (bt herokuBuildTool) setup(ctx context.Context) error {
-	herokuDir := bt.herokuDir()
-	cmdPath := fmt.Sprintf("%s/heroku/bin", herokuDir)
-	currentPath := os.Getenv("PATH")
-	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
-	log.Infof(ctx, "Setting PATH to %s", newPath)
-	os.Setenv("PATH", newPath)
-
-	return nil
-}
-
-// TODO, generalize downloader
-func (bt herokuBuildTool) install(ctx context.Context) error {
-	herokuDir := bt.herokuDir()
-
-	if _, err := os.Stat(herokuDir); err == nil {
-		log.Infof(ctx, "Heroku v%s located in %s!", bt.version, herokuDir)
+	if _, err := biome.EvalSymlinks(ctx, sys.Biome, herokuDir); err == nil {
+		// Directory already exists: update it.
+		log.Infof(ctx, "Heroku located in %s; running update...", herokuDir)
+		err := sys.Biome.Run(ctx, &biome.Invocation{
+			Argv:   []string{"heroku", "update"},
+			Env:    env,
+			Stdout: sys.Stdout,
+			Stderr: sys.Stderr,
+		})
+		if err != nil {
+			return biome.Environment{}, err
+		}
 	} else {
-		log.Infof(ctx, "Will install Heroku v%s into %s", bt.version, herokuDir)
-		downloadURL := bt.downloadURL()
-
-		log.Infof(ctx, "Downloading Heroku from URL %s...", downloadURL)
-		localFile, err := ybdata.DownloadFileWithCache(ctx, http.DefaultClient, bt.spec.dataDirs, downloadURL)
-		if err != nil {
-			log.Errorf(ctx, "Unable to download: %v", err)
-			return err
+		// Download Heroku.
+		log.Infof(ctx, "Installing Heroku in %s", herokuDir)
+		const template = "https://cli-assets.heroku.com/heroku-{{.OS}}-{{.Arch}}.tar.gz"
+		desc := sys.Biome.Describe()
+		data := struct {
+			OS   string
+			Arch string
+		}{
+			OS: map[string]string{
+				biome.Linux: "linux",
+				biome.MacOS: "darwin",
+			}[desc.OS],
+			Arch: map[string]string{
+				biome.Intel64: "x64",
+				biome.Intel32: "x86",
+			}[desc.Arch],
 		}
-		err = archiver.Unarchive(localFile, herokuDir)
-		if err != nil {
-			log.Errorf(ctx, "Unable to decompress: %v", err)
-			return err
+		if data.OS == "" {
+			return biome.Environment{}, fmt.Errorf("unsupported os %s", desc.OS)
 		}
-
+		if data.Arch == "" {
+			return biome.Environment{}, fmt.Errorf("unsupported architecture %s", desc.Arch)
+		}
+		downloadURL, err := plumbing.TemplateToString(template, data)
+		if err != nil {
+			return biome.Environment{}, err
+		}
+		if err := extract(ctx, sys, herokuDir, downloadURL, stripTopDirectory); err != nil {
+			return biome.Environment{}, err
+		}
 	}
-
-	return nil
+	return env, nil
 }

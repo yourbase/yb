@@ -3,87 +3,61 @@ package buildpack
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"os"
-	"path/filepath"
 
-	"github.com/yourbase/yb/internal/ybdata"
+	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/types"
 	"zombiezen.com/go/log"
 )
 
-const rustDistMirror = "https://static.rust-lang.org/rustup/dist"
-
-type rustBuildTool struct {
-	version string
-	spec    buildToolSpec
-}
-
-func newRustBuildTool(toolSpec buildToolSpec) rustBuildTool {
-	tool := rustBuildTool{
-		version: toolSpec.version,
-		spec:    toolSpec,
+func installRust(ctx context.Context, sys Sys, spec types.BuildpackSpec) (biome.Environment, error) {
+	rustDir := sys.Biome.JoinPath(sys.Biome.Dirs().Tools, "rust", "rust-"+spec.Version())
+	env := biome.Environment{
+		Vars: map[string]string{
+			"CARGO_HOME": sys.Biome.JoinPath(sys.Biome.Dirs().Home, "cargohome"),
+		},
+		PrependPath: []string{
+			sys.Biome.JoinPath(rustDir, "cargo", "bin"),
+			sys.Biome.JoinPath(rustDir, "rustc", "bin"),
+		},
 	}
 
-	return tool
-}
-
-func (bt rustBuildTool) rustDir() string {
-	return filepath.Join(bt.installDir(), fmt.Sprintf("rust-%s", bt.version))
-}
-
-func (bt rustBuildTool) installDir() string {
-	return filepath.Join(bt.spec.cacheDir, "rust")
-}
-
-func (bt rustBuildTool) setup(ctx context.Context) error {
-	rustDir := bt.rustDir()
-	cmdPath := fmt.Sprintf("%s/bin", rustDir)
-	currentPath := os.Getenv("PATH")
-	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
-	log.Infof(ctx, "Setting PATH to %s", newPath)
-	os.Setenv("PATH", newPath)
-
-	os.Setenv("CARGO_HOME", rustDir)
-	os.Setenv("RUSTUP_HOME", rustDir)
-
-	return nil
-}
-
-func (bt rustBuildTool) install(ctx context.Context) error {
-
-	arch := "x86_64"
-	operatingSystem := "unknown-linux-gnu"
-
-	rustDir := bt.rustDir()
-	installDir := bt.installDir()
-	if err := os.MkdirAll(installDir, 0777); err != nil {
-		return fmt.Errorf("install Rust: %w", err)
+	// If directory already exists, then use it.
+	if _, err := biome.EvalSymlinks(ctx, sys.Biome, rustDir); err == nil {
+		log.Infof(ctx, "Rust v%s located in %s", spec.Version(), rustDir)
+		return env, nil
 	}
 
-	if _, err := os.Stat(rustDir); err == nil {
-		log.Infof(ctx, "Rust v%s located in %s!", bt.version, rustDir)
-	} else {
-		log.Infof(ctx, "Will install Rust v%s into %s", bt.version, rustDir)
-		extension := ""
-		installerFile := fmt.Sprintf("rustup-init%s", extension)
-		downloadURL := fmt.Sprintf("%s/%s-%s/%s", rustDistMirror, arch, operatingSystem, installerFile)
-
-		downloadDir := bt.spec.cacheDir
-		localFile, err := ybdata.DownloadFileWithCache(ctx, http.DefaultClient, bt.spec.dataDirs, downloadURL)
-		if err != nil {
-			log.Errorf(ctx, "Unable to download: %v", err)
-			return err
-		}
-
-		os.Chmod(localFile, 0700)
-		os.Setenv("CARGO_HOME", rustDir)
-		os.Setenv("RUSTUP_HOME", rustDir)
-
-		installCmd := fmt.Sprintf("%s -y", localFile)
-		plumbing.ExecToStdout(installCmd, downloadDir)
+	log.Infof(ctx, "Installing Rust v%s in %s", spec.Version(), rustDir)
+	const template = "https://static.rust-lang.org/dist/rust-{{.Version}}-{{.Arch}}-{{.OS}}.tar.gz"
+	desc := sys.Biome.Describe()
+	data := struct {
+		Version string
+		OS      string
+		Arch    string
+	}{
+		Version: spec.Version(),
+		OS: map[string]string{
+			biome.Linux: "unknown-linux-gnu",
+			biome.MacOS: "apple-darwin",
+		}[desc.OS],
+		Arch: map[string]string{
+			biome.Intel64: "x86_64",
+			biome.Intel32: "i686",
+		}[desc.Arch],
 	}
-
-	return nil
-
+	if data.OS == "" {
+		return biome.Environment{}, fmt.Errorf("unsupported os %s", desc.OS)
+	}
+	if data.Arch == "" {
+		return biome.Environment{}, fmt.Errorf("unsupported architecture %s", desc.Arch)
+	}
+	downloadURL, err := plumbing.TemplateToString(template, data)
+	if err != nil {
+		return biome.Environment{}, err
+	}
+	if err := extract(ctx, sys, rustDir, downloadURL, stripTopDirectory); err != nil {
+		return biome.Environment{}, err
+	}
+	return env, nil
 }

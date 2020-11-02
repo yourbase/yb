@@ -28,14 +28,14 @@ import (
 
 var (
 	_ interface {
-		Biome
+		BiomeCloser
 		fileWriter
 		dirMaker
 		symlinkEvaler
 	} = Local{}
 
 	_ interface {
-		Biome
+		BiomeCloser
 		fileWriter
 		dirMaker
 		symlinkEvaler

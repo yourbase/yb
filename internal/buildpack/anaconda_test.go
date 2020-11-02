@@ -17,18 +17,58 @@
 package buildpack
 
 import (
+	"context"
 	"net/http"
+	"strings"
 	"testing"
 
-	"github.com/yourbase/commons/http/headers"
+	"github.com/yourbase/yb/internal/biome"
+	"github.com/yourbase/yb/types"
+	"zombiezen.com/go/log/testlog"
 )
 
+func TestAnaconda(t *testing.T) {
+	tests := []struct {
+		name string
+		spec types.BuildpackSpec
+	}{
+		{
+			name: "Python2",
+			spec: "anaconda2:4.8.3",
+		},
+		{
+			name: "Python3",
+			spec: "anaconda3:4.8.3",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := testlog.WithTB(context.Background(), t)
+			anacondaBiome, _ := testInstall(ctx, t, test.spec)
+			infoOutput := new(strings.Builder)
+			err := anacondaBiome.Run(ctx, &biome.Invocation{
+				Argv:   []string{"conda", "info"},
+				Stdout: infoOutput,
+				Stderr: infoOutput,
+			})
+			t.Logf("conda info:\n%s", infoOutput)
+			if err != nil {
+				t.Errorf("conda info: %v", err)
+			}
+		})
+	}
+}
+
 func TestAnacondaDownloadURL(t *testing.T) {
-	osArchGolden := anacondaOSMap[OS()] + "-" + anacondaArchMap[Arch()]
+	linux := &biome.Descriptor{
+		OS:   biome.Linux,
+		Arch: biome.Intel64,
+	}
 	tests := []struct {
 		version   string
 		pyMajor   int
 		pyMinor   int
+		desc      *biome.Descriptor
 		want      string
 		wantError bool
 	}{
@@ -36,41 +76,47 @@ func TestAnacondaDownloadURL(t *testing.T) {
 			version: "4.8.3",
 			pyMajor: 3,
 			pyMinor: 7,
-			want:    "https://repo.continuum.io/miniconda/Miniconda3-py37_4.8.3-" + osArchGolden + ".sh",
+			desc:    linux,
+			want:    "https://repo.continuum.io/miniconda/Miniconda3-py37_4.8.3-Linux-x86_64.sh",
 		},
 		{
 			version: "4.8.3",
 			pyMajor: 3,
 			pyMinor: 8,
-			want:    "https://repo.continuum.io/miniconda/Miniconda3-py38_4.8.3-" + osArchGolden + ".sh",
+			desc:    linux,
+			want:    "https://repo.continuum.io/miniconda/Miniconda3-py38_4.8.3-Linux-x86_64.sh",
 		},
 		{
 			version: "4.8.3",
 			pyMajor: 2,
 			pyMinor: 7,
-			want:    "https://repo.continuum.io/miniconda/Miniconda2-py27_4.8.3-" + osArchGolden + ".sh",
+			desc:    linux,
+			want:    "https://repo.continuum.io/miniconda/Miniconda2-py27_4.8.3-Linux-x86_64.sh",
 		},
 		{
 			version: "4.7.10",
 			pyMajor: 3,
 			pyMinor: 7,
-			want:    "https://repo.continuum.io/miniconda/Miniconda3-4.7.10-" + osArchGolden + ".sh",
+			desc:    linux,
+			want:    "https://repo.continuum.io/miniconda/Miniconda3-4.7.10-Linux-x86_64.sh",
 		},
 		{
 			version: "4.7.10",
 			pyMajor: 3,
 			pyMinor: 8,
-			want:    "https://repo.continuum.io/miniconda/Miniconda3-4.7.10-" + osArchGolden + ".sh",
+			desc:    linux,
+			want:    "https://repo.continuum.io/miniconda/Miniconda3-4.7.10-Linux-x86_64.sh",
 		},
 		{
 			version: "4.7.10",
 			pyMajor: 2,
 			pyMinor: 7,
-			want:    "https://repo.continuum.io/miniconda/Miniconda2-4.7.10-" + osArchGolden + ".sh",
+			desc:    linux,
+			want:    "https://repo.continuum.io/miniconda/Miniconda2-4.7.10-Linux-x86_64.sh",
 		},
 	}
 	for _, test := range tests {
-		got, err := anacondaDownloadURL(test.version, test.pyMajor, test.pyMinor)
+		got, err := anacondaDownloadURL(test.version, test.pyMajor, test.pyMinor, test.desc)
 		if got != test.want || (err != nil) != test.wantError {
 			errString := "<nil>"
 			if test.wantError {
@@ -85,26 +131,9 @@ func TestAnacondaDownloadURL(t *testing.T) {
 			t.Skip("Skipping due to -short")
 		}
 		for _, test := range tests {
-			if test.wantError {
-				continue
+			if !test.wantError {
+				verifyURLExists(t, http.MethodHead, test.want)
 			}
-			resp, err := http.Head(test.want)
-			if err != nil {
-				t.Errorf("FAIL %s: %v", test.want, err)
-				continue
-			}
-			resp.Body.Close()
-			if resp.StatusCode != http.StatusOK {
-				t.Errorf("FAIL %s: HTTP %s", test.want, resp.Status)
-				continue
-			}
-			t.Logf("%s found. %s: %s %s: %s",
-				test.want,
-				headers.ContentType,
-				resp.Header.Get(headers.ContentType),
-				headers.ContentLength,
-				resp.Header.Get(headers.ContentLength),
-			)
 		}
 	})
 }

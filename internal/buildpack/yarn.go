@@ -3,79 +3,30 @@ package buildpack
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"os"
-	"path/filepath"
 
-	"github.com/johnewart/archiver"
-	"github.com/yourbase/yb/internal/ybdata"
-	"github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/internal/biome"
+	"github.com/yourbase/yb/types"
 	"zombiezen.com/go/log"
 )
 
-type yarnBuildTool struct {
-	version string
-	spec    buildToolSpec
-}
-
-func newYarnBuildTool(toolSpec buildToolSpec) yarnBuildTool {
-	tool := yarnBuildTool{
-		version: toolSpec.version,
-		spec:    toolSpec,
+func installYarn(ctx context.Context, sys Sys, spec types.BuildpackSpec) (biome.Environment, error) {
+	yarnDir := sys.Biome.JoinPath(sys.Biome.Dirs().Tools, "yarn", "yarn-v"+spec.Version())
+	env := biome.Environment{
+		PrependPath: []string{
+			sys.Biome.JoinPath(yarnDir, "bin"),
+		},
 	}
 
-	return tool
-}
-
-func (bt yarnBuildTool) yarnDir() string {
-	return filepath.Join(bt.installDir(), fmt.Sprintf("yarn-v%s", bt.version))
-}
-
-func (bt yarnBuildTool) installDir() string {
-	return filepath.Join(bt.spec.cacheDir, "yarn")
-}
-
-func (bt yarnBuildTool) downloadURL() string {
-	urlTemplate := "https://github.com/yarnpkg/yarn/releases/download/v{{ .Version }}/yarn-v{{ .Version }}.tar.gz"
-	data := struct {
-		Version string
-	}{
-		bt.version,
+	// If directory already exists, then use it.
+	if _, err := biome.EvalSymlinks(ctx, sys.Biome, yarnDir); err == nil {
+		log.Infof(ctx, "Yarn v%s located in %s", spec.Version(), yarnDir)
+		return env, nil
 	}
 
-	url, _ := plumbing.TemplateToString(urlTemplate, data)
-
-	return url
-}
-
-func (bt yarnBuildTool) install(ctx context.Context) error {
-
-	yarnDir := bt.yarnDir()
-	installDir := bt.installDir()
-
-	if _, err := os.Stat(yarnDir); err == nil {
-		log.Infof(ctx, "Yarn v%s located in %s!", bt.version, yarnDir)
-	} else {
-		log.Infof(ctx, "Will install Yarn v%s into %s", bt.version, installDir)
-		downloadURL := bt.downloadURL()
-		log.Infof(ctx, "Downloading from URL %s...", downloadURL)
-		localFile, err := ybdata.DownloadFileWithCache(ctx, http.DefaultClient, bt.spec.dataDirs, downloadURL)
-		if err != nil {
-			return fmt.Errorf("Unable to download %s: %v", downloadURL, err)
-		}
-
-		if err := archiver.Unarchive(localFile, installDir); err != nil {
-			return fmt.Errorf("Unable to decompress archive: %v", err)
-		}
+	log.Infof(ctx, "Installing Yarn v%s in %s", spec.Version(), yarnDir)
+	downloadURL := fmt.Sprintf("https://github.com/yarnpkg/yarn/releases/download/v%s/yarn-v%s.tar.gz", spec.Version(), spec.Version())
+	if err := extract(ctx, sys, yarnDir, downloadURL, stripTopDirectory); err != nil {
+		return biome.Environment{}, err
 	}
-
-	return nil
-}
-
-func (bt yarnBuildTool) setup(ctx context.Context) error {
-	yarnDir := bt.yarnDir()
-	cmdPath := filepath.Join(yarnDir, "bin")
-	plumbing.PrependToPath(cmdPath)
-
-	return nil
+	return env, nil
 }

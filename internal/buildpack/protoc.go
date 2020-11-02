@@ -3,111 +3,55 @@ package buildpack
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"os"
-	"path/filepath"
-	"strings"
 
-	"github.com/johnewart/archiver"
-	"github.com/yourbase/yb/internal/ybdata"
+	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/types"
 	"zombiezen.com/go/log"
 )
 
-// https://github.com/google/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip
-const protocDistMirror = "https://github.com/google/protobuf/releases/download/v{{.Version}}/protoc-{{.Version}}-{{.OS}}-x86_64.{{.Extension}}"
-
-type protocBuildTool struct {
-	version string
-	spec    buildToolSpec
-}
-
-func newProtocBuildTool(spec buildToolSpec) protocBuildTool {
-
-	tool := protocBuildTool{
-		version: spec.version,
-		spec:    spec,
+func installProtoc(ctx context.Context, sys Sys, spec types.BuildpackSpec) (biome.Environment, error) {
+	protocDir := sys.Biome.JoinPath(sys.Biome.Dirs().Tools, "protoc", "protoc-"+spec.Version())
+	env := biome.Environment{
+		PrependPath: []string{
+			sys.Biome.JoinPath(protocDir, "bin"),
+		},
 	}
 
-	return tool
-}
-
-func (bt protocBuildTool) downloadURL() string {
-	opsys := OS()
-	arch := Arch()
-	extension := "zip"
-
-	if arch == "amd64" {
-		arch = "x64"
+	// If directory already exists, then use it.
+	if _, err := biome.EvalSymlinks(ctx, sys.Biome, protocDir); err == nil {
+		log.Infof(ctx, "protoc v%s located in %s", spec.Version(), protocDir)
+		return env, nil
 	}
 
-	if opsys == "darwin" {
-		opsys = "osx"
-	}
-
-	version := bt.version
-
+	log.Infof(ctx, "Installing protoc v%s in %s", spec.Version(), protocDir)
+	const template = "https://github.com/google/protobuf/releases/download/v{{.Version}}/protoc-{{.Version}}-{{.Variant}}.zip"
 	data := struct {
-		OS        string
-		Arch      string
-		Version   string
-		Extension string
+		Version string
+		Variant string
 	}{
-		opsys,
-		arch,
-		version,
-		extension,
+		Version: spec.Version(),
 	}
-
-	url, _ := plumbing.TemplateToString(protocDistMirror, data)
-
-	return url
-}
-
-func (bt protocBuildTool) majorVersion() string {
-	parts := strings.Split(bt.version, ".")
-	return parts[0]
-}
-
-func (bt protocBuildTool) installDir() string {
-	return filepath.Join(bt.spec.cacheDir, "protoc", fmt.Sprintf("protoc-%s", bt.version))
-}
-
-func (bt protocBuildTool) protocDir() string {
-	return filepath.Join(bt.installDir())
-}
-
-func (bt protocBuildTool) setup(ctx context.Context) error {
-	protocDir := bt.protocDir()
-
-	cmdPath := filepath.Join(protocDir, "bin")
-	plumbing.PrependToPath(cmdPath)
-	return nil
-}
-
-// TODO, generalize downloader
-func (bt protocBuildTool) install(ctx context.Context) error {
-	protocDir := bt.protocDir()
-	installDir := bt.installDir()
-
-	if _, err := os.Stat(protocDir); err == nil {
-		log.Infof(ctx, "Protoc v%s located in %s!", bt.version, protocDir)
-		return nil
+	switch desc := sys.Biome.Describe(); {
+	case desc.OS == biome.Linux && desc.Arch == biome.Intel64:
+		data.Variant = "linux-x86_64"
+	case desc.OS == biome.Linux && desc.Arch == biome.Intel32:
+		data.Variant = "linux-x86_32"
+	case desc.OS == biome.MacOS && desc.Arch == biome.Intel64:
+		data.Variant = "osx-x86_64"
+	case desc.OS == biome.Windows && desc.Arch == biome.Intel64:
+		data.Variant = "win64"
+	case desc.OS == biome.Windows && desc.Arch == biome.Intel32:
+		data.Variant = "win32"
+	default:
+		return biome.Environment{}, fmt.Errorf("unsupported os/arch %s/%s", desc.OS, desc.Arch)
 	}
-	log.Infof(ctx, "Will install Protoc v%s into %s", bt.version, protocDir)
-	downloadURL := bt.downloadURL()
-
-	log.Infof(ctx, "Downloading Protoc from URL %s...", downloadURL)
-	localFile, err := ybdata.DownloadFileWithCache(ctx, http.DefaultClient, bt.spec.dataDirs, downloadURL)
+	downloadURL, err := plumbing.TemplateToString(template, data)
 	if err != nil {
-		log.Errorf(ctx, "Unable to download: %v", err)
-		return err
+		return biome.Environment{}, err
 	}
-	err = archiver.Unarchive(localFile, installDir)
-	if err != nil {
-		log.Errorf(ctx, "Unable to decompress: %v", err)
-		return err
+	if err := extract(ctx, sys, protocDir, downloadURL, tarbomb); err != nil {
+		return biome.Environment{}, err
 	}
-
-	return nil
+	return env, nil
 }

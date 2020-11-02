@@ -32,8 +32,8 @@ func TestSetup(t *testing.T) {
 	bio := &biome.Fake{
 		Separator: '/',
 		Descriptor: biome.Descriptor{
-			OS:   "linux",
-			Arch: "amd64",
+			OS:   biome.Linux,
+			Arch: biome.Intel64,
 		},
 		RunFunc: func(_ context.Context, invoke *biome.Invocation) error {
 			gotEnv = invoke.Env
@@ -51,6 +51,11 @@ func TestSetup(t *testing.T) {
 	if err != nil {
 		t.Fatal("Setup:", err)
 	}
+	defer func() {
+		if err := gotBiome.Close(); err != nil {
+			t.Error("Close:", err)
+		}
+	}()
 	err = gotBiome.Run(ctx, &biome.Invocation{
 		Argv: []string{"env"},
 	})

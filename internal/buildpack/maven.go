@@ -3,94 +3,50 @@ package buildpack
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 
-	"github.com/johnewart/archiver"
-	"github.com/yourbase/yb/internal/ybdata"
+	"github.com/yourbase/yb/internal/biome"
+	"github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/types"
 	"zombiezen.com/go/log"
 )
 
-//https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apache-maven-3.3.3-bin.tar.gz
-const mavenDistMirror = "https://archive.apache.org/dist/maven/"
+func installMaven(ctx context.Context, sys Sys, spec types.BuildpackSpec) (biome.Environment, error) {
+	version := spec.Version()
+	dotIndex := strings.IndexByte(version, '.')
+	if dotIndex == -1 {
+		return biome.Environment{}, fmt.Errorf("invalid version %q", version)
+	}
+	majorVersion := version[:dotIndex]
 
-type mavenBuildTool struct {
-	version string
-	spec    buildToolSpec
-}
-
-func newMavenBuildTool(toolSpec buildToolSpec) mavenBuildTool {
-	tool := mavenBuildTool{
-		version: toolSpec.version,
-		spec:    toolSpec,
+	mavenDir := sys.Biome.JoinPath(sys.Biome.Dirs().Tools, "maven", "apache-maven-"+version)
+	env := biome.Environment{
+		PrependPath: []string{
+			sys.Biome.JoinPath(mavenDir, "bin"),
+		},
 	}
 
-	return tool
-}
-
-func (bt mavenBuildTool) archiveFile() string {
-	return fmt.Sprintf("apache-maven-%s-bin.tar.gz", bt.version)
-}
-
-func (bt mavenBuildTool) downloadURL() string {
-	return fmt.Sprintf(
-		"%s/maven-%s/%s/binaries/%s",
-		mavenDistMirror,
-		bt.majorVersion(),
-		bt.version,
-		bt.archiveFile(),
-	)
-}
-
-func (bt mavenBuildTool) majorVersion() string {
-	parts := strings.Split(bt.version, ".")
-	return parts[0]
-}
-
-func (bt mavenBuildTool) installDir() string {
-	return filepath.Join(bt.spec.cacheDir, "maven")
-}
-
-func (bt mavenBuildTool) mavenDir() string {
-	return filepath.Join(bt.installDir(), fmt.Sprintf("apache-maven-%s", bt.version))
-}
-
-func (bt mavenBuildTool) setup(ctx context.Context) error {
-	mavenDir := bt.mavenDir()
-	cmdPath := fmt.Sprintf("%s/bin", mavenDir)
-	currentPath := os.Getenv("PATH")
-	newPath := fmt.Sprintf("%s:%s", cmdPath, currentPath)
-	log.Infof(ctx, "Setting PATH to %s", newPath)
-	os.Setenv("PATH", newPath)
-
-	return nil
-}
-
-// TODO, generalize downloader
-func (bt mavenBuildTool) install(ctx context.Context) error {
-	mavenDir := bt.mavenDir()
-
-	if _, err := os.Stat(mavenDir); err == nil {
-		log.Infof(ctx, "Maven v%s located in %s!", bt.version, mavenDir)
-	} else {
-		log.Infof(ctx, "Will install Maven v%s into %s", bt.version, bt.installDir())
-		downloadURL := bt.downloadURL()
-
-		log.Infof(ctx, "Downloading Maven from URL %s...", downloadURL)
-		localFile, err := ybdata.DownloadFileWithCache(ctx, http.DefaultClient, bt.spec.dataDirs, downloadURL)
-		if err != nil {
-			log.Errorf(ctx, "Unable to download: %v", err)
-			return err
-		}
-		err = archiver.Unarchive(localFile, bt.installDir())
-		if err != nil {
-			log.Errorf(ctx, "Unable to decompress: %v", err)
-			return err
-		}
-
+	// If directory already exists, then use it.
+	if _, err := biome.EvalSymlinks(ctx, sys.Biome, mavenDir); err == nil {
+		log.Infof(ctx, "Maven v%s located in %s", spec.Version(), mavenDir)
+		return env, nil
 	}
 
-	return nil
+	log.Infof(ctx, "Installing Maven v%s in %s", spec.Version(), mavenDir)
+	const template = "https://archive.apache.org/dist/maven/maven-{{.MajorVersion}}/{{.Version}}/binaries/apache-maven-{{.Version}}-bin.tar.gz"
+	data := struct {
+		Version      string
+		MajorVersion string
+	}{
+		Version:      spec.Version(),
+		MajorVersion: majorVersion,
+	}
+	downloadURL, err := plumbing.TemplateToString(template, data)
+	if dotIndex == -1 {
+		return biome.Environment{}, err
+	}
+	if err := extract(ctx, sys, mavenDir, downloadURL, stripTopDirectory); err != nil {
+		return biome.Environment{}, err
+	}
+	return env, nil
 }

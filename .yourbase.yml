@@ -5,7 +5,7 @@ dependencies:
 build_targets:
   - name: default
     commands:
-      - go test ./...
+      - go test -mod=readonly -race -short ./...
       - release/build.sh yb
 
   - name: integration

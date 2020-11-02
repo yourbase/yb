@@ -19,7 +19,7 @@ package build
 import (
 	"context"
 	"fmt"
-	"io"
+	"math/rand"
 	"net"
 	"os"
 	"strings"
@@ -29,19 +29,15 @@ import (
 	"github.com/yourbase/commons/xcontext"
 	"github.com/yourbase/narwhal"
 	"github.com/yourbase/yb/internal/biome"
+	"github.com/yourbase/yb/internal/buildpack"
 	"github.com/yourbase/yb/internal/ybtrace"
 	"github.com/yourbase/yb/plumbing"
+	"github.com/yourbase/yb/types"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/label"
 	"zombiezen.com/go/log"
 )
-
-// BiomeCloser is a biome that has resources that need to be cleaned up.
-type BiomeCloser interface {
-	biome.Biome
-	io.Closer
-}
 
 // PhaseDeps defines the dependencies for a build target phase.
 //
@@ -49,19 +45,19 @@ type BiomeCloser interface {
 // loader package.
 type PhaseDeps struct {
 	TargetName string
+	Buildpacks []types.BuildpackSpec
 	Resources  map[string]*narwhal.ContainerDefinition
 
 	// EnvironmentTemplate is the set of environment variables that should be set
 	// in the biome. These variables may include substitutions for container IP
 	// addresses in the form `{{ .Containers.IP "mycontainer" }}`.
 	EnvironmentTemplate map[string]string
-	// TODO(ch2744): Buildpacks
 }
 
 // Setup arranges for the phase's dependencies to be available, returning a new
 // biome that has the dependencies configured. It is the caller's responsibility
 // to call Close on the returned biome.
-func Setup(ctx context.Context, sys Sys, phase *PhaseDeps) (_ BiomeCloser, err error) {
+func Setup(ctx context.Context, sys Sys, phase *PhaseDeps) (_ biome.BiomeCloser, err error) {
 	ctx, span := ybtrace.Start(ctx, "Setup "+phase.TargetName, trace.WithAttributes(
 		label.String("target", phase.TargetName),
 	))
@@ -71,6 +67,28 @@ func Setup(ctx context.Context, sys Sys, phase *PhaseDeps) (_ BiomeCloser, err e
 		}
 		span.End()
 	}()
+
+	// Randomize pack setup order to surface unexpected data dependencies.
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	packs := append([]types.BuildpackSpec(nil), phase.Buildpacks...)
+	if len(packs) > 0 {
+		for i := range packs[:len(packs)-1] {
+			j := i + rng.Intn(len(phase.Buildpacks)-i)
+			packs[i], packs[j] = packs[j], packs[i]
+		}
+	}
+
+	// Install all buildpacks.
+	newEnv := biome.Environment{
+		Vars: make(map[string]string),
+	}
+	for _, pack := range packs {
+		packEnv, err := buildpack.Install(ctx, sys, pack)
+		if err != nil {
+			return nil, fmt.Errorf("setup %s: %w", phase.TargetName, err)
+		}
+		newEnv = newEnv.Merge(packEnv)
+	}
 
 	expContainers, closeFunc, err := startContainers(ctx, sys, phase.Resources)
 	if err != nil {
@@ -84,23 +102,20 @@ func Setup(ctx context.Context, sys Sys, phase *PhaseDeps) (_ BiomeCloser, err e
 	exp := configExpansion{
 		Containers: expContainers,
 	}
-	env := biome.Environment{
-		Vars: make(map[string]string),
-	}
 	for k, t := range phase.EnvironmentTemplate {
 		v, err := exp.expand(t)
 		if err != nil {
 			return nil, fmt.Errorf("setup %s: expand %s: %w", phase.TargetName, k, err)
 		}
-		env.Vars[k] = v
+		newEnv.Vars[k] = v
 	}
-	return biomeCloser{
-		Biome: biome.EnvBiome{
-			Biome: sys.Biome,
-			Env:   env,
+	return biome.WithClose(
+		biome.EnvBiome{
+			Biome: biome.NopCloser(sys.Biome),
+			Env:   newEnv,
 		},
-		closeFunc: closeFunc,
-	}, nil
+		closeFunc,
+	), nil
 }
 
 type container struct {
@@ -127,7 +142,7 @@ func startContainers(ctx context.Context, sys Sys, defs map[string]*narwhal.Cont
 		}
 	}
 	if len(containers) == 0 {
-		return containersExpansion{}, nil, nil
+		return containersExpansion{}, func() error { return nil }, nil
 	}
 	if sys.DockerClient == nil {
 		names := make([]string, 0, len(containers))
@@ -292,16 +307,4 @@ func (exp containersExpansion) IP(label string) (string, error) {
 		return "", fmt.Errorf("find IP for %s: unknown container", label)
 	}
 	return ip, nil
-}
-
-type biomeCloser struct {
-	biome.Biome
-	closeFunc func() error
-}
-
-func (bc biomeCloser) Close() error {
-	if bc.closeFunc == nil {
-		return nil
-	}
-	return bc.closeFunc()
 }
