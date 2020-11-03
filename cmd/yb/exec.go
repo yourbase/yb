@@ -58,6 +58,11 @@ func (b *execCmd) run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if err := bio.Close(); err != nil {
+			log.Warnf(ctx, "Clean up environment: %v", err)
+		}
+	}()
 	sys := build.Sys{
 		Biome:           bio,
 		DataDirs:        dataDirs,

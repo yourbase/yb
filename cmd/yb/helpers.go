@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"os"
+	"strings"
 
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/yourbase/narwhal"
@@ -26,7 +29,9 @@ func connectDockerClient(useDocker bool) (*docker.Client, error) {
 	return dockerClient, nil
 }
 
-func newBiome(ctx context.Context, client *docker.Client, dataDirs *ybdata.Dirs, packageDir, target string) (biome.Biome, error) {
+const netrcFilename = ".netrc"
+
+func newBiome(ctx context.Context, client *docker.Client, dataDirs *ybdata.Dirs, packageDir, target string) (biome.BiomeCloser, error) {
 	// TODO(ch2743): Eventually also allow Docker container.
 	l := biome.Local{
 		PackageDir: packageDir,
@@ -36,7 +41,72 @@ func newBiome(ctx context.Context, client *docker.Client, dataDirs *ybdata.Dirs,
 	if err != nil {
 		return nil, fmt.Errorf("create build context for target %s: %w", target, err)
 	}
-	return l, nil
+	bio, err := injectNetrc(ctx, l)
+	if err != nil {
+		return nil, fmt.Errorf("create build context for target %s: %w", target, err)
+	}
+	return bio, nil
+}
+
+func injectNetrc(ctx context.Context, bio biome.BiomeCloser) (biome.BiomeCloser, error) {
+	const gitHubTokenVar = "YB_GH_TOKEN"
+	token := os.Getenv(gitHubTokenVar)
+	if token == "" {
+		return bio, nil
+	}
+	log.Infof(ctx, "Writing .netrc")
+	netrcPath := bio.JoinPath(bio.Dirs().Home, netrcFilename)
+	err := biome.WriteFile(ctx, bio, netrcPath, bytes.NewReader(generateNetrc(token)))
+	if err != nil {
+		return nil, fmt.Errorf("write netrc: %w", err)
+	}
+	err = runCommand(ctx, bio, "chmod", "600", netrcPath)
+	if err != nil {
+		// Not fatal. File will be removed later.
+		log.Warnf(ctx, "Making temporary .netrc private: %v", err)
+	}
+	bio = biome.WithClose(bio, func() error {
+		ctx := context.Background()
+		err := runCommand(ctx, bio,
+			"rm", bio.JoinPath(bio.Dirs().Home, netrcFilename))
+		if err != nil {
+			log.Warnf(ctx, "Could not clean up .netrc: %v", err)
+		}
+		return nil
+	})
+	return biome.EnvBiome{
+		Biome: bio,
+		Env: biome.Environment{
+			Vars: map[string]string{
+				gitHubTokenVar: token,
+			},
+		},
+	}, nil
+}
+
+func generateNetrc(gitHubToken string) []byte {
+	if gitHubToken == "" {
+		return nil
+	}
+	buf := new(bytes.Buffer)
+	fmt.Fprintf(buf, "machine github.com login x-access-token password %s\n", gitHubToken)
+	return buf.Bytes()
+}
+
+func runCommand(ctx context.Context, bio biome.Biome, argv ...string) error {
+	output := new(strings.Builder)
+	err := bio.Run(ctx, &biome.Invocation{
+		Argv:   argv,
+		Stdout: output,
+		Stderr: output,
+	})
+	if err != nil {
+		if output.Len() > 0 {
+			return fmt.Errorf("%w\n%s", err, output)
+		}
+		return err
+	}
+	return nil
 }
 
 func targetToPhaseDeps(target *types.BuildTarget) (*build.PhaseDeps, error) {
