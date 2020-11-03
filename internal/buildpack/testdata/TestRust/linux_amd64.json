@@ -4,50 +4,48 @@
 		"Arch": "amd64"
 	},
 	"Dirs": {
-		"Package": "/tmp/TestRust899693908/001",
-		"Home": "/tmp/TestRust899693908/002",
-		"Tools": "/tmp/TestRust899693908/002/.cache/yb/tools"
+		"Package": "/tmp/TestRust801473782/001",
+		"Home": "/tmp/TestRust801473782/002",
+		"Tools": "/tmp/TestRust801473782/002/.cache/yb/tools"
 	},
 	"JoinedPaths": [
 		{
 			"Elems": [
-				"/tmp/TestRust899693908/002/.cache/yb/tools",
+				"/tmp/TestRust801473782/002/.cache/yb/tools",
 				"rust",
 				"rust-1.43.1"
 			],
-			"Result": "/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1"
+			"Result": "/tmp/TestRust801473782/002/.cache/yb/tools/rust/rust-1.43.1"
 		},
 		{
 			"Elems": [
-				"/tmp/TestRust899693908/002",
+				"/tmp/TestRust801473782/002",
 				"cargohome"
 			],
-			"Result": "/tmp/TestRust899693908/002/cargohome"
+			"Result": "/tmp/TestRust801473782/002/cargohome"
 		},
 		{
 			"Elems": [
-				"/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1",
-				"cargo",
+				"/tmp/TestRust801473782/002/.cache/yb/tools/rust/rust-1.43.1",
 				"bin"
 			],
-			"Result": "/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1/cargo/bin"
+			"Result": "/tmp/TestRust801473782/002/.cache/yb/tools/rust/rust-1.43.1/bin"
 		},
 		{
 			"Elems": [
-				"/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1",
-				"rustc",
-				"bin"
+				"/tmp/TestRust801473782/002/.cache/yb/tools/rust/rust-1.43.1-download",
+				"install.sh"
 			],
-			"Result": "/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1/rustc/bin"
+			"Result": "/tmp/TestRust801473782/002/.cache/yb/tools/rust/rust-1.43.1-download/install.sh"
 		}
 	],
 	"CleanedPaths": {
-		"/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1": "/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1",
-		"/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1.tar.gz": "/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1.tar.gz"
+		"/tmp/TestRust801473782/002/.cache/yb/tools/rust/rust-1.43.1-download": "/tmp/TestRust801473782/002/.cache/yb/tools/rust/rust-1.43.1-download",
+		"/tmp/TestRust801473782/002/.cache/yb/tools/rust/rust-1.43.1-download.tar.gz": "/tmp/TestRust801473782/002/.cache/yb/tools/rust/rust-1.43.1-download.tar.gz"
 	},
 	"AbsPaths": {
-		"/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1": true,
-		"/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1.tar.gz": true
+		"/tmp/TestRust801473782/002/.cache/yb/tools/rust/rust-1.43.1-download": true,
+		"/tmp/TestRust801473782/002/.cache/yb/tools/rust/rust-1.43.1-download.tar.gz": true
 	},
 	"Invocations": [
 		{
@@ -55,7 +53,7 @@
 				"readlink",
 				"--canonicalize-existing",
 				"--no-newline",
-				"/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1"
+				"/tmp/TestRust801473782/002/.cache/yb/tools/rust/rust-1.43.1"
 			],
 			"Output": {
 				"Stdout": "",
@@ -67,7 +65,7 @@
 			"Argv": [
 				"mkdir",
 				"-p",
-				"/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1"
+				"/tmp/TestRust801473782/002/.cache/yb/tools/rust/rust-1.43.1-download"
 			],
 			"Output": {
 				"Stderr": ""
@@ -76,7 +74,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1.tar.gz"
+				"/tmp/TestRust801473782/002/.cache/yb/tools/rust/rust-1.43.1-download.tar.gz"
 			],
 			"StdinSHA256": "25cd71b95bba0daef56bad8c943a87368c4185b90983f4412f46e3e2418c0505",
 			"Output": {
@@ -89,11 +87,11 @@
 				"-x",
 				"-z",
 				"-f",
-				"/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1.tar.gz",
+				"/tmp/TestRust801473782/002/.cache/yb/tools/rust/rust-1.43.1-download.tar.gz",
 				"--strip-components",
 				"1"
 			],
-			"Dir": "/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1",
+			"Dir": "/tmp/TestRust801473782/002/.cache/yb/tools/rust/rust-1.43.1-download",
 			"Output": {
 				"Combined": ""
 			}
@@ -102,10 +100,20 @@
 			"Argv": [
 				"rm",
 				"-f",
-				"/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1.tar.gz"
+				"/tmp/TestRust801473782/002/.cache/yb/tools/rust/rust-1.43.1-download.tar.gz"
 			],
 			"Output": {
 				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"/tmp/TestRust801473782/002/.cache/yb/tools/rust/rust-1.43.1-download/install.sh",
+				"--prefix=/tmp/TestRust801473782/002/.cache/yb/tools/rust/rust-1.43.1"
+			],
+			"Dir": "/tmp/TestRust801473782/002/.cache/yb/tools/rust/rust-1.43.1-download",
+			"Output": {
+				"Combined": "aW5zdGFsbDogY3JlYXRpbmcgdW5pbnN0YWxsIHNjcmlwdCBhdCAvdG1wL1Rlc3RSdXN0ODAxNDczNzgyLzAwMi8uY2FjaGUveWIvdG9vbHMvcnVzdC9ydXN0LTEuNDMuMS9saWIvcnVzdGxpYi91bmluc3RhbGwuc2gKaW5zdGFsbDogaW5zdGFsbGluZyBjb21wb25lbnQgJ3J1c3RjJwppbnN0YWxsOiBpbnN0YWxsaW5nIGNvbXBvbmVudCAnY2FyZ28nCmluc3RhbGw6IGluc3RhbGxpbmcgY29tcG9uZW50ICdybHMtcHJldmlldycKaW5zdGFsbDogaW5zdGFsbGluZyBjb21wb25lbnQgJ2NsaXBweS1wcmV2aWV3JwppbnN0YWxsOiBpbnN0YWxsaW5nIGNvbXBvbmVudCAnbWlyaS1wcmV2aWV3JwppbnN0YWxsOiBpbnN0YWxsaW5nIGNvbXBvbmVudCAncnVzdGZtdC1wcmV2aWV3JwppbnN0YWxsOiBpbnN0YWxsaW5nIGNvbXBvbmVudCAnbGx2bS10b29scy1wcmV2aWV3JwppbnN0YWxsOiBpbnN0YWxsaW5nIGNvbXBvbmVudCAncnVzdC1hbmFseXNpcy14ODZfNjQtdW5rbm93bi1saW51eC1nbnUnCmluc3RhbGw6IGluc3RhbGxpbmcgY29tcG9uZW50ICdydXN0LXN0ZC14ODZfNjQtdW5rbm93bi1saW51eC1nbnUnCmluc3RhbGw6IGluc3RhbGxpbmcgY29tcG9uZW50ICdydXN0LWRvY3MnCmluc3RhbGw6IFdBUk5JTkc6IGZhaWxlZCB0byBydW4gbGRjb25maWcuIHRoaXMgbWF5IGhhcHBlbiB3aGVuIG5vdCBpbnN0YWxsaW5nIGFzIHJvb3QuIHJ1biB3aXRoIC0tdmVyYm9zZSB0byBzZWUgdGhlIGVycm9yCgogICAgUnVzdCBpcyByZWFkeSB0byByb2xsLgoK"
 			}
 		},
 		{
@@ -114,11 +122,10 @@
 				"--version"
 			],
 			"EnvVars": {
-				"CARGO_HOME": "/tmp/TestRust899693908/002/cargohome"
+				"CARGO_HOME": "/tmp/TestRust801473782/002/cargohome"
 			},
 			"PrependPath": [
-				"/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1/cargo/bin",
-				"/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1/rustc/bin"
+				"/tmp/TestRust801473782/002/.cache/yb/tools/rust/rust-1.43.1/bin"
 			],
 			"Output": {
 				"Combined": "cnVzdGMgMS40My4xICg4ZDY5ODQwYWIgMjAyMC0wNS0wNCkK"
@@ -130,11 +137,10 @@
 				"--version"
 			],
 			"EnvVars": {
-				"CARGO_HOME": "/tmp/TestRust899693908/002/cargohome"
+				"CARGO_HOME": "/tmp/TestRust801473782/002/cargohome"
 			},
 			"PrependPath": [
-				"/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1/cargo/bin",
-				"/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1/rustc/bin"
+				"/tmp/TestRust801473782/002/.cache/yb/tools/rust/rust-1.43.1/bin"
 			],
 			"Output": {
 				"Combined": "Y2FyZ28gMS40My4wICgyY2JlOTA0OGUgMjAyMC0wNS0wMykK"
