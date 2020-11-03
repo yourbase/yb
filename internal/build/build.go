@@ -20,6 +20,7 @@ package build
 import (
 	"context"
 	"fmt"
+	slashpath "path"
 	"strings"
 
 	"github.com/google/shlex"
@@ -62,7 +63,7 @@ func Execute(ctx context.Context, sys Sys, target *Phase) (err error) {
 		if isSlashAbs(target.Root) {
 			return fmt.Errorf("build %s: root %s is absolute", target.TargetName, target.Root)
 		}
-		workDir = sys.Biome.PathFromSlash(target.Root)
+		workDir = joinSlashPath(sys.Biome, "", target.Root)
 	}
 	// Validate commands before running them.
 	for _, cmdString := range target.Commands {
@@ -113,7 +114,10 @@ func runCommand(ctx context.Context, sys Sys, dir string, cmdString string) (new
 
 	if newDir, ok := parseChdir(cmdString); ok {
 		// TODO(ch2195): What do we expect this to do in general?
-		return sys.Biome.JoinPath(dir, sys.Biome.PathFromSlash(newDir)), nil
+		if isSlashAbs(newDir) {
+			return dir, fmt.Errorf("run build command %q: cd: absolute path not allowed", cmdString)
+		}
+		return joinSlashPath(sys.Biome, dir, newDir), nil
 	}
 	argv, err := shlex.Split(cmdString)
 	if err != nil {
@@ -138,6 +142,12 @@ func parseChdir(cmdString string) (dir string, ok bool) {
 		return "", false
 	}
 	return strings.TrimSpace(cmdString[len(prefix):]), true
+}
+
+func joinSlashPath(bio biome.Biome, dir, path string) string {
+	parts := []string{dir}
+	parts = append(parts, strings.Split(slashpath.Clean(path), "/")...)
+	return bio.JoinPath(parts...)
 }
 
 // isSlashAbs reports whether the slash-separated path starts with a slash.

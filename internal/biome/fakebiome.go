@@ -98,15 +98,6 @@ func (f *Fake) IsAbsPath(path string) bool {
 	return strings.HasPrefix(path, string(f.sep()))
 }
 
-// PathFromSlash returns the result of replacing each slash ('/')
-// character in path with a separator character.
-func (f *Fake) PathFromSlash(path string) string {
-	if f.sep() == '/' {
-		return path
-	}
-	return strings.ReplaceAll(path, "/", string(f.sep()))
-}
-
 // Close does nothing and returns nil.
 func (f *Fake) Close() error {
 	return nil
