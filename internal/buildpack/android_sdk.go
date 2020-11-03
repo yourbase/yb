@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
-	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/types"
+	"github.com/yourbase/yb/internal/plumbing"
 	"zombiezen.com/go/log"
 )
 
 const latestAndroidVersion = "4333796"
 
-func installAndroidSDK(ctx context.Context, sys Sys, spec types.BuildpackSpec) (biome.Environment, error) {
+func installAndroidSDK(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (biome.Environment, error) {
 	version := spec.Version()
 	if version == "latest" {
 		version = latestAndroidVersion

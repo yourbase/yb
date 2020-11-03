@@ -6,13 +6,13 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
-	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/types"
+	"github.com/yourbase/yb/internal/plumbing"
 	"zombiezen.com/go/log"
 )
 
-func installJava(ctx context.Context, sys Sys, spec types.BuildpackSpec) (_ biome.Environment, err error) {
+func installJava(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (_ biome.Environment, err error) {
 	installDir := sys.Biome.JoinPath(sys.Biome.Dirs().Tools, "java", "openjdk"+spec.Version())
 	desc := sys.Biome.Describe()
 	home := installDir

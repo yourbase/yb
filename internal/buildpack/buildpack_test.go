@@ -34,9 +34,9 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/yourbase/commons/http/headers"
+	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/internal/ybdata"
-	"github.com/yourbase/yb/types"
 	"zombiezen.com/go/log/testlog"
 )
 
@@ -44,7 +44,7 @@ import (
 // cleaned up after the test finishes.
 //
 // testInstall must be called from the goroutine running the test or benchmark function.
-func testInstall(ctx context.Context, tb testing.TB, specs ...types.BuildpackSpec) (biome.Biome, biome.Environment) {
+func testInstall(ctx context.Context, tb testing.TB, specs ...yb.BuildpackSpec) (biome.Biome, biome.Environment) {
 	tb.Helper()
 	if testing.Short() {
 		tb.Skip("Skipping due to -short")

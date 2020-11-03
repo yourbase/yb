@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
-	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/types"
+	"github.com/yourbase/yb/internal/plumbing"
 	"zombiezen.com/go/log"
 )
 
-func installRust(ctx context.Context, sys Sys, spec types.BuildpackSpec) (biome.Environment, error) {
+func installRust(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (biome.Environment, error) {
 	rustDir := sys.Biome.JoinPath(sys.Biome.Dirs().Tools, "rust", "rust-"+spec.Version())
 	env := biome.Environment{
 		Vars: map[string]string{

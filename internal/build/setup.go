@@ -28,11 +28,11 @@ import (
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/yourbase/commons/xcontext"
 	"github.com/yourbase/narwhal"
+	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/internal/buildpack"
+	"github.com/yourbase/yb/internal/plumbing"
 	"github.com/yourbase/yb/internal/ybtrace"
-	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/types"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/label"
@@ -45,7 +45,7 @@ import (
 // loader package.
 type PhaseDeps struct {
 	TargetName string
-	Buildpacks []types.BuildpackSpec
+	Buildpacks []yb.BuildpackSpec
 	Resources  map[string]*narwhal.ContainerDefinition
 
 	// EnvironmentTemplate is the set of environment variables that should be set
@@ -70,7 +70,7 @@ func Setup(ctx context.Context, sys Sys, phase *PhaseDeps) (_ biome.BiomeCloser,
 
 	// Randomize pack setup order to surface unexpected data dependencies.
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
-	packs := append([]types.BuildpackSpec(nil), phase.Buildpacks...)
+	packs := append([]yb.BuildpackSpec(nil), phase.Buildpacks...)
 	if len(packs) > 0 {
 		for i := range packs[:len(packs)-1] {
 			j := i + rng.Intn(len(phase.Buildpacks)-i)

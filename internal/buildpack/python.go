@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
-	"github.com/yourbase/yb/types"
 )
 
-func installPython(ctx context.Context, sys Sys, spec types.BuildpackSpec) (biome.Environment, error) {
+func installPython(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (biome.Environment, error) {
 	envDir := sys.Biome.JoinPath(sys.Biome.Dirs().Tools, "conda-python", spec.Version())
 	env, err := installAnaconda(ctx, sys, 3, "4.8.3")
 	if err != nil {

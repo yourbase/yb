@@ -12,7 +12,7 @@ import (
 	"github.com/matishsiao/goInfo"
 	"github.com/spf13/cobra"
 	"github.com/yourbase/commons/envvar"
-	ybconfig "github.com/yourbase/yb/config"
+	ybconfig "github.com/yourbase/yb/internal/config"
 	"zombiezen.com/go/log"
 )
 

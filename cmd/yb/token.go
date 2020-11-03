@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"github.com/yourbase/yb/config"
+	"github.com/yourbase/yb/internal/config"
 )
 
 // tokenCmd represents an invocation of `yb token`, which outputs the saved

@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
-	"github.com/yourbase/yb/types"
 	"zombiezen.com/go/log"
 )
 
-func installGradle(ctx context.Context, sys Sys, spec types.BuildpackSpec) (biome.Environment, error) {
+func installGradle(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (biome.Environment, error) {
 	gradleDir := sys.Biome.JoinPath(sys.Biome.Dirs().Tools, "gradle", "gradle-"+spec.Version())
 	env := biome.Environment{
 		Vars: map[string]string{

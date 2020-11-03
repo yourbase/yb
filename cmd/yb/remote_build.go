@@ -21,9 +21,9 @@ import (
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	"github.com/spf13/cobra"
-	ybconfig "github.com/yourbase/yb/config"
-	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/types"
+	"github.com/yourbase/yb"
+	ybconfig "github.com/yourbase/yb/internal/config"
+	"github.com/yourbase/yb/internal/plumbing"
 	"gopkg.in/src-d/go-git.v4"
 	gitplumbing "gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
@@ -86,7 +86,7 @@ func (p *remoteCmd) run(ctx context.Context) error {
 
 	manifest := targetPackage.Manifest
 
-	var target *types.BuildTarget
+	var target *yb.BuildTarget
 
 	if len(manifest.BuildTargets) == 0 {
 		target = manifest.Build
@@ -212,7 +212,7 @@ func (p *remoteCmd) run(ctx context.Context) error {
 		log.Infof(ctx, "Generating patch for local changes...")
 
 		log.Debugf(ctx, "Start backing up the worktree-save")
-		saver, err := types.NewWorktreeSave(targetPackage.Path, headCommit.Hash.String(), p.backupWorktree)
+		saver, err := yb.NewWorktreeSave(targetPackage.Path, headCommit.Hash.String(), p.backupWorktree)
 		if err != nil {
 			return err
 		}
@@ -316,7 +316,7 @@ func commitTempChanges(w *git.Worktree, c *object.Commit) (latest gitplumbing.Ha
 	return
 }
 
-func (p *remoteCmd) traverseChanges(ctx context.Context, g *ggit.Git, saver *types.WorktreeSave) error {
+func (p *remoteCmd) traverseChanges(ctx context.Context, g *ggit.Git, saver *yb.WorktreeSave) error {
 	workTree, err := g.WorkTree(ctx)
 	if err != nil {
 		return fmt.Errorf("traverse changes: %w", err)
@@ -441,7 +441,7 @@ func buildIDFromLogURL(u *url.URL) (string, error) {
 	return id, nil
 }
 
-func (p *remoteCmd) fetchProject(ctx context.Context, urls []string) (*types.Project, error) {
+func (p *remoteCmd) fetchProject(ctx context.Context, urls []string) (*yb.Project, error) {
 	v := url.Values{}
 	fmt.Println()
 	log.Infof(ctx, "URLs used to search: %s", urls)
@@ -485,7 +485,7 @@ func (p *remoteCmd) fetchProject(ctx context.Context, urls []string) (*types.Pro
 	if err != nil {
 		return nil, err
 	}
-	var project types.Project
+	var project yb.Project
 	err = json.Unmarshal(body, &project)
 	if err != nil {
 		return nil, err
@@ -504,7 +504,7 @@ func (cmd *remoteCmd) savePatch() error {
 	return nil
 }
 
-func (cmd *remoteCmd) submitBuild(ctx context.Context, project *types.Project, tagMap map[string]string) error {
+func (cmd *remoteCmd) submitBuild(ctx context.Context, project *yb.Project, tagMap map[string]string) error {
 
 	startTime := time.Now()
 
