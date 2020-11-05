@@ -1,0 +1,431 @@
+{
+	"Descriptor": {
+		"OS": "linux",
+		"Arch": "amd64"
+	},
+	"Dirs": {
+		"Package": "/tmp/TestAndroidSDK834339849/001",
+		"Home": "/tmp/TestAndroidSDK834339849/002",
+		"Tools": "/tmp/TestAndroidSDK834339849/002/.cache/yb/tools"
+	},
+	"JoinedPaths": [
+		{
+			"Elems": [
+				"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools",
+				"java",
+				"openjdk8.265+01"
+			],
+			"Result": "/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/java/openjdk8.265+01"
+		},
+		{
+			"Elems": [
+				"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/java/openjdk8.265+01",
+				"bin"
+			],
+			"Result": "/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/java/openjdk8.265+01/bin"
+		},
+		{
+			"Elems": [
+				"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools",
+				"android",
+				"android-4333796"
+			],
+			"Result": "/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796"
+		},
+		{
+			"Elems": [
+				"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796",
+				"tools"
+			],
+			"Result": "/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/tools"
+		},
+		{
+			"Elems": [
+				"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796",
+				"tools",
+				"bin"
+			],
+			"Result": "/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/tools/bin"
+		},
+		{
+			"Elems": [
+				"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796",
+				"tools"
+			],
+			"Result": "/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/tools"
+		},
+		{
+			"Elems": [
+				"tools",
+				"proguard"
+			],
+			"Result": "tools/proguard"
+		},
+		{
+			"Elems": [
+				"tools",
+				"lib"
+			],
+			"Result": "tools/lib"
+		},
+		{
+			"Elems": [
+				"tools",
+				"source.properties"
+			],
+			"Result": "tools/source.properties"
+		},
+		{
+			"Elems": [
+				"tools",
+				"bin"
+			],
+			"Result": "tools/bin"
+		},
+		{
+			"Elems": [
+				"tools",
+				"NOTICE.txt"
+			],
+			"Result": "tools/NOTICE.txt"
+		},
+		{
+			"Elems": [
+				"tools",
+				"emulator"
+			],
+			"Result": "tools/emulator"
+		},
+		{
+			"Elems": [
+				"tools",
+				"emulator-check"
+			],
+			"Result": "tools/emulator-check"
+		},
+		{
+			"Elems": [
+				"tools",
+				"monitor"
+			],
+			"Result": "tools/monitor"
+		},
+		{
+			"Elems": [
+				"tools",
+				"android"
+			],
+			"Result": "tools/android"
+		},
+		{
+			"Elems": [
+				"tools",
+				"mksdcard"
+			],
+			"Result": "tools/mksdcard"
+		},
+		{
+			"Elems": [
+				"tools",
+				"support"
+			],
+			"Result": "tools/support"
+		},
+		{
+			"Elems": [
+				"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796",
+				"licenses"
+			],
+			"Result": "/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/licenses"
+		},
+		{
+			"Elems": [
+				"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/licenses",
+				"android-googletv-license"
+			],
+			"Result": "/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/licenses/android-googletv-license"
+		},
+		{
+			"Elems": [
+				"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/licenses",
+				"android-sdk-license"
+			],
+			"Result": "/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/licenses/android-sdk-license"
+		},
+		{
+			"Elems": [
+				"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/licenses",
+				"android-sdk-preview-license"
+			],
+			"Result": "/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/licenses/android-sdk-preview-license"
+		},
+		{
+			"Elems": [
+				"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/licenses",
+				"google-gdk-license"
+			],
+			"Result": "/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/licenses/google-gdk-license"
+		},
+		{
+			"Elems": [
+				"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/licenses",
+				"intel-android-extra-license"
+			],
+			"Result": "/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/licenses/intel-android-extra-license"
+		},
+		{
+			"Elems": [
+				"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/licenses",
+				"mips-android-sysimage-license"
+			],
+			"Result": "/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/licenses/mips-android-sysimage-license"
+		}
+	],
+	"CleanedPaths": {
+		"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/tools": "/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/tools",
+		"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/tools.zip": "/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/tools.zip",
+		"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/java/openjdk8.265+01": "/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/java/openjdk8.265+01",
+		"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz": "/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
+	},
+	"AbsPaths": {
+		"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/tools": true,
+		"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/tools.zip": true,
+		"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/java/openjdk8.265+01": true,
+		"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz": true
+	},
+	"Invocations": [
+		{
+			"Argv": [
+				"readlink",
+				"--canonicalize-existing",
+				"--no-newline",
+				"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/java/openjdk8.265+01"
+			],
+			"Output": {
+				"Stdout": "",
+				"Stderr": ""
+			},
+			"Error": "local run: exit status 1"
+		},
+		{
+			"Argv": [
+				"mkdir",
+				"-p",
+				"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/java/openjdk8.265+01"
+			],
+			"Output": {
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"tee",
+				"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
+			],
+			"StdinSHA256": "1285da6278f2d38a790a21148d7e683f20de0799c44b937043830ef6b57f58c4",
+			"Output": {
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"tar",
+				"-x",
+				"-z",
+				"-f",
+				"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz",
+				"--strip-components",
+				"1"
+			],
+			"Dir": "/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/java/openjdk8.265+01",
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"rm",
+				"-f",
+				"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
+			],
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"readlink",
+				"--canonicalize-existing",
+				"--no-newline",
+				"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/tools"
+			],
+			"Output": {
+				"Stdout": "",
+				"Stderr": ""
+			},
+			"Error": "local run: exit status 1"
+		},
+		{
+			"Argv": [
+				"mkdir",
+				"-p",
+				"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/tools"
+			],
+			"Output": {
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"tee",
+				"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/tools.zip"
+			],
+			"StdinSHA256": "92ffee5a1d98d856634e8b71132e8a95d96c83a63fde1099be3d86df3106def9",
+			"Output": {
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"unzip",
+				"-q",
+				"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/tools.zip"
+			],
+			"Dir": "/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/tools",
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"mv",
+				"tools/proguard",
+				"tools/lib",
+				"tools/source.properties",
+				"tools/bin",
+				"tools/NOTICE.txt",
+				"tools/emulator",
+				"tools/emulator-check",
+				"tools/monitor",
+				"tools/android",
+				"tools/mksdcard",
+				"tools/support",
+				"."
+			],
+			"Dir": "/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/tools",
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"rmdir",
+				"tools"
+			],
+			"Dir": "/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/tools",
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"rm",
+				"-f",
+				"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/tools.zip"
+			],
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"mkdir",
+				"-p",
+				"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/licenses"
+			],
+			"Output": {
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"tee",
+				"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/licenses/android-googletv-license"
+			],
+			"StdinSHA256": "3f31fae63c343da47fd7731d9d850c9a25d382d379e4216287ebeafdbe473291",
+			"Output": {
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"tee",
+				"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/licenses/android-sdk-license"
+			],
+			"StdinSHA256": "e4cb32e27aa4991e39e1082d82812a85dd2500c0adc55f228cc4660b32148505",
+			"Output": {
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"tee",
+				"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/licenses/android-sdk-preview-license"
+			],
+			"StdinSHA256": "5b219be22224244e4a0b5e0ee2ae2003afc736329f4ec7644a378a93eed5ee10",
+			"Output": {
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"tee",
+				"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/licenses/google-gdk-license"
+			],
+			"StdinSHA256": "e227a28274a1585f33ed5e5efdb13cfd7f80f6763abb6bda41e33699c9ad0db0",
+			"Output": {
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"tee",
+				"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/licenses/intel-android-extra-license"
+			],
+			"StdinSHA256": "4a4065416c2cffdb38842404eb5290716858ad07a42f2c5ebcf42fb0d78a9999",
+			"Output": {
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"tee",
+				"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/licenses/mips-android-sysimage-license"
+			],
+			"StdinSHA256": "868d9a1c85e914236f2caca59927ebc6e86043ba869a5c439e5ea77c73111697",
+			"Output": {
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"sdkmanager",
+				"--install",
+				"tools"
+			],
+			"EnvVars": {
+				"ANDROID_HOME": "/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796",
+				"ANDROID_SDK_ROOT": "/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796",
+				"JAVA_HOME": "/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/java/openjdk8.265+01"
+			},
+			"PrependPath": [
+				"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/tools/bin",
+				"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/android/android-4333796/tools",
+				"/tmp/TestAndroidSDK834339849/002/.cache/yb/tools/java/openjdk8.265+01/bin"
+			],
+			"Output": {
+				"Combined": "TG9hZGluZyBwYWNrYWdlIGluZm9ybWF0aW9uLi4uICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICANTG9hZGluZyBsb2NhbCByZXBvc2l0b3J5Li4uICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICANWyAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gMyUgTG9hZGluZyBsb2NhbCByZXBvc2l0b3J5Li4uICAgICAgICANWyAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gMyUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWyAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gMyUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gMyUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gNCUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gNCUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gNCUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gNCUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gNSUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gNSUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gNSUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gNSUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gNSUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gNSUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz09ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gNSUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz09ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gNSUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz09ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gNSUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz09ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gNSUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz09ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gNSUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz09ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gNSUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz09ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gNSUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz09ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gNiUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz09ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gNiUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz09ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gNiUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz09ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gNiUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz09ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gNiUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICANV2FybmluZzogRmlsZSAvaG9tZS9saWdodC8uYW5kcm9pZC9yZXBvc2l0b3JpZXMuY2ZnIGNvdWxkIG5vdCBiZSBsb2FkZWQuCls9PSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDYlIEZldGNoIHJlbW90ZSByZXBvc2l0b3J5Li4uICAgICAgICAgDVs9PSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDYlIENvbXB1dGluZyB1cGRhdGVzLi4uICAgICAgICAgICAgICAgDVs9PT0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDglIENvbXB1dGluZyB1cGRhdGVzLi4uICAgICAgICAgICAgICAgDVs9PT0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDglIENvbXB1dGluZyB1cGRhdGVzLi4uICAgICAgICAgICAgICAgDVs9PT0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDEwJSBDb21wdXRpbmcgdXBkYXRlcy4uLiAgICAgICAgICAgICAgDVs9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT1dIDEwMCUgQ29tcHV0aW5nIHVwZGF0ZXMuLi4gICAgICAgICAgICAgDQo="
+			}
+		}
+	]
+}

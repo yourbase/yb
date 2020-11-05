@@ -1,0 +1,188 @@
+{
+	"Descriptor": {
+		"OS": "linux",
+		"Arch": "amd64"
+	},
+	"Dirs": {
+		"Package": "/tmp/TestDart420102461/001",
+		"Home": "/tmp/TestDart420102461/002",
+		"Tools": "/tmp/TestDart420102461/002/.cache/yb/tools"
+	},
+	"JoinedPaths": [
+		{
+			"Elems": [
+				"/tmp/TestDart420102461/002/.cache/yb/tools",
+				"dart",
+				"dart-sdk-2.10.2"
+			],
+			"Result": "/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2"
+		},
+		{
+			"Elems": [
+				"/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2",
+				"bin"
+			],
+			"Result": "/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2/bin"
+		},
+		{
+			"Elems": [
+				"dart-sdk",
+				"lib"
+			],
+			"Result": "dart-sdk/lib"
+		},
+		{
+			"Elems": [
+				"dart-sdk",
+				"version"
+			],
+			"Result": "dart-sdk/version"
+		},
+		{
+			"Elems": [
+				"dart-sdk",
+				"README"
+			],
+			"Result": "dart-sdk/README"
+		},
+		{
+			"Elems": [
+				"dart-sdk",
+				"bin"
+			],
+			"Result": "dart-sdk/bin"
+		},
+		{
+			"Elems": [
+				"dart-sdk",
+				"dartdoc_options.yaml"
+			],
+			"Result": "dart-sdk/dartdoc_options.yaml"
+		},
+		{
+			"Elems": [
+				"dart-sdk",
+				"LICENSE"
+			],
+			"Result": "dart-sdk/LICENSE"
+		},
+		{
+			"Elems": [
+				"dart-sdk",
+				"revision"
+			],
+			"Result": "dart-sdk/revision"
+		},
+		{
+			"Elems": [
+				"dart-sdk",
+				"include"
+			],
+			"Result": "dart-sdk/include"
+		}
+	],
+	"CleanedPaths": {
+		"/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2": "/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2",
+		"/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2.zip": "/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2.zip"
+	},
+	"AbsPaths": {
+		"/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2": true,
+		"/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2.zip": true
+	},
+	"Invocations": [
+		{
+			"Argv": [
+				"readlink",
+				"--canonicalize-existing",
+				"--no-newline",
+				"/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2"
+			],
+			"Output": {
+				"Stdout": "",
+				"Stderr": ""
+			},
+			"Error": "local run: exit status 1"
+		},
+		{
+			"Argv": [
+				"mkdir",
+				"-p",
+				"/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2"
+			],
+			"Output": {
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"tee",
+				"/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2.zip"
+			],
+			"StdinSHA256": "fa98052d7fa605807a6b34ccc00f133da82e6d23c3e7f7663dfd32b121246c25",
+			"Output": {
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"unzip",
+				"-q",
+				"/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2.zip"
+			],
+			"Dir": "/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2",
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"mv",
+				"dart-sdk/lib",
+				"dart-sdk/version",
+				"dart-sdk/README",
+				"dart-sdk/bin",
+				"dart-sdk/dartdoc_options.yaml",
+				"dart-sdk/LICENSE",
+				"dart-sdk/revision",
+				"dart-sdk/include",
+				"."
+			],
+			"Dir": "/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2",
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"rmdir",
+				"dart-sdk"
+			],
+			"Dir": "/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2",
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"rm",
+				"-f",
+				"/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2.zip"
+			],
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"dart",
+				"--version"
+			],
+			"PrependPath": [
+				"/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2/bin"
+			],
+			"Output": {
+				"Combined": "RGFydCBTREsgdmVyc2lvbjogMi4xMC4yIChzdGFibGUpIChUdWUgT2N0IDEzIDE1OjUwOjI3IDIwMjAgKzAyMDApIG9uICJsaW51eF94NjQiCg=="
+			}
+		}
+	]
+}

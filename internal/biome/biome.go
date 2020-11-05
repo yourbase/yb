@@ -66,10 +66,6 @@ type Biome interface {
 
 	// IsAbsPath reports whether the path is absolute.
 	IsAbsPath(path string) bool
-
-	// PathFromSlash returns the result of replacing each slash ('/')
-	// character in path with a separator character.
-	PathFromSlash(path string) string
 }
 
 // A Descriptor describes various facets of a biome.
@@ -234,11 +230,6 @@ func (l Local) CleanPath(path string) string {
 // IsAbsPath calls filepath.IsAbs.
 func (l Local) IsAbsPath(path string) bool {
 	return filepath.IsAbs(path)
-}
-
-// PathFromSlash calls filepath.FromSlash.
-func (l Local) PathFromSlash(path string) string {
-	return filepath.FromSlash(path)
 }
 
 // WriteFile writes the data from src to the gven path with the mode 0666.

@@ -1,0 +1,288 @@
+{
+	"Descriptor": {
+		"OS": "linux",
+		"Arch": "amd64"
+	},
+	"Dirs": {
+		"Package": "/tmp/TestAndroidNDK508414162/001",
+		"Home": "/tmp/TestAndroidNDK508414162/002",
+		"Tools": "/tmp/TestAndroidNDK508414162/002/.cache/yb/tools"
+	},
+	"JoinedPaths": [
+		{
+			"Elems": [
+				"/tmp/TestAndroidNDK508414162/002/.cache/yb/tools",
+				"android-ndk",
+				"android-ndk-r21d"
+			],
+			"Result": "/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"CHANGELOG.md"
+			],
+			"Result": "android-ndk-r21d/CHANGELOG.md"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"NOTICE"
+			],
+			"Result": "android-ndk-r21d/NOTICE"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"NOTICE.toolchain"
+			],
+			"Result": "android-ndk-r21d/NOTICE.toolchain"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"README.md"
+			],
+			"Result": "android-ndk-r21d/README.md"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"build"
+			],
+			"Result": "android-ndk-r21d/build"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"meta"
+			],
+			"Result": "android-ndk-r21d/meta"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"ndk-build"
+			],
+			"Result": "android-ndk-r21d/ndk-build"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"ndk-gdb"
+			],
+			"Result": "android-ndk-r21d/ndk-gdb"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"ndk-stack"
+			],
+			"Result": "android-ndk-r21d/ndk-stack"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"ndk-which"
+			],
+			"Result": "android-ndk-r21d/ndk-which"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"platforms"
+			],
+			"Result": "android-ndk-r21d/platforms"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"prebuilt"
+			],
+			"Result": "android-ndk-r21d/prebuilt"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"python-packages"
+			],
+			"Result": "android-ndk-r21d/python-packages"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"shader-tools"
+			],
+			"Result": "android-ndk-r21d/shader-tools"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"simpleperf"
+			],
+			"Result": "android-ndk-r21d/simpleperf"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"source.properties"
+			],
+			"Result": "android-ndk-r21d/source.properties"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"sources"
+			],
+			"Result": "android-ndk-r21d/sources"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"sysroot"
+			],
+			"Result": "android-ndk-r21d/sysroot"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"toolchains"
+			],
+			"Result": "android-ndk-r21d/toolchains"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"wrap.sh"
+			],
+			"Result": "android-ndk-r21d/wrap.sh"
+		},
+		{
+			"Elems": [
+				"/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d",
+				"ndk-build"
+			],
+			"Result": "/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d/ndk-build"
+		}
+	],
+	"CleanedPaths": {
+		"/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d": "/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d",
+		"/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip": "/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip",
+		"/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d/ndk-build": "/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d/ndk-build"
+	},
+	"AbsPaths": {
+		"/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d": true,
+		"/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip": true
+	},
+	"Invocations": [
+		{
+			"Argv": [
+				"readlink",
+				"--canonicalize-existing",
+				"--no-newline",
+				"/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
+			],
+			"Output": {
+				"Stdout": "",
+				"Stderr": ""
+			},
+			"Error": "local run: exit status 1"
+		},
+		{
+			"Argv": [
+				"mkdir",
+				"-p",
+				"/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
+			],
+			"Output": {
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"tee",
+				"/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip"
+			],
+			"StdinSHA256": "dd6dc090b6e2580206c64bcee499bc16509a5d017c6952dcd2bed9072af67cbd",
+			"Output": {
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"unzip",
+				"-q",
+				"/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip"
+			],
+			"Dir": "/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d",
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"mv",
+				"android-ndk-r21d/CHANGELOG.md",
+				"android-ndk-r21d/NOTICE",
+				"android-ndk-r21d/NOTICE.toolchain",
+				"android-ndk-r21d/README.md",
+				"android-ndk-r21d/build",
+				"android-ndk-r21d/meta",
+				"android-ndk-r21d/ndk-build",
+				"android-ndk-r21d/ndk-gdb",
+				"android-ndk-r21d/ndk-stack",
+				"android-ndk-r21d/ndk-which",
+				"android-ndk-r21d/platforms",
+				"android-ndk-r21d/prebuilt",
+				"android-ndk-r21d/python-packages",
+				"android-ndk-r21d/shader-tools",
+				"android-ndk-r21d/simpleperf",
+				"android-ndk-r21d/source.properties",
+				"android-ndk-r21d/sources",
+				"android-ndk-r21d/sysroot",
+				"android-ndk-r21d/toolchains",
+				"android-ndk-r21d/wrap.sh",
+				"."
+			],
+			"Dir": "/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d",
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"rmdir",
+				"android-ndk-r21d"
+			],
+			"Dir": "/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d",
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"rm",
+				"-f",
+				"/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip"
+			],
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"readlink",
+				"--canonicalize-existing",
+				"--no-newline",
+				"/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d/ndk-build"
+			],
+			"EnvVars": {
+				"ANDROID_NDK_HOME": "/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
+			},
+			"Output": {
+				"Stdout": "L3RtcC9UZXN0QW5kcm9pZE5ESzUwODQxNDE2Mi8wMDIvLmNhY2hlL3liL3Rvb2xzL2FuZHJvaWQtbmRrL2FuZHJvaWQtbmRrLXIyMWQvbmRrLWJ1aWxk",
+				"Stderr": ""
+			}
+		}
+	]
+}
