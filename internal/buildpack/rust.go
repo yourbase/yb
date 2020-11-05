@@ -12,13 +12,13 @@ import (
 
 func installRust(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (biome.Environment, error) {
 	rustDir := sys.Biome.JoinPath(sys.Biome.Dirs().Tools, "rust", "rust-"+spec.Version())
+	rustDownloadDir := rustDir + "-download"
 	env := biome.Environment{
 		Vars: map[string]string{
 			"CARGO_HOME": sys.Biome.JoinPath(sys.Biome.Dirs().Home, "cargohome"),
 		},
 		PrependPath: []string{
-			sys.Biome.JoinPath(rustDir, "cargo", "bin"),
-			sys.Biome.JoinPath(rustDir, "rustc", "bin"),
+			sys.Biome.JoinPath(rustDir, "bin"),
 		},
 	}
 
@@ -56,7 +56,19 @@ func installRust(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (biome.Env
 	if err != nil {
 		return biome.Environment{}, err
 	}
-	if err := extract(ctx, sys, rustDir, downloadURL, stripTopDirectory); err != nil {
+	if err := extract(ctx, sys, rustDownloadDir, downloadURL, stripTopDirectory); err != nil {
+		return biome.Environment{}, err
+	}
+	err = sys.Biome.Run(ctx, &biome.Invocation{
+		Argv: []string{
+			sys.Biome.JoinPath(rustDownloadDir, "install.sh"),
+			"--prefix=" + rustDir,
+		},
+		Dir:    rustDownloadDir,
+		Stdout: sys.Stdout,
+		Stderr: sys.Stderr,
+	})
+	if err != nil {
 		return biome.Environment{}, err
 	}
 	return env, nil
