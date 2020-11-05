@@ -51,6 +51,19 @@ The format is based on [Keep a Changelog][], and this project adheres to
 -  The Ant buildpack now downloads over HTTPS from the sonic.net mirror. It was
    previously using the lucidnetworks.net mirror over HTTP.
 
+## [0.4.3][] - 2020-11-05
+
+Version 0.4.3 fixes an issue with containers in environments that don't have
+a `docker0` network like WSL and macOS.
+
+[0.4.3]: https://github.com/yourbase/yb/releases/tag/v0.4.3
+
+### Fixed
+
+-  Port wait checks will now automatically forward a port on any host that does
+   not have a `docker0` network. Previously, this behavior was only used on
+   macOS, but it is also applicable to Docker Desktop with WSL.
+
 ## [0.4.2][] - 2020-10-20
 
 Version 0.4.2 fixes an issue with `yb remotebuild`.
