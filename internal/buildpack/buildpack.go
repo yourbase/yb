@@ -9,10 +9,10 @@ import (
 	"strings"
 
 	docker "github.com/fsouza/go-dockerclient"
+	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/internal/ybdata"
 	"github.com/yourbase/yb/internal/ybtrace"
-	"github.com/yourbase/yb/types"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/label"
@@ -32,7 +32,7 @@ type Sys struct {
 	DockerNetworkID string
 }
 
-var packs = map[string]func(context.Context, Sys, types.BuildpackSpec) (biome.Environment, error){
+var packs = map[string]func(context.Context, Sys, yb.BuildpackSpec) (biome.Environment, error){
 	"anaconda2":  installAnaconda2,
 	"anaconda3":  installAnaconda3,
 	"android":    installAndroidSDK,
@@ -56,14 +56,14 @@ var packs = map[string]func(context.Context, Sys, types.BuildpackSpec) (biome.En
 }
 
 type buildToolSpec struct {
-	tool       types.BuildpackSpec
+	tool       yb.BuildpackSpec
 	dataDirs   *ybdata.Dirs
 	cacheDir   string
 	packageDir string
 }
 
 // Install installs the buildpack given by spec into the biome.
-func Install(ctx context.Context, sys Sys, spec types.BuildpackSpec) (_ biome.Environment, err error) {
+func Install(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (_ biome.Environment, err error) {
 	ctx, span := ybtrace.Start(ctx, "Buildpack "+string(spec), trace.WithAttributes(
 		label.String("buildpack", spec.Name()),
 		label.String("spec", string(spec)),

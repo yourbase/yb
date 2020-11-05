@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/yourbase/yb/config"
+	"github.com/yourbase/yb/internal/config"
 	"zombiezen.com/go/log"
 )
 

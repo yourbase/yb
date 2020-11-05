@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
-	"github.com/yourbase/yb/types"
 	"zombiezen.com/go/log"
 )
 
-func installYarn(ctx context.Context, sys Sys, spec types.BuildpackSpec) (biome.Environment, error) {
+func installYarn(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (biome.Environment, error) {
 	yarnDir := sys.Biome.JoinPath(sys.Biome.Dirs().Tools, "yarn", "yarn-v"+spec.Version())
 	env := biome.Environment{
 		PrependPath: []string{

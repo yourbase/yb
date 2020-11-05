@@ -11,8 +11,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	ybconfig "github.com/yourbase/yb/config"
-	"github.com/yourbase/yb/types"
+	"github.com/yourbase/yb"
+	ybconfig "github.com/yourbase/yb/internal/config"
 	"zombiezen.com/go/log"
 )
 
@@ -71,7 +71,7 @@ func (p *loginCmd) run(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("parse response body: %w", err)
 	}
-	var tokenResponse types.TokenResponse
+	var tokenResponse yb.TokenResponse
 	if err := json.Unmarshal(body, &tokenResponse); err != nil {
 		return fmt.Errorf("parse response body: %w", err)
 	}

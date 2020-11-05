@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
-	"github.com/yourbase/yb/types"
 	"zombiezen.com/go/log"
 )
 
-func installAnt(ctx context.Context, sys Sys, spec types.BuildpackSpec) (biome.Environment, error) {
+func installAnt(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (biome.Environment, error) {
 	antDir := sys.Biome.JoinPath(sys.Biome.Dirs().Tools, "ant", "apache-ant-"+spec.Version())
 	env := biome.Environment{
 		PrependPath: []string{

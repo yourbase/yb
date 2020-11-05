@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/spf13/cobra"
-	"github.com/yourbase/yb/types"
+	"github.com/yourbase/yb"
 	"zombiezen.com/go/log"
 )
 
@@ -31,7 +31,7 @@ func newCheckConfigCmd() *cobra.Command {
 }
 
 func (b *checkConfigCmd) run(ctx context.Context) error {
-	targetPackage, err := types.LoadPackage(b.file)
+	targetPackage, err := yb.LoadPackage(b.file)
 	if err != nil {
 		return err
 	}

@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
-	"github.com/yourbase/yb/plumbing"
-	"github.com/yourbase/yb/types"
+	"github.com/yourbase/yb/internal/plumbing"
 	"zombiezen.com/go/log"
 )
 
-func installDart(ctx context.Context, sys Sys, spec types.BuildpackSpec) (biome.Environment, error) {
+func installDart(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (biome.Environment, error) {
 	dartDir := sys.Biome.JoinPath(sys.Biome.Dirs().Tools, "dart", "dart-sdk-"+spec.Version())
 	env := biome.Environment{
 		PrependPath: []string{

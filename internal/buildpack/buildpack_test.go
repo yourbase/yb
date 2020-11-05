@@ -37,10 +37,10 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/yourbase/commons/http/headers"
+	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/internal/biome/replay"
 	"github.com/yourbase/yb/internal/ybdata"
-	"github.com/yourbase/yb/types"
 	"zombiezen.com/go/log/testlog"
 )
 
@@ -50,7 +50,7 @@ var recordMode = false
 // cleaned up after the test finishes.
 //
 // testInstall must be called from the goroutine running the test or benchmark function.
-func testInstall(ctx context.Context, tb testing.TB, specs ...types.BuildpackSpec) (biome.Biome, biome.Environment) {
+func testInstall(ctx context.Context, tb testing.TB, specs ...yb.BuildpackSpec) (biome.Biome, biome.Environment) {
 	tb.Helper()
 	var bio biome.Biome
 	if recordMode {
@@ -69,7 +69,7 @@ func testInstall(ctx context.Context, tb testing.TB, specs ...types.BuildpackSpe
 }
 
 // runTestInstall installs the specified buildpacks in the given biome.
-func runTestInstall(ctx context.Context, tb testing.TB, bio biome.Biome, specs ...types.BuildpackSpec) (biome.Environment, error) {
+func runTestInstall(ctx context.Context, tb testing.TB, bio biome.Biome, specs ...yb.BuildpackSpec) (biome.Environment, error) {
 	tb.Helper()
 	installOutput := new(strings.Builder)
 	sys := Sys{
