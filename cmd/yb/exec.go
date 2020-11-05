@@ -61,7 +61,6 @@ func (b *execCmd) run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	// bio, err := newBiome(ctx, dockerClient, dataDirs, pkg.Path, b.environment)
 	bio, err := newBiome(ctx, newBiomeOptions{
 		packageDir:   pkg.Path,
 		target:       b.execEnvName,
