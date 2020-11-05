@@ -22,6 +22,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"hash"
 	"io"
 	"io/ioutil"
 	"os"
@@ -37,6 +38,8 @@ type Recorder struct {
 	biome biome.Biome
 	dir   string
 
+	// mu protects the data fields except Descriptor and Dirs, which are
+	// both immutable.
 	mu   sync.Mutex
 	data *replayData
 }
@@ -79,50 +82,82 @@ func recordFilename(desc *biome.Descriptor) string {
 }
 
 func (rec *Recorder) Describe() *biome.Descriptor {
-	rec.mu.Lock()
-	defer rec.mu.Unlock()
 	return rec.data.Descriptor
 }
 
 func (rec *Recorder) Dirs() *biome.Dirs {
-	rec.mu.Lock()
-	defer rec.mu.Unlock()
 	return rec.data.Dirs
 }
 
 func (rec *Recorder) Run(ctx context.Context, invoke *biome.Invocation) error {
-	// Intercept I/O and then run in biome.
-	forwarded := &biome.Invocation{
-		Argv: invoke.Argv,
-		Dir:  invoke.Dir,
-		Env:  invoke.Env,
-	}
-	stdinHash := sha256.New()
-	if invoke.Stdin != nil {
-		forwarded.Stdin = io.TeeReader(invoke.Stdin, stdinHash)
-	}
-	var stdout, stderr *bytes.Buffer
-	var combinedOutput *bytes.Buffer
-	if isCombinedOutput(invoke.Stdout, invoke.Stderr) {
-		combinedOutput = new(bytes.Buffer)
-		forwarded.Stdout = io.MultiWriter(invoke.Stdout, combinedOutput)
-		forwarded.Stderr = forwarded.Stdout
-	} else {
-		if invoke.Stdout != nil {
-			stdout = new(bytes.Buffer)
-			forwarded.Stdout = io.MultiWriter(invoke.Stdout, stdout)
-		}
-		if invoke.Stderr != nil {
-			stderr = new(bytes.Buffer)
-			forwarded.Stderr = io.MultiWriter(invoke.Stderr, stderr)
-		}
-	}
-	err := rec.biome.Run(ctx, forwarded)
+	wrapped, sinks := captureIO(invoke)
+	err := rec.biome.Run(ctx, wrapped)
+	recorded := saveInvocation(invoke, sinks, err)
+	rec.mu.Lock()
+	rec.data.Invocations = append(rec.data.Invocations, recorded)
+	rec.mu.Unlock()
+	return err
+}
 
-	// Save invocation.
+type ioSinks struct {
+	stdinHash      hash.Hash
+	stdout         *bytes.Buffer
+	stderr         *bytes.Buffer
+	combinedOutput *bytes.Buffer
+}
+
+// captureIO creates a new invocation that wraps another by teeing its
+// standard I/O streams to the returned sinks.
+func captureIO(original *biome.Invocation) (*biome.Invocation, ioSinks) {
+	wrapped := new(biome.Invocation)
+	*wrapped = *original
+	var sinks ioSinks
+	if original.Stdin != nil {
+		sinks.stdinHash = sha256.New()
+		wrapped.Stdin = io.TeeReader(original.Stdin, sinks.stdinHash)
+	}
+	if isCombinedOutput(original.Stdout, original.Stderr) {
+		sinks.combinedOutput = new(bytes.Buffer)
+		wrapped.Stdout = io.MultiWriter(original.Stdout, sinks.combinedOutput)
+		wrapped.Stderr = wrapped.Stdout
+	} else {
+		if original.Stdout != nil {
+			sinks.stdout = new(bytes.Buffer)
+			wrapped.Stdout = io.MultiWriter(original.Stdout, sinks.stdout)
+		}
+		if original.Stderr != nil {
+			sinks.stderr = new(bytes.Buffer)
+			wrapped.Stderr = io.MultiWriter(original.Stderr, sinks.stderr)
+		}
+	}
+	return wrapped, sinks
+}
+
+func (sinks ioSinks) output() *invocationOutput {
+	if sinks.combinedOutput != nil {
+		return &invocationOutput{
+			combined: ensureBytesNotNil(sinks.combinedOutput.Bytes()),
+		}
+	}
+	if sinks.stdout == nil && sinks.stderr == nil {
+		return nil
+	}
+	out := new(invocationOutput)
+	if sinks.stdout != nil {
+		out.stdout = ensureBytesNotNil(sinks.stdout.Bytes())
+	}
+	if sinks.stderr != nil {
+		out.stderr = ensureBytesNotNil(sinks.stderr.Bytes())
+	}
+	return out
+}
+
+// saveInvocation converts the result of a Run into a replayable invocation.
+func saveInvocation(invoke *biome.Invocation, sinks ioSinks, err error) *invocation {
 	recorded := &invocation{
-		Argv: append([]string(nil), invoke.Argv...),
-		Dir:  invoke.Dir,
+		Argv:   append([]string(nil), invoke.Argv...),
+		Dir:    invoke.Dir,
+		Output: sinks.output(),
 	}
 	if len(invoke.Env.Vars) > 0 {
 		recorded.EnvVars = make(map[string]string, len(invoke.Env.Vars))
@@ -136,31 +171,13 @@ func (rec *Recorder) Run(ctx context.Context, invoke *biome.Invocation) error {
 	if len(invoke.Env.AppendPath) > 0 {
 		recorded.AppendPath = append([]string(nil), invoke.Env.AppendPath...)
 	}
-	if invoke.Stdin != nil {
-		recorded.StdinSHA256 = stdinHash.Sum(nil)
-	}
-	if combinedOutput != nil {
-		recorded.Output = &invocationOutput{
-			combined: ensureBytesNotNil(combinedOutput.Bytes()),
-		}
-	}
-	if stdout != nil || stderr != nil {
-		recorded.Output = new(invocationOutput)
-		if stdout != nil {
-			recorded.Output.stdout = ensureBytesNotNil(stdout.Bytes())
-		}
-		if stderr != nil {
-			recorded.Output.stderr = ensureBytesNotNil(stderr.Bytes())
-		}
+	if sinks.stdinHash != nil {
+		recorded.StdinSHA256 = sinks.stdinHash.Sum(nil)
 	}
 	if err != nil {
 		recorded.Error = err.Error()
 	}
-	rec.mu.Lock()
-	rec.data.Invocations = append(rec.data.Invocations, recorded)
-	rec.mu.Unlock()
-
-	return err
+	return recorded
 }
 
 func (rec *Recorder) JoinPath(elem ...string) string {
