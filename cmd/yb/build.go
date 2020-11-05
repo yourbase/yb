@@ -31,6 +31,7 @@ import (
 const TIME_FORMAT = "15:04:05 MST"
 
 type buildCmd struct {
+	env              []commandLineEnv
 	execPrefix       string
 	noContainer      bool
 	dependenciesOnly bool
@@ -55,6 +56,7 @@ func newBuildCmd() *cobra.Command {
 			return b.run(cmd.Context(), target)
 		},
 	}
+	envFlagsVar(c.Flags(), &b.env)
 	c.Flags().BoolVar(&b.noContainer, "no-container", false, "Avoid using Docker if possible")
 	c.Flags().BoolVar(&b.dependenciesOnly, "deps-only", false, "Install only dependencies, don't do anything else")
 	c.Flags().StringVar(&b.execPrefix, "exec-prefix", "", "Add a prefix to all executed commands (useful for timing or wrapping things)")
@@ -72,6 +74,10 @@ func (b *buildCmd) run(ctx context.Context, buildTargetName string) error {
 
 	// Obtain global dependencies.
 	dataDirs, err := ybdata.DirsFromEnv()
+	if err != nil {
+		return err
+	}
+	baseEnv, err := envFromCommandLine(b.env)
 	if err != nil {
 		return err
 	}
@@ -120,6 +126,7 @@ func (b *buildCmd) run(ctx context.Context, buildTargetName string) error {
 		dataDirs:     dataDirs,
 		execPrefix:   execPrefix,
 		setupOnly:    b.dependenciesOnly,
+		baseEnv:      baseEnv,
 	})
 	if buildError != nil {
 		span.SetStatus(codes.Unknown, buildError.Error())
@@ -147,6 +154,7 @@ type doOptions struct {
 	dataDirs        *ybdata.Dirs
 	dockerClient    *docker.Client
 	dockerNetworkID string
+	baseEnv         biome.Environment
 	execPrefix      []string
 	setupOnly       bool
 }
@@ -185,7 +193,13 @@ func doTargetList(ctx context.Context, pkg *yb.Package, targets []*yb.BuildTarge
 }
 
 func doTarget(ctx context.Context, pkg *yb.Package, target *yb.BuildTarget, opts *doOptions) error {
-	bio, err := newBiome(ctx, opts.dockerClient, opts.dataDirs, pkg.Path, target.Name)
+	bio, err := newBiome(ctx, newBiomeOptions{
+		packageDir:   pkg.Path,
+		target:       target.Name,
+		dataDirs:     opts.dataDirs,
+		baseEnv:      opts.baseEnv,
+		dockerClient: opts.dockerClient,
+	})
 	if err != nil {
 		return fmt.Errorf("target %s: %w", target.Name, err)
 	}
