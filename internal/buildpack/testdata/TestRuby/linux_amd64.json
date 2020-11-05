@@ -1,0 +1,143 @@
+{
+	"Descriptor": {
+		"OS": "linux",
+		"Arch": "amd64"
+	},
+	"Dirs": {
+		"Package": "/tmp/TestRuby413976969/001",
+		"Home": "/tmp/TestRuby413976969/002",
+		"Tools": "/tmp/TestRuby413976969/002/.cache/yb/tools"
+	},
+	"JoinedPaths": [
+		{
+			"Elems": [
+				"/tmp/TestRuby413976969/002/.cache/yb/tools",
+				"rbenv"
+			],
+			"Result": "/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv"
+		},
+		{
+			"Elems": [
+				"/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv",
+				"versions",
+				"2.6.3"
+			],
+			"Result": "/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv/versions/2.6.3"
+		},
+		{
+			"Elems": [
+				"/tmp/TestRuby413976969/002",
+				"rubygems"
+			],
+			"Result": "/tmp/TestRuby413976969/002/rubygems"
+		},
+		{
+			"Elems": [
+				"/tmp/TestRuby413976969/002/rubygems",
+				"bin"
+			],
+			"Result": "/tmp/TestRuby413976969/002/rubygems/bin"
+		},
+		{
+			"Elems": [
+				"/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv/versions/2.6.3",
+				"bin"
+			],
+			"Result": "/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv/versions/2.6.3/bin"
+		}
+	],
+	"CleanedPaths": {
+		"/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv/versions/2.6.3": "/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv/versions/2.6.3",
+		"/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv/versions/2.6.3.tar.bz2": "/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv/versions/2.6.3.tar.bz2"
+	},
+	"AbsPaths": {
+		"/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv/versions/2.6.3": true,
+		"/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv/versions/2.6.3.tar.bz2": true
+	},
+	"Invocations": [
+		{
+			"Argv": [
+				"readlink",
+				"--canonicalize-existing",
+				"--no-newline",
+				"/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv/versions/2.6.3"
+			],
+			"Output": {
+				"Stdout": "",
+				"Stderr": ""
+			},
+			"Error": "local run: exit status 1"
+		},
+		{
+			"Argv": [
+				"cat",
+				"/etc/os-release"
+			],
+			"Output": {
+				"Stdout": "TkFNRT0iVWJ1bnR1IgpWRVJTSU9OPSIxOC4wNC41IExUUyAoQmlvbmljIEJlYXZlcikiCklEPXVidW50dQpJRF9MSUtFPWRlYmlhbgpQUkVUVFlfTkFNRT0iVWJ1bnR1IDE4LjA0LjUgTFRTIgpWRVJTSU9OX0lEPSIxOC4wNCIKSE9NRV9VUkw9Imh0dHBzOi8vd3d3LnVidW50dS5jb20vIgpTVVBQT1JUX1VSTD0iaHR0cHM6Ly9oZWxwLnVidW50dS5jb20vIgpCVUdfUkVQT1JUX1VSTD0iaHR0cHM6Ly9idWdzLmxhdW5jaHBhZC5uZXQvdWJ1bnR1LyIKUFJJVkFDWV9QT0xJQ1lfVVJMPSJodHRwczovL3d3dy51YnVudHUuY29tL2xlZ2FsL3Rlcm1zLWFuZC1wb2xpY2llcy9wcml2YWN5LXBvbGljeSIKVkVSU0lPTl9DT0RFTkFNRT1iaW9uaWMKVUJVTlRVX0NPREVOQU1FPWJpb25pYwo=",
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"mkdir",
+				"-p",
+				"/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv/versions/2.6.3"
+			],
+			"Output": {
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"tee",
+				"/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv/versions/2.6.3.tar.bz2"
+			],
+			"StdinSHA256": "40879eb6b5118c4eb396fda06fab20f43b80e092deb12fa1fa421e5097dec540",
+			"Output": {
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"tar",
+				"-x",
+				"-j",
+				"-f",
+				"/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv/versions/2.6.3.tar.bz2",
+				"--strip-components",
+				"1"
+			],
+			"Dir": "/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv/versions/2.6.3",
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"rm",
+				"-f",
+				"/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv/versions/2.6.3.tar.bz2"
+			],
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"ruby",
+				"--version"
+			],
+			"EnvVars": {
+				"GEM_HOME": "/tmp/TestRuby413976969/002/rubygems"
+			},
+			"PrependPath": [
+				"/tmp/TestRuby413976969/002/rubygems/bin",
+				"/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv/versions/2.6.3/bin"
+			],
+			"Output": {
+				"Combined": "cnVieSAyLjYuM3A2MiAoMjAxOS0wNC0xNiByZXZpc2lvbiA2NzU4MCkgW3g4Nl82NC1saW51eF0K"
+			}
+		}
+	]
+}

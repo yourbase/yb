@@ -1,0 +1,288 @@
+{
+	"Descriptor": {
+		"OS": "darwin",
+		"Arch": "amd64"
+	},
+	"Dirs": {
+		"Package": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/001",
+		"Home": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002",
+		"Tools": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools"
+	},
+	"JoinedPaths": [
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools",
+				"android-ndk",
+				"android-ndk-r21d"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"CHANGELOG.md"
+			],
+			"Result": "android-ndk-r21d/CHANGELOG.md"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"NOTICE"
+			],
+			"Result": "android-ndk-r21d/NOTICE"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"NOTICE.toolchain"
+			],
+			"Result": "android-ndk-r21d/NOTICE.toolchain"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"README.md"
+			],
+			"Result": "android-ndk-r21d/README.md"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"build"
+			],
+			"Result": "android-ndk-r21d/build"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"meta"
+			],
+			"Result": "android-ndk-r21d/meta"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"ndk-build"
+			],
+			"Result": "android-ndk-r21d/ndk-build"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"ndk-gdb"
+			],
+			"Result": "android-ndk-r21d/ndk-gdb"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"ndk-stack"
+			],
+			"Result": "android-ndk-r21d/ndk-stack"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"ndk-which"
+			],
+			"Result": "android-ndk-r21d/ndk-which"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"platforms"
+			],
+			"Result": "android-ndk-r21d/platforms"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"prebuilt"
+			],
+			"Result": "android-ndk-r21d/prebuilt"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"python-packages"
+			],
+			"Result": "android-ndk-r21d/python-packages"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"shader-tools"
+			],
+			"Result": "android-ndk-r21d/shader-tools"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"simpleperf"
+			],
+			"Result": "android-ndk-r21d/simpleperf"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"source.properties"
+			],
+			"Result": "android-ndk-r21d/source.properties"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"sources"
+			],
+			"Result": "android-ndk-r21d/sources"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"sysroot"
+			],
+			"Result": "android-ndk-r21d/sysroot"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"toolchains"
+			],
+			"Result": "android-ndk-r21d/toolchains"
+		},
+		{
+			"Elems": [
+				"android-ndk-r21d",
+				"wrap.sh"
+			],
+			"Result": "android-ndk-r21d/wrap.sh"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d",
+				"ndk-build"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d/ndk-build"
+		}
+	],
+	"CleanedPaths": {
+		"/private/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d/ndk-build": "/private/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d/ndk-build",
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d",
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip"
+	},
+	"AbsPaths": {
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d": true,
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip": true
+	},
+	"Invocations": [
+		{
+			"Argv": [
+				"python",
+				"-c",
+				"import os, sys; os.stat(sys.argv[1]); sys.stdout.write(os.path.realpath(sys.argv[1]))",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
+			],
+			"Output": {
+				"Stdout": "",
+				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0QW5kcm9pZE5ESzI5ODgwODU0My8wMDIvLmNhY2hlL3liL3Rvb2xzL2FuZHJvaWQtbmRrL2FuZHJvaWQtbmRrLXIyMWQnCg=="
+			},
+			"Error": "local run: exit status 1"
+		},
+		{
+			"Argv": [
+				"mkdir",
+				"-p",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
+			],
+			"Output": {
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"tee",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip"
+			],
+			"StdinSHA256": "5851115c6fc4cce26bc320295b52da240665d7ff89bda2f5d5af1887582f5c48",
+			"Output": {
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"unzip",
+				"-q",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip"
+			],
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d",
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"mv",
+				"android-ndk-r21d/CHANGELOG.md",
+				"android-ndk-r21d/NOTICE",
+				"android-ndk-r21d/NOTICE.toolchain",
+				"android-ndk-r21d/README.md",
+				"android-ndk-r21d/build",
+				"android-ndk-r21d/meta",
+				"android-ndk-r21d/ndk-build",
+				"android-ndk-r21d/ndk-gdb",
+				"android-ndk-r21d/ndk-stack",
+				"android-ndk-r21d/ndk-which",
+				"android-ndk-r21d/platforms",
+				"android-ndk-r21d/prebuilt",
+				"android-ndk-r21d/python-packages",
+				"android-ndk-r21d/shader-tools",
+				"android-ndk-r21d/simpleperf",
+				"android-ndk-r21d/source.properties",
+				"android-ndk-r21d/sources",
+				"android-ndk-r21d/sysroot",
+				"android-ndk-r21d/toolchains",
+				"android-ndk-r21d/wrap.sh",
+				"."
+			],
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d",
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"rmdir",
+				"android-ndk-r21d"
+			],
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d",
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"rm",
+				"-f",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip"
+			],
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"python",
+				"-c",
+				"import os, sys; os.stat(sys.argv[1]); sys.stdout.write(os.path.realpath(sys.argv[1]))",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d/ndk-build"
+			],
+			"EnvVars": {
+				"ANDROID_NDK_HOME": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
+			},
+			"Output": {
+				"Stdout": "L3ByaXZhdGUvdmFyL2ZvbGRlcnMvZ2wvOGt4YzF6eDU3NGIyeWJqdHZ4aDQ3ank0MDAwMGtrL1QvVGVzdEFuZHJvaWROREsyOTg4MDg1NDMvMDAyLy5jYWNoZS95Yi90b29scy9hbmRyb2lkLW5kay9hbmRyb2lkLW5kay1yMjFkL25kay1idWlsZA==",
+				"Stderr": ""
+			}
+		}
+	]
+}

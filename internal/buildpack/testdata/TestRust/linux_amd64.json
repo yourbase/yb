@@ -1,0 +1,144 @@
+{
+	"Descriptor": {
+		"OS": "linux",
+		"Arch": "amd64"
+	},
+	"Dirs": {
+		"Package": "/tmp/TestRust899693908/001",
+		"Home": "/tmp/TestRust899693908/002",
+		"Tools": "/tmp/TestRust899693908/002/.cache/yb/tools"
+	},
+	"JoinedPaths": [
+		{
+			"Elems": [
+				"/tmp/TestRust899693908/002/.cache/yb/tools",
+				"rust",
+				"rust-1.43.1"
+			],
+			"Result": "/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1"
+		},
+		{
+			"Elems": [
+				"/tmp/TestRust899693908/002",
+				"cargohome"
+			],
+			"Result": "/tmp/TestRust899693908/002/cargohome"
+		},
+		{
+			"Elems": [
+				"/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1",
+				"cargo",
+				"bin"
+			],
+			"Result": "/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1/cargo/bin"
+		},
+		{
+			"Elems": [
+				"/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1",
+				"rustc",
+				"bin"
+			],
+			"Result": "/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1/rustc/bin"
+		}
+	],
+	"CleanedPaths": {
+		"/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1": "/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1",
+		"/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1.tar.gz": "/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1.tar.gz"
+	},
+	"AbsPaths": {
+		"/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1": true,
+		"/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1.tar.gz": true
+	},
+	"Invocations": [
+		{
+			"Argv": [
+				"readlink",
+				"--canonicalize-existing",
+				"--no-newline",
+				"/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1"
+			],
+			"Output": {
+				"Stdout": "",
+				"Stderr": ""
+			},
+			"Error": "local run: exit status 1"
+		},
+		{
+			"Argv": [
+				"mkdir",
+				"-p",
+				"/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1"
+			],
+			"Output": {
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"tee",
+				"/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1.tar.gz"
+			],
+			"StdinSHA256": "25cd71b95bba0daef56bad8c943a87368c4185b90983f4412f46e3e2418c0505",
+			"Output": {
+				"Stderr": ""
+			}
+		},
+		{
+			"Argv": [
+				"tar",
+				"-x",
+				"-z",
+				"-f",
+				"/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1.tar.gz",
+				"--strip-components",
+				"1"
+			],
+			"Dir": "/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1",
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"rm",
+				"-f",
+				"/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1.tar.gz"
+			],
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"rustc",
+				"--version"
+			],
+			"EnvVars": {
+				"CARGO_HOME": "/tmp/TestRust899693908/002/cargohome"
+			},
+			"PrependPath": [
+				"/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1/cargo/bin",
+				"/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1/rustc/bin"
+			],
+			"Output": {
+				"Combined": "cnVzdGMgMS40My4xICg4ZDY5ODQwYWIgMjAyMC0wNS0wNCkK"
+			}
+		},
+		{
+			"Argv": [
+				"cargo",
+				"--version"
+			],
+			"EnvVars": {
+				"CARGO_HOME": "/tmp/TestRust899693908/002/cargohome"
+			},
+			"PrependPath": [
+				"/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1/cargo/bin",
+				"/tmp/TestRust899693908/002/.cache/yb/tools/rust/rust-1.43.1/rustc/bin"
+			],
+			"Output": {
+				"Combined": "Y2FyZ28gMS40My4wICgyY2JlOTA0OGUgMjAyMC0wNS0wMykK"
+			}
+		}
+	]
+}

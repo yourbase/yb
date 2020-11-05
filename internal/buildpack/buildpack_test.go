@@ -22,11 +22,14 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"flag"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -36,9 +39,12 @@ import (
 	"github.com/yourbase/commons/http/headers"
 	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
+	"github.com/yourbase/yb/internal/biome/replay"
 	"github.com/yourbase/yb/internal/ybdata"
 	"zombiezen.com/go/log/testlog"
 )
+
+var recordMode = false
 
 // testInstall installs the specified buildpacks in a temporary biome that is
 // cleaned up after the test finishes.
@@ -46,15 +52,25 @@ import (
 // testInstall must be called from the goroutine running the test or benchmark function.
 func testInstall(ctx context.Context, tb testing.TB, specs ...yb.BuildpackSpec) (biome.Biome, biome.Environment) {
 	tb.Helper()
-	if testing.Short() {
-		tb.Skip("Skipping due to -short")
+	var bio biome.Biome
+	if recordMode {
+		bio = newRecordBiome(tb)
+	} else {
+		bio = newReplayBiome(tb)
 	}
-	bio := biome.EnvBiome{
-		Biome: &biome.Local{
-			PackageDir: tb.TempDir(),
-			HomeDir:    tb.TempDir(),
-		},
+	mergedEnv, err := runTestInstall(ctx, tb, bio, specs...)
+	if err != nil {
+		tb.Fatal(err)
 	}
+	return biome.EnvBiome{
+		Biome: bio,
+		Env:   mergedEnv,
+	}, mergedEnv
+}
+
+// runTestInstall installs the specified buildpacks in the given biome.
+func runTestInstall(ctx context.Context, tb testing.TB, bio biome.Biome, specs ...yb.BuildpackSpec) (biome.Environment, error) {
+	tb.Helper()
 	installOutput := new(strings.Builder)
 	sys := Sys{
 		Biome:      bio,
@@ -68,15 +84,47 @@ func testInstall(ctx context.Context, tb testing.TB, specs ...yb.BuildpackSpec) 
 		newEnv, err := Install(ctx, sys, spec)
 		tb.Logf("Install(ctx, sys, %q) output:\n%s", spec, installOutput)
 		if err != nil {
-			tb.Fatalf("Install(ctx, sys, %q): %v", spec, err)
+			return biome.Environment{}, err
 		}
 		tb.Logf("%s environment:\n%v", spec, newEnv)
 		mergedEnv = mergedEnv.Merge(newEnv)
 	}
-	return biome.EnvBiome{
-		Biome: bio,
-		Env:   mergedEnv,
-	}, mergedEnv
+	return mergedEnv, nil
+}
+
+func replayInstallDir(tb testing.TB) string {
+	return filepath.Join("testdata", filepath.FromSlash(tb.Name()))
+}
+
+func newLocalTestBiome(tb testing.TB) biome.Biome {
+	return &biome.Local{
+		PackageDir: tb.TempDir(),
+		HomeDir:    tb.TempDir(),
+	}
+}
+
+func newRecordBiome(tb testing.TB) biome.Biome {
+	tb.Helper()
+	bio := replay.NewRecorder(replayInstallDir(tb), newLocalTestBiome(tb))
+	tb.Cleanup(func() {
+		if err := bio.Close(); err != nil {
+			tb.Error(err)
+		}
+	})
+	return bio
+}
+
+func newReplayBiome(tb testing.TB) biome.Biome {
+	tb.Helper()
+	desc := &biome.Descriptor{
+		OS:   runtime.GOOS,
+		Arch: runtime.GOARCH,
+	}
+	bio, err := replay.Load(replayInstallDir(tb), desc)
+	if err != nil {
+		tb.Fatal(err)
+	}
+	return bio
 }
 
 // verifyURLExists makes a request for the given URL, failing the test or
@@ -362,6 +410,7 @@ func makeGzipTar(fname string) []byte {
 }
 
 func TestMain(m *testing.M) {
+	flag.BoolVar(&recordMode, "record", false, "record buildpack installations")
 	testlog.Main(nil)
 	os.Exit(m.Run())
 }
