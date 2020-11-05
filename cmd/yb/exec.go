@@ -15,7 +15,8 @@ import (
 const defaultExecEnvironment = "default"
 
 type execCmd struct {
-	environment string
+	execEnvName string
+	env         []commandLineEnv
 }
 
 func newExecCmd() *cobra.Command {
@@ -31,12 +32,18 @@ func newExecCmd() *cobra.Command {
 			return b.run(cmd.Context())
 		},
 	}
-	c.Flags().StringVarP(&b.environment, "environment", "e", defaultExecEnvironment, "Environment to run as")
+	envFlagsVar(c.Flags(), &b.env)
+	// TODO(light): Use a less confusing name for this flag when it is using targets.
+	c.Flags().StringVarP(&b.execEnvName, "environment", "", defaultExecEnvironment, "Environment to run as")
 	return c
 }
 
 func (b *execCmd) run(ctx context.Context) error {
 	dataDirs, err := ybdata.DirsFromEnv()
+	if err != nil {
+		return err
+	}
+	baseEnv, err := envFromCommandLine(b.env)
 	if err != nil {
 		return err
 	}
@@ -54,7 +61,13 @@ func (b *execCmd) run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	bio, err := newBiome(ctx, dockerClient, dataDirs, pkg.Path, b.environment)
+	bio, err := newBiome(ctx, newBiomeOptions{
+		packageDir:   pkg.Path,
+		target:       b.execEnvName,
+		dataDirs:     dataDirs,
+		baseEnv:      baseEnv,
+		dockerClient: dockerClient,
+	})
 	if err != nil {
 		return err
 	}
@@ -77,12 +90,12 @@ func (b *execCmd) run(ctx context.Context) error {
 		return err
 	}
 	deps := &build.PhaseDeps{
-		TargetName:          b.environment,
+		TargetName:          b.execEnvName,
 		Resources:           narwhalContainerMap(pkg.Manifest.Exec.Dependencies.Containers),
 		EnvironmentTemplate: defaultEnv,
 	}
-	if b.environment != defaultExecEnvironment {
-		overrideEnv, err := biome.MapVars(pkg.Manifest.Exec.Environment[b.environment])
+	if b.execEnvName != defaultExecEnvironment {
+		overrideEnv, err := biome.MapVars(pkg.Manifest.Exec.Environment[b.execEnvName])
 		if err != nil {
 			return err
 		}
@@ -97,12 +110,12 @@ func (b *execCmd) run(ctx context.Context) error {
 	sys.Biome = execBiome
 	defer func() {
 		if err := execBiome.Close(); err != nil {
-			log.Errorf(ctx, "Clean up environment %s: %v", b.environment, err)
+			log.Errorf(ctx, "Clean up environment %s: %v", b.execEnvName, err)
 		}
 	}()
 
 	return build.Execute(ctx, sys, &build.Phase{
-		TargetName: b.environment,
+		TargetName: b.execEnvName,
 		Commands:   pkg.Manifest.Exec.Commands,
 	})
 }

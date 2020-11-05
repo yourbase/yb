@@ -13,6 +13,7 @@ import (
 )
 
 type runCmd struct {
+	env         []commandLineEnv
 	target      string
 	noContainer bool
 }
@@ -31,6 +32,7 @@ func newRunCmd() *cobra.Command {
 			return b.run(cmd.Context(), args)
 		},
 	}
+	envFlagsVar(c.Flags(), &b.env)
 	c.Flags().StringVarP(&b.target, "target", "t", "default", "The target to run the command in")
 	c.Flags().BoolVar(&b.noContainer, "no-container", false, "Avoid using Docker if possible")
 	return c
@@ -38,6 +40,10 @@ func newRunCmd() *cobra.Command {
 
 func (b *runCmd) run(ctx context.Context, args []string) error {
 	dataDirs, err := ybdata.DirsFromEnv()
+	if err != nil {
+		return err
+	}
+	baseEnv, err := envFromCommandLine(b.env)
 	if err != nil {
 		return err
 	}
@@ -64,6 +70,7 @@ func (b *runCmd) run(ctx context.Context, args []string) error {
 		dockerClient:    dockerClient,
 		dockerNetworkID: dockerNetworkID,
 		dataDirs:        dataDirs,
+		baseEnv:         baseEnv,
 	})
 	if err != nil {
 		return err
@@ -71,7 +78,13 @@ func (b *runCmd) run(ctx context.Context, args []string) error {
 
 	// Run command.
 	execTarget := targets[len(targets)-1]
-	bio, err := newBiome(ctx, dockerClient, dataDirs, pkg.Path, execTarget.Name)
+	bio, err := newBiome(ctx, newBiomeOptions{
+		packageDir:   pkg.Path,
+		target:       execTarget.Name,
+		dataDirs:     dataDirs,
+		baseEnv:      baseEnv,
+		dockerClient: dockerClient,
+	})
 	if err != nil {
 		return err
 	}

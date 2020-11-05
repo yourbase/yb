@@ -16,6 +16,9 @@ The format is based on [Keep a Changelog][], and this project adheres to
 -  If the `YB_GH_TOKEN` environment variable is set, the environment variable
    will be available in the build commands' environment and in a temporary
    [.netrc file](https://ec.haxx.se/usingcurl/usingcurl-netrc).
+-  `yb build`, `yb exec`, and `yb run` now all support two new flags: `--env`
+   and `--env-file`. These flags set environment variables in the execution
+   environment.
 
 ### Changed
 
@@ -27,7 +30,8 @@ The format is based on [Keep a Changelog][], and this project adheres to
 -  The `TZ` environment variable is set to the value `UTC` by default for all
    builds to increase reproducibility.
 -  yb build commands no longer inherit environment variables for greater
-   reproducibility.
+   reproducibility. To set environment variables in your build, use the new
+   `--env` or `--env-file` flags.
 -  `yb remotebuild` will now always use the locally installed Git to determine
    the changed files.
 

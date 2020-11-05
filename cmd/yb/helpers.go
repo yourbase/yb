@@ -31,21 +31,33 @@ func connectDockerClient(useDocker bool) (*docker.Client, error) {
 
 const netrcFilename = ".netrc"
 
-func newBiome(ctx context.Context, client *docker.Client, dataDirs *ybdata.Dirs, packageDir, target string) (biome.BiomeCloser, error) {
+type newBiomeOptions struct {
+	packageDir string
+	target     string
+	dataDirs   *ybdata.Dirs
+	baseEnv    biome.Environment
+
+	dockerClient *docker.Client
+}
+
+func newBiome(ctx context.Context, opts newBiomeOptions) (biome.BiomeCloser, error) {
 	// TODO(ch2743): Eventually also allow Docker container.
 	l := biome.Local{
-		PackageDir: packageDir,
+		PackageDir: opts.packageDir,
 	}
 	var err error
-	l.HomeDir, err = dataDirs.BuildHome(packageDir, target, l.Describe())
+	l.HomeDir, err = opts.dataDirs.BuildHome(opts.packageDir, opts.target, l.Describe())
 	if err != nil {
-		return nil, fmt.Errorf("create build context for target %s: %w", target, err)
+		return nil, fmt.Errorf("create build context for target %s: %w", opts.target, err)
 	}
 	bio, err := injectNetrc(ctx, l)
 	if err != nil {
-		return nil, fmt.Errorf("create build context for target %s: %w", target, err)
+		return nil, fmt.Errorf("create build context for target %s: %w", opts.target, err)
 	}
-	return bio, nil
+	return biome.EnvBiome{
+		Biome: bio,
+		Env:   opts.baseEnv,
+	}, nil
 }
 
 func injectNetrc(ctx context.Context, bio biome.BiomeCloser) (biome.BiomeCloser, error) {
