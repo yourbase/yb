@@ -462,10 +462,11 @@ github.com/xeipuuv/gojsonschema v0.0.0-20180618132009-1d523034197f/go.mod h1:5yf
 github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 h1:nIPpBwaJSVYIxUFsDv3M8ofmx9yWTog9BfvIu0q41lo=
 github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8/go.mod h1:HUYIGzjTL3rfEspMxjDjgmT5uz5wzYJKVo23qUhYTos=
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=
+github.com/yourbase/commons v0.1.0/go.mod h1:33VOfAZFfHwouAocNBqM9o5ZpCIwwSQq3vqjKpYK8sc=
 github.com/yourbase/commons v0.6.0 h1:v77YBV6TL4TL+0vnop6LaTOhzCQJACpED4lXVhyK2Ps=
 github.com/yourbase/commons v0.6.0/go.mod h1:Puc7zTNtP4J7cRK9LkAUWYdORUQ0f7ZcgFFu2lxOe4Y=
-github.com/yourbase/narwhal v0.5.3 h1:qJzTSuM/5Wf3XQFQLdEGW0af/Kjt1UIsyW6hlgzqZCU=
-github.com/yourbase/narwhal v0.5.3/go.mod h1:E3CDnwheEjNSYK+ISGCoE805lBzm+qfG2tDA5M1s+mk=
+github.com/yourbase/narwhal v0.6.1 h1:kRdEXM1bRm2zPEx9Y+bg/DhLifxYvz3faeAXlm6rjgI=
+github.com/yourbase/narwhal v0.6.1/go.mod h1:X1FC2daND8bK/vrhDsa00VtR4vnwYcmPUAzKF/FXdyw=
 go.etcd.io/bbolt v1.3.2/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
 go.opencensus.io v0.21.0/go.mod h1:mSImk1erAIZhrmZN+AvHh14ztQfjbGwt4TtuofqLduU=
 go.opencensus.io v0.22.0/go.mod h1:+kGneAE2xo2IficOXnaByMWTGM9T73dGwxeWcUqIpI8=
