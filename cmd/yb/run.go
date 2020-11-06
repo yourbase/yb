@@ -78,7 +78,7 @@ func (b *runCmd) run(ctx context.Context, args []string) error {
 
 	// Run command.
 	execTarget := targets[len(targets)-1]
-	bio, err := newBiome(ctx, newBiomeOptions{
+	biomeOpts := newBiomeOptions{
 		packageDir:      pkg.Path,
 		target:          execTarget.Name,
 		dataDirs:        dataDirs,
@@ -86,7 +86,11 @@ func (b *runCmd) run(ctx context.Context, args []string) error {
 		dockerClient:    dockerClient,
 		targetContainer: execTarget.Container.ToNarwhal(),
 		dockerNetworkID: dockerNetworkID,
-	})
+	}
+	if execTarget.HostOnly {
+		biomeOpts = biomeOpts.disableDocker()
+	}
+	bio, err := newBiome(ctx, biomeOpts)
 	if err != nil {
 		return err
 	}

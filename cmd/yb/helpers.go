@@ -43,6 +43,14 @@ type newBiomeOptions struct {
 	dockerNetworkID string
 }
 
+func (opts newBiomeOptions) disableDocker() newBiomeOptions {
+	// Operating on copy, so free to modify fields.
+	opts.dockerClient = nil
+	opts.targetContainer = nil
+	opts.dockerNetworkID = ""
+	return opts
+}
+
 func newBiome(ctx context.Context, opts newBiomeOptions) (biome.BiomeCloser, error) {
 	if opts.dockerClient == nil {
 		l := biome.Local{
