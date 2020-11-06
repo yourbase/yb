@@ -5,20 +5,15 @@ dependencies:
 build_targets:
   - name: default
     commands:
-      - go test -mod=readonly -race -short ./...
       - release/build.sh yb
 
-  - name: integration
-    build_after:
-      - default
+  - name: test
     commands:
-      - apt-get install -y --no-install-recommends git
-      - bash -c "cd integration-tests; ../yb build --no-container"
-      - bash -c "cd integration-tests; ../yb build --no-container flutter"
-      - bash -c "cd integration-tests; ../yb build --no-container python"
-      - bash -c "cd integration-tests; ../yb build --no-container gopher"
-      - bash -c "cd integration-tests; ../yb build --no-container ruby"
-      - bash -c "cd integration-tests; ../yb build --no-container java"
+      - go test -mod=readonly -race -short ./...
+
+  - name: all_tests
+    commands:
+      - go test -mod=readonly -race ./...
 
 ci:
   builds:
@@ -26,7 +21,7 @@ ci:
       build_target: default
       when: branch IS 'main' OR action IS 'pull_request'
 
-    - name: test_integration
-      build_target: integration
+    - name: test
+      build_target: test
       when: branch IS 'main' OR action IS 'pull_request'
 
