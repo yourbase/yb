@@ -7,7 +7,6 @@ import (
 	"github.com/blang/semver"
 	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
-	"github.com/yourbase/yb/internal/plumbing"
 	"github.com/yourbase/yb/internal/ybdata"
 	"zombiezen.com/go/log"
 )
@@ -139,13 +138,13 @@ func anacondaDownloadURL(version string, pyMajor, pyMinor int, desc *biome.Descr
 	}
 
 	if v.Major > 4 || (v.Major == 4 && v.Minor >= 8) {
-		url, err := plumbing.TemplateToString(anacondaNewerDistMirrorTemplate, data)
+		url, err := templateToString(anacondaNewerDistMirrorTemplate, data)
 		if err != nil {
 			return "", fmt.Errorf("compute anaconda %s download url: %w", version, err)
 		}
 		return url, nil
 	}
-	url, err := plumbing.TemplateToString(anacondaDistMirrorTemplate, data)
+	url, err := templateToString(anacondaDistMirrorTemplate, data)
 	if err != nil {
 		return "", fmt.Errorf("compute anaconda %s download url: %w", version, err)
 	}

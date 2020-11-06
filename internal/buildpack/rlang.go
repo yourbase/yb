@@ -9,7 +9,6 @@ import (
 	"github.com/yourbase/commons/xcontext"
 	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
-	"github.com/yourbase/yb/internal/plumbing"
 	"zombiezen.com/go/log"
 )
 
@@ -44,7 +43,7 @@ func installR(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (_ biome.Envi
 		Version:      version,
 		MajorVersion: majorVersion,
 	}
-	downloadURL, err := plumbing.TemplateToString(template, data)
+	downloadURL, err := templateToString(template, data)
 	if err != nil {
 		return biome.Environment{}, err
 	}

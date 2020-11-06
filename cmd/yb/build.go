@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
@@ -17,7 +18,6 @@ import (
 	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/internal/build"
-	"github.com/yourbase/yb/internal/plumbing"
 	"github.com/yourbase/yb/internal/ybdata"
 	"github.com/yourbase/yb/internal/ybtrace"
 	"go.opentelemetry.io/otel/api/global"
@@ -94,8 +94,8 @@ func (b *buildCmd) run(ctx context.Context, buildTargetName string) error {
 	ctx, span := ybtrace.Start(ctx, "Build", trace.WithNewRoot())
 	defer span.End()
 
-	if plumbing.InsideTheMatrix() {
-		startSection("BUILD CONTAINER")
+	if insideTheMatrix() {
+		startSection("BUILD")
 	} else {
 		startSection("BUILD HOST")
 	}
@@ -321,6 +321,25 @@ func (sink *traceSink) dumpLocked(sb *strings.Builder, parent trace.SpanID, dept
 		)
 		sink.dumpLocked(sb, span.SpanContext.SpanID, depth+1)
 	}
+}
+
+// Because, why not?
+// Based on https://github.com/sindresorhus/is-docker/blob/master/index.js and https://github.com/moby/moby/issues/18355
+// Discussion is not settled yet: https://stackoverflow.com/questions/23513045/how-to-check-if-a-process-is-running-inside-docker-container#25518538
+func insideTheMatrix() bool {
+	hasDockerEnv := pathExists("/.dockerenv")
+	hasDockerCGroup := false
+	dockerCGroupPath := "/proc/self/cgroup"
+	if pathExists(dockerCGroupPath) {
+		contents, _ := ioutil.ReadFile(dockerCGroupPath)
+		hasDockerCGroup = strings.Count(string(contents), "docker") > 0
+	}
+	return hasDockerEnv || hasDockerCGroup
+}
+
+func pathExists(path string) bool {
+	_, err := os.Lstat(path)
+	return !os.IsNotExist(err)
 }
 
 func startSection(name string) {

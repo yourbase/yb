@@ -23,6 +23,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"text/template"
 	"time"
 
 	docker "github.com/fsouza/go-dockerclient"
@@ -31,7 +32,6 @@ import (
 	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/internal/buildpack"
-	"github.com/yourbase/yb/internal/plumbing"
 	"github.com/yourbase/yb/internal/ybtrace"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/codes"
@@ -296,7 +296,15 @@ type containersExpansion struct {
 }
 
 func (exp configExpansion) expand(value string) (string, error) {
-	return plumbing.TemplateToString(value, exp)
+	t, err := template.New(".yourbase.yml").Parse(value)
+	if err != nil {
+		return "", fmt.Errorf("expand %s: %v", value, err)
+	}
+	expanded := new(strings.Builder)
+	if err := t.Execute(expanded, exp); err != nil {
+		return "", fmt.Errorf("expand %s: %v", value, err)
+	}
+	return expanded.String(), nil
 }
 
 // IP returns the IP address of a particular container.

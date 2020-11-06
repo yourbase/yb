@@ -7,7 +7,6 @@ import (
 
 	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
-	"github.com/yourbase/yb/internal/plumbing"
 	"github.com/yourbase/yb/internal/ybdata"
 	"zombiezen.com/go/log"
 )
@@ -60,7 +59,7 @@ func installRuby(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (biome.Env
 		if err != nil {
 			log.Warnf(ctx, "Skipping search for pre-built binary: %v", err)
 		} else {
-			downloadURL, err := plumbing.TemplateToString(template, data)
+			downloadURL, err := templateToString(template, data)
 			if err != nil {
 				return biome.Environment{}, fmt.Errorf("download pre-built binary: %w", err)
 			}
