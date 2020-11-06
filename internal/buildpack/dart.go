@@ -6,7 +6,6 @@ import (
 
 	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
-	"github.com/yourbase/yb/internal/plumbing"
 	"zombiezen.com/go/log"
 )
 
@@ -47,7 +46,7 @@ func installDart(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (biome.Env
 	if data.OS == "" {
 		return biome.Environment{}, fmt.Errorf("unsupported architecture %s", desc.Arch)
 	}
-	downloadURL, err := plumbing.TemplateToString(template, data)
+	downloadURL, err := templateToString(template, data)
 	if err != nil {
 		return biome.Environment{}, err
 	}

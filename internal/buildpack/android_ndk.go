@@ -6,7 +6,6 @@ import (
 
 	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
-	"github.com/yourbase/yb/internal/plumbing"
 	"zombiezen.com/go/log"
 )
 
@@ -43,7 +42,7 @@ func installAndroidNDK(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (bio
 	if data.OS == "" || data.Arch == "" {
 		return biome.Environment{}, fmt.Errorf("unsupported os/arch %s/%s", desc.OS, desc.Arch)
 	}
-	downloadURL, err := plumbing.TemplateToString(androidNDKDistMirror, data)
+	downloadURL, err := templateToString(androidNDKDistMirror, data)
 	if err != nil {
 		return biome.Environment{}, err
 	}

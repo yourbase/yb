@@ -7,7 +7,6 @@ import (
 
 	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
-	"github.com/yourbase/yb/internal/plumbing"
 	"zombiezen.com/go/log"
 )
 
@@ -41,7 +40,7 @@ func installMaven(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (biome.En
 		Version:      spec.Version(),
 		MajorVersion: majorVersion,
 	}
-	downloadURL, err := plumbing.TemplateToString(template, data)
+	downloadURL, err := templateToString(template, data)
 	if dotIndex == -1 {
 		return biome.Environment{}, err
 	}

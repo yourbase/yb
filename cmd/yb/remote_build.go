@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -21,9 +22,9 @@ import (
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	"github.com/spf13/cobra"
+	"github.com/ulikunitz/xz"
 	"github.com/yourbase/yb"
 	ybconfig "github.com/yourbase/yb/internal/config"
-	"github.com/yourbase/yb/internal/plumbing"
 	"gopkg.in/src-d/go-git.v4"
 	gitplumbing "gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
@@ -370,7 +371,7 @@ func findFilesToAdd(ctx context.Context, g *ggit.Git, workTree string, dst []ggi
 	}
 
 	if !fi.IsDir() {
-		binary, err := plumbing.IsBinary(realPath)
+		binary, err := isBinary(realPath)
 		if err != nil {
 			return dst, fmt.Errorf("find files to git add: %w", err)
 		}
@@ -395,6 +396,34 @@ func findFilesToAdd(ctx context.Context, g *ggit.Git, workTree string, dst []ggi
 		}
 	}
 	return dst, nil
+}
+
+// isBinary returns whether a file contains a NUL byte near the beginning of the file.
+func isBinary(filePath string) (bool, error) {
+	r, err := os.Open(filePath)
+	if err != nil {
+		return false, err
+	}
+	defer r.Close()
+
+	buf := make([]byte, 8000)
+	n, err := io.ReadFull(r, buf)
+	if err != nil {
+		// Ignore EOF, since it's fine for the file to be shorter than the buffer size.
+		// Otherwise, wrap the error. We don't fully stop the control flow here because
+		// we may still have read enough data to make a determination.
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+			err = nil
+		} else {
+			err = fmt.Errorf("check for binary: %w", err)
+		}
+	}
+	for _, b := range buf[:n] {
+		if b == 0 {
+			return true, err
+		}
+	}
+	return false, err
 }
 
 func postToApi(path string, formData url.Values) (*http.Response, error) {
@@ -513,10 +542,16 @@ func (cmd *remoteCmd) submitBuild(ctx context.Context, project *yb.Project, tagM
 		return err
 	}
 
-	patchBuffer := bytes.NewBuffer(cmd.patchData)
-
-	if err = plumbing.CompressBuffer(patchBuffer); err != nil {
-		return fmt.Errorf("Couldn't compress the patch file: %s", err)
+	patchBuffer := new(bytes.Buffer)
+	xzWriter, err := xz.NewWriter(patchBuffer)
+	if err != nil {
+		return fmt.Errorf("submit build: compress patch: %w", err)
+	}
+	if _, err := xzWriter.Write(cmd.patchData); err != nil {
+		return fmt.Errorf("submit build: compress patch: %w", err)
+	}
+	if err := xzWriter.Close(); err != nil {
+		return fmt.Errorf("submit build: compress patch: %w", err)
 	}
 
 	patchEncoded := base64.StdEncoding.EncodeToString(patchBuffer.Bytes())

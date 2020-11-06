@@ -9,7 +9,6 @@ import (
 
 	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
-	"github.com/yourbase/yb/internal/plumbing"
 	"zombiezen.com/go/log"
 )
 
@@ -100,5 +99,5 @@ func flutterDownloadURL(version string, desc *biome.Descriptor) (string, error) 
 		data.Channel = "stable"
 	}
 
-	return plumbing.TemplateToString(template, data)
+	return templateToString(template, data)
 }

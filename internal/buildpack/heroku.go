@@ -6,7 +6,6 @@ import (
 
 	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
-	"github.com/yourbase/yb/internal/plumbing"
 	"zombiezen.com/go/log"
 )
 
@@ -57,7 +56,7 @@ func installHeroku(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (biome.E
 		if data.Arch == "" {
 			return biome.Environment{}, fmt.Errorf("unsupported architecture %s", desc.Arch)
 		}
-		downloadURL, err := plumbing.TemplateToString(template, data)
+		downloadURL, err := templateToString(template, data)
 		if err != nil {
 			return biome.Environment{}, err
 		}

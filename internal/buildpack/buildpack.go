@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"text/template"
 
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/yourbase/yb"
@@ -275,6 +276,18 @@ func topLevelZipFilenames(files []*zip.File) (root string, names []string, _ err
 		}
 	}
 	return
+}
+
+func templateToString(templateText string, data interface{}) (string, error) {
+	t, err := template.New("generic").Parse(templateText)
+	if err != nil {
+		return "", err
+	}
+	expanded := new(strings.Builder)
+	if err := t.Execute(expanded, data); err != nil {
+		return "", err
+	}
+	return expanded.String(), nil
 }
 
 func stringInSlice(slice []string, s string) bool {

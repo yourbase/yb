@@ -8,7 +8,6 @@ import (
 
 	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
-	"github.com/yourbase/yb/internal/plumbing"
 	"zombiezen.com/go/log"
 )
 
@@ -140,7 +139,7 @@ func javaDownloadURL(version string, desc *biome.Descriptor) (string, error) {
 	data.MinorVersion = minorVersion
 	data.PatchVersion = patchVersion
 	data.SubVersion = subVersion
-	return plumbing.TemplateToString(urlPattern, data)
+	return templateToString(urlPattern, data)
 }
 
 func convertVersionPiece(parts []string, index int) (int64, error) {
