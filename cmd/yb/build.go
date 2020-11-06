@@ -194,11 +194,13 @@ func doTargetList(ctx context.Context, pkg *yb.Package, targets []*yb.BuildTarge
 
 func doTarget(ctx context.Context, pkg *yb.Package, target *yb.BuildTarget, opts *doOptions) error {
 	bio, err := newBiome(ctx, newBiomeOptions{
-		packageDir:   pkg.Path,
-		target:       target.Name,
-		dataDirs:     opts.dataDirs,
-		baseEnv:      opts.baseEnv,
-		dockerClient: opts.dockerClient,
+		packageDir:      pkg.Path,
+		target:          target.Name,
+		dataDirs:        opts.dataDirs,
+		baseEnv:         opts.baseEnv,
+		dockerClient:    opts.dockerClient,
+		targetContainer: target.Container.ToNarwhal(),
+		dockerNetworkID: opts.dockerNetworkID,
 	})
 	if err != nil {
 		return fmt.Errorf("target %s: %w", target.Name, err)

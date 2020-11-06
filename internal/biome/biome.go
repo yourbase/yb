@@ -122,6 +122,11 @@ type Invocation struct {
 	// If Stdin is nil, the program reads from the null device.
 	Stdin io.Reader
 
+	// Interactive indicates whether the program will be surfaced to the user
+	// interactively. This usually indicates that the program should be given
+	// a pseudo-TTY as input.
+	Interactive bool
+
 	// Stdout and Stderr specify the program's standard output and error.
 	// If either is nil, Run connects the corresponding file descriptor to the
 	// null device.
@@ -224,7 +229,7 @@ func (l Local) JoinPath(elem ...string) string {
 
 // CleanPath calls filepath.Clean.
 func (l Local) CleanPath(path string) string {
-	return filepath.Join(path)
+	return filepath.Clean(path)
 }
 
 // IsAbsPath calls filepath.IsAbs.

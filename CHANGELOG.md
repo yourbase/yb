@@ -22,8 +22,17 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 ### Changed
 
+-  The Docker container for a build is entirely ephemeral: a new container will
+   be started for each target and the container will be stopped and removed
+   at the end of building the target. The contents of the build's
+   `HOME` directory and the package directory will persist between runs, but
+   all other changes will be lost, particularly packages installed
+   with `apt-get`.
+-  `yb build` now directly runs commands in the Docker container instead of
+   invoking a copy of itself to run the build.
 -  `yb run` now runs commands in the environment of a build target, not an
-   exec environment.
+   exec environment. This also means that `yb run` will operate in an ephemeral
+   Docker container by default.
 -  To increase isolation in local builds, yb now sets `HOME` to a directory
    cached between builds of the same target instead of using the user's `HOME`
    directory.
@@ -31,7 +40,8 @@ The format is based on [Keep a Changelog][], and this project adheres to
    builds to increase reproducibility.
 -  yb build commands no longer inherit environment variables for greater
    reproducibility. To set environment variables in your build, use the new
-   `--env` or `--env-file` flags.
+   `--env` or `--env-file` flags. This has the benefit of working regardless
+   of whether you're building in a container.
 -  `yb remotebuild` will now always use the locally installed Git to determine
    the changed files.
 
