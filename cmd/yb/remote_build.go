@@ -21,6 +21,7 @@ import (
 	ggit "gg-scm.io/pkg/git"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
+	"github.com/johnewart/archiver"
 	"github.com/spf13/cobra"
 	"github.com/ulikunitz/xz"
 	"github.com/yourbase/yb"
@@ -212,37 +213,31 @@ func (p *remoteCmd) run(ctx context.Context) error {
 
 		log.Infof(ctx, "Generating patch for local changes...")
 
+		// Save files before committing.
 		log.Debugf(ctx, "Start backing up the worktree-save")
-		saver, err := yb.NewWorktreeSave(targetPackage.Path, headCommit.Hash.String(), p.backupWorktree)
+		saver, err := newWorktreeSave(targetPackage.Path, ggit.Hash(headCommit.Hash), p.backupWorktree)
 		if err != nil {
 			return err
 		}
-
 		if err := p.traverseChanges(ctx, g, saver); err != nil {
 			return err
 		}
-
 		resetDone := false
-		if p.backupWorktree && len(saver.Files) > 0 {
-			log.Debugf(ctx, "Saving a tarball  with all the worktree changes made")
-			// Save them before committing
-			saveFile, err := saver.Save()
-			if err != nil {
-				return fmt.Errorf("unable to keep worktree changes, won't commit: %w", err)
-			}
-			defer func(s string) {
-				if !resetDone {
-					log.Debugf(ctx, "Reset failed, restoring the tarball")
-					if err := saver.Restore(s); err != nil {
-						log.Errorf(ctx, "Unable to restore kept files at %v: %v\n     Please consider unarchiving that package", saveFile, err)
-					} else {
-						_ = os.Remove(s)
-					}
-				} else {
-					_ = os.Remove(s)
-				}
-			}(saveFile)
+		if err := saver.save(ctx); err != nil {
+			return err
 		}
+		defer func() {
+			if !resetDone {
+				log.Debugf(ctx, "Reset failed, restoring...")
+				if err := saver.restore(ctx); err != nil {
+					log.Errorf(ctx,
+						"Unable to restore kept files at %s: %v\n"+
+							"     Please consider unarchiving that package",
+						saver.saveFilePath(),
+						err)
+				}
+			}
+		}()
 
 		log.Debugf(ctx, "Committing temporary changes")
 		latest, err := commitTempChanges(worktree, headCommit)
@@ -317,7 +312,7 @@ func commitTempChanges(w *git.Worktree, c *object.Commit) (latest gitplumbing.Ha
 	return
 }
 
-func (p *remoteCmd) traverseChanges(ctx context.Context, g *ggit.Git, saver *yb.WorktreeSave) error {
+func (p *remoteCmd) traverseChanges(ctx context.Context, g *ggit.Git, saver *worktreeSave) error {
 	workTree, err := g.WorkTree(ctx)
 	if err != nil {
 		return fmt.Errorf("traverse changes: %w", err)
@@ -342,8 +337,7 @@ func (p *remoteCmd) traverseChanges(ctx context.Context, g *ggit.Git, saver *yb.
 		}
 
 		if !ent.Code.IsMissing() { // No need to add deletion to the saver, right?
-			log.Debugf(ctx, "Saving %s to the tarball", ent.Name)
-			if err = saver.Add(filepath.FromSlash(string(ent.Name))); err != nil {
+			if err = saver.add(ctx, filepath.FromSlash(string(ent.Name))); err != nil {
 				return fmt.Errorf("traverse changes: %w", err)
 			}
 		}
@@ -694,4 +688,77 @@ func (cmd *remoteCmd) submitBuild(ctx context.Context, project *yb.Project, tagM
 			os.Stdout.Write(msg)
 		}
 	}
+}
+
+type worktreeSave struct {
+	path  string
+	hash  ggit.Hash
+	files []string
+}
+
+func newWorktreeSave(path string, hash ggit.Hash, enabled bool) (*worktreeSave, error) {
+	if !enabled {
+		return nil, nil
+	}
+	if _, err := os.Lstat(path); os.IsNotExist(err) {
+		return nil, fmt.Errorf("save worktree state: %w", err)
+	}
+	return &worktreeSave{
+		path: path,
+		hash: hash,
+	}, nil
+}
+
+func (w *worktreeSave) hasFiles() bool {
+	return w != nil && len(w.files) > 0
+}
+
+func (w *worktreeSave) add(ctx context.Context, file string) error {
+	if w == nil {
+		return nil
+	}
+	fullPath := filepath.Join(w.path, file)
+	if _, err := os.Lstat(fullPath); os.IsNotExist(err) {
+		return fmt.Errorf("save worktree state: %w", err)
+	}
+	log.Debugf(ctx, "Saving %s to the tarball", file)
+	w.files = append(w.files, file)
+	return nil
+}
+
+func (w *worktreeSave) saveFilePath() string {
+	return filepath.Join(w.path, fmt.Sprintf(".yb-worktreesave-%v.tar", w.hash))
+}
+
+func (w *worktreeSave) save(ctx context.Context) error {
+	if !w.hasFiles() {
+		return nil
+	}
+	log.Debugf(ctx, "Saving a tarball with all the worktree changes made")
+	tar := archiver.Tar{
+		MkdirAll: true,
+	}
+	if err := tar.Archive(w.files, w.saveFilePath()); err != nil {
+		return fmt.Errorf("save worktree state: %w", err)
+	}
+	return nil
+}
+
+func (w *worktreeSave) restore(ctx context.Context) error {
+	if !w.hasFiles() {
+		return nil
+	}
+	log.Debugf(ctx, "Restoring the worktree tarball")
+	pkgFile := w.saveFilePath()
+	if _, err := os.Lstat(pkgFile); os.IsNotExist(err) {
+		return fmt.Errorf("restore worktree state: %w", err)
+	}
+	tar := archiver.Tar{OverwriteExisting: true}
+	if err := tar.Unarchive(pkgFile, w.path); err != nil {
+		return fmt.Errorf("restore worktree state: %w", err)
+	}
+	if err := os.Remove(pkgFile); err != nil {
+		log.Warnf(ctx, "Failed to clean up temporary worktree save: %v", err)
+	}
+	return nil
 }
