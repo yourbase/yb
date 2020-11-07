@@ -39,27 +39,12 @@ import (
 	"zombiezen.com/go/log"
 )
 
-// PhaseDeps defines the dependencies for a build target phase.
-//
-// TODO(ch2285): This should be moved out of this package and into a separate
-// loader package.
-type PhaseDeps struct {
-	TargetName string
-	Buildpacks []yb.BuildpackSpec
-	Resources  map[string]*narwhal.ContainerDefinition
-
-	// EnvironmentTemplate is the set of environment variables that should be set
-	// in the biome. These variables may include substitutions for container IP
-	// addresses in the form `{{ .Containers.IP "mycontainer" }}`.
-	EnvironmentTemplate map[string]string
-}
-
 // Setup arranges for the phase's dependencies to be available, returning a new
 // biome that has the dependencies configured. It is the caller's responsibility
 // to call Close on the returned biome.
-func Setup(ctx context.Context, sys Sys, phase *PhaseDeps) (_ biome.BiomeCloser, err error) {
-	ctx, span := ybtrace.Start(ctx, "Setup "+phase.TargetName, trace.WithAttributes(
-		label.String("target", phase.TargetName),
+func Setup(ctx context.Context, sys Sys, target *yb.Target) (_ biome.BiomeCloser, err error) {
+	ctx, span := ybtrace.Start(ctx, "Setup "+target.Name, trace.WithAttributes(
+		label.String("target", target.Name),
 	))
 	defer func() {
 		if err != nil {
@@ -69,11 +54,14 @@ func Setup(ctx context.Context, sys Sys, phase *PhaseDeps) (_ biome.BiomeCloser,
 	}()
 
 	// Randomize pack setup order to surface unexpected data dependencies.
-	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
-	packs := append([]yb.BuildpackSpec(nil), phase.Buildpacks...)
-	if len(packs) > 0 {
+	var packs []yb.BuildpackSpec
+	if len(target.Buildpacks) > 0 {
+		rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+		for _, spec := range target.Buildpacks {
+			packs = append(packs, spec)
+		}
 		for i := range packs[:len(packs)-1] {
-			j := i + rng.Intn(len(phase.Buildpacks)-i)
+			j := i + rng.Intn(len(target.Buildpacks)-i)
 			packs[i], packs[j] = packs[j], packs[i]
 		}
 	}
@@ -85,14 +73,14 @@ func Setup(ctx context.Context, sys Sys, phase *PhaseDeps) (_ biome.BiomeCloser,
 	for _, pack := range packs {
 		packEnv, err := buildpack.Install(ctx, sys, pack)
 		if err != nil {
-			return nil, fmt.Errorf("setup %s: %w", phase.TargetName, err)
+			return nil, fmt.Errorf("setup %s: %w", target.Name, err)
 		}
 		newEnv = newEnv.Merge(packEnv)
 	}
 
-	expContainers, closeFunc, err := startContainers(ctx, sys, phase.Resources)
+	expContainers, closeFunc, err := startContainers(ctx, sys, target.Resources)
 	if err != nil {
-		return nil, fmt.Errorf("setup %s: %w", phase.TargetName, err)
+		return nil, fmt.Errorf("setup %s: %w", target.Name, err)
 	}
 	defer func() {
 		if err != nil && closeFunc != nil {
@@ -102,10 +90,10 @@ func Setup(ctx context.Context, sys Sys, phase *PhaseDeps) (_ biome.BiomeCloser,
 	exp := configExpansion{
 		Containers: expContainers,
 	}
-	for k, t := range phase.EnvironmentTemplate {
-		v, err := exp.expand(t)
+	for k, t := range target.Env {
+		v, err := exp.expand(string(t))
 		if err != nil {
-			return nil, fmt.Errorf("setup %s: expand %s: %w", phase.TargetName, k, err)
+			return nil, fmt.Errorf("setup %s: expand %s: %w", target.Name, k, err)
 		}
 		newEnv.Vars[k] = v
 	}

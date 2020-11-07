@@ -1,0 +1,21 @@
+dependencies:
+  runtime:
+    - python:3.7.7
+exec:
+  container:
+    ports:
+      - 5000
+      - 5001
+  dependencies:
+    containers:
+      db:
+        image: yourbase/api_dev_db
+  environment:
+    default:
+      - DATABASE_URL=postgres://yourbase:yourbase@{{ .Containers.IP "db" }}/yourbase
+      - FLASK_DEBUG=1
+      - YB_ENVIRONMENT=development
+    staging:
+      - YB_ENVIRONMENT=staging
+  commands:
+    - honcho start

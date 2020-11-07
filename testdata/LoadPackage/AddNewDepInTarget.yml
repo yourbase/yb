@@ -1,0 +1,8 @@
+dependencies:
+  build:
+    - java:1.8
+build_targets:
+  - name: default
+    dependencies:
+      build:
+        - go:1.14.1

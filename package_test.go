@@ -1,46 +1,79 @@
 package yb
 
 import (
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/yourbase/narwhal"
 )
 
-func TestMergeDeps(t *testing.T) {
-	const dummyGoToolSpec = "go:1.14.6"
+func TestLoadPackage(t *testing.T) {
+	workingDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Source files are under testdata/LoadPackage.
 	tests := []struct {
 		name string
-		b    *BuildManifest
-		want *BuildManifest
+		want *Package
 	}{
 		{
 			name: "Empty",
-			b:    &BuildManifest{},
-			want: &BuildManifest{},
+			want: &Package{},
 		},
 		{
-			name: "Global",
-			b: &BuildManifest{
-				Dependencies: DependencySet{
-					Build: []string{dummyGoToolSpec},
-				},
-				BuildTargets: []*BuildTarget{
-					{
-						Name: "default",
+			name: "TargetDeps",
+			want: &Package{
+				Targets: map[string]*Target{
+					"foo": {
+						Name: "foo",
+						Container: &narwhal.ContainerDefinition{
+							Image: DefaultContainerImage,
+						},
+					},
+					"bar": {
+						Name: "bar",
+						Deps: map[*Target]struct{}{
+							{Name: "foo"}: {},
+						},
+						Container: &narwhal.ContainerDefinition{
+							Image: DefaultContainerImage,
+						},
 					},
 				},
 			},
-			want: &BuildManifest{
-				Dependencies: DependencySet{
-					Build: []string{dummyGoToolSpec},
-				},
-				BuildTargets: []*BuildTarget{
-					{
+		},
+		{
+			name: "DefaultTarget",
+			want: &Package{
+				Targets: map[string]*Target{
+					"default": {
 						Name: "default",
-						Dependencies: BuildDependencies{
-							Build: []string{dummyGoToolSpec},
+						Container: &narwhal.ContainerDefinition{
+							Image: DefaultContainerImage,
+						},
+						Commands: []string{
+							"/bin/true",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "GlobalDeps",
+			want: &Package{
+				Targets: map[string]*Target{
+					"default": {
+						Name: "default",
+						Container: &narwhal.ContainerDefinition{
+							Image: DefaultContainerImage,
+						},
+						Buildpacks: map[string]BuildpackSpec{
+							"go": "go:1.14.1",
 						},
 					},
 				},
@@ -48,28 +81,15 @@ func TestMergeDeps(t *testing.T) {
 		},
 		{
 			name: "OverrideVersionLocally",
-			b: &BuildManifest{
-				Dependencies: DependencySet{
-					Build: []string{"go:1.13"},
-				},
-				BuildTargets: []*BuildTarget{
-					{
+			want: &Package{
+				Targets: map[string]*Target{
+					"default": {
 						Name: "default",
-						Dependencies: BuildDependencies{
-							Build: []string{"go:1.14"},
+						Container: &narwhal.ContainerDefinition{
+							Image: DefaultContainerImage,
 						},
-					},
-				},
-			},
-			want: &BuildManifest{
-				Dependencies: DependencySet{
-					Build: []string{"go:1.13"},
-				},
-				BuildTargets: []*BuildTarget{
-					{
-						Name: "default",
-						Dependencies: BuildDependencies{
-							Build: []string{"go:1.14"},
+						Buildpacks: map[string]BuildpackSpec{
+							"go": "go:1.14.1",
 						},
 					},
 				},
@@ -77,28 +97,71 @@ func TestMergeDeps(t *testing.T) {
 		},
 		{
 			name: "AddNewDepInTarget",
-			b: &BuildManifest{
-				Dependencies: DependencySet{
-					Build: []string{dummyGoToolSpec},
-				},
-				BuildTargets: []*BuildTarget{
-					{
+			want: &Package{
+				Targets: map[string]*Target{
+					"default": {
 						Name: "default",
-						Dependencies: BuildDependencies{
-							Build: []string{"java:1.8"},
+						Container: &narwhal.ContainerDefinition{
+							Image: DefaultContainerImage,
+						},
+						Buildpacks: map[string]BuildpackSpec{
+							"go":   "go:1.14.1",
+							"java": "java:1.8",
 						},
 					},
 				},
 			},
-			want: &BuildManifest{
-				Dependencies: DependencySet{
-					Build: []string{dummyGoToolSpec},
-				},
-				BuildTargets: []*BuildTarget{
-					{
+		},
+		{
+			name: "Exec",
+			want: &Package{
+				ExecEnvironments: map[string]*Target{
+					"default": {
 						Name: "default",
-						Dependencies: BuildDependencies{
-							Build: []string{"java:1.8", dummyGoToolSpec},
+						Container: &narwhal.ContainerDefinition{
+							Image: DefaultContainerImage,
+							Ports: []string{
+								"5000",
+								"5001",
+							},
+						},
+						Buildpacks: map[string]BuildpackSpec{
+							"python": "python:3.7.7",
+						},
+						Resources: map[string]*narwhal.ContainerDefinition{
+							"db": {Image: "yourbase/api_dev_db"},
+						},
+						Env: map[string]EnvTemplate{
+							"DATABASE_URL":   `postgres://yourbase:yourbase@{{ .Containers.IP "db" }}/yourbase`,
+							"FLASK_DEBUG":    "1",
+							"YB_ENVIRONMENT": "development",
+						},
+						Commands: []string{
+							"honcho start",
+						},
+					},
+					"staging": {
+						Name: "staging",
+						Container: &narwhal.ContainerDefinition{
+							Image: DefaultContainerImage,
+							Ports: []string{
+								"5000",
+								"5001",
+							},
+						},
+						Buildpacks: map[string]BuildpackSpec{
+							"python": "python:3.7.7",
+						},
+						Resources: map[string]*narwhal.ContainerDefinition{
+							"db": {Image: "yourbase/api_dev_db"},
+						},
+						Env: map[string]EnvTemplate{
+							"DATABASE_URL":   `postgres://yourbase:yourbase@{{ .Containers.IP "db" }}/yourbase`,
+							"FLASK_DEBUG":    "1",
+							"YB_ENVIRONMENT": "staging",
+						},
+						Commands: []string{
+							"honcho start",
 						},
 					},
 				},
@@ -107,26 +170,45 @@ func TestMergeDeps(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := mergeDeps(test.b)
+			configPath := filepath.Join(workingDir, "testdata", "LoadPackage", filepath.FromSlash(test.name+".yml"))
+			got, err := LoadPackage(configPath)
 			if err != nil {
-				t.Fatal(err)
+				t.Fatal("LoadPackage:", err)
 			}
-			diff := cmp.Diff(test.want, test.b,
-				cmpopts.EquateEmpty(),
-				// Ignore order of BuildDependencies.Build field
-				cmp.FilterPath(func(path cmp.Path) bool {
-					f, ok := path.Last().(cmp.StructField)
-					if !ok {
-						return false
+			if want := filepath.Dir(configPath); got.Path != want {
+				t.Errorf("pkg.Path = %q; want %q", got.Path, want)
+			}
+			for name, tgt := range got.Targets {
+				if tgt.Package != got {
+					t.Errorf("pkg.Targets[%q].Package = %p; want %p", name, tgt.Package, got)
+				}
+			}
+			for name, tgt := range got.ExecEnvironments {
+				if tgt.Package != got {
+					t.Errorf("pkg.ExecEnvironments[%q].Package = %p; want %p", name, tgt.Package, got)
+				}
+			}
+			diff := cmp.Diff(test.want, got,
+				cmp.FilterPath(func(p cmp.Path) bool {
+					return p.Last().Type() != reflect.TypeOf(map[*Target]struct{}(nil))
+				}, cmpopts.EquateEmpty()),
+				cmpopts.IgnoreFields(Package{}, "Name", "Path"),
+				cmpopts.IgnoreFields(Target{}, "Package"),
+				// Compare Deps by name.
+				cmp.Comparer(func(set1, set2 map[*Target]struct{}) bool {
+					names1 := make(map[string]struct{})
+					for tgt := range set1 {
+						names1[tgt.Name] = struct{}{}
 					}
-					return path.Index(-2).Type() == reflect.TypeOf(BuildDependencies{}) &&
-						f.Name() == "Build"
-				}, cmpopts.SortSlices(func(s1, s2 string) bool {
-					return s1 < s2
-				})),
+					names2 := make(map[string]struct{})
+					for tgt := range set2 {
+						names2[tgt.Name] = struct{}{}
+					}
+					return cmp.Equal(names1, names2)
+				}),
 			)
 			if diff != "" {
-				t.Errorf("manifest (-want +got):\n%s", diff)
+				t.Errorf("package (-want +got):\n%s", diff)
 			}
 		})
 	}

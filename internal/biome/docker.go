@@ -33,6 +33,7 @@ import (
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/yourbase/commons/xcontext"
 	"github.com/yourbase/narwhal"
+	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/ybtrace"
 	"go.opentelemetry.io/otel/codes"
 	"zombiezen.com/go/log"
@@ -88,7 +89,7 @@ func (opts *ContainerOptions) definition() (*narwhal.ContainerDefinition, error)
 	}
 	defn.Namespace = hex.EncodeToString(bits[:])
 	if defn.Image == "" {
-		defn.Image = "yourbase/yb_ubuntu:18.04"
+		defn.Image = yb.DefaultContainerImage
 	}
 	if defn.WorkDir == "" {
 		defn.WorkDir = "/workspace"

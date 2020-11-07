@@ -2,17 +2,16 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/yourbase/yb/internal/biome"
+	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/build"
 	"github.com/yourbase/yb/internal/ybdata"
 	"zombiezen.com/go/log"
 )
-
-const defaultExecEnvironment = "default"
 
 type execCmd struct {
 	execEnvName string
@@ -36,7 +35,7 @@ func newExecCmd() *cobra.Command {
 	envFlagsVar(c.Flags(), &b.env)
 	netrcFlagVar(c.Flags(), &b.netrcFiles)
 	// TODO(light): Use a less confusing name for this flag when it is using targets.
-	c.Flags().StringVar(&b.execEnvName, "environment", defaultExecEnvironment, "Environment to run as")
+	c.Flags().StringVar(&b.execEnvName, "environment", yb.DefaultExecEnvironment, "Environment to run as")
 	return c
 }
 
@@ -63,16 +62,24 @@ func (b *execCmd) run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	bio, err := newBiome(ctx, newBiomeOptions{
+	execTarget := pkg.ExecEnvironments[b.execEnvName]
+	if execTarget == nil {
+		return fmt.Errorf("exec %s: no such environment", b.execEnvName)
+	}
+	biomeOpts := newBiomeOptions{
 		packageDir:      pkg.Path,
-		target:          b.execEnvName,
+		target:          execTarget.Name,
 		dataDirs:        dataDirs,
 		baseEnv:         baseEnv,
 		netrcFiles:      b.netrcFiles,
 		dockerClient:    dockerClient,
-		targetContainer: pkg.Manifest.Exec.Container.ToNarwhal(),
+		targetContainer: execTarget.Container,
 		dockerNetworkID: dockerNetworkID,
-	})
+	}
+	if execTarget.HostOnly {
+		biomeOpts = biomeOpts.disableDocker()
+	}
+	bio, err := newBiome(ctx, biomeOpts)
 	if err != nil {
 		return err
 	}
@@ -90,25 +97,7 @@ func (b *execCmd) run(ctx context.Context) error {
 		Stdout:          os.Stdout,
 		Stderr:          os.Stderr,
 	}
-	defaultEnv, err := biome.MapVars(pkg.Manifest.Exec.Environment[defaultExecEnvironment])
-	if err != nil {
-		return err
-	}
-	deps := &build.PhaseDeps{
-		TargetName:          b.execEnvName,
-		Resources:           narwhalContainerMap(pkg.Manifest.Exec.Dependencies.Containers),
-		EnvironmentTemplate: defaultEnv,
-	}
-	if b.execEnvName != defaultExecEnvironment {
-		overrideEnv, err := biome.MapVars(pkg.Manifest.Exec.Environment[b.execEnvName])
-		if err != nil {
-			return err
-		}
-		for k, v := range overrideEnv {
-			deps.EnvironmentTemplate[k] = v
-		}
-	}
-	execBiome, err := build.Setup(ctx, sys, deps)
+	execBiome, err := build.Setup(ctx, sys, execTarget)
 	if err != nil {
 		return err
 	}
@@ -118,9 +107,5 @@ func (b *execCmd) run(ctx context.Context) error {
 			log.Errorf(ctx, "Clean up environment %s: %v", b.execEnvName, err)
 		}
 	}()
-
-	return build.Execute(ctx, sys, &build.Phase{
-		TargetName: b.execEnvName,
-		Commands:   pkg.Manifest.Exec.Commands,
-	})
+	return build.Execute(ctx, sys, execTarget)
 }

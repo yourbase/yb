@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
 
 	docker "github.com/fsouza/go-dockerclient"
@@ -15,7 +16,6 @@ import (
 	"github.com/yourbase/narwhal"
 	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
-	"github.com/yourbase/yb/internal/build"
 	"github.com/yourbase/yb/internal/config"
 	"github.com/yourbase/yb/internal/ybdata"
 	"zombiezen.com/go/log"
@@ -162,45 +162,6 @@ func runCommand(ctx context.Context, bio biome.Biome, argv ...string) error {
 	return nil
 }
 
-func targetToPhaseDeps(target *yb.BuildTarget) (*build.PhaseDeps, error) {
-	phaseDeps := &build.PhaseDeps{
-		TargetName: target.Name,
-		Resources:  narwhalContainerMap(target.Dependencies.Containers),
-	}
-	for _, dep := range target.Dependencies.Build {
-		spec, err := yb.ParseBuildpackSpec(dep)
-		if err != nil {
-			return nil, fmt.Errorf("target %s: %w", target.Name, err)
-		}
-		phaseDeps.Buildpacks = append(phaseDeps.Buildpacks, spec)
-	}
-	var err error
-	phaseDeps.EnvironmentTemplate, err = biome.MapVars(target.Environment)
-	if err != nil {
-		return nil, fmt.Errorf("target %s: %w", target.Name, err)
-	}
-	return phaseDeps, nil
-}
-
-func narwhalContainerMap(defs map[string]*yb.ContainerDefinition) map[string]*narwhal.ContainerDefinition {
-	if len(defs) == 0 {
-		return nil
-	}
-	nmap := make(map[string]*narwhal.ContainerDefinition, len(defs))
-	for k, cd := range defs {
-		nmap[k] = cd.ToNarwhal()
-	}
-	return nmap
-}
-
-func targetToPhase(target *yb.BuildTarget) *build.Phase {
-	return &build.Phase{
-		TargetName: target.Name,
-		Commands:   target.Commands,
-		Root:       target.Root,
-	}
-}
-
 func newDockerNetwork(ctx context.Context, client *docker.Client) (string, func(), error) {
 	if client == nil {
 		return "", func() {}, nil
@@ -232,4 +193,13 @@ const packageConfigFileName = ".yourbase.yml"
 
 func GetTargetPackage() (*yb.Package, error) {
 	return yb.LoadPackage(packageConfigFileName)
+}
+
+func listTargetNames(targets map[string]*yb.Target) []string {
+	names := make([]string, 0, len(targets))
+	for name := range targets {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
 }

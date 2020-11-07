@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog][], and this project adheres to
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
 [Unreleased]: https://github.com/yourbase/yb/compare/v0.5.0...HEAD
 
+## [Unreleased][]
+
+### Added
+
+-  `github.com/yourbase/yb` is now a Go package for reading
+   `.yourbase.yml` files. The API is mostly stable, but may still change before
+   yb 1.0.
+
+### Changed
+
+-  Unknown keys in `.yourbase.yml` objects will now cause errors. Previously
+   they were ignored.
+
+### Removed
+
+-  The `exec.ports` stanza in .yourbase.yml was previously accepted but did
+   nothing. `exec.container.ports` should be used instead.
+
 ## [0.5.0][] - 2020-11-18
 
 Version 0.5 provides better reproducibility and isolation than previous

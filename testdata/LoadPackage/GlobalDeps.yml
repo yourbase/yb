@@ -1,0 +1,5 @@
+dependencies:
+  build:
+    - go:1.14.1
+build_targets:
+  - name: default

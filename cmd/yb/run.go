@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/internal/build"
 	"github.com/yourbase/yb/internal/ybdata"
@@ -35,7 +37,7 @@ func newRunCmd() *cobra.Command {
 	}
 	envFlagsVar(c.Flags(), &b.env)
 	netrcFlagVar(c.Flags(), &b.netrcFiles)
-	c.Flags().StringVarP(&b.target, "target", "t", "default", "The target to run the command in")
+	c.Flags().StringVarP(&b.target, "target", "t", yb.DefaultTarget, "The target to run the command in")
 	c.Flags().BoolVar(&b.noContainer, "no-container", false, "Avoid using Docker if possible")
 	return c
 }
@@ -57,10 +59,11 @@ func (b *runCmd) run(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	targets, err := pkg.Manifest.BuildOrder(b.target)
-	if err != nil {
-		return err
+	execTarget := pkg.Targets[b.target]
+	if execTarget == nil {
+		return fmt.Errorf("%s: no such target", b.target)
 	}
+	targets := yb.BuildOrder(execTarget)
 	dockerNetworkID, removeNetwork, err := newDockerNetwork(ctx, dockerClient)
 	if err != nil {
 		return err
@@ -80,7 +83,6 @@ func (b *runCmd) run(ctx context.Context, args []string) error {
 	}
 
 	// Run command.
-	execTarget := targets[len(targets)-1]
 	biomeOpts := newBiomeOptions{
 		packageDir:      pkg.Path,
 		target:          execTarget.Name,
@@ -88,7 +90,7 @@ func (b *runCmd) run(ctx context.Context, args []string) error {
 		baseEnv:         baseEnv,
 		netrcFiles:      b.netrcFiles,
 		dockerClient:    dockerClient,
-		targetContainer: execTarget.Container.ToNarwhal(),
+		targetContainer: execTarget.Container,
 		dockerNetworkID: dockerNetworkID,
 	}
 	if execTarget.HostOnly {
@@ -112,11 +114,7 @@ func (b *runCmd) run(ctx context.Context, args []string) error {
 		Stdout:          os.Stdout,
 		Stderr:          os.Stderr,
 	}
-	phaseDeps, err := targetToPhaseDeps(execTarget)
-	if err != nil {
-		return err
-	}
-	execBiome, err := build.Setup(ctx, sys, phaseDeps)
+	execBiome, err := build.Setup(ctx, sys, execTarget)
 	if err != nil {
 		return err
 	}
