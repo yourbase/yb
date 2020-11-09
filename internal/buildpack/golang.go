@@ -15,6 +15,7 @@ func installGo(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (biome.Envir
 	gopathDir := sys.Biome.JoinPath(golangRoot, "gopath")
 	env := biome.Environment{
 		Vars: map[string]string{
+			"GOROOT": golangDir,
 			"GOPATH": gopathDir + ":" + sys.Biome.Dirs().Package,
 		},
 		PrependPath: []string{

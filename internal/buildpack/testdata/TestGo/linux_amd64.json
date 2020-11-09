@@ -4,47 +4,47 @@
 		"Arch": "amd64"
 	},
 	"Dirs": {
-		"Package": "/tmp/TestGo873929066/001",
-		"Home": "/tmp/TestGo873929066/002",
-		"Tools": "/tmp/TestGo873929066/002/.cache/yb/tools"
+		"Package": "/tmp/TestGo037641266/001",
+		"Home": "/tmp/TestGo037641266/002",
+		"Tools": "/tmp/TestGo037641266/002/.cache/yb/tools"
 	},
 	"JoinedPaths": [
 		{
 			"Elems": [
-				"/tmp/TestGo873929066/002/.cache/yb/tools",
+				"/tmp/TestGo037641266/002/.cache/yb/tools",
 				"go"
 			],
-			"Result": "/tmp/TestGo873929066/002/.cache/yb/tools/go"
+			"Result": "/tmp/TestGo037641266/002/.cache/yb/tools/go"
 		},
 		{
 			"Elems": [
-				"/tmp/TestGo873929066/002/.cache/yb/tools/go",
+				"/tmp/TestGo037641266/002/.cache/yb/tools/go",
 				"go1.15.2"
 			],
-			"Result": "/tmp/TestGo873929066/002/.cache/yb/tools/go/go1.15.2"
+			"Result": "/tmp/TestGo037641266/002/.cache/yb/tools/go/go1.15.2"
 		},
 		{
 			"Elems": [
-				"/tmp/TestGo873929066/002/.cache/yb/tools/go",
+				"/tmp/TestGo037641266/002/.cache/yb/tools/go",
 				"gopath"
 			],
-			"Result": "/tmp/TestGo873929066/002/.cache/yb/tools/go/gopath"
+			"Result": "/tmp/TestGo037641266/002/.cache/yb/tools/go/gopath"
 		},
 		{
 			"Elems": [
-				"/tmp/TestGo873929066/002/.cache/yb/tools/go/go1.15.2",
+				"/tmp/TestGo037641266/002/.cache/yb/tools/go/go1.15.2",
 				"bin"
 			],
-			"Result": "/tmp/TestGo873929066/002/.cache/yb/tools/go/go1.15.2/bin"
+			"Result": "/tmp/TestGo037641266/002/.cache/yb/tools/go/go1.15.2/bin"
 		}
 	],
 	"CleanedPaths": {
-		"/tmp/TestGo873929066/002/.cache/yb/tools/go/go1.15.2": "/tmp/TestGo873929066/002/.cache/yb/tools/go/go1.15.2",
-		"/tmp/TestGo873929066/002/.cache/yb/tools/go/go1.15.2.tar.gz": "/tmp/TestGo873929066/002/.cache/yb/tools/go/go1.15.2.tar.gz"
+		"/tmp/TestGo037641266/002/.cache/yb/tools/go/go1.15.2": "/tmp/TestGo037641266/002/.cache/yb/tools/go/go1.15.2",
+		"/tmp/TestGo037641266/002/.cache/yb/tools/go/go1.15.2.tar.gz": "/tmp/TestGo037641266/002/.cache/yb/tools/go/go1.15.2.tar.gz"
 	},
 	"AbsPaths": {
-		"/tmp/TestGo873929066/002/.cache/yb/tools/go/go1.15.2": true,
-		"/tmp/TestGo873929066/002/.cache/yb/tools/go/go1.15.2.tar.gz": true
+		"/tmp/TestGo037641266/002/.cache/yb/tools/go/go1.15.2": true,
+		"/tmp/TestGo037641266/002/.cache/yb/tools/go/go1.15.2.tar.gz": true
 	},
 	"Invocations": [
 		{
@@ -52,7 +52,7 @@
 				"readlink",
 				"--canonicalize-existing",
 				"--no-newline",
-				"/tmp/TestGo873929066/002/.cache/yb/tools/go/go1.15.2"
+				"/tmp/TestGo037641266/002/.cache/yb/tools/go/go1.15.2"
 			],
 			"Output": {
 				"Stdout": "",
@@ -64,7 +64,7 @@
 			"Argv": [
 				"mkdir",
 				"-p",
-				"/tmp/TestGo873929066/002/.cache/yb/tools/go/go1.15.2"
+				"/tmp/TestGo037641266/002/.cache/yb/tools/go/go1.15.2"
 			],
 			"Output": {
 				"Stderr": ""
@@ -73,7 +73,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/tmp/TestGo873929066/002/.cache/yb/tools/go/go1.15.2.tar.gz"
+				"/tmp/TestGo037641266/002/.cache/yb/tools/go/go1.15.2.tar.gz"
 			],
 			"StdinSHA256": "b49fda1ca29a1946d6bb2a5a6982cf07ccd2aba849289508ee0f9918f6bb4552",
 			"Output": {
@@ -86,11 +86,11 @@
 				"-x",
 				"-z",
 				"-f",
-				"/tmp/TestGo873929066/002/.cache/yb/tools/go/go1.15.2.tar.gz",
+				"/tmp/TestGo037641266/002/.cache/yb/tools/go/go1.15.2.tar.gz",
 				"--strip-components",
 				"1"
 			],
-			"Dir": "/tmp/TestGo873929066/002/.cache/yb/tools/go/go1.15.2",
+			"Dir": "/tmp/TestGo037641266/002/.cache/yb/tools/go/go1.15.2",
 			"Output": {
 				"Combined": ""
 			}
@@ -99,7 +99,7 @@
 			"Argv": [
 				"rm",
 				"-f",
-				"/tmp/TestGo873929066/002/.cache/yb/tools/go/go1.15.2.tar.gz"
+				"/tmp/TestGo037641266/002/.cache/yb/tools/go/go1.15.2.tar.gz"
 			],
 			"Output": {
 				"Combined": ""
@@ -111,11 +111,12 @@
 				"version"
 			],
 			"EnvVars": {
-				"GOPATH": "/tmp/TestGo873929066/002/.cache/yb/tools/go/gopath:/tmp/TestGo873929066/001"
+				"GOPATH": "/tmp/TestGo037641266/002/.cache/yb/tools/go/gopath:/tmp/TestGo037641266/001",
+				"GOROOT": "/tmp/TestGo037641266/002/.cache/yb/tools/go/go1.15.2"
 			},
 			"PrependPath": [
-				"/tmp/TestGo873929066/002/.cache/yb/tools/go/gopath",
-				"/tmp/TestGo873929066/002/.cache/yb/tools/go/go1.15.2/bin"
+				"/tmp/TestGo037641266/002/.cache/yb/tools/go/gopath",
+				"/tmp/TestGo037641266/002/.cache/yb/tools/go/go1.15.2/bin"
 			],
 			"Output": {
 				"Combined": "Z28gdmVyc2lvbiBnbzEuMTUuMiBsaW51eC9hbWQ2NAo="
