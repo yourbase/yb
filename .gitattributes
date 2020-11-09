@@ -2,3 +2,6 @@
 # 1. don't show diffs in GitHub, and
 # 2. don't try to merge files (they should be re-recorded)
 /internal/buildpack/testdata/**/*.json linguist-generated=true -merge
+# go.sum is basically append-only but may require tidying.
+# When merging, just add all the lines into the file.
+go.sum merge=union
