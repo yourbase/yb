@@ -53,16 +53,25 @@ func (opts newBiomeOptions) disableDocker() newBiomeOptions {
 
 func newBiome(ctx context.Context, opts newBiomeOptions) (biome.BiomeCloser, error) {
 	if opts.dockerClient == nil {
-		l := biome.Local{
-			PackageDir: opts.packageDir,
-		}
-		var err error
-		l.HomeDir, err = opts.dataDirs.BuildHome(opts.packageDir, opts.target, l.Describe())
+		// l := biome.Local{
+		// 	PackageDir: opts.packageDir,
+		// }
+		// var err error
+		// l.HomeDir, err = opts.dataDirs.BuildHome(opts.packageDir, opts.target, l.Describe())
+		// if err != nil {
+		// 	return nil, fmt.Errorf("set up environment for target %s: %w", opts.target, err)
+		// }
+		homeDir, err := opts.dataDirs.BuildHome(opts.packageDir, opts.target, biome.Local{}.Describe())
 		if err != nil {
 			return nil, fmt.Errorf("set up environment for target %s: %w", opts.target, err)
 		}
-		log.Debugf(ctx, "Home located at %s", l.HomeDir)
-		bio, err := injectNetrc(ctx, l)
+		log.Debugf(ctx, "Home located at %s", homeDir)
+
+		cb, err := newContainerBiome(ctx, opts.dataDirs, opts.packageDir, homeDir, opts.targetContainer.Image)
+		if err != nil {
+			return nil, fmt.Errorf("set up environment for target %s: %w", opts.target, err)
+		}
+		bio, err := injectNetrc(ctx, cb)
 		if err != nil {
 			return nil, fmt.Errorf("set up environment for target %s: %w", opts.target, err)
 		}

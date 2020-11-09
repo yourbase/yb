@@ -46,14 +46,17 @@ func main() {
 	}
 	showDebug := rootCmd.PersistentFlags().Bool("debug", false, "show debug logs")
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
-		initLog(*showDebug)
-		displayOldDirectoryWarning(cmd.Context())
+		if cmd.Use != "container-init" {
+			initLog(*showDebug)
+			displayOldDirectoryWarning(cmd.Context())
+		}
 	}
 
 	rootCmd.AddCommand(
 		newBuildCmd(),
 		newCheckConfigCmd(),
 		newConfigCmd(),
+		newContainerInitCmd(),
 		newExecCmd(),
 		newLoginCmd(),
 		newRemoteCmd(),

@@ -71,6 +71,10 @@ func (dirs *Dirs) Downloads() string {
 	return filepath.Join(dirs.cache, "downloads")
 }
 
+func (dirs *Dirs) Docker() string {
+	return filepath.Join(dirs.cache, "images")
+}
+
 // BuildHome finds or creates a directory to store cached data for a target.
 //
 // TODO(ch2755): This should get moved to a directory physically in the package
