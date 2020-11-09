@@ -242,7 +242,7 @@ func (c *Container) Run(ctx context.Context, invoke *Invocation) error {
 		"HOME=" + c.dirs.Home,
 		"TZ=UTC",
 	}
-	opts.Env = invoke.Env.appendTo(opts.Env, c.path, ':')
+	opts.Env = invoke.Env.AppendTo(opts.Env, c.path, ':')
 	if slashpath.IsAbs(invoke.Dir) {
 		opts.WorkingDir = invoke.Dir
 	} else {

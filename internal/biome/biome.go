@@ -193,7 +193,7 @@ func (l Local) Run(ctx context.Context, invoke *Invocation) error {
 		"USER=" + os.Getenv("USER"),
 		"TZ=UTC",
 	}
-	c.Env = invoke.Env.appendTo(c.Env, os.Getenv("PATH"), filepath.ListSeparator)
+	c.Env = invoke.Env.AppendTo(c.Env, os.Getenv("PATH"), filepath.ListSeparator)
 	if filepath.IsAbs(invoke.Dir) {
 		c.Dir = invoke.Dir
 	} else {
