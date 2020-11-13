@@ -40,12 +40,11 @@ import (
 
 // replayData is the JSON document saved by a Recorder.
 type replayData struct {
-	Descriptor   *biome.Descriptor
-	Dirs         *biome.Dirs
-	JoinedPaths  []*joinPathLookup
-	CleanedPaths map[string]string
-	AbsPaths     map[string]bool
-	Invocations  []*invocation
+	Descriptor  *biome.Descriptor
+	Dirs        *biome.Dirs
+	JoinedPaths []*joinPathLookup
+	AbsPaths    map[string]bool
+	Invocations []*invocation
 }
 
 type joinPathLookup struct {
@@ -271,14 +270,6 @@ func (r *Replay) JoinPath(elem ...string) string {
 		}
 	}
 	return "__UNKNOWN_JOIN_PATH__"
-}
-
-func (r *Replay) CleanPath(path string) string {
-	cleaned, ok := r.data.CleanedPaths[path]
-	if !ok {
-		return "__UNKNOWN_CLEAN_PATH__"
-	}
-	return cleaned
 }
 
 func (r *Replay) IsAbsPath(path string) bool {

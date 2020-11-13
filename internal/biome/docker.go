@@ -335,11 +335,6 @@ func (c *Container) JoinPath(elem ...string) string {
 	return slashpath.Join(elem...)
 }
 
-// CleanPath calls path.Clean.
-func (c *Container) CleanPath(path string) string {
-	return slashpath.Clean(path)
-}
-
 // IsAbsPath calls path.IsAbs.
 func (c *Container) IsAbsPath(path string) bool {
 	return slashpath.IsAbs(path)

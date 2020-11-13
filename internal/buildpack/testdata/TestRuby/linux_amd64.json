@@ -4,55 +4,63 @@
 		"Arch": "amd64"
 	},
 	"Dirs": {
-		"Package": "/tmp/TestRuby413976969/001",
-		"Home": "/tmp/TestRuby413976969/002",
-		"Tools": "/tmp/TestRuby413976969/002/.cache/yb/tools"
+		"Package": "/tmp/TestRuby131703113/001",
+		"Home": "/tmp/TestRuby131703113/002",
+		"Tools": "/tmp/TestRuby131703113/002/.cache/yb/tools"
 	},
 	"JoinedPaths": [
 		{
 			"Elems": [
-				"/tmp/TestRuby413976969/002/.cache/yb/tools",
+				"/tmp/TestRuby131703113/002/.cache/yb/tools",
 				"rbenv"
 			],
-			"Result": "/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv"
+			"Result": "/tmp/TestRuby131703113/002/.cache/yb/tools/rbenv"
 		},
 		{
 			"Elems": [
-				"/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv",
+				"/tmp/TestRuby131703113/002/.cache/yb/tools/rbenv",
 				"versions",
 				"2.6.3"
 			],
-			"Result": "/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv/versions/2.6.3"
+			"Result": "/tmp/TestRuby131703113/002/.cache/yb/tools/rbenv/versions/2.6.3"
 		},
 		{
 			"Elems": [
-				"/tmp/TestRuby413976969/002",
+				"/tmp/TestRuby131703113/002",
 				"rubygems"
 			],
-			"Result": "/tmp/TestRuby413976969/002/rubygems"
+			"Result": "/tmp/TestRuby131703113/002/rubygems"
 		},
 		{
 			"Elems": [
-				"/tmp/TestRuby413976969/002/rubygems",
+				"/tmp/TestRuby131703113/002/rubygems",
 				"bin"
 			],
-			"Result": "/tmp/TestRuby413976969/002/rubygems/bin"
+			"Result": "/tmp/TestRuby131703113/002/rubygems/bin"
 		},
 		{
 			"Elems": [
-				"/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv/versions/2.6.3",
+				"/tmp/TestRuby131703113/002/.cache/yb/tools/rbenv/versions/2.6.3",
 				"bin"
 			],
-			"Result": "/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv/versions/2.6.3/bin"
+			"Result": "/tmp/TestRuby131703113/002/.cache/yb/tools/rbenv/versions/2.6.3/bin"
+		},
+		{
+			"Elems": [
+				"/tmp/TestRuby131703113/002/.cache/yb/tools/rbenv/versions/2.6.3"
+			],
+			"Result": "/tmp/TestRuby131703113/002/.cache/yb/tools/rbenv/versions/2.6.3"
+		},
+		{
+			"Elems": [
+				"/tmp/TestRuby131703113/002/.cache/yb/tools/rbenv/versions/2.6.3.tar.bz2"
+			],
+			"Result": "/tmp/TestRuby131703113/002/.cache/yb/tools/rbenv/versions/2.6.3.tar.bz2"
 		}
 	],
-	"CleanedPaths": {
-		"/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv/versions/2.6.3": "/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv/versions/2.6.3",
-		"/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv/versions/2.6.3.tar.bz2": "/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv/versions/2.6.3.tar.bz2"
-	},
 	"AbsPaths": {
-		"/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv/versions/2.6.3": true,
-		"/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv/versions/2.6.3.tar.bz2": true
+		"/tmp/TestRuby131703113/002/.cache/yb/tools/rbenv/versions/2.6.3": true,
+		"/tmp/TestRuby131703113/002/.cache/yb/tools/rbenv/versions/2.6.3.tar.bz2": true
 	},
 	"Invocations": [
 		{
@@ -60,7 +68,7 @@
 				"readlink",
 				"--canonicalize-existing",
 				"--no-newline",
-				"/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv/versions/2.6.3"
+				"/tmp/TestRuby131703113/002/.cache/yb/tools/rbenv/versions/2.6.3"
 			],
 			"Output": {
 				"Stdout": "",
@@ -82,7 +90,7 @@
 			"Argv": [
 				"mkdir",
 				"-p",
-				"/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv/versions/2.6.3"
+				"/tmp/TestRuby131703113/002/.cache/yb/tools/rbenv/versions/2.6.3"
 			],
 			"Output": {
 				"Stderr": ""
@@ -91,7 +99,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv/versions/2.6.3.tar.bz2"
+				"/tmp/TestRuby131703113/002/.cache/yb/tools/rbenv/versions/2.6.3.tar.bz2"
 			],
 			"StdinSHA256": "40879eb6b5118c4eb396fda06fab20f43b80e092deb12fa1fa421e5097dec540",
 			"Output": {
@@ -104,11 +112,11 @@
 				"-x",
 				"-j",
 				"-f",
-				"/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv/versions/2.6.3.tar.bz2",
+				"/tmp/TestRuby131703113/002/.cache/yb/tools/rbenv/versions/2.6.3.tar.bz2",
 				"--strip-components",
 				"1"
 			],
-			"Dir": "/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv/versions/2.6.3",
+			"Dir": "/tmp/TestRuby131703113/002/.cache/yb/tools/rbenv/versions/2.6.3",
 			"Output": {
 				"Combined": ""
 			}
@@ -117,7 +125,7 @@
 			"Argv": [
 				"rm",
 				"-f",
-				"/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv/versions/2.6.3.tar.bz2"
+				"/tmp/TestRuby131703113/002/.cache/yb/tools/rbenv/versions/2.6.3.tar.bz2"
 			],
 			"Output": {
 				"Combined": ""
@@ -129,11 +137,11 @@
 				"--version"
 			],
 			"EnvVars": {
-				"GEM_HOME": "/tmp/TestRuby413976969/002/rubygems"
+				"GEM_HOME": "/tmp/TestRuby131703113/002/rubygems"
 			},
 			"PrependPath": [
-				"/tmp/TestRuby413976969/002/rubygems/bin",
-				"/tmp/TestRuby413976969/002/.cache/yb/tools/rbenv/versions/2.6.3/bin"
+				"/tmp/TestRuby131703113/002/rubygems/bin",
+				"/tmp/TestRuby131703113/002/.cache/yb/tools/rbenv/versions/2.6.3/bin"
 			],
 			"Output": {
 				"Combined": "cnVieSAyLjYuM3A2MiAoMjAxOS0wNC0xNiByZXZpc2lvbiA2NzU4MCkgW3g4Nl82NC1saW51eF0K"

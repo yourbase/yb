@@ -4,47 +4,71 @@
 		"Arch": "amd64"
 	},
 	"Dirs": {
-		"Package": "/tmp/TestGradle268604353/001",
-		"Home": "/tmp/TestGradle268604353/002",
-		"Tools": "/tmp/TestGradle268604353/002/.cache/yb/tools"
+		"Package": "/tmp/TestGradle586322305/001",
+		"Home": "/tmp/TestGradle586322305/002",
+		"Tools": "/tmp/TestGradle586322305/002/.cache/yb/tools"
 	},
 	"JoinedPaths": [
 		{
 			"Elems": [
-				"/tmp/TestGradle268604353/002/.cache/yb/tools",
+				"/tmp/TestGradle586322305/002/.cache/yb/tools",
 				"java",
 				"openjdk8.265+01"
 			],
-			"Result": "/tmp/TestGradle268604353/002/.cache/yb/tools/java/openjdk8.265+01"
+			"Result": "/tmp/TestGradle586322305/002/.cache/yb/tools/java/openjdk8.265+01"
 		},
 		{
 			"Elems": [
-				"/tmp/TestGradle268604353/002/.cache/yb/tools/java/openjdk8.265+01",
+				"/tmp/TestGradle586322305/002/.cache/yb/tools/java/openjdk8.265+01",
 				"bin"
 			],
-			"Result": "/tmp/TestGradle268604353/002/.cache/yb/tools/java/openjdk8.265+01/bin"
+			"Result": "/tmp/TestGradle586322305/002/.cache/yb/tools/java/openjdk8.265+01/bin"
 		},
 		{
 			"Elems": [
-				"/tmp/TestGradle268604353/002/.cache/yb/tools",
+				"/tmp/TestGradle586322305/002/.cache/yb/tools/java/openjdk8.265+01"
+			],
+			"Result": "/tmp/TestGradle586322305/002/.cache/yb/tools/java/openjdk8.265+01"
+		},
+		{
+			"Elems": [
+				"/tmp/TestGradle586322305/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
+			],
+			"Result": "/tmp/TestGradle586322305/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
+		},
+		{
+			"Elems": [
+				"/tmp/TestGradle586322305/002/.cache/yb/tools",
 				"gradle",
 				"gradle-6.7"
 			],
-			"Result": "/tmp/TestGradle268604353/002/.cache/yb/tools/gradle/gradle-6.7"
+			"Result": "/tmp/TestGradle586322305/002/.cache/yb/tools/gradle/gradle-6.7"
 		},
 		{
 			"Elems": [
-				"/tmp/TestGradle268604353/002",
+				"/tmp/TestGradle586322305/002",
 				".gradle"
 			],
-			"Result": "/tmp/TestGradle268604353/002/.gradle"
+			"Result": "/tmp/TestGradle586322305/002/.gradle"
 		},
 		{
 			"Elems": [
-				"/tmp/TestGradle268604353/002/.cache/yb/tools/gradle/gradle-6.7",
+				"/tmp/TestGradle586322305/002/.cache/yb/tools/gradle/gradle-6.7",
 				"bin"
 			],
-			"Result": "/tmp/TestGradle268604353/002/.cache/yb/tools/gradle/gradle-6.7/bin"
+			"Result": "/tmp/TestGradle586322305/002/.cache/yb/tools/gradle/gradle-6.7/bin"
+		},
+		{
+			"Elems": [
+				"/tmp/TestGradle586322305/002/.cache/yb/tools/gradle/gradle-6.7"
+			],
+			"Result": "/tmp/TestGradle586322305/002/.cache/yb/tools/gradle/gradle-6.7"
+		},
+		{
+			"Elems": [
+				"/tmp/TestGradle586322305/002/.cache/yb/tools/gradle/gradle-6.7.zip"
+			],
+			"Result": "/tmp/TestGradle586322305/002/.cache/yb/tools/gradle/gradle-6.7.zip"
 		},
 		{
 			"Elems": [
@@ -87,19 +111,25 @@
 				"lib"
 			],
 			"Result": "gradle-6.7/lib"
+		},
+		{
+			"Elems": [
+				"/tmp/TestGradle586322305/002/.cache/yb/tools/gradle/gradle-6.7"
+			],
+			"Result": "/tmp/TestGradle586322305/002/.cache/yb/tools/gradle/gradle-6.7"
+		},
+		{
+			"Elems": [
+				"/tmp/TestGradle586322305/002/.cache/yb/tools/gradle/gradle-6.7"
+			],
+			"Result": "/tmp/TestGradle586322305/002/.cache/yb/tools/gradle/gradle-6.7"
 		}
 	],
-	"CleanedPaths": {
-		"/tmp/TestGradle268604353/002/.cache/yb/tools/gradle/gradle-6.7": "/tmp/TestGradle268604353/002/.cache/yb/tools/gradle/gradle-6.7",
-		"/tmp/TestGradle268604353/002/.cache/yb/tools/gradle/gradle-6.7.zip": "/tmp/TestGradle268604353/002/.cache/yb/tools/gradle/gradle-6.7.zip",
-		"/tmp/TestGradle268604353/002/.cache/yb/tools/java/openjdk8.265+01": "/tmp/TestGradle268604353/002/.cache/yb/tools/java/openjdk8.265+01",
-		"/tmp/TestGradle268604353/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz": "/tmp/TestGradle268604353/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
-	},
 	"AbsPaths": {
-		"/tmp/TestGradle268604353/002/.cache/yb/tools/gradle/gradle-6.7": true,
-		"/tmp/TestGradle268604353/002/.cache/yb/tools/gradle/gradle-6.7.zip": true,
-		"/tmp/TestGradle268604353/002/.cache/yb/tools/java/openjdk8.265+01": true,
-		"/tmp/TestGradle268604353/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz": true
+		"/tmp/TestGradle586322305/002/.cache/yb/tools/gradle/gradle-6.7": true,
+		"/tmp/TestGradle586322305/002/.cache/yb/tools/gradle/gradle-6.7.zip": true,
+		"/tmp/TestGradle586322305/002/.cache/yb/tools/java/openjdk8.265+01": true,
+		"/tmp/TestGradle586322305/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz": true
 	},
 	"Invocations": [
 		{
@@ -107,7 +137,7 @@
 				"readlink",
 				"--canonicalize-existing",
 				"--no-newline",
-				"/tmp/TestGradle268604353/002/.cache/yb/tools/java/openjdk8.265+01"
+				"/tmp/TestGradle586322305/002/.cache/yb/tools/java/openjdk8.265+01"
 			],
 			"Output": {
 				"Stdout": "",
@@ -119,7 +149,7 @@
 			"Argv": [
 				"mkdir",
 				"-p",
-				"/tmp/TestGradle268604353/002/.cache/yb/tools/java/openjdk8.265+01"
+				"/tmp/TestGradle586322305/002/.cache/yb/tools/java/openjdk8.265+01"
 			],
 			"Output": {
 				"Stderr": ""
@@ -128,7 +158,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/tmp/TestGradle268604353/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
+				"/tmp/TestGradle586322305/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
 			],
 			"StdinSHA256": "1285da6278f2d38a790a21148d7e683f20de0799c44b937043830ef6b57f58c4",
 			"Output": {
@@ -141,11 +171,11 @@
 				"-x",
 				"-z",
 				"-f",
-				"/tmp/TestGradle268604353/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz",
+				"/tmp/TestGradle586322305/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz",
 				"--strip-components",
 				"1"
 			],
-			"Dir": "/tmp/TestGradle268604353/002/.cache/yb/tools/java/openjdk8.265+01",
+			"Dir": "/tmp/TestGradle586322305/002/.cache/yb/tools/java/openjdk8.265+01",
 			"Output": {
 				"Combined": ""
 			}
@@ -154,7 +184,7 @@
 			"Argv": [
 				"rm",
 				"-f",
-				"/tmp/TestGradle268604353/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
+				"/tmp/TestGradle586322305/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
 			],
 			"Output": {
 				"Combined": ""
@@ -165,7 +195,7 @@
 				"readlink",
 				"--canonicalize-existing",
 				"--no-newline",
-				"/tmp/TestGradle268604353/002/.cache/yb/tools/gradle/gradle-6.7"
+				"/tmp/TestGradle586322305/002/.cache/yb/tools/gradle/gradle-6.7"
 			],
 			"Output": {
 				"Stdout": "",
@@ -177,7 +207,7 @@
 			"Argv": [
 				"mkdir",
 				"-p",
-				"/tmp/TestGradle268604353/002/.cache/yb/tools/gradle/gradle-6.7"
+				"/tmp/TestGradle586322305/002/.cache/yb/tools/gradle/gradle-6.7"
 			],
 			"Output": {
 				"Stderr": ""
@@ -186,7 +216,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/tmp/TestGradle268604353/002/.cache/yb/tools/gradle/gradle-6.7.zip"
+				"/tmp/TestGradle586322305/002/.cache/yb/tools/gradle/gradle-6.7.zip"
 			],
 			"StdinSHA256": "8ad57759019a9233dc7dc4d1a530cefe109dc122000d57f7e623f8cf4ba9dfc4",
 			"Output": {
@@ -197,9 +227,9 @@
 			"Argv": [
 				"unzip",
 				"-q",
-				"/tmp/TestGradle268604353/002/.cache/yb/tools/gradle/gradle-6.7.zip"
+				"/tmp/TestGradle586322305/002/.cache/yb/tools/gradle/gradle-6.7.zip"
 			],
-			"Dir": "/tmp/TestGradle268604353/002/.cache/yb/tools/gradle/gradle-6.7",
+			"Dir": "/tmp/TestGradle586322305/002/.cache/yb/tools/gradle/gradle-6.7",
 			"Output": {
 				"Combined": ""
 			}
@@ -215,7 +245,7 @@
 				"gradle-6.7/lib",
 				"."
 			],
-			"Dir": "/tmp/TestGradle268604353/002/.cache/yb/tools/gradle/gradle-6.7",
+			"Dir": "/tmp/TestGradle586322305/002/.cache/yb/tools/gradle/gradle-6.7",
 			"Output": {
 				"Combined": ""
 			}
@@ -225,7 +255,7 @@
 				"rmdir",
 				"gradle-6.7"
 			],
-			"Dir": "/tmp/TestGradle268604353/002/.cache/yb/tools/gradle/gradle-6.7",
+			"Dir": "/tmp/TestGradle586322305/002/.cache/yb/tools/gradle/gradle-6.7",
 			"Output": {
 				"Combined": ""
 			}
@@ -234,7 +264,7 @@
 			"Argv": [
 				"rm",
 				"-f",
-				"/tmp/TestGradle268604353/002/.cache/yb/tools/gradle/gradle-6.7.zip"
+				"/tmp/TestGradle586322305/002/.cache/yb/tools/gradle/gradle-6.7.zip"
 			],
 			"Output": {
 				"Combined": ""
@@ -246,12 +276,12 @@
 				"-version"
 			],
 			"EnvVars": {
-				"GRADLE_USER_HOME": "/tmp/TestGradle268604353/002/.gradle",
-				"JAVA_HOME": "/tmp/TestGradle268604353/002/.cache/yb/tools/java/openjdk8.265+01"
+				"GRADLE_USER_HOME": "/tmp/TestGradle586322305/002/.gradle",
+				"JAVA_HOME": "/tmp/TestGradle586322305/002/.cache/yb/tools/java/openjdk8.265+01"
 			},
 			"PrependPath": [
-				"/tmp/TestGradle268604353/002/.cache/yb/tools/gradle/gradle-6.7/bin",
-				"/tmp/TestGradle268604353/002/.cache/yb/tools/java/openjdk8.265+01/bin"
+				"/tmp/TestGradle586322305/002/.cache/yb/tools/gradle/gradle-6.7/bin",
+				"/tmp/TestGradle586322305/002/.cache/yb/tools/java/openjdk8.265+01/bin"
 			],
 			"Output": {
 				"Combined": "CldlbGNvbWUgdG8gR3JhZGxlIDYuNyEKCkhlcmUgYXJlIHRoZSBoaWdobGlnaHRzIG9mIHRoaXMgcmVsZWFzZToKIC0gRmlsZSBzeXN0ZW0gd2F0Y2hpbmcgaXMgcmVhZHkgZm9yIHByb2R1Y3Rpb24gdXNlCiAtIERlY2xhcmUgdGhlIHZlcnNpb24gb2YgSmF2YSB5b3VyIGJ1aWxkIHJlcXVpcmVzCiAtIEphdmEgMTUgc3VwcG9ydAoKRm9yIG1vcmUgZGV0YWlscyBzZWUgaHR0cHM6Ly9kb2NzLmdyYWRsZS5vcmcvNi43L3JlbGVhc2Utbm90ZXMuaHRtbAoKCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQpHcmFkbGUgNi43Ci0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQoKQnVpbGQgdGltZTogICAyMDIwLTEwLTE0IDE2OjEzOjEyIFVUQwpSZXZpc2lvbjogICAgIDMxMmJhOWUwZjRmOGEwMmQwMTg1NGQxZWQ3NDNiNzllZDk5NmRmZDMKCktvdGxpbjogICAgICAgMS4zLjcyCkdyb292eTogICAgICAgMi41LjEyCkFudDogICAgICAgICAgQXBhY2hlIEFudChUTSkgdmVyc2lvbiAxLjEwLjggY29tcGlsZWQgb24gTWF5IDEwIDIwMjAKSlZNOiAgICAgICAgICAxLjguMF8yNjUgKEFkb3B0T3BlbkpESyAyNS4yNjUtYjAxKQpPUzogICAgICAgICAgIExpbnV4IDQuMTUuMC0xMDYtZ2VuZXJpYyBhbWQ2NAoK"

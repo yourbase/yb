@@ -4,25 +4,37 @@
 		"Arch": "amd64"
 	},
 	"Dirs": {
-		"Package": "/tmp/TestDart420102461/001",
-		"Home": "/tmp/TestDart420102461/002",
-		"Tools": "/tmp/TestDart420102461/002/.cache/yb/tools"
+		"Package": "/tmp/TestDart491330301/001",
+		"Home": "/tmp/TestDart491330301/002",
+		"Tools": "/tmp/TestDart491330301/002/.cache/yb/tools"
 	},
 	"JoinedPaths": [
 		{
 			"Elems": [
-				"/tmp/TestDart420102461/002/.cache/yb/tools",
+				"/tmp/TestDart491330301/002/.cache/yb/tools",
 				"dart",
 				"dart-sdk-2.10.2"
 			],
-			"Result": "/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2"
+			"Result": "/tmp/TestDart491330301/002/.cache/yb/tools/dart/dart-sdk-2.10.2"
 		},
 		{
 			"Elems": [
-				"/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2",
+				"/tmp/TestDart491330301/002/.cache/yb/tools/dart/dart-sdk-2.10.2",
 				"bin"
 			],
-			"Result": "/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2/bin"
+			"Result": "/tmp/TestDart491330301/002/.cache/yb/tools/dart/dart-sdk-2.10.2/bin"
+		},
+		{
+			"Elems": [
+				"/tmp/TestDart491330301/002/.cache/yb/tools/dart/dart-sdk-2.10.2"
+			],
+			"Result": "/tmp/TestDart491330301/002/.cache/yb/tools/dart/dart-sdk-2.10.2"
+		},
+		{
+			"Elems": [
+				"/tmp/TestDart491330301/002/.cache/yb/tools/dart/dart-sdk-2.10.2.zip"
+			],
+			"Result": "/tmp/TestDart491330301/002/.cache/yb/tools/dart/dart-sdk-2.10.2.zip"
 		},
 		{
 			"Elems": [
@@ -79,15 +91,23 @@
 				"include"
 			],
 			"Result": "dart-sdk/include"
+		},
+		{
+			"Elems": [
+				"/tmp/TestDart491330301/002/.cache/yb/tools/dart/dart-sdk-2.10.2"
+			],
+			"Result": "/tmp/TestDart491330301/002/.cache/yb/tools/dart/dart-sdk-2.10.2"
+		},
+		{
+			"Elems": [
+				"/tmp/TestDart491330301/002/.cache/yb/tools/dart/dart-sdk-2.10.2"
+			],
+			"Result": "/tmp/TestDart491330301/002/.cache/yb/tools/dart/dart-sdk-2.10.2"
 		}
 	],
-	"CleanedPaths": {
-		"/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2": "/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2",
-		"/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2.zip": "/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2.zip"
-	},
 	"AbsPaths": {
-		"/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2": true,
-		"/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2.zip": true
+		"/tmp/TestDart491330301/002/.cache/yb/tools/dart/dart-sdk-2.10.2": true,
+		"/tmp/TestDart491330301/002/.cache/yb/tools/dart/dart-sdk-2.10.2.zip": true
 	},
 	"Invocations": [
 		{
@@ -95,7 +115,7 @@
 				"readlink",
 				"--canonicalize-existing",
 				"--no-newline",
-				"/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2"
+				"/tmp/TestDart491330301/002/.cache/yb/tools/dart/dart-sdk-2.10.2"
 			],
 			"Output": {
 				"Stdout": "",
@@ -107,7 +127,7 @@
 			"Argv": [
 				"mkdir",
 				"-p",
-				"/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2"
+				"/tmp/TestDart491330301/002/.cache/yb/tools/dart/dart-sdk-2.10.2"
 			],
 			"Output": {
 				"Stderr": ""
@@ -116,7 +136,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2.zip"
+				"/tmp/TestDart491330301/002/.cache/yb/tools/dart/dart-sdk-2.10.2.zip"
 			],
 			"StdinSHA256": "fa98052d7fa605807a6b34ccc00f133da82e6d23c3e7f7663dfd32b121246c25",
 			"Output": {
@@ -127,9 +147,9 @@
 			"Argv": [
 				"unzip",
 				"-q",
-				"/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2.zip"
+				"/tmp/TestDart491330301/002/.cache/yb/tools/dart/dart-sdk-2.10.2.zip"
 			],
-			"Dir": "/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2",
+			"Dir": "/tmp/TestDart491330301/002/.cache/yb/tools/dart/dart-sdk-2.10.2",
 			"Output": {
 				"Combined": ""
 			}
@@ -147,7 +167,7 @@
 				"dart-sdk/include",
 				"."
 			],
-			"Dir": "/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2",
+			"Dir": "/tmp/TestDart491330301/002/.cache/yb/tools/dart/dart-sdk-2.10.2",
 			"Output": {
 				"Combined": ""
 			}
@@ -157,7 +177,7 @@
 				"rmdir",
 				"dart-sdk"
 			],
-			"Dir": "/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2",
+			"Dir": "/tmp/TestDart491330301/002/.cache/yb/tools/dart/dart-sdk-2.10.2",
 			"Output": {
 				"Combined": ""
 			}
@@ -166,7 +186,7 @@
 			"Argv": [
 				"rm",
 				"-f",
-				"/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2.zip"
+				"/tmp/TestDart491330301/002/.cache/yb/tools/dart/dart-sdk-2.10.2.zip"
 			],
 			"Output": {
 				"Combined": ""
@@ -178,7 +198,7 @@
 				"--version"
 			],
 			"PrependPath": [
-				"/tmp/TestDart420102461/002/.cache/yb/tools/dart/dart-sdk-2.10.2/bin"
+				"/tmp/TestDart491330301/002/.cache/yb/tools/dart/dart-sdk-2.10.2/bin"
 			],
 			"Output": {
 				"Combined": "RGFydCBTREsgdmVyc2lvbjogMi4xMC4yIChzdGFibGUpIChUdWUgT2N0IDEzIDE1OjUwOjI3IDIwMjAgKzAyMDApIG9uICJsaW51eF94NjQiCg=="

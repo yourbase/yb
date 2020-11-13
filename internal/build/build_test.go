@@ -181,7 +181,7 @@ func TestExecute(t *testing.T) {
 							path.Last().(cmp.StructField).Name() == "dir"
 					},
 					cmp.Comparer(func(dir1, dir2 string) bool {
-						return bio.CleanPath(dir1) == bio.CleanPath(dir2)
+						return biome.CleanPath(bio, dir1) == biome.CleanPath(bio, dir2)
 					}),
 				),
 			)

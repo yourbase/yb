@@ -55,6 +55,7 @@ func TestFakeCleanPath(t *testing.T) {
 		sep  rune
 		want string
 	}{
+		{path: "", sep: '/', want: "."},
 		{path: "a/c", sep: '/', want: "a/c"},
 		{path: "a//c", sep: '/', want: "a/c"},
 		{path: "a/c/.", sep: '/', want: "a/c"},
@@ -79,9 +80,9 @@ func TestFakeCleanPath(t *testing.T) {
 		{path: "/../a/b/../././/c", sep: '\\', want: "/../a/b/../././/c"},
 	}
 	for _, test := range tests {
-		got := (&Fake{Separator: test.sep}).CleanPath(test.path)
+		got := CleanPath(&Fake{Separator: test.sep}, test.path)
 		if got != test.want {
-			t.Errorf("(&Fake{Separator: %q}).Clean(%q) = %q; want %q", test.sep, test.path, got, test.want)
+			t.Errorf("CleanPath(&Fake{Separator: %q}, %q) = %q; want %q", test.sep, test.path, got, test.want)
 		}
 	}
 }

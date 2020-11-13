@@ -200,7 +200,7 @@ func TestEvalSymlinks(t *testing.T) {
 				if gotAbs, want := AbsPath(test.bio, got), filepath.Join(dir, fname); gotAbs != want {
 					t.Errorf("EvalSymlinks(ctx, bio, %q) = %q (Abs=%q), <nil>; want Abs=%q, <nil>", fname, got, gotAbs, want)
 				}
-				if got != test.bio.CleanPath(got) {
+				if got != CleanPath(test.bio, got) {
 					t.Errorf("Path %q is not clean", got)
 				}
 			})
@@ -223,7 +223,7 @@ func TestEvalSymlinks(t *testing.T) {
 				if gotAbs, want := AbsPath(test.bio, got), filepath.Join(dir, fname); gotAbs != want {
 					t.Errorf("EvalSymlinks(ctx, bio, %q) = %q (Abs=%q), <nil>; want Abs=%q, <nil>", linkName, got, gotAbs, want)
 				}
-				if got != test.bio.CleanPath(got) {
+				if got != CleanPath(test.bio, got) {
 					t.Errorf("Path %q is not clean", got)
 				}
 			})

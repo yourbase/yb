@@ -4,53 +4,71 @@
 		"Arch": "amd64"
 	},
 	"Dirs": {
-		"Package": "/tmp/TestMaven376600475/001",
-		"Home": "/tmp/TestMaven376600475/002",
-		"Tools": "/tmp/TestMaven376600475/002/.cache/yb/tools"
+		"Package": "/tmp/TestMaven149454171/001",
+		"Home": "/tmp/TestMaven149454171/002",
+		"Tools": "/tmp/TestMaven149454171/002/.cache/yb/tools"
 	},
 	"JoinedPaths": [
 		{
 			"Elems": [
-				"/tmp/TestMaven376600475/002/.cache/yb/tools",
+				"/tmp/TestMaven149454171/002/.cache/yb/tools",
 				"java",
 				"openjdk8.265+01"
 			],
-			"Result": "/tmp/TestMaven376600475/002/.cache/yb/tools/java/openjdk8.265+01"
+			"Result": "/tmp/TestMaven149454171/002/.cache/yb/tools/java/openjdk8.265+01"
 		},
 		{
 			"Elems": [
-				"/tmp/TestMaven376600475/002/.cache/yb/tools/java/openjdk8.265+01",
+				"/tmp/TestMaven149454171/002/.cache/yb/tools/java/openjdk8.265+01",
 				"bin"
 			],
-			"Result": "/tmp/TestMaven376600475/002/.cache/yb/tools/java/openjdk8.265+01/bin"
+			"Result": "/tmp/TestMaven149454171/002/.cache/yb/tools/java/openjdk8.265+01/bin"
 		},
 		{
 			"Elems": [
-				"/tmp/TestMaven376600475/002/.cache/yb/tools",
+				"/tmp/TestMaven149454171/002/.cache/yb/tools/java/openjdk8.265+01"
+			],
+			"Result": "/tmp/TestMaven149454171/002/.cache/yb/tools/java/openjdk8.265+01"
+		},
+		{
+			"Elems": [
+				"/tmp/TestMaven149454171/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
+			],
+			"Result": "/tmp/TestMaven149454171/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
+		},
+		{
+			"Elems": [
+				"/tmp/TestMaven149454171/002/.cache/yb/tools",
 				"maven",
 				"apache-maven-3.6.3"
 			],
-			"Result": "/tmp/TestMaven376600475/002/.cache/yb/tools/maven/apache-maven-3.6.3"
+			"Result": "/tmp/TestMaven149454171/002/.cache/yb/tools/maven/apache-maven-3.6.3"
 		},
 		{
 			"Elems": [
-				"/tmp/TestMaven376600475/002/.cache/yb/tools/maven/apache-maven-3.6.3",
+				"/tmp/TestMaven149454171/002/.cache/yb/tools/maven/apache-maven-3.6.3",
 				"bin"
 			],
-			"Result": "/tmp/TestMaven376600475/002/.cache/yb/tools/maven/apache-maven-3.6.3/bin"
+			"Result": "/tmp/TestMaven149454171/002/.cache/yb/tools/maven/apache-maven-3.6.3/bin"
+		},
+		{
+			"Elems": [
+				"/tmp/TestMaven149454171/002/.cache/yb/tools/maven/apache-maven-3.6.3"
+			],
+			"Result": "/tmp/TestMaven149454171/002/.cache/yb/tools/maven/apache-maven-3.6.3"
+		},
+		{
+			"Elems": [
+				"/tmp/TestMaven149454171/002/.cache/yb/tools/maven/apache-maven-3.6.3.tar.gz"
+			],
+			"Result": "/tmp/TestMaven149454171/002/.cache/yb/tools/maven/apache-maven-3.6.3.tar.gz"
 		}
 	],
-	"CleanedPaths": {
-		"/tmp/TestMaven376600475/002/.cache/yb/tools/java/openjdk8.265+01": "/tmp/TestMaven376600475/002/.cache/yb/tools/java/openjdk8.265+01",
-		"/tmp/TestMaven376600475/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz": "/tmp/TestMaven376600475/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz",
-		"/tmp/TestMaven376600475/002/.cache/yb/tools/maven/apache-maven-3.6.3": "/tmp/TestMaven376600475/002/.cache/yb/tools/maven/apache-maven-3.6.3",
-		"/tmp/TestMaven376600475/002/.cache/yb/tools/maven/apache-maven-3.6.3.tar.gz": "/tmp/TestMaven376600475/002/.cache/yb/tools/maven/apache-maven-3.6.3.tar.gz"
-	},
 	"AbsPaths": {
-		"/tmp/TestMaven376600475/002/.cache/yb/tools/java/openjdk8.265+01": true,
-		"/tmp/TestMaven376600475/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz": true,
-		"/tmp/TestMaven376600475/002/.cache/yb/tools/maven/apache-maven-3.6.3": true,
-		"/tmp/TestMaven376600475/002/.cache/yb/tools/maven/apache-maven-3.6.3.tar.gz": true
+		"/tmp/TestMaven149454171/002/.cache/yb/tools/java/openjdk8.265+01": true,
+		"/tmp/TestMaven149454171/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz": true,
+		"/tmp/TestMaven149454171/002/.cache/yb/tools/maven/apache-maven-3.6.3": true,
+		"/tmp/TestMaven149454171/002/.cache/yb/tools/maven/apache-maven-3.6.3.tar.gz": true
 	},
 	"Invocations": [
 		{
@@ -58,7 +76,7 @@
 				"readlink",
 				"--canonicalize-existing",
 				"--no-newline",
-				"/tmp/TestMaven376600475/002/.cache/yb/tools/java/openjdk8.265+01"
+				"/tmp/TestMaven149454171/002/.cache/yb/tools/java/openjdk8.265+01"
 			],
 			"Output": {
 				"Stdout": "",
@@ -70,7 +88,7 @@
 			"Argv": [
 				"mkdir",
 				"-p",
-				"/tmp/TestMaven376600475/002/.cache/yb/tools/java/openjdk8.265+01"
+				"/tmp/TestMaven149454171/002/.cache/yb/tools/java/openjdk8.265+01"
 			],
 			"Output": {
 				"Stderr": ""
@@ -79,7 +97,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/tmp/TestMaven376600475/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
+				"/tmp/TestMaven149454171/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
 			],
 			"StdinSHA256": "1285da6278f2d38a790a21148d7e683f20de0799c44b937043830ef6b57f58c4",
 			"Output": {
@@ -92,11 +110,11 @@
 				"-x",
 				"-z",
 				"-f",
-				"/tmp/TestMaven376600475/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz",
+				"/tmp/TestMaven149454171/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz",
 				"--strip-components",
 				"1"
 			],
-			"Dir": "/tmp/TestMaven376600475/002/.cache/yb/tools/java/openjdk8.265+01",
+			"Dir": "/tmp/TestMaven149454171/002/.cache/yb/tools/java/openjdk8.265+01",
 			"Output": {
 				"Combined": ""
 			}
@@ -105,7 +123,7 @@
 			"Argv": [
 				"rm",
 				"-f",
-				"/tmp/TestMaven376600475/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
+				"/tmp/TestMaven149454171/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
 			],
 			"Output": {
 				"Combined": ""
@@ -116,7 +134,7 @@
 				"readlink",
 				"--canonicalize-existing",
 				"--no-newline",
-				"/tmp/TestMaven376600475/002/.cache/yb/tools/maven/apache-maven-3.6.3"
+				"/tmp/TestMaven149454171/002/.cache/yb/tools/maven/apache-maven-3.6.3"
 			],
 			"Output": {
 				"Stdout": "",
@@ -128,7 +146,7 @@
 			"Argv": [
 				"mkdir",
 				"-p",
-				"/tmp/TestMaven376600475/002/.cache/yb/tools/maven/apache-maven-3.6.3"
+				"/tmp/TestMaven149454171/002/.cache/yb/tools/maven/apache-maven-3.6.3"
 			],
 			"Output": {
 				"Stderr": ""
@@ -137,7 +155,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/tmp/TestMaven376600475/002/.cache/yb/tools/maven/apache-maven-3.6.3.tar.gz"
+				"/tmp/TestMaven149454171/002/.cache/yb/tools/maven/apache-maven-3.6.3.tar.gz"
 			],
 			"StdinSHA256": "26ad91d751b3a9a53087aefa743f4e16a17741d3915b219cf74112bf87a438c5",
 			"Output": {
@@ -150,11 +168,11 @@
 				"-x",
 				"-z",
 				"-f",
-				"/tmp/TestMaven376600475/002/.cache/yb/tools/maven/apache-maven-3.6.3.tar.gz",
+				"/tmp/TestMaven149454171/002/.cache/yb/tools/maven/apache-maven-3.6.3.tar.gz",
 				"--strip-components",
 				"1"
 			],
-			"Dir": "/tmp/TestMaven376600475/002/.cache/yb/tools/maven/apache-maven-3.6.3",
+			"Dir": "/tmp/TestMaven149454171/002/.cache/yb/tools/maven/apache-maven-3.6.3",
 			"Output": {
 				"Combined": ""
 			}
@@ -163,7 +181,7 @@
 			"Argv": [
 				"rm",
 				"-f",
-				"/tmp/TestMaven376600475/002/.cache/yb/tools/maven/apache-maven-3.6.3.tar.gz"
+				"/tmp/TestMaven149454171/002/.cache/yb/tools/maven/apache-maven-3.6.3.tar.gz"
 			],
 			"Output": {
 				"Combined": ""
@@ -175,14 +193,14 @@
 				"-version"
 			],
 			"EnvVars": {
-				"JAVA_HOME": "/tmp/TestMaven376600475/002/.cache/yb/tools/java/openjdk8.265+01"
+				"JAVA_HOME": "/tmp/TestMaven149454171/002/.cache/yb/tools/java/openjdk8.265+01"
 			},
 			"PrependPath": [
-				"/tmp/TestMaven376600475/002/.cache/yb/tools/maven/apache-maven-3.6.3/bin",
-				"/tmp/TestMaven376600475/002/.cache/yb/tools/java/openjdk8.265+01/bin"
+				"/tmp/TestMaven149454171/002/.cache/yb/tools/maven/apache-maven-3.6.3/bin",
+				"/tmp/TestMaven149454171/002/.cache/yb/tools/java/openjdk8.265+01/bin"
 			],
 			"Output": {
-				"Combined": "QXBhY2hlIE1hdmVuIDMuNi4zIChjZWNlZGQzNDMwMDI2OTZkMGFiYjUwYjMyYjU0MWI4YTZiYTI4ODNmKQpNYXZlbiBob21lOiAvdG1wL1Rlc3RNYXZlbjM3NjYwMDQ3NS8wMDIvLmNhY2hlL3liL3Rvb2xzL21hdmVuL2FwYWNoZS1tYXZlbi0zLjYuMwpKYXZhIHZlcnNpb246IDEuOC4wXzI2NSwgdmVuZG9yOiBBZG9wdE9wZW5KREssIHJ1bnRpbWU6IC90bXAvVGVzdE1hdmVuMzc2NjAwNDc1LzAwMi8uY2FjaGUveWIvdG9vbHMvamF2YS9vcGVuamRrOC4yNjUrMDEvanJlCkRlZmF1bHQgbG9jYWxlOiBlbl9VUywgcGxhdGZvcm0gZW5jb2Rpbmc6IEFOU0lfWDMuNC0xOTY4Ck9TIG5hbWU6ICJsaW51eCIsIHZlcnNpb246ICI0LjE1LjAtMTA2LWdlbmVyaWMiLCBhcmNoOiAiYW1kNjQiLCBmYW1pbHk6ICJ1bml4Igo="
+				"Combined": "QXBhY2hlIE1hdmVuIDMuNi4zIChjZWNlZGQzNDMwMDI2OTZkMGFiYjUwYjMyYjU0MWI4YTZiYTI4ODNmKQpNYXZlbiBob21lOiAvdG1wL1Rlc3RNYXZlbjE0OTQ1NDE3MS8wMDIvLmNhY2hlL3liL3Rvb2xzL21hdmVuL2FwYWNoZS1tYXZlbi0zLjYuMwpKYXZhIHZlcnNpb246IDEuOC4wXzI2NSwgdmVuZG9yOiBBZG9wdE9wZW5KREssIHJ1bnRpbWU6IC90bXAvVGVzdE1hdmVuMTQ5NDU0MTcxLzAwMi8uY2FjaGUveWIvdG9vbHMvamF2YS9vcGVuamRrOC4yNjUrMDEvanJlCkRlZmF1bHQgbG9jYWxlOiBlbl9VUywgcGxhdGZvcm0gZW5jb2Rpbmc6IEFOU0lfWDMuNC0xOTY4Ck9TIG5hbWU6ICJsaW51eCIsIHZlcnNpb246ICI0LjE1LjAtMTA2LWdlbmVyaWMiLCBhcmNoOiAiYW1kNjQiLCBmYW1pbHk6ICJ1bml4Igo="
 			}
 		}
 	]

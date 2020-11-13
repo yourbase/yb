@@ -4,34 +4,42 @@
 		"Arch": "amd64"
 	},
 	"Dirs": {
-		"Package": "/tmp/TestProtoc800118816/001",
-		"Home": "/tmp/TestProtoc800118816/002",
-		"Tools": "/tmp/TestProtoc800118816/002/.cache/yb/tools"
+		"Package": "/tmp/TestProtoc626475744/001",
+		"Home": "/tmp/TestProtoc626475744/002",
+		"Tools": "/tmp/TestProtoc626475744/002/.cache/yb/tools"
 	},
 	"JoinedPaths": [
 		{
 			"Elems": [
-				"/tmp/TestProtoc800118816/002/.cache/yb/tools",
+				"/tmp/TestProtoc626475744/002/.cache/yb/tools",
 				"protoc",
 				"protoc-3.13.0"
 			],
-			"Result": "/tmp/TestProtoc800118816/002/.cache/yb/tools/protoc/protoc-3.13.0"
+			"Result": "/tmp/TestProtoc626475744/002/.cache/yb/tools/protoc/protoc-3.13.0"
 		},
 		{
 			"Elems": [
-				"/tmp/TestProtoc800118816/002/.cache/yb/tools/protoc/protoc-3.13.0",
+				"/tmp/TestProtoc626475744/002/.cache/yb/tools/protoc/protoc-3.13.0",
 				"bin"
 			],
-			"Result": "/tmp/TestProtoc800118816/002/.cache/yb/tools/protoc/protoc-3.13.0/bin"
+			"Result": "/tmp/TestProtoc626475744/002/.cache/yb/tools/protoc/protoc-3.13.0/bin"
+		},
+		{
+			"Elems": [
+				"/tmp/TestProtoc626475744/002/.cache/yb/tools/protoc/protoc-3.13.0"
+			],
+			"Result": "/tmp/TestProtoc626475744/002/.cache/yb/tools/protoc/protoc-3.13.0"
+		},
+		{
+			"Elems": [
+				"/tmp/TestProtoc626475744/002/.cache/yb/tools/protoc/protoc-3.13.0.zip"
+			],
+			"Result": "/tmp/TestProtoc626475744/002/.cache/yb/tools/protoc/protoc-3.13.0.zip"
 		}
 	],
-	"CleanedPaths": {
-		"/tmp/TestProtoc800118816/002/.cache/yb/tools/protoc/protoc-3.13.0": "/tmp/TestProtoc800118816/002/.cache/yb/tools/protoc/protoc-3.13.0",
-		"/tmp/TestProtoc800118816/002/.cache/yb/tools/protoc/protoc-3.13.0.zip": "/tmp/TestProtoc800118816/002/.cache/yb/tools/protoc/protoc-3.13.0.zip"
-	},
 	"AbsPaths": {
-		"/tmp/TestProtoc800118816/002/.cache/yb/tools/protoc/protoc-3.13.0": true,
-		"/tmp/TestProtoc800118816/002/.cache/yb/tools/protoc/protoc-3.13.0.zip": true
+		"/tmp/TestProtoc626475744/002/.cache/yb/tools/protoc/protoc-3.13.0": true,
+		"/tmp/TestProtoc626475744/002/.cache/yb/tools/protoc/protoc-3.13.0.zip": true
 	},
 	"Invocations": [
 		{
@@ -39,7 +47,7 @@
 				"readlink",
 				"--canonicalize-existing",
 				"--no-newline",
-				"/tmp/TestProtoc800118816/002/.cache/yb/tools/protoc/protoc-3.13.0"
+				"/tmp/TestProtoc626475744/002/.cache/yb/tools/protoc/protoc-3.13.0"
 			],
 			"Output": {
 				"Stdout": "",
@@ -51,7 +59,7 @@
 			"Argv": [
 				"mkdir",
 				"-p",
-				"/tmp/TestProtoc800118816/002/.cache/yb/tools/protoc/protoc-3.13.0"
+				"/tmp/TestProtoc626475744/002/.cache/yb/tools/protoc/protoc-3.13.0"
 			],
 			"Output": {
 				"Stderr": ""
@@ -60,7 +68,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/tmp/TestProtoc800118816/002/.cache/yb/tools/protoc/protoc-3.13.0.zip"
+				"/tmp/TestProtoc626475744/002/.cache/yb/tools/protoc/protoc-3.13.0.zip"
 			],
 			"StdinSHA256": "4a3b26d1ebb9c1d23e933694a6669295f6a39ddc64c3db2adf671f0a6026f82e",
 			"Output": {
@@ -71,9 +79,9 @@
 			"Argv": [
 				"unzip",
 				"-q",
-				"/tmp/TestProtoc800118816/002/.cache/yb/tools/protoc/protoc-3.13.0.zip"
+				"/tmp/TestProtoc626475744/002/.cache/yb/tools/protoc/protoc-3.13.0.zip"
 			],
-			"Dir": "/tmp/TestProtoc800118816/002/.cache/yb/tools/protoc/protoc-3.13.0",
+			"Dir": "/tmp/TestProtoc626475744/002/.cache/yb/tools/protoc/protoc-3.13.0",
 			"Output": {
 				"Combined": ""
 			}
@@ -82,7 +90,7 @@
 			"Argv": [
 				"rm",
 				"-f",
-				"/tmp/TestProtoc800118816/002/.cache/yb/tools/protoc/protoc-3.13.0.zip"
+				"/tmp/TestProtoc626475744/002/.cache/yb/tools/protoc/protoc-3.13.0.zip"
 			],
 			"Output": {
 				"Combined": ""
@@ -94,7 +102,7 @@
 				"--version"
 			],
 			"PrependPath": [
-				"/tmp/TestProtoc800118816/002/.cache/yb/tools/protoc/protoc-3.13.0/bin"
+				"/tmp/TestProtoc626475744/002/.cache/yb/tools/protoc/protoc-3.13.0/bin"
 			],
 			"Output": {
 				"Combined": "bGlicHJvdG9jIDMuMTMuMAo="

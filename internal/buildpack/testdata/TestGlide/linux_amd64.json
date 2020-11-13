@@ -4,32 +4,40 @@
 		"Arch": "amd64"
 	},
 	"Dirs": {
-		"Package": "/tmp/TestGlide755742327/001",
-		"Home": "/tmp/TestGlide755742327/002",
-		"Tools": "/tmp/TestGlide755742327/002/.cache/yb/tools"
+		"Package": "/tmp/TestGlide032764983/001",
+		"Home": "/tmp/TestGlide032764983/002",
+		"Tools": "/tmp/TestGlide032764983/002/.cache/yb/tools"
 	},
 	"JoinedPaths": [
 		{
 			"Elems": [
-				"/tmp/TestGlide755742327/002/.cache/yb/tools",
+				"/tmp/TestGlide032764983/002/.cache/yb/tools",
 				"glide-0.13.3"
 			],
-			"Result": "/tmp/TestGlide755742327/002/.cache/yb/tools/glide-0.13.3"
+			"Result": "/tmp/TestGlide032764983/002/.cache/yb/tools/glide-0.13.3"
 		},
 		{
 			"Elems": [
-				"/tmp/TestGlide755742327/002/.cache/yb/tools/glide-0.13.3"
+				"/tmp/TestGlide032764983/002/.cache/yb/tools/glide-0.13.3"
 			],
-			"Result": "/tmp/TestGlide755742327/002/.cache/yb/tools/glide-0.13.3"
+			"Result": "/tmp/TestGlide032764983/002/.cache/yb/tools/glide-0.13.3"
+		},
+		{
+			"Elems": [
+				"/tmp/TestGlide032764983/002/.cache/yb/tools/glide-0.13.3"
+			],
+			"Result": "/tmp/TestGlide032764983/002/.cache/yb/tools/glide-0.13.3"
+		},
+		{
+			"Elems": [
+				"/tmp/TestGlide032764983/002/.cache/yb/tools/glide-0.13.3.tar.gz"
+			],
+			"Result": "/tmp/TestGlide032764983/002/.cache/yb/tools/glide-0.13.3.tar.gz"
 		}
 	],
-	"CleanedPaths": {
-		"/tmp/TestGlide755742327/002/.cache/yb/tools/glide-0.13.3": "/tmp/TestGlide755742327/002/.cache/yb/tools/glide-0.13.3",
-		"/tmp/TestGlide755742327/002/.cache/yb/tools/glide-0.13.3.tar.gz": "/tmp/TestGlide755742327/002/.cache/yb/tools/glide-0.13.3.tar.gz"
-	},
 	"AbsPaths": {
-		"/tmp/TestGlide755742327/002/.cache/yb/tools/glide-0.13.3": true,
-		"/tmp/TestGlide755742327/002/.cache/yb/tools/glide-0.13.3.tar.gz": true
+		"/tmp/TestGlide032764983/002/.cache/yb/tools/glide-0.13.3": true,
+		"/tmp/TestGlide032764983/002/.cache/yb/tools/glide-0.13.3.tar.gz": true
 	},
 	"Invocations": [
 		{
@@ -37,7 +45,7 @@
 				"readlink",
 				"--canonicalize-existing",
 				"--no-newline",
-				"/tmp/TestGlide755742327/002/.cache/yb/tools/glide-0.13.3"
+				"/tmp/TestGlide032764983/002/.cache/yb/tools/glide-0.13.3"
 			],
 			"Output": {
 				"Stdout": "",
@@ -49,7 +57,7 @@
 			"Argv": [
 				"mkdir",
 				"-p",
-				"/tmp/TestGlide755742327/002/.cache/yb/tools/glide-0.13.3"
+				"/tmp/TestGlide032764983/002/.cache/yb/tools/glide-0.13.3"
 			],
 			"Output": {
 				"Stderr": ""
@@ -58,7 +66,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/tmp/TestGlide755742327/002/.cache/yb/tools/glide-0.13.3.tar.gz"
+				"/tmp/TestGlide032764983/002/.cache/yb/tools/glide-0.13.3.tar.gz"
 			],
 			"StdinSHA256": "ba5619955a28d7931a9ae38d095fc5fa5acc28e77abc8737a8136c652d9cbb38",
 			"Output": {
@@ -71,11 +79,11 @@
 				"-x",
 				"-z",
 				"-f",
-				"/tmp/TestGlide755742327/002/.cache/yb/tools/glide-0.13.3.tar.gz",
+				"/tmp/TestGlide032764983/002/.cache/yb/tools/glide-0.13.3.tar.gz",
 				"--strip-components",
 				"1"
 			],
-			"Dir": "/tmp/TestGlide755742327/002/.cache/yb/tools/glide-0.13.3",
+			"Dir": "/tmp/TestGlide032764983/002/.cache/yb/tools/glide-0.13.3",
 			"Output": {
 				"Combined": ""
 			}
@@ -84,7 +92,7 @@
 			"Argv": [
 				"rm",
 				"-f",
-				"/tmp/TestGlide755742327/002/.cache/yb/tools/glide-0.13.3.tar.gz"
+				"/tmp/TestGlide032764983/002/.cache/yb/tools/glide-0.13.3.tar.gz"
 			],
 			"Output": {
 				"Combined": ""
@@ -96,7 +104,7 @@
 				"--version"
 			],
 			"PrependPath": [
-				"/tmp/TestGlide755742327/002/.cache/yb/tools/glide-0.13.3"
+				"/tmp/TestGlide032764983/002/.cache/yb/tools/glide-0.13.3"
 			],
 			"Output": {
 				"Combined": "Z2xpZGUgdmVyc2lvbiB2MC4xMy4zCg=="

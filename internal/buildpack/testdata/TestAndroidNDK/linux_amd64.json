@@ -4,18 +4,30 @@
 		"Arch": "amd64"
 	},
 	"Dirs": {
-		"Package": "/tmp/TestAndroidNDK508414162/001",
-		"Home": "/tmp/TestAndroidNDK508414162/002",
-		"Tools": "/tmp/TestAndroidNDK508414162/002/.cache/yb/tools"
+		"Package": "/tmp/TestAndroidNDK554066064/001",
+		"Home": "/tmp/TestAndroidNDK554066064/002",
+		"Tools": "/tmp/TestAndroidNDK554066064/002/.cache/yb/tools"
 	},
 	"JoinedPaths": [
 		{
 			"Elems": [
-				"/tmp/TestAndroidNDK508414162/002/.cache/yb/tools",
+				"/tmp/TestAndroidNDK554066064/002/.cache/yb/tools",
 				"android-ndk",
 				"android-ndk-r21d"
 			],
-			"Result": "/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
+			"Result": "/tmp/TestAndroidNDK554066064/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
+		},
+		{
+			"Elems": [
+				"/tmp/TestAndroidNDK554066064/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
+			],
+			"Result": "/tmp/TestAndroidNDK554066064/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
+		},
+		{
+			"Elems": [
+				"/tmp/TestAndroidNDK554066064/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip"
+			],
+			"Result": "/tmp/TestAndroidNDK554066064/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip"
 		},
 		{
 			"Elems": [
@@ -159,20 +171,33 @@
 		},
 		{
 			"Elems": [
-				"/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d",
+				"/tmp/TestAndroidNDK554066064/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
+			],
+			"Result": "/tmp/TestAndroidNDK554066064/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
+		},
+		{
+			"Elems": [
+				"/tmp/TestAndroidNDK554066064/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
+			],
+			"Result": "/tmp/TestAndroidNDK554066064/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
+		},
+		{
+			"Elems": [
+				"/tmp/TestAndroidNDK554066064/002/.cache/yb/tools/android-ndk/android-ndk-r21d",
 				"ndk-build"
 			],
-			"Result": "/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d/ndk-build"
+			"Result": "/tmp/TestAndroidNDK554066064/002/.cache/yb/tools/android-ndk/android-ndk-r21d/ndk-build"
+		},
+		{
+			"Elems": [
+				"/tmp/TestAndroidNDK554066064/002/.cache/yb/tools/android-ndk/android-ndk-r21d/ndk-build"
+			],
+			"Result": "/tmp/TestAndroidNDK554066064/002/.cache/yb/tools/android-ndk/android-ndk-r21d/ndk-build"
 		}
 	],
-	"CleanedPaths": {
-		"/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d": "/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d",
-		"/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip": "/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip",
-		"/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d/ndk-build": "/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d/ndk-build"
-	},
 	"AbsPaths": {
-		"/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d": true,
-		"/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip": true
+		"/tmp/TestAndroidNDK554066064/002/.cache/yb/tools/android-ndk/android-ndk-r21d": true,
+		"/tmp/TestAndroidNDK554066064/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip": true
 	},
 	"Invocations": [
 		{
@@ -180,7 +205,7 @@
 				"readlink",
 				"--canonicalize-existing",
 				"--no-newline",
-				"/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
+				"/tmp/TestAndroidNDK554066064/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
 			],
 			"Output": {
 				"Stdout": "",
@@ -192,7 +217,7 @@
 			"Argv": [
 				"mkdir",
 				"-p",
-				"/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
+				"/tmp/TestAndroidNDK554066064/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
 			],
 			"Output": {
 				"Stderr": ""
@@ -201,7 +226,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip"
+				"/tmp/TestAndroidNDK554066064/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip"
 			],
 			"StdinSHA256": "dd6dc090b6e2580206c64bcee499bc16509a5d017c6952dcd2bed9072af67cbd",
 			"Output": {
@@ -212,9 +237,9 @@
 			"Argv": [
 				"unzip",
 				"-q",
-				"/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip"
+				"/tmp/TestAndroidNDK554066064/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip"
 			],
-			"Dir": "/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d",
+			"Dir": "/tmp/TestAndroidNDK554066064/002/.cache/yb/tools/android-ndk/android-ndk-r21d",
 			"Output": {
 				"Combined": ""
 			}
@@ -244,7 +269,7 @@
 				"android-ndk-r21d/wrap.sh",
 				"."
 			],
-			"Dir": "/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d",
+			"Dir": "/tmp/TestAndroidNDK554066064/002/.cache/yb/tools/android-ndk/android-ndk-r21d",
 			"Output": {
 				"Combined": ""
 			}
@@ -254,7 +279,7 @@
 				"rmdir",
 				"android-ndk-r21d"
 			],
-			"Dir": "/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d",
+			"Dir": "/tmp/TestAndroidNDK554066064/002/.cache/yb/tools/android-ndk/android-ndk-r21d",
 			"Output": {
 				"Combined": ""
 			}
@@ -263,7 +288,7 @@
 			"Argv": [
 				"rm",
 				"-f",
-				"/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip"
+				"/tmp/TestAndroidNDK554066064/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip"
 			],
 			"Output": {
 				"Combined": ""
@@ -274,13 +299,13 @@
 				"readlink",
 				"--canonicalize-existing",
 				"--no-newline",
-				"/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d/ndk-build"
+				"/tmp/TestAndroidNDK554066064/002/.cache/yb/tools/android-ndk/android-ndk-r21d/ndk-build"
 			],
 			"EnvVars": {
-				"ANDROID_NDK_HOME": "/tmp/TestAndroidNDK508414162/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
+				"ANDROID_NDK_HOME": "/tmp/TestAndroidNDK554066064/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
 			},
 			"Output": {
-				"Stdout": "L3RtcC9UZXN0QW5kcm9pZE5ESzUwODQxNDE2Mi8wMDIvLmNhY2hlL3liL3Rvb2xzL2FuZHJvaWQtbmRrL2FuZHJvaWQtbmRrLXIyMWQvbmRrLWJ1aWxk",
+				"Stdout": "L3RtcC9UZXN0QW5kcm9pZE5ESzU1NDA2NjA2NC8wMDIvLmNhY2hlL3liL3Rvb2xzL2FuZHJvaWQtbmRrL2FuZHJvaWQtbmRrLXIyMWQvbmRrLWJ1aWxk",
 				"Stderr": ""
 			}
 		}

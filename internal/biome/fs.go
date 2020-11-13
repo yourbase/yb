@@ -27,13 +27,23 @@ import (
 // This file holds functions that can be derived from any implementation of the
 // base biome interface, but may potentially have a more optimal implementation.
 
+// CleanPath returns the shortest path name equivalent to path by purely
+// lexical processing. It uses the same algorithm as path/filepath.Clean.
+func CleanPath(bio Biome, path string) string {
+	if path == "" {
+		// JoinPath will return an empty string, which does not match Clean.
+		return "."
+	}
+	return bio.JoinPath(path)
+}
+
 // AbsPath returns an absolute representation of path. If the path is not absolute
 // it will be joined with the package directory to turn it into an absolute
 // path. The absolute path name for a given file is not guaranteed to be unique.
 // AbsPath calls Clean on the result.
 func AbsPath(bio Biome, path string) string {
 	if bio.IsAbsPath(path) {
-		return bio.CleanPath(path)
+		return CleanPath(bio, path)
 	}
 	return bio.JoinPath(bio.Dirs().Package, path)
 }
@@ -149,7 +159,7 @@ func EvalSymlinks(ctx context.Context, bio Biome, path string) (string, error) {
 		}
 		return "", fmt.Errorf("eval symlinks for %s: %s", path, strings.TrimSuffix(stderr.String(), "\n"))
 	}
-	return bio.CleanPath(stdout.String()), nil
+	return CleanPath(bio, stdout.String()), nil
 }
 
 func forwardEvalSymlinks(ctx context.Context, bio Biome, path string) (string, error) {
