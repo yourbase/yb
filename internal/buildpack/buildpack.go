@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net/http"
 	"strings"
 	"text/template"
 
@@ -22,12 +21,10 @@ import (
 
 // Sys holds dependencies provided by the caller needed to run builds.
 type Sys struct {
-	Biome    biome.Biome
-	Stdout   io.Writer
-	Stderr   io.Writer
-	DataDirs *ybdata.Dirs
-
-	HTTPClient *http.Client
+	Biome      biome.Biome
+	Stdout     io.Writer
+	Stderr     io.Writer
+	Downloader *ybdata.Downloader
 
 	DockerClient    *docker.Client
 	DockerNetworkID string
@@ -121,7 +118,7 @@ func extract(ctx context.Context, sys Sys, dstDir, url string, extractMode bool)
 		return fmt.Errorf("extract %s in %s: unknown extension", url, dstDir)
 	}
 
-	f, err := ybdata.Download(ctx, sys.HTTPClient, sys.DataDirs, url)
+	f, err := sys.Downloader.Download(ctx, url)
 	if err != nil {
 		return fmt.Errorf("extract %s in %s: %w", url, dstDir, err)
 	}
