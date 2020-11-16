@@ -4,25 +4,37 @@
 		"Arch": "amd64"
 	},
 	"Dirs": {
-		"Package": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart123193128/001",
-		"Home": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart123193128/002",
-		"Tools": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart123193128/002/.cache/yb/tools"
+		"Package": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart875935360/001",
+		"Home": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart875935360/002",
+		"Tools": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart875935360/002/.cache/yb/tools"
 	},
 	"JoinedPaths": [
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart123193128/002/.cache/yb/tools",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart875935360/002/.cache/yb/tools",
 				"dart",
 				"dart-sdk-2.10.2"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart123193128/002/.cache/yb/tools/dart/dart-sdk-2.10.2"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart875935360/002/.cache/yb/tools/dart/dart-sdk-2.10.2"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart123193128/002/.cache/yb/tools/dart/dart-sdk-2.10.2",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart875935360/002/.cache/yb/tools/dart/dart-sdk-2.10.2",
 				"bin"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart123193128/002/.cache/yb/tools/dart/dart-sdk-2.10.2/bin"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart875935360/002/.cache/yb/tools/dart/dart-sdk-2.10.2/bin"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart875935360/002/.cache/yb/tools/dart/dart-sdk-2.10.2"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart875935360/002/.cache/yb/tools/dart/dart-sdk-2.10.2"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart875935360/002/.cache/yb/tools/dart/dart-sdk-2.10.2.zip"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart875935360/002/.cache/yb/tools/dart/dart-sdk-2.10.2.zip"
 		},
 		{
 			"Elems": [
@@ -79,15 +91,23 @@
 				"version"
 			],
 			"Result": "dart-sdk/version"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart875935360/002/.cache/yb/tools/dart/dart-sdk-2.10.2"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart875935360/002/.cache/yb/tools/dart/dart-sdk-2.10.2"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart875935360/002/.cache/yb/tools/dart/dart-sdk-2.10.2"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart875935360/002/.cache/yb/tools/dart/dart-sdk-2.10.2"
 		}
 	],
-	"CleanedPaths": {
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart123193128/002/.cache/yb/tools/dart/dart-sdk-2.10.2": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart123193128/002/.cache/yb/tools/dart/dart-sdk-2.10.2",
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart123193128/002/.cache/yb/tools/dart/dart-sdk-2.10.2.zip": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart123193128/002/.cache/yb/tools/dart/dart-sdk-2.10.2.zip"
-	},
 	"AbsPaths": {
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart123193128/002/.cache/yb/tools/dart/dart-sdk-2.10.2": true,
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart123193128/002/.cache/yb/tools/dart/dart-sdk-2.10.2.zip": true
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart875935360/002/.cache/yb/tools/dart/dart-sdk-2.10.2": true,
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart875935360/002/.cache/yb/tools/dart/dart-sdk-2.10.2.zip": true
 	},
 	"Invocations": [
 		{
@@ -95,11 +115,11 @@
 				"python",
 				"-c",
 				"import os, sys; os.stat(sys.argv[1]); sys.stdout.write(os.path.realpath(sys.argv[1]))",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart123193128/002/.cache/yb/tools/dart/dart-sdk-2.10.2"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart875935360/002/.cache/yb/tools/dart/dart-sdk-2.10.2"
 			],
 			"Output": {
 				"Stdout": "",
-				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0RGFydDEyMzE5MzEyOC8wMDIvLmNhY2hlL3liL3Rvb2xzL2RhcnQvZGFydC1zZGstMi4xMC4yJwo="
+				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0RGFydDg3NTkzNTM2MC8wMDIvLmNhY2hlL3liL3Rvb2xzL2RhcnQvZGFydC1zZGstMi4xMC4yJwo="
 			},
 			"Error": "local run: exit status 1"
 		},
@@ -107,7 +127,7 @@
 			"Argv": [
 				"mkdir",
 				"-p",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart123193128/002/.cache/yb/tools/dart/dart-sdk-2.10.2"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart875935360/002/.cache/yb/tools/dart/dart-sdk-2.10.2"
 			],
 			"Output": {
 				"Stderr": ""
@@ -116,7 +136,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart123193128/002/.cache/yb/tools/dart/dart-sdk-2.10.2.zip"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart875935360/002/.cache/yb/tools/dart/dart-sdk-2.10.2.zip"
 			],
 			"StdinSHA256": "eb51f670ee184887b56e7432501fc16a3fadcbab45fb1ee633055b093b54f81a",
 			"Output": {
@@ -127,9 +147,9 @@
 			"Argv": [
 				"unzip",
 				"-q",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart123193128/002/.cache/yb/tools/dart/dart-sdk-2.10.2.zip"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart875935360/002/.cache/yb/tools/dart/dart-sdk-2.10.2.zip"
 			],
-			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart123193128/002/.cache/yb/tools/dart/dart-sdk-2.10.2",
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart875935360/002/.cache/yb/tools/dart/dart-sdk-2.10.2",
 			"Output": {
 				"Combined": ""
 			}
@@ -147,7 +167,7 @@
 				"dart-sdk/version",
 				"."
 			],
-			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart123193128/002/.cache/yb/tools/dart/dart-sdk-2.10.2",
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart875935360/002/.cache/yb/tools/dart/dart-sdk-2.10.2",
 			"Output": {
 				"Combined": ""
 			}
@@ -157,7 +177,7 @@
 				"rmdir",
 				"dart-sdk"
 			],
-			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart123193128/002/.cache/yb/tools/dart/dart-sdk-2.10.2",
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart875935360/002/.cache/yb/tools/dart/dart-sdk-2.10.2",
 			"Output": {
 				"Combined": ""
 			}
@@ -166,7 +186,7 @@
 			"Argv": [
 				"rm",
 				"-f",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart123193128/002/.cache/yb/tools/dart/dart-sdk-2.10.2.zip"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart875935360/002/.cache/yb/tools/dart/dart-sdk-2.10.2.zip"
 			],
 			"Output": {
 				"Combined": ""
@@ -178,7 +198,7 @@
 				"--version"
 			],
 			"PrependPath": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart123193128/002/.cache/yb/tools/dart/dart-sdk-2.10.2/bin"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestDart875935360/002/.cache/yb/tools/dart/dart-sdk-2.10.2/bin"
 			],
 			"Output": {
 				"Combined": "RGFydCBTREsgdmVyc2lvbjogMi4xMC4yIChzdGFibGUpIChUdWUgT2N0IDEzIDE1OjUwOjI3IDIwMjAgKzAyMDApIG9uICJtYWNvc194NjQiCg=="

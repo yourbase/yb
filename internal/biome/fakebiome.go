@@ -79,12 +79,12 @@ func (f *Fake) JoinPath(elem ...string) string {
 	if sb.Len() == 0 {
 		return ""
 	}
-	return f.CleanPath(sb.String())
+	return f.cleanPath(sb.String())
 }
 
-// CleanPath returns the shortest path name equivalent to path by purely
+// cleanPath returns the shortest path name equivalent to path by purely
 // lexical processing.
-func (f *Fake) CleanPath(path string) string {
+func (f *Fake) cleanPath(path string) string {
 	if f.sep() == '/' {
 		return slashpath.Clean(path)
 	}

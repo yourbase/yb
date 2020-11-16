@@ -4,40 +4,64 @@
 		"Arch": "amd64"
 	},
 	"Dirs": {
-		"Package": "/tmp/TestAnt932085634/001",
-		"Home": "/tmp/TestAnt932085634/002",
-		"Tools": "/tmp/TestAnt932085634/002/.cache/yb/tools"
+		"Package": "/tmp/TestAnt259522114/001",
+		"Home": "/tmp/TestAnt259522114/002",
+		"Tools": "/tmp/TestAnt259522114/002/.cache/yb/tools"
 	},
 	"JoinedPaths": [
 		{
 			"Elems": [
-				"/tmp/TestAnt932085634/002/.cache/yb/tools",
+				"/tmp/TestAnt259522114/002/.cache/yb/tools",
 				"java",
 				"openjdk8.265+01"
 			],
-			"Result": "/tmp/TestAnt932085634/002/.cache/yb/tools/java/openjdk8.265+01"
+			"Result": "/tmp/TestAnt259522114/002/.cache/yb/tools/java/openjdk8.265+01"
 		},
 		{
 			"Elems": [
-				"/tmp/TestAnt932085634/002/.cache/yb/tools/java/openjdk8.265+01",
+				"/tmp/TestAnt259522114/002/.cache/yb/tools/java/openjdk8.265+01",
 				"bin"
 			],
-			"Result": "/tmp/TestAnt932085634/002/.cache/yb/tools/java/openjdk8.265+01/bin"
+			"Result": "/tmp/TestAnt259522114/002/.cache/yb/tools/java/openjdk8.265+01/bin"
 		},
 		{
 			"Elems": [
-				"/tmp/TestAnt932085634/002/.cache/yb/tools",
+				"/tmp/TestAnt259522114/002/.cache/yb/tools/java/openjdk8.265+01"
+			],
+			"Result": "/tmp/TestAnt259522114/002/.cache/yb/tools/java/openjdk8.265+01"
+		},
+		{
+			"Elems": [
+				"/tmp/TestAnt259522114/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
+			],
+			"Result": "/tmp/TestAnt259522114/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
+		},
+		{
+			"Elems": [
+				"/tmp/TestAnt259522114/002/.cache/yb/tools",
 				"ant",
 				"apache-ant-1.10.9"
 			],
-			"Result": "/tmp/TestAnt932085634/002/.cache/yb/tools/ant/apache-ant-1.10.9"
+			"Result": "/tmp/TestAnt259522114/002/.cache/yb/tools/ant/apache-ant-1.10.9"
 		},
 		{
 			"Elems": [
-				"/tmp/TestAnt932085634/002/.cache/yb/tools/ant/apache-ant-1.10.9",
+				"/tmp/TestAnt259522114/002/.cache/yb/tools/ant/apache-ant-1.10.9",
 				"bin"
 			],
-			"Result": "/tmp/TestAnt932085634/002/.cache/yb/tools/ant/apache-ant-1.10.9/bin"
+			"Result": "/tmp/TestAnt259522114/002/.cache/yb/tools/ant/apache-ant-1.10.9/bin"
+		},
+		{
+			"Elems": [
+				"/tmp/TestAnt259522114/002/.cache/yb/tools/ant/apache-ant-1.10.9"
+			],
+			"Result": "/tmp/TestAnt259522114/002/.cache/yb/tools/ant/apache-ant-1.10.9"
+		},
+		{
+			"Elems": [
+				"/tmp/TestAnt259522114/002/.cache/yb/tools/ant/apache-ant-1.10.9.zip"
+			],
+			"Result": "/tmp/TestAnt259522114/002/.cache/yb/tools/ant/apache-ant-1.10.9.zip"
 		},
 		{
 			"Elems": [
@@ -143,19 +167,25 @@
 				"patch.xml"
 			],
 			"Result": "apache-ant-1.10.9/patch.xml"
+		},
+		{
+			"Elems": [
+				"/tmp/TestAnt259522114/002/.cache/yb/tools/ant/apache-ant-1.10.9"
+			],
+			"Result": "/tmp/TestAnt259522114/002/.cache/yb/tools/ant/apache-ant-1.10.9"
+		},
+		{
+			"Elems": [
+				"/tmp/TestAnt259522114/002/.cache/yb/tools/ant/apache-ant-1.10.9"
+			],
+			"Result": "/tmp/TestAnt259522114/002/.cache/yb/tools/ant/apache-ant-1.10.9"
 		}
 	],
-	"CleanedPaths": {
-		"/tmp/TestAnt932085634/002/.cache/yb/tools/ant/apache-ant-1.10.9": "/tmp/TestAnt932085634/002/.cache/yb/tools/ant/apache-ant-1.10.9",
-		"/tmp/TestAnt932085634/002/.cache/yb/tools/ant/apache-ant-1.10.9.zip": "/tmp/TestAnt932085634/002/.cache/yb/tools/ant/apache-ant-1.10.9.zip",
-		"/tmp/TestAnt932085634/002/.cache/yb/tools/java/openjdk8.265+01": "/tmp/TestAnt932085634/002/.cache/yb/tools/java/openjdk8.265+01",
-		"/tmp/TestAnt932085634/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz": "/tmp/TestAnt932085634/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
-	},
 	"AbsPaths": {
-		"/tmp/TestAnt932085634/002/.cache/yb/tools/ant/apache-ant-1.10.9": true,
-		"/tmp/TestAnt932085634/002/.cache/yb/tools/ant/apache-ant-1.10.9.zip": true,
-		"/tmp/TestAnt932085634/002/.cache/yb/tools/java/openjdk8.265+01": true,
-		"/tmp/TestAnt932085634/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz": true
+		"/tmp/TestAnt259522114/002/.cache/yb/tools/ant/apache-ant-1.10.9": true,
+		"/tmp/TestAnt259522114/002/.cache/yb/tools/ant/apache-ant-1.10.9.zip": true,
+		"/tmp/TestAnt259522114/002/.cache/yb/tools/java/openjdk8.265+01": true,
+		"/tmp/TestAnt259522114/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz": true
 	},
 	"Invocations": [
 		{
@@ -163,7 +193,7 @@
 				"readlink",
 				"--canonicalize-existing",
 				"--no-newline",
-				"/tmp/TestAnt932085634/002/.cache/yb/tools/java/openjdk8.265+01"
+				"/tmp/TestAnt259522114/002/.cache/yb/tools/java/openjdk8.265+01"
 			],
 			"Output": {
 				"Stdout": "",
@@ -175,7 +205,7 @@
 			"Argv": [
 				"mkdir",
 				"-p",
-				"/tmp/TestAnt932085634/002/.cache/yb/tools/java/openjdk8.265+01"
+				"/tmp/TestAnt259522114/002/.cache/yb/tools/java/openjdk8.265+01"
 			],
 			"Output": {
 				"Stderr": ""
@@ -184,7 +214,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/tmp/TestAnt932085634/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
+				"/tmp/TestAnt259522114/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
 			],
 			"StdinSHA256": "1285da6278f2d38a790a21148d7e683f20de0799c44b937043830ef6b57f58c4",
 			"Output": {
@@ -197,11 +227,11 @@
 				"-x",
 				"-z",
 				"-f",
-				"/tmp/TestAnt932085634/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz",
+				"/tmp/TestAnt259522114/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz",
 				"--strip-components",
 				"1"
 			],
-			"Dir": "/tmp/TestAnt932085634/002/.cache/yb/tools/java/openjdk8.265+01",
+			"Dir": "/tmp/TestAnt259522114/002/.cache/yb/tools/java/openjdk8.265+01",
 			"Output": {
 				"Combined": ""
 			}
@@ -210,7 +240,7 @@
 			"Argv": [
 				"rm",
 				"-f",
-				"/tmp/TestAnt932085634/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
+				"/tmp/TestAnt259522114/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
 			],
 			"Output": {
 				"Combined": ""
@@ -221,7 +251,7 @@
 				"readlink",
 				"--canonicalize-existing",
 				"--no-newline",
-				"/tmp/TestAnt932085634/002/.cache/yb/tools/ant/apache-ant-1.10.9"
+				"/tmp/TestAnt259522114/002/.cache/yb/tools/ant/apache-ant-1.10.9"
 			],
 			"Output": {
 				"Stdout": "",
@@ -233,7 +263,7 @@
 			"Argv": [
 				"mkdir",
 				"-p",
-				"/tmp/TestAnt932085634/002/.cache/yb/tools/ant/apache-ant-1.10.9"
+				"/tmp/TestAnt259522114/002/.cache/yb/tools/ant/apache-ant-1.10.9"
 			],
 			"Output": {
 				"Stderr": ""
@@ -242,7 +272,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/tmp/TestAnt932085634/002/.cache/yb/tools/ant/apache-ant-1.10.9.zip"
+				"/tmp/TestAnt259522114/002/.cache/yb/tools/ant/apache-ant-1.10.9.zip"
 			],
 			"StdinSHA256": "6e09f110c363f10de95b24532050a028c6e4307b1e8edc0e614edfc32f62ba70",
 			"Output": {
@@ -253,9 +283,9 @@
 			"Argv": [
 				"unzip",
 				"-q",
-				"/tmp/TestAnt932085634/002/.cache/yb/tools/ant/apache-ant-1.10.9.zip"
+				"/tmp/TestAnt259522114/002/.cache/yb/tools/ant/apache-ant-1.10.9.zip"
 			],
-			"Dir": "/tmp/TestAnt932085634/002/.cache/yb/tools/ant/apache-ant-1.10.9",
+			"Dir": "/tmp/TestAnt259522114/002/.cache/yb/tools/ant/apache-ant-1.10.9",
 			"Output": {
 				"Combined": ""
 			}
@@ -280,7 +310,7 @@
 				"apache-ant-1.10.9/patch.xml",
 				"."
 			],
-			"Dir": "/tmp/TestAnt932085634/002/.cache/yb/tools/ant/apache-ant-1.10.9",
+			"Dir": "/tmp/TestAnt259522114/002/.cache/yb/tools/ant/apache-ant-1.10.9",
 			"Output": {
 				"Combined": ""
 			}
@@ -290,7 +320,7 @@
 				"rmdir",
 				"apache-ant-1.10.9"
 			],
-			"Dir": "/tmp/TestAnt932085634/002/.cache/yb/tools/ant/apache-ant-1.10.9",
+			"Dir": "/tmp/TestAnt259522114/002/.cache/yb/tools/ant/apache-ant-1.10.9",
 			"Output": {
 				"Combined": ""
 			}
@@ -299,7 +329,7 @@
 			"Argv": [
 				"rm",
 				"-f",
-				"/tmp/TestAnt932085634/002/.cache/yb/tools/ant/apache-ant-1.10.9.zip"
+				"/tmp/TestAnt259522114/002/.cache/yb/tools/ant/apache-ant-1.10.9.zip"
 			],
 			"Output": {
 				"Combined": ""
@@ -311,11 +341,11 @@
 				"-version"
 			],
 			"EnvVars": {
-				"JAVA_HOME": "/tmp/TestAnt932085634/002/.cache/yb/tools/java/openjdk8.265+01"
+				"JAVA_HOME": "/tmp/TestAnt259522114/002/.cache/yb/tools/java/openjdk8.265+01"
 			},
 			"PrependPath": [
-				"/tmp/TestAnt932085634/002/.cache/yb/tools/ant/apache-ant-1.10.9/bin",
-				"/tmp/TestAnt932085634/002/.cache/yb/tools/java/openjdk8.265+01/bin"
+				"/tmp/TestAnt259522114/002/.cache/yb/tools/ant/apache-ant-1.10.9/bin",
+				"/tmp/TestAnt259522114/002/.cache/yb/tools/java/openjdk8.265+01/bin"
 			],
 			"Output": {
 				"Combined": "QXBhY2hlIEFudChUTSkgdmVyc2lvbiAxLjEwLjkgY29tcGlsZWQgb24gU2VwdGVtYmVyIDI3IDIwMjAK"

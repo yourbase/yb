@@ -4,34 +4,42 @@
 		"Arch": "amd64"
 	},
 	"Dirs": {
-		"Package": "/tmp/TestJava388630661/001",
-		"Home": "/tmp/TestJava388630661/002",
-		"Tools": "/tmp/TestJava388630661/002/.cache/yb/tools"
+		"Package": "/tmp/TestJava022111301/001",
+		"Home": "/tmp/TestJava022111301/002",
+		"Tools": "/tmp/TestJava022111301/002/.cache/yb/tools"
 	},
 	"JoinedPaths": [
 		{
 			"Elems": [
-				"/tmp/TestJava388630661/002/.cache/yb/tools",
+				"/tmp/TestJava022111301/002/.cache/yb/tools",
 				"java",
 				"openjdk15+36"
 			],
-			"Result": "/tmp/TestJava388630661/002/.cache/yb/tools/java/openjdk15+36"
+			"Result": "/tmp/TestJava022111301/002/.cache/yb/tools/java/openjdk15+36"
 		},
 		{
 			"Elems": [
-				"/tmp/TestJava388630661/002/.cache/yb/tools/java/openjdk15+36",
+				"/tmp/TestJava022111301/002/.cache/yb/tools/java/openjdk15+36",
 				"bin"
 			],
-			"Result": "/tmp/TestJava388630661/002/.cache/yb/tools/java/openjdk15+36/bin"
+			"Result": "/tmp/TestJava022111301/002/.cache/yb/tools/java/openjdk15+36/bin"
+		},
+		{
+			"Elems": [
+				"/tmp/TestJava022111301/002/.cache/yb/tools/java/openjdk15+36"
+			],
+			"Result": "/tmp/TestJava022111301/002/.cache/yb/tools/java/openjdk15+36"
+		},
+		{
+			"Elems": [
+				"/tmp/TestJava022111301/002/.cache/yb/tools/java/openjdk15+36.tar.gz"
+			],
+			"Result": "/tmp/TestJava022111301/002/.cache/yb/tools/java/openjdk15+36.tar.gz"
 		}
 	],
-	"CleanedPaths": {
-		"/tmp/TestJava388630661/002/.cache/yb/tools/java/openjdk15+36": "/tmp/TestJava388630661/002/.cache/yb/tools/java/openjdk15+36",
-		"/tmp/TestJava388630661/002/.cache/yb/tools/java/openjdk15+36.tar.gz": "/tmp/TestJava388630661/002/.cache/yb/tools/java/openjdk15+36.tar.gz"
-	},
 	"AbsPaths": {
-		"/tmp/TestJava388630661/002/.cache/yb/tools/java/openjdk15+36": true,
-		"/tmp/TestJava388630661/002/.cache/yb/tools/java/openjdk15+36.tar.gz": true
+		"/tmp/TestJava022111301/002/.cache/yb/tools/java/openjdk15+36": true,
+		"/tmp/TestJava022111301/002/.cache/yb/tools/java/openjdk15+36.tar.gz": true
 	},
 	"Invocations": [
 		{
@@ -39,7 +47,7 @@
 				"readlink",
 				"--canonicalize-existing",
 				"--no-newline",
-				"/tmp/TestJava388630661/002/.cache/yb/tools/java/openjdk15+36"
+				"/tmp/TestJava022111301/002/.cache/yb/tools/java/openjdk15+36"
 			],
 			"Output": {
 				"Stdout": "",
@@ -51,7 +59,7 @@
 			"Argv": [
 				"mkdir",
 				"-p",
-				"/tmp/TestJava388630661/002/.cache/yb/tools/java/openjdk15+36"
+				"/tmp/TestJava022111301/002/.cache/yb/tools/java/openjdk15+36"
 			],
 			"Output": {
 				"Stderr": ""
@@ -60,7 +68,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/tmp/TestJava388630661/002/.cache/yb/tools/java/openjdk15+36.tar.gz"
+				"/tmp/TestJava022111301/002/.cache/yb/tools/java/openjdk15+36.tar.gz"
 			],
 			"StdinSHA256": "c198593d1b5188ee3570e2ca33c3bc004aaefbda2c11e68e58ae7296cf5c3982",
 			"Output": {
@@ -73,11 +81,11 @@
 				"-x",
 				"-z",
 				"-f",
-				"/tmp/TestJava388630661/002/.cache/yb/tools/java/openjdk15+36.tar.gz",
+				"/tmp/TestJava022111301/002/.cache/yb/tools/java/openjdk15+36.tar.gz",
 				"--strip-components",
 				"1"
 			],
-			"Dir": "/tmp/TestJava388630661/002/.cache/yb/tools/java/openjdk15+36",
+			"Dir": "/tmp/TestJava022111301/002/.cache/yb/tools/java/openjdk15+36",
 			"Output": {
 				"Combined": ""
 			}
@@ -86,7 +94,7 @@
 			"Argv": [
 				"rm",
 				"-f",
-				"/tmp/TestJava388630661/002/.cache/yb/tools/java/openjdk15+36.tar.gz"
+				"/tmp/TestJava022111301/002/.cache/yb/tools/java/openjdk15+36.tar.gz"
 			],
 			"Output": {
 				"Combined": ""
@@ -98,10 +106,10 @@
 				"--version"
 			],
 			"EnvVars": {
-				"JAVA_HOME": "/tmp/TestJava388630661/002/.cache/yb/tools/java/openjdk15+36"
+				"JAVA_HOME": "/tmp/TestJava022111301/002/.cache/yb/tools/java/openjdk15+36"
 			},
 			"PrependPath": [
-				"/tmp/TestJava388630661/002/.cache/yb/tools/java/openjdk15+36/bin"
+				"/tmp/TestJava022111301/002/.cache/yb/tools/java/openjdk15+36/bin"
 			],
 			"Output": {
 				"Combined": "b3BlbmpkayAxNSAyMDIwLTA5LTE1Ck9wZW5KREsgUnVudGltZSBFbnZpcm9ubWVudCBBZG9wdE9wZW5KREsgKGJ1aWxkIDE1KzM2KQpPcGVuSkRLIDY0LUJpdCBTZXJ2ZXIgVk0gQWRvcHRPcGVuSkRLIChidWlsZCAxNSszNiwgbWl4ZWQgbW9kZSwgc2hhcmluZykK"
@@ -113,10 +121,10 @@
 				"--version"
 			],
 			"EnvVars": {
-				"JAVA_HOME": "/tmp/TestJava388630661/002/.cache/yb/tools/java/openjdk15+36"
+				"JAVA_HOME": "/tmp/TestJava022111301/002/.cache/yb/tools/java/openjdk15+36"
 			},
 			"PrependPath": [
-				"/tmp/TestJava388630661/002/.cache/yb/tools/java/openjdk15+36/bin"
+				"/tmp/TestJava022111301/002/.cache/yb/tools/java/openjdk15+36/bin"
 			],
 			"Output": {
 				"Combined": "amF2YWMgMTUK"

@@ -4,18 +4,30 @@
 		"Arch": "amd64"
 	},
 	"Dirs": {
-		"Package": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/001",
-		"Home": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002",
-		"Tools": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools"
+		"Package": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK909758807/001",
+		"Home": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK909758807/002",
+		"Tools": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK909758807/002/.cache/yb/tools"
 	},
 	"JoinedPaths": [
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK909758807/002/.cache/yb/tools",
 				"android-ndk",
 				"android-ndk-r21d"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK909758807/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK909758807/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK909758807/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK909758807/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK909758807/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip"
 		},
 		{
 			"Elems": [
@@ -159,20 +171,33 @@
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK909758807/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK909758807/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK909758807/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK909758807/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK909758807/002/.cache/yb/tools/android-ndk/android-ndk-r21d",
 				"ndk-build"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d/ndk-build"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK909758807/002/.cache/yb/tools/android-ndk/android-ndk-r21d/ndk-build"
+		},
+		{
+			"Elems": [
+				"/private/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK909758807/002/.cache/yb/tools/android-ndk/android-ndk-r21d/ndk-build"
+			],
+			"Result": "/private/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK909758807/002/.cache/yb/tools/android-ndk/android-ndk-r21d/ndk-build"
 		}
 	],
-	"CleanedPaths": {
-		"/private/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d/ndk-build": "/private/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d/ndk-build",
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d",
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip"
-	},
 	"AbsPaths": {
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d": true,
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip": true
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK909758807/002/.cache/yb/tools/android-ndk/android-ndk-r21d": true,
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK909758807/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip": true
 	},
 	"Invocations": [
 		{
@@ -180,11 +205,11 @@
 				"python",
 				"-c",
 				"import os, sys; os.stat(sys.argv[1]); sys.stdout.write(os.path.realpath(sys.argv[1]))",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK909758807/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
 			],
 			"Output": {
 				"Stdout": "",
-				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0QW5kcm9pZE5ESzI5ODgwODU0My8wMDIvLmNhY2hlL3liL3Rvb2xzL2FuZHJvaWQtbmRrL2FuZHJvaWQtbmRrLXIyMWQnCg=="
+				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0QW5kcm9pZE5ESzkwOTc1ODgwNy8wMDIvLmNhY2hlL3liL3Rvb2xzL2FuZHJvaWQtbmRrL2FuZHJvaWQtbmRrLXIyMWQnCg=="
 			},
 			"Error": "local run: exit status 1"
 		},
@@ -192,7 +217,7 @@
 			"Argv": [
 				"mkdir",
 				"-p",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK909758807/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
 			],
 			"Output": {
 				"Stderr": ""
@@ -201,7 +226,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK909758807/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip"
 			],
 			"StdinSHA256": "5851115c6fc4cce26bc320295b52da240665d7ff89bda2f5d5af1887582f5c48",
 			"Output": {
@@ -212,9 +237,9 @@
 			"Argv": [
 				"unzip",
 				"-q",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK909758807/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip"
 			],
-			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d",
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK909758807/002/.cache/yb/tools/android-ndk/android-ndk-r21d",
 			"Output": {
 				"Combined": ""
 			}
@@ -244,7 +269,7 @@
 				"android-ndk-r21d/wrap.sh",
 				"."
 			],
-			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d",
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK909758807/002/.cache/yb/tools/android-ndk/android-ndk-r21d",
 			"Output": {
 				"Combined": ""
 			}
@@ -254,7 +279,7 @@
 				"rmdir",
 				"android-ndk-r21d"
 			],
-			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d",
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK909758807/002/.cache/yb/tools/android-ndk/android-ndk-r21d",
 			"Output": {
 				"Combined": ""
 			}
@@ -263,7 +288,7 @@
 			"Argv": [
 				"rm",
 				"-f",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK909758807/002/.cache/yb/tools/android-ndk/android-ndk-r21d.zip"
 			],
 			"Output": {
 				"Combined": ""
@@ -274,13 +299,13 @@
 				"python",
 				"-c",
 				"import os, sys; os.stat(sys.argv[1]); sys.stdout.write(os.path.realpath(sys.argv[1]))",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d/ndk-build"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK909758807/002/.cache/yb/tools/android-ndk/android-ndk-r21d/ndk-build"
 			],
 			"EnvVars": {
-				"ANDROID_NDK_HOME": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK298808543/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
+				"ANDROID_NDK_HOME": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidNDK909758807/002/.cache/yb/tools/android-ndk/android-ndk-r21d"
 			},
 			"Output": {
-				"Stdout": "L3ByaXZhdGUvdmFyL2ZvbGRlcnMvZ2wvOGt4YzF6eDU3NGIyeWJqdHZ4aDQ3ank0MDAwMGtrL1QvVGVzdEFuZHJvaWROREsyOTg4MDg1NDMvMDAyLy5jYWNoZS95Yi90b29scy9hbmRyb2lkLW5kay9hbmRyb2lkLW5kay1yMjFkL25kay1idWlsZA==",
+				"Stdout": "L3ByaXZhdGUvdmFyL2ZvbGRlcnMvZ2wvOGt4YzF6eDU3NGIyeWJqdHZ4aDQ3ank0MDAwMGtrL1QvVGVzdEFuZHJvaWROREs5MDk3NTg4MDcvMDAyLy5jYWNoZS95Yi90b29scy9hbmRyb2lkLW5kay9hbmRyb2lkLW5kay1yMjFkL25kay1idWlsZA==",
 				"Stderr": ""
 			}
 		}

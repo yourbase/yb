@@ -4,61 +4,79 @@
 		"Arch": "amd64"
 	},
 	"Dirs": {
-		"Package": "/tmp/TestYarn948816547/001",
-		"Home": "/tmp/TestYarn948816547/002",
-		"Tools": "/tmp/TestYarn948816547/002/.cache/yb/tools"
+		"Package": "/tmp/TestYarn598226019/001",
+		"Home": "/tmp/TestYarn598226019/002",
+		"Tools": "/tmp/TestYarn598226019/002/.cache/yb/tools"
 	},
 	"JoinedPaths": [
 		{
 			"Elems": [
-				"/tmp/TestYarn948816547/002/.cache/yb/tools",
+				"/tmp/TestYarn598226019/002/.cache/yb/tools",
 				"nodejs",
 				"node-12.19.0"
 			],
-			"Result": "/tmp/TestYarn948816547/002/.cache/yb/tools/nodejs/node-12.19.0"
+			"Result": "/tmp/TestYarn598226019/002/.cache/yb/tools/nodejs/node-12.19.0"
 		},
 		{
 			"Elems": [
-				"/tmp/TestYarn948816547/001",
+				"/tmp/TestYarn598226019/001",
 				"node_modules",
 				".bin"
 			],
-			"Result": "/tmp/TestYarn948816547/001/node_modules/.bin"
+			"Result": "/tmp/TestYarn598226019/001/node_modules/.bin"
 		},
 		{
 			"Elems": [
-				"/tmp/TestYarn948816547/002/.cache/yb/tools/nodejs/node-12.19.0",
+				"/tmp/TestYarn598226019/002/.cache/yb/tools/nodejs/node-12.19.0",
 				"bin"
 			],
-			"Result": "/tmp/TestYarn948816547/002/.cache/yb/tools/nodejs/node-12.19.0/bin"
+			"Result": "/tmp/TestYarn598226019/002/.cache/yb/tools/nodejs/node-12.19.0/bin"
 		},
 		{
 			"Elems": [
-				"/tmp/TestYarn948816547/002/.cache/yb/tools",
+				"/tmp/TestYarn598226019/002/.cache/yb/tools/nodejs/node-12.19.0"
+			],
+			"Result": "/tmp/TestYarn598226019/002/.cache/yb/tools/nodejs/node-12.19.0"
+		},
+		{
+			"Elems": [
+				"/tmp/TestYarn598226019/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz"
+			],
+			"Result": "/tmp/TestYarn598226019/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz"
+		},
+		{
+			"Elems": [
+				"/tmp/TestYarn598226019/002/.cache/yb/tools",
 				"yarn",
 				"yarn-v1.22.10"
 			],
-			"Result": "/tmp/TestYarn948816547/002/.cache/yb/tools/yarn/yarn-v1.22.10"
+			"Result": "/tmp/TestYarn598226019/002/.cache/yb/tools/yarn/yarn-v1.22.10"
 		},
 		{
 			"Elems": [
-				"/tmp/TestYarn948816547/002/.cache/yb/tools/yarn/yarn-v1.22.10",
+				"/tmp/TestYarn598226019/002/.cache/yb/tools/yarn/yarn-v1.22.10",
 				"bin"
 			],
-			"Result": "/tmp/TestYarn948816547/002/.cache/yb/tools/yarn/yarn-v1.22.10/bin"
+			"Result": "/tmp/TestYarn598226019/002/.cache/yb/tools/yarn/yarn-v1.22.10/bin"
+		},
+		{
+			"Elems": [
+				"/tmp/TestYarn598226019/002/.cache/yb/tools/yarn/yarn-v1.22.10"
+			],
+			"Result": "/tmp/TestYarn598226019/002/.cache/yb/tools/yarn/yarn-v1.22.10"
+		},
+		{
+			"Elems": [
+				"/tmp/TestYarn598226019/002/.cache/yb/tools/yarn/yarn-v1.22.10.tar.gz"
+			],
+			"Result": "/tmp/TestYarn598226019/002/.cache/yb/tools/yarn/yarn-v1.22.10.tar.gz"
 		}
 	],
-	"CleanedPaths": {
-		"/tmp/TestYarn948816547/002/.cache/yb/tools/nodejs/node-12.19.0": "/tmp/TestYarn948816547/002/.cache/yb/tools/nodejs/node-12.19.0",
-		"/tmp/TestYarn948816547/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz": "/tmp/TestYarn948816547/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz",
-		"/tmp/TestYarn948816547/002/.cache/yb/tools/yarn/yarn-v1.22.10": "/tmp/TestYarn948816547/002/.cache/yb/tools/yarn/yarn-v1.22.10",
-		"/tmp/TestYarn948816547/002/.cache/yb/tools/yarn/yarn-v1.22.10.tar.gz": "/tmp/TestYarn948816547/002/.cache/yb/tools/yarn/yarn-v1.22.10.tar.gz"
-	},
 	"AbsPaths": {
-		"/tmp/TestYarn948816547/002/.cache/yb/tools/nodejs/node-12.19.0": true,
-		"/tmp/TestYarn948816547/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz": true,
-		"/tmp/TestYarn948816547/002/.cache/yb/tools/yarn/yarn-v1.22.10": true,
-		"/tmp/TestYarn948816547/002/.cache/yb/tools/yarn/yarn-v1.22.10.tar.gz": true
+		"/tmp/TestYarn598226019/002/.cache/yb/tools/nodejs/node-12.19.0": true,
+		"/tmp/TestYarn598226019/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz": true,
+		"/tmp/TestYarn598226019/002/.cache/yb/tools/yarn/yarn-v1.22.10": true,
+		"/tmp/TestYarn598226019/002/.cache/yb/tools/yarn/yarn-v1.22.10.tar.gz": true
 	},
 	"Invocations": [
 		{
@@ -66,7 +84,7 @@
 				"readlink",
 				"--canonicalize-existing",
 				"--no-newline",
-				"/tmp/TestYarn948816547/002/.cache/yb/tools/nodejs/node-12.19.0"
+				"/tmp/TestYarn598226019/002/.cache/yb/tools/nodejs/node-12.19.0"
 			],
 			"Output": {
 				"Stdout": "",
@@ -78,7 +96,7 @@
 			"Argv": [
 				"mkdir",
 				"-p",
-				"/tmp/TestYarn948816547/002/.cache/yb/tools/nodejs/node-12.19.0"
+				"/tmp/TestYarn598226019/002/.cache/yb/tools/nodejs/node-12.19.0"
 			],
 			"Output": {
 				"Stderr": ""
@@ -87,7 +105,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/tmp/TestYarn948816547/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz"
+				"/tmp/TestYarn598226019/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz"
 			],
 			"StdinSHA256": "f37a5bf0965e8ab7b1b078392638778286ceee8fdb895c050889a61772944bda",
 			"Output": {
@@ -100,11 +118,11 @@
 				"-x",
 				"-z",
 				"-f",
-				"/tmp/TestYarn948816547/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz",
+				"/tmp/TestYarn598226019/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz",
 				"--strip-components",
 				"1"
 			],
-			"Dir": "/tmp/TestYarn948816547/002/.cache/yb/tools/nodejs/node-12.19.0",
+			"Dir": "/tmp/TestYarn598226019/002/.cache/yb/tools/nodejs/node-12.19.0",
 			"Output": {
 				"Combined": ""
 			}
@@ -113,7 +131,7 @@
 			"Argv": [
 				"rm",
 				"-f",
-				"/tmp/TestYarn948816547/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz"
+				"/tmp/TestYarn598226019/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz"
 			],
 			"Output": {
 				"Combined": ""
@@ -124,7 +142,7 @@
 				"readlink",
 				"--canonicalize-existing",
 				"--no-newline",
-				"/tmp/TestYarn948816547/002/.cache/yb/tools/yarn/yarn-v1.22.10"
+				"/tmp/TestYarn598226019/002/.cache/yb/tools/yarn/yarn-v1.22.10"
 			],
 			"Output": {
 				"Stdout": "",
@@ -136,7 +154,7 @@
 			"Argv": [
 				"mkdir",
 				"-p",
-				"/tmp/TestYarn948816547/002/.cache/yb/tools/yarn/yarn-v1.22.10"
+				"/tmp/TestYarn598226019/002/.cache/yb/tools/yarn/yarn-v1.22.10"
 			],
 			"Output": {
 				"Stderr": ""
@@ -145,7 +163,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/tmp/TestYarn948816547/002/.cache/yb/tools/yarn/yarn-v1.22.10.tar.gz"
+				"/tmp/TestYarn598226019/002/.cache/yb/tools/yarn/yarn-v1.22.10.tar.gz"
 			],
 			"StdinSHA256": "7e433d4a77e2c79e6a7ae4866782608a8e8bcad3ec6783580577c59538381a6e",
 			"Output": {
@@ -158,11 +176,11 @@
 				"-x",
 				"-z",
 				"-f",
-				"/tmp/TestYarn948816547/002/.cache/yb/tools/yarn/yarn-v1.22.10.tar.gz",
+				"/tmp/TestYarn598226019/002/.cache/yb/tools/yarn/yarn-v1.22.10.tar.gz",
 				"--strip-components",
 				"1"
 			],
-			"Dir": "/tmp/TestYarn948816547/002/.cache/yb/tools/yarn/yarn-v1.22.10",
+			"Dir": "/tmp/TestYarn598226019/002/.cache/yb/tools/yarn/yarn-v1.22.10",
 			"Output": {
 				"Combined": ""
 			}
@@ -171,7 +189,7 @@
 			"Argv": [
 				"rm",
 				"-f",
-				"/tmp/TestYarn948816547/002/.cache/yb/tools/yarn/yarn-v1.22.10.tar.gz"
+				"/tmp/TestYarn598226019/002/.cache/yb/tools/yarn/yarn-v1.22.10.tar.gz"
 			],
 			"Output": {
 				"Combined": ""
@@ -183,12 +201,12 @@
 				"--version"
 			],
 			"EnvVars": {
-				"NODE_PATH": "/tmp/TestYarn948816547/001"
+				"NODE_PATH": "/tmp/TestYarn598226019/001"
 			},
 			"PrependPath": [
-				"/tmp/TestYarn948816547/002/.cache/yb/tools/yarn/yarn-v1.22.10/bin",
-				"/tmp/TestYarn948816547/001/node_modules/.bin",
-				"/tmp/TestYarn948816547/002/.cache/yb/tools/nodejs/node-12.19.0/bin"
+				"/tmp/TestYarn598226019/002/.cache/yb/tools/yarn/yarn-v1.22.10/bin",
+				"/tmp/TestYarn598226019/001/node_modules/.bin",
+				"/tmp/TestYarn598226019/002/.cache/yb/tools/nodejs/node-12.19.0/bin"
 			],
 			"Output": {
 				"Combined": "MS4yMi4xMAo="

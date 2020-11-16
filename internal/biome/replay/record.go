@@ -51,10 +51,9 @@ func NewRecorder(dir string, bio biome.Biome) *Recorder {
 		biome: bio,
 		dir:   dir,
 		data: &replayData{
-			Descriptor:   bio.Describe(),
-			Dirs:         bio.Dirs(),
-			CleanedPaths: make(map[string]string),
-			AbsPaths:     make(map[string]bool),
+			Descriptor: bio.Describe(),
+			Dirs:       bio.Dirs(),
+			AbsPaths:   make(map[string]bool),
 		},
 	}
 }
@@ -188,14 +187,6 @@ func (rec *Recorder) JoinPath(elem ...string) string {
 		Elems:  append([]string(nil), elem...),
 		Result: got,
 	})
-	return got
-}
-
-func (rec *Recorder) CleanPath(path string) string {
-	got := rec.biome.CleanPath(path)
-	rec.mu.Lock()
-	defer rec.mu.Unlock()
-	rec.data.CleanedPaths[path] = got
 	return got
 }
 

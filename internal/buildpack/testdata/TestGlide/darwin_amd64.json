@@ -4,32 +4,40 @@
 		"Arch": "amd64"
 	},
 	"Dirs": {
-		"Package": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide673429146/001",
-		"Home": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide673429146/002",
-		"Tools": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide673429146/002/.cache/yb/tools"
+		"Package": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide720202162/001",
+		"Home": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide720202162/002",
+		"Tools": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide720202162/002/.cache/yb/tools"
 	},
 	"JoinedPaths": [
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide673429146/002/.cache/yb/tools",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide720202162/002/.cache/yb/tools",
 				"glide-0.13.3"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide673429146/002/.cache/yb/tools/glide-0.13.3"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide720202162/002/.cache/yb/tools/glide-0.13.3"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide673429146/002/.cache/yb/tools/glide-0.13.3"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide720202162/002/.cache/yb/tools/glide-0.13.3"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide673429146/002/.cache/yb/tools/glide-0.13.3"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide720202162/002/.cache/yb/tools/glide-0.13.3"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide720202162/002/.cache/yb/tools/glide-0.13.3"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide720202162/002/.cache/yb/tools/glide-0.13.3"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide720202162/002/.cache/yb/tools/glide-0.13.3.tar.gz"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide720202162/002/.cache/yb/tools/glide-0.13.3.tar.gz"
 		}
 	],
-	"CleanedPaths": {
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide673429146/002/.cache/yb/tools/glide-0.13.3": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide673429146/002/.cache/yb/tools/glide-0.13.3",
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide673429146/002/.cache/yb/tools/glide-0.13.3.tar.gz": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide673429146/002/.cache/yb/tools/glide-0.13.3.tar.gz"
-	},
 	"AbsPaths": {
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide673429146/002/.cache/yb/tools/glide-0.13.3": true,
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide673429146/002/.cache/yb/tools/glide-0.13.3.tar.gz": true
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide720202162/002/.cache/yb/tools/glide-0.13.3": true,
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide720202162/002/.cache/yb/tools/glide-0.13.3.tar.gz": true
 	},
 	"Invocations": [
 		{
@@ -37,11 +45,11 @@
 				"python",
 				"-c",
 				"import os, sys; os.stat(sys.argv[1]); sys.stdout.write(os.path.realpath(sys.argv[1]))",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide673429146/002/.cache/yb/tools/glide-0.13.3"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide720202162/002/.cache/yb/tools/glide-0.13.3"
 			],
 			"Output": {
 				"Stdout": "",
-				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0R2xpZGU2NzM0MjkxNDYvMDAyLy5jYWNoZS95Yi90b29scy9nbGlkZS0wLjEzLjMnCg=="
+				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0R2xpZGU3MjAyMDIxNjIvMDAyLy5jYWNoZS95Yi90b29scy9nbGlkZS0wLjEzLjMnCg=="
 			},
 			"Error": "local run: exit status 1"
 		},
@@ -49,7 +57,7 @@
 			"Argv": [
 				"mkdir",
 				"-p",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide673429146/002/.cache/yb/tools/glide-0.13.3"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide720202162/002/.cache/yb/tools/glide-0.13.3"
 			],
 			"Output": {
 				"Stderr": ""
@@ -58,7 +66,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide673429146/002/.cache/yb/tools/glide-0.13.3.tar.gz"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide720202162/002/.cache/yb/tools/glide-0.13.3.tar.gz"
 			],
 			"StdinSHA256": "cd8e51c1c81e7588b285c6ceb38ac83fd2d34fcdceeb67389b4bd0c238ec07d6",
 			"Output": {
@@ -71,11 +79,11 @@
 				"-x",
 				"-z",
 				"-f",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide673429146/002/.cache/yb/tools/glide-0.13.3.tar.gz",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide720202162/002/.cache/yb/tools/glide-0.13.3.tar.gz",
 				"--strip-components",
 				"1"
 			],
-			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide673429146/002/.cache/yb/tools/glide-0.13.3",
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide720202162/002/.cache/yb/tools/glide-0.13.3",
 			"Output": {
 				"Combined": ""
 			}
@@ -84,7 +92,7 @@
 			"Argv": [
 				"rm",
 				"-f",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide673429146/002/.cache/yb/tools/glide-0.13.3.tar.gz"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide720202162/002/.cache/yb/tools/glide-0.13.3.tar.gz"
 			],
 			"Output": {
 				"Combined": ""
@@ -96,7 +104,7 @@
 				"--version"
 			],
 			"PrependPath": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide673429146/002/.cache/yb/tools/glide-0.13.3"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGlide720202162/002/.cache/yb/tools/glide-0.13.3"
 			],
 			"Output": {
 				"Combined": "Z2xpZGUgdmVyc2lvbiB2MC4xMy4zCg=="

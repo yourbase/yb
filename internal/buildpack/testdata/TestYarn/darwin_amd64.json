@@ -4,61 +4,79 @@
 		"Arch": "amd64"
 	},
 	"Dirs": {
-		"Package": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/001",
-		"Home": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002",
-		"Tools": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools"
+		"Package": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/001",
+		"Home": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002",
+		"Tools": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools"
 	},
 	"JoinedPaths": [
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools",
 				"nodejs",
 				"node-12.19.0"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools/nodejs/node-12.19.0"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools/nodejs/node-12.19.0"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/001",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/001",
 				"node_modules",
 				".bin"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/001/node_modules/.bin"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/001/node_modules/.bin"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools/nodejs/node-12.19.0",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools/nodejs/node-12.19.0",
 				"bin"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools/nodejs/node-12.19.0/bin"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools/nodejs/node-12.19.0/bin"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools/nodejs/node-12.19.0"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools/nodejs/node-12.19.0"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools",
 				"yarn",
 				"yarn-v1.22.10"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools/yarn/yarn-v1.22.10"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools/yarn/yarn-v1.22.10"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools/yarn/yarn-v1.22.10",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools/yarn/yarn-v1.22.10",
 				"bin"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools/yarn/yarn-v1.22.10/bin"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools/yarn/yarn-v1.22.10/bin"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools/yarn/yarn-v1.22.10"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools/yarn/yarn-v1.22.10"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools/yarn/yarn-v1.22.10.tar.gz"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools/yarn/yarn-v1.22.10.tar.gz"
 		}
 	],
-	"CleanedPaths": {
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools/nodejs/node-12.19.0": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools/nodejs/node-12.19.0",
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz",
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools/yarn/yarn-v1.22.10": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools/yarn/yarn-v1.22.10",
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools/yarn/yarn-v1.22.10.tar.gz": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools/yarn/yarn-v1.22.10.tar.gz"
-	},
 	"AbsPaths": {
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools/nodejs/node-12.19.0": true,
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz": true,
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools/yarn/yarn-v1.22.10": true,
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools/yarn/yarn-v1.22.10.tar.gz": true
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools/nodejs/node-12.19.0": true,
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz": true,
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools/yarn/yarn-v1.22.10": true,
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools/yarn/yarn-v1.22.10.tar.gz": true
 	},
 	"Invocations": [
 		{
@@ -66,11 +84,11 @@
 				"python",
 				"-c",
 				"import os, sys; os.stat(sys.argv[1]); sys.stdout.write(os.path.realpath(sys.argv[1]))",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools/nodejs/node-12.19.0"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools/nodejs/node-12.19.0"
 			],
 			"Output": {
 				"Stdout": "",
-				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0WWFybjY1Nzg1Njk4Mi8wMDIvLmNhY2hlL3liL3Rvb2xzL25vZGVqcy9ub2RlLTEyLjE5LjAnCg=="
+				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0WWFybjAxMzAyOTIzMC8wMDIvLmNhY2hlL3liL3Rvb2xzL25vZGVqcy9ub2RlLTEyLjE5LjAnCg=="
 			},
 			"Error": "local run: exit status 1"
 		},
@@ -78,7 +96,7 @@
 			"Argv": [
 				"mkdir",
 				"-p",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools/nodejs/node-12.19.0"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools/nodejs/node-12.19.0"
 			],
 			"Output": {
 				"Stderr": ""
@@ -87,7 +105,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz"
 			],
 			"StdinSHA256": "751482c5060c2b705bd63739300a8d06bb33bcfacaf616eec78bbc20c55a627b",
 			"Output": {
@@ -100,11 +118,11 @@
 				"-x",
 				"-z",
 				"-f",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz",
 				"--strip-components",
 				"1"
 			],
-			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools/nodejs/node-12.19.0",
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools/nodejs/node-12.19.0",
 			"Output": {
 				"Combined": ""
 			}
@@ -113,7 +131,7 @@
 			"Argv": [
 				"rm",
 				"-f",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz"
 			],
 			"Output": {
 				"Combined": ""
@@ -124,11 +142,11 @@
 				"python",
 				"-c",
 				"import os, sys; os.stat(sys.argv[1]); sys.stdout.write(os.path.realpath(sys.argv[1]))",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools/yarn/yarn-v1.22.10"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools/yarn/yarn-v1.22.10"
 			],
 			"Output": {
 				"Stdout": "",
-				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0WWFybjY1Nzg1Njk4Mi8wMDIvLmNhY2hlL3liL3Rvb2xzL3lhcm4veWFybi12MS4yMi4xMCcK"
+				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0WWFybjAxMzAyOTIzMC8wMDIvLmNhY2hlL3liL3Rvb2xzL3lhcm4veWFybi12MS4yMi4xMCcK"
 			},
 			"Error": "local run: exit status 1"
 		},
@@ -136,7 +154,7 @@
 			"Argv": [
 				"mkdir",
 				"-p",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools/yarn/yarn-v1.22.10"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools/yarn/yarn-v1.22.10"
 			],
 			"Output": {
 				"Stderr": ""
@@ -145,7 +163,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools/yarn/yarn-v1.22.10.tar.gz"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools/yarn/yarn-v1.22.10.tar.gz"
 			],
 			"StdinSHA256": "7e433d4a77e2c79e6a7ae4866782608a8e8bcad3ec6783580577c59538381a6e",
 			"Output": {
@@ -158,11 +176,11 @@
 				"-x",
 				"-z",
 				"-f",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools/yarn/yarn-v1.22.10.tar.gz",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools/yarn/yarn-v1.22.10.tar.gz",
 				"--strip-components",
 				"1"
 			],
-			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools/yarn/yarn-v1.22.10",
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools/yarn/yarn-v1.22.10",
 			"Output": {
 				"Combined": ""
 			}
@@ -171,7 +189,7 @@
 			"Argv": [
 				"rm",
 				"-f",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools/yarn/yarn-v1.22.10.tar.gz"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools/yarn/yarn-v1.22.10.tar.gz"
 			],
 			"Output": {
 				"Combined": ""
@@ -183,12 +201,12 @@
 				"--version"
 			],
 			"EnvVars": {
-				"NODE_PATH": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/001"
+				"NODE_PATH": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/001"
 			},
 			"PrependPath": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools/yarn/yarn-v1.22.10/bin",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/001/node_modules/.bin",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn657856982/002/.cache/yb/tools/nodejs/node-12.19.0/bin"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools/yarn/yarn-v1.22.10/bin",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/001/node_modules/.bin",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestYarn013029230/002/.cache/yb/tools/nodejs/node-12.19.0/bin"
 			],
 			"Output": {
 				"Combined": "MS4yMi4xMAo="

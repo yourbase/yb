@@ -58,11 +58,10 @@ type Biome interface {
 	// path/filepath package, but operate on the biome's filesystem paths.
 
 	// JoinPath joins any number of path elements into a single path.
+	// The result is cleaned as if by path/filepath.Clean, however, if the
+	// argument list is empty or all its elements are empty, JoinPath
+	// returns an empty string.
 	JoinPath(elem ...string) string
-
-	// CleanPath returns the shortest path name equivalent to path by purely
-	// lexical processing.
-	CleanPath(path string) string
 
 	// IsAbsPath reports whether the path is absolute.
 	IsAbsPath(path string) bool
@@ -225,11 +224,6 @@ func (l Local) lookPath(env Environment, program string) (string, error) {
 // JoinPath calls filepath.Join.
 func (l Local) JoinPath(elem ...string) string {
 	return filepath.Join(elem...)
-}
-
-// CleanPath calls filepath.Clean.
-func (l Local) CleanPath(path string) string {
-	return filepath.Clean(path)
 }
 
 // IsAbsPath calls filepath.IsAbs.

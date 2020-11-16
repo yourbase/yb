@@ -4,63 +4,87 @@
 		"Arch": "amd64"
 	},
 	"Dirs": {
-		"Package": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/001",
-		"Home": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002",
-		"Tools": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools"
+		"Package": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/001",
+		"Home": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002",
+		"Tools": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools"
 	},
 	"JoinedPaths": [
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools",
 				"java",
 				"openjdk8.265+01"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/java/openjdk8.265+01"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/java/openjdk8.265+01"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/java/openjdk8.265+01",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/java/openjdk8.265+01",
 				"Contents",
 				"Home"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home",
 				"bin"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home/bin"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home/bin"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/java/openjdk8.265+01"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/java/openjdk8.265+01"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools",
 				"android",
 				"android-4333796"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796",
 				"tools"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/tools"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/tools"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796",
 				"tools",
 				"bin"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/tools/bin"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/tools/bin"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796",
 				"tools"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/tools"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/tools"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/tools"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/tools"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/tools.zip"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/tools.zip"
 		},
 		{
 			"Elems": [
@@ -141,65 +165,71 @@
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/tools"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/tools"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/tools"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/tools"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796",
 				"licenses"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/licenses"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/licenses"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/licenses",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/licenses",
 				"android-googletv-license"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/licenses/android-googletv-license"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/licenses/android-googletv-license"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/licenses",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/licenses",
 				"android-sdk-license"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/licenses/android-sdk-license"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/licenses/android-sdk-license"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/licenses",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/licenses",
 				"android-sdk-preview-license"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/licenses/android-sdk-preview-license"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/licenses/android-sdk-preview-license"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/licenses",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/licenses",
 				"google-gdk-license"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/licenses/google-gdk-license"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/licenses/google-gdk-license"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/licenses",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/licenses",
 				"intel-android-extra-license"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/licenses/intel-android-extra-license"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/licenses/intel-android-extra-license"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/licenses",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/licenses",
 				"mips-android-sysimage-license"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/licenses/mips-android-sysimage-license"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/licenses/mips-android-sysimage-license"
 		}
 	],
-	"CleanedPaths": {
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/tools": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/tools",
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/tools.zip": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/tools.zip",
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/java/openjdk8.265+01": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/java/openjdk8.265+01",
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
-	},
 	"AbsPaths": {
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/tools": true,
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/tools.zip": true,
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/java/openjdk8.265+01": true,
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz": true
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/tools": true,
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/tools.zip": true,
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/java/openjdk8.265+01": true,
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz": true
 	},
 	"Invocations": [
 		{
@@ -207,11 +237,11 @@
 				"python",
 				"-c",
 				"import os, sys; os.stat(sys.argv[1]); sys.stdout.write(os.path.realpath(sys.argv[1]))",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home"
 			],
 			"Output": {
 				"Stdout": "",
-				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0QW5kcm9pZFNESzI4NTIyOTIzNC8wMDIvLmNhY2hlL3liL3Rvb2xzL2phdmEvb3BlbmpkazguMjY1KzAxL0NvbnRlbnRzL0hvbWUnCg=="
+				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0QW5kcm9pZFNESzIyNjQwNDA0Mi8wMDIvLmNhY2hlL3liL3Rvb2xzL2phdmEvb3BlbmpkazguMjY1KzAxL0NvbnRlbnRzL0hvbWUnCg=="
 			},
 			"Error": "local run: exit status 1"
 		},
@@ -219,7 +249,7 @@
 			"Argv": [
 				"mkdir",
 				"-p",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/java/openjdk8.265+01"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/java/openjdk8.265+01"
 			],
 			"Output": {
 				"Stderr": ""
@@ -228,7 +258,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
 			],
 			"StdinSHA256": "f316b154e8c4a99b95bc3d07add3c9b19609c541a2f297112f274c1abce1efb4",
 			"Output": {
@@ -241,11 +271,11 @@
 				"-x",
 				"-z",
 				"-f",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz",
 				"--strip-components",
 				"1"
 			],
-			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/java/openjdk8.265+01",
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/java/openjdk8.265+01",
 			"Output": {
 				"Combined": ""
 			}
@@ -254,7 +284,7 @@
 			"Argv": [
 				"rm",
 				"-f",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
 			],
 			"Output": {
 				"Combined": ""
@@ -265,11 +295,11 @@
 				"python",
 				"-c",
 				"import os, sys; os.stat(sys.argv[1]); sys.stdout.write(os.path.realpath(sys.argv[1]))",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/tools"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/tools"
 			],
 			"Output": {
 				"Stdout": "",
-				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0QW5kcm9pZFNESzI4NTIyOTIzNC8wMDIvLmNhY2hlL3liL3Rvb2xzL2FuZHJvaWQvYW5kcm9pZC00MzMzNzk2L3Rvb2xzJwo="
+				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0QW5kcm9pZFNESzIyNjQwNDA0Mi8wMDIvLmNhY2hlL3liL3Rvb2xzL2FuZHJvaWQvYW5kcm9pZC00MzMzNzk2L3Rvb2xzJwo="
 			},
 			"Error": "local run: exit status 1"
 		},
@@ -277,7 +307,7 @@
 			"Argv": [
 				"mkdir",
 				"-p",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/tools"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/tools"
 			],
 			"Output": {
 				"Stderr": ""
@@ -286,7 +316,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/tools.zip"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/tools.zip"
 			],
 			"StdinSHA256": "ecb29358bc0f13d7c2fa0f9290135a5b608e38434aad9bf7067d0252c160853e",
 			"Output": {
@@ -297,9 +327,9 @@
 			"Argv": [
 				"unzip",
 				"-q",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/tools.zip"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/tools.zip"
 			],
-			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/tools",
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/tools",
 			"Output": {
 				"Combined": ""
 			}
@@ -320,7 +350,7 @@
 				"tools/support",
 				"."
 			],
-			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/tools",
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/tools",
 			"Output": {
 				"Combined": ""
 			}
@@ -330,7 +360,7 @@
 				"rmdir",
 				"tools"
 			],
-			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/tools",
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/tools",
 			"Output": {
 				"Combined": ""
 			}
@@ -339,7 +369,7 @@
 			"Argv": [
 				"rm",
 				"-f",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/tools.zip"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/tools.zip"
 			],
 			"Output": {
 				"Combined": ""
@@ -349,7 +379,7 @@
 			"Argv": [
 				"mkdir",
 				"-p",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/licenses"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/licenses"
 			],
 			"Output": {
 				"Stderr": ""
@@ -358,7 +388,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/licenses/android-googletv-license"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/licenses/android-googletv-license"
 			],
 			"StdinSHA256": "3f31fae63c343da47fd7731d9d850c9a25d382d379e4216287ebeafdbe473291",
 			"Output": {
@@ -368,7 +398,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/licenses/android-sdk-license"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/licenses/android-sdk-license"
 			],
 			"StdinSHA256": "e4cb32e27aa4991e39e1082d82812a85dd2500c0adc55f228cc4660b32148505",
 			"Output": {
@@ -378,7 +408,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/licenses/android-sdk-preview-license"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/licenses/android-sdk-preview-license"
 			],
 			"StdinSHA256": "5b219be22224244e4a0b5e0ee2ae2003afc736329f4ec7644a378a93eed5ee10",
 			"Output": {
@@ -388,7 +418,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/licenses/google-gdk-license"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/licenses/google-gdk-license"
 			],
 			"StdinSHA256": "e227a28274a1585f33ed5e5efdb13cfd7f80f6763abb6bda41e33699c9ad0db0",
 			"Output": {
@@ -398,7 +428,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/licenses/intel-android-extra-license"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/licenses/intel-android-extra-license"
 			],
 			"StdinSHA256": "4a4065416c2cffdb38842404eb5290716858ad07a42f2c5ebcf42fb0d78a9999",
 			"Output": {
@@ -408,7 +438,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/licenses/mips-android-sysimage-license"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/licenses/mips-android-sysimage-license"
 			],
 			"StdinSHA256": "868d9a1c85e914236f2caca59927ebc6e86043ba869a5c439e5ea77c73111697",
 			"Output": {
@@ -422,17 +452,17 @@
 				"tools"
 			],
 			"EnvVars": {
-				"ANDROID_HOME": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796",
-				"ANDROID_SDK_ROOT": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796",
-				"JAVA_HOME": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home"
+				"ANDROID_HOME": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796",
+				"ANDROID_SDK_ROOT": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796",
+				"JAVA_HOME": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home"
 			},
 			"PrependPath": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/tools/bin",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/android/android-4333796/tools",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK285229234/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home/bin"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/tools/bin",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/android/android-4333796/tools",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAndroidSDK226404042/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home/bin"
 			],
 			"Output": {
-				"Combined": "TG9hZGluZyBwYWNrYWdlIGluZm9ybWF0aW9uLi4uICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICANTG9hZGluZyBsb2NhbCByZXBvc2l0b3J5Li4uICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICANWyAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gMyUgTG9hZGluZyBsb2NhbCByZXBvc2l0b3J5Li4uICAgICAgICANWyAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gMyUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWyAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gMyUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gMyUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gNCUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICANV2FybmluZzogRmlsZSAvVXNlcnMvdXNlcjkyNTIyNC8uYW5kcm9pZC9yZXBvc2l0b3JpZXMuY2ZnIGNvdWxkIG5vdCBiZSBsb2FkZWQuCls9ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDQlIEZldGNoIHJlbW90ZSByZXBvc2l0b3J5Li4uICAgICAgICAgDVs9ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDQlIEZldGNoIHJlbW90ZSByZXBvc2l0b3J5Li4uICAgICAgICAgDVs9ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDUlIEZldGNoIHJlbW90ZSByZXBvc2l0b3J5Li4uICAgICAgICAgDVs9ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDUlIEZldGNoIHJlbW90ZSByZXBvc2l0b3J5Li4uICAgICAgICAgDVs9ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDUlIEZldGNoIHJlbW90ZSByZXBvc2l0b3J5Li4uICAgICAgICAgDVs9ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDUlIEZldGNoIHJlbW90ZSByZXBvc2l0b3J5Li4uICAgICAgICAgDVs9ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDUlIEZldGNoIHJlbW90ZSByZXBvc2l0b3J5Li4uICAgICAgICAgDVs9ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDUlIEZldGNoIHJlbW90ZSByZXBvc2l0b3J5Li4uICAgICAgICAgDVs9PSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDUlIEZldGNoIHJlbW90ZSByZXBvc2l0b3J5Li4uICAgICAgICAgDVs9PSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDUlIEZldGNoIHJlbW90ZSByZXBvc2l0b3J5Li4uICAgICAgICAgDVs9PSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDUlIEZldGNoIHJlbW90ZSByZXBvc2l0b3J5Li4uICAgICAgICAgDVs9PSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDUlIEZldGNoIHJlbW90ZSByZXBvc2l0b3J5Li4uICAgICAgICAgDVs9PSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDUlIEZldGNoIHJlbW90ZSByZXBvc2l0b3J5Li4uICAgICAgICAgDVs9PSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDUlIEZldGNoIHJlbW90ZSByZXBvc2l0b3J5Li4uICAgICAgICAgDVs9PSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDUlIEZldGNoIHJlbW90ZSByZXBvc2l0b3J5Li4uICAgICAgICAgDVs9PSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDYlIEZldGNoIHJlbW90ZSByZXBvc2l0b3J5Li4uICAgICAgICAgDVs9PSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDYlIEZldGNoIHJlbW90ZSByZXBvc2l0b3J5Li4uICAgICAgICAgDVs9PSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDYlIEZldGNoIHJlbW90ZSByZXBvc2l0b3J5Li4uICAgICAgICAgDVs9PSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDYlIEZldGNoIHJlbW90ZSByZXBvc2l0b3J5Li4uICAgICAgICAgDVs9PSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDYlIEZldGNoIHJlbW90ZSByZXBvc2l0b3J5Li4uICAgICAgICAgDVs9PSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDYlIEZldGNoIHJlbW90ZSByZXBvc2l0b3J5Li4uICAgICAgICAgDVs9PSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDYlIEZldGNoIHJlbW90ZSByZXBvc2l0b3J5Li4uICAgICAgICAgDVs9PSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDYlIENvbXB1dGluZyB1cGRhdGVzLi4uICAgICAgICAgICAgICAgDVs9PT0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDglIENvbXB1dGluZyB1cGRhdGVzLi4uICAgICAgICAgICAgICAgDVs9PT0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDglIENvbXB1dGluZyB1cGRhdGVzLi4uICAgICAgICAgICAgICAgDVs9PT0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDEwJSBDb21wdXRpbmcgdXBkYXRlcy4uLiAgICAgICAgICAgICAgDVs9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT1dIDEwMCUgQ29tcHV0aW5nIHVwZGF0ZXMuLi4gICAgICAgICAgICAgDQo="
+				"Combined": "TG9hZGluZyBwYWNrYWdlIGluZm9ybWF0aW9uLi4uICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICANTG9hZGluZyBsb2NhbCByZXBvc2l0b3J5Li4uICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICANWyAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gMyUgTG9hZGluZyBsb2NhbCByZXBvc2l0b3J5Li4uICAgICAgICANWyAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gMyUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWyAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gMyUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gMyUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gMyUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gMyUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gMyUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gMyUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gMyUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gMyUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gMyUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gMyUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gMyUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gMyUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gMyUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gNCUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gNCUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gNCUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gNCUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gNCUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gNCUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gNCUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gNCUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANWz0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIF0gNCUgRmV0Y2ggcmVtb3RlIHJlcG9zaXRvcnkuLi4gICAgICAgICANICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICANV2FybmluZzogRmlsZSAvVXNlcnMvdXNlcjkyNTIyNC8uYW5kcm9pZC9yZXBvc2l0b3JpZXMuY2ZnIGNvdWxkIG5vdCBiZSBsb2FkZWQuCls9ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDQlIEZldGNoIHJlbW90ZSByZXBvc2l0b3J5Li4uICAgICAgICAgDVs9PSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDUlIEZldGNoIHJlbW90ZSByZXBvc2l0b3J5Li4uICAgICAgICAgDVs9PSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDYlIEZldGNoIHJlbW90ZSByZXBvc2l0b3J5Li4uICAgICAgICAgDVs9PSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDYlIENvbXB1dGluZyB1cGRhdGVzLi4uICAgICAgICAgICAgICAgDVs9PT0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDglIENvbXB1dGluZyB1cGRhdGVzLi4uICAgICAgICAgICAgICAgDVs9PT0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDglIENvbXB1dGluZyB1cGRhdGVzLi4uICAgICAgICAgICAgICAgDVs9PT0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBdIDEwJSBDb21wdXRpbmcgdXBkYXRlcy4uLiAgICAgICAgICAgICAgDVs9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT1dIDEwMCUgQ29tcHV0aW5nIHVwZGF0ZXMuLi4gICAgICAgICAgICAgDQo="
 			}
 		}
 	]

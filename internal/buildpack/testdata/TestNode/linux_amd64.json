@@ -4,42 +4,50 @@
 		"Arch": "amd64"
 	},
 	"Dirs": {
-		"Package": "/tmp/TestNode852767806/001",
-		"Home": "/tmp/TestNode852767806/002",
-		"Tools": "/tmp/TestNode852767806/002/.cache/yb/tools"
+		"Package": "/tmp/TestNode251636990/001",
+		"Home": "/tmp/TestNode251636990/002",
+		"Tools": "/tmp/TestNode251636990/002/.cache/yb/tools"
 	},
 	"JoinedPaths": [
 		{
 			"Elems": [
-				"/tmp/TestNode852767806/002/.cache/yb/tools",
+				"/tmp/TestNode251636990/002/.cache/yb/tools",
 				"nodejs",
 				"node-12.19.0"
 			],
-			"Result": "/tmp/TestNode852767806/002/.cache/yb/tools/nodejs/node-12.19.0"
+			"Result": "/tmp/TestNode251636990/002/.cache/yb/tools/nodejs/node-12.19.0"
 		},
 		{
 			"Elems": [
-				"/tmp/TestNode852767806/001",
+				"/tmp/TestNode251636990/001",
 				"node_modules",
 				".bin"
 			],
-			"Result": "/tmp/TestNode852767806/001/node_modules/.bin"
+			"Result": "/tmp/TestNode251636990/001/node_modules/.bin"
 		},
 		{
 			"Elems": [
-				"/tmp/TestNode852767806/002/.cache/yb/tools/nodejs/node-12.19.0",
+				"/tmp/TestNode251636990/002/.cache/yb/tools/nodejs/node-12.19.0",
 				"bin"
 			],
-			"Result": "/tmp/TestNode852767806/002/.cache/yb/tools/nodejs/node-12.19.0/bin"
+			"Result": "/tmp/TestNode251636990/002/.cache/yb/tools/nodejs/node-12.19.0/bin"
+		},
+		{
+			"Elems": [
+				"/tmp/TestNode251636990/002/.cache/yb/tools/nodejs/node-12.19.0"
+			],
+			"Result": "/tmp/TestNode251636990/002/.cache/yb/tools/nodejs/node-12.19.0"
+		},
+		{
+			"Elems": [
+				"/tmp/TestNode251636990/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz"
+			],
+			"Result": "/tmp/TestNode251636990/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz"
 		}
 	],
-	"CleanedPaths": {
-		"/tmp/TestNode852767806/002/.cache/yb/tools/nodejs/node-12.19.0": "/tmp/TestNode852767806/002/.cache/yb/tools/nodejs/node-12.19.0",
-		"/tmp/TestNode852767806/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz": "/tmp/TestNode852767806/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz"
-	},
 	"AbsPaths": {
-		"/tmp/TestNode852767806/002/.cache/yb/tools/nodejs/node-12.19.0": true,
-		"/tmp/TestNode852767806/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz": true
+		"/tmp/TestNode251636990/002/.cache/yb/tools/nodejs/node-12.19.0": true,
+		"/tmp/TestNode251636990/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz": true
 	},
 	"Invocations": [
 		{
@@ -47,7 +55,7 @@
 				"readlink",
 				"--canonicalize-existing",
 				"--no-newline",
-				"/tmp/TestNode852767806/002/.cache/yb/tools/nodejs/node-12.19.0"
+				"/tmp/TestNode251636990/002/.cache/yb/tools/nodejs/node-12.19.0"
 			],
 			"Output": {
 				"Stdout": "",
@@ -59,7 +67,7 @@
 			"Argv": [
 				"mkdir",
 				"-p",
-				"/tmp/TestNode852767806/002/.cache/yb/tools/nodejs/node-12.19.0"
+				"/tmp/TestNode251636990/002/.cache/yb/tools/nodejs/node-12.19.0"
 			],
 			"Output": {
 				"Stderr": ""
@@ -68,7 +76,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/tmp/TestNode852767806/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz"
+				"/tmp/TestNode251636990/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz"
 			],
 			"StdinSHA256": "f37a5bf0965e8ab7b1b078392638778286ceee8fdb895c050889a61772944bda",
 			"Output": {
@@ -81,11 +89,11 @@
 				"-x",
 				"-z",
 				"-f",
-				"/tmp/TestNode852767806/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz",
+				"/tmp/TestNode251636990/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz",
 				"--strip-components",
 				"1"
 			],
-			"Dir": "/tmp/TestNode852767806/002/.cache/yb/tools/nodejs/node-12.19.0",
+			"Dir": "/tmp/TestNode251636990/002/.cache/yb/tools/nodejs/node-12.19.0",
 			"Output": {
 				"Combined": ""
 			}
@@ -94,7 +102,7 @@
 			"Argv": [
 				"rm",
 				"-f",
-				"/tmp/TestNode852767806/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz"
+				"/tmp/TestNode251636990/002/.cache/yb/tools/nodejs/node-12.19.0.tar.gz"
 			],
 			"Output": {
 				"Combined": ""
@@ -106,11 +114,11 @@
 				"--version"
 			],
 			"EnvVars": {
-				"NODE_PATH": "/tmp/TestNode852767806/001"
+				"NODE_PATH": "/tmp/TestNode251636990/001"
 			},
 			"PrependPath": [
-				"/tmp/TestNode852767806/001/node_modules/.bin",
-				"/tmp/TestNode852767806/002/.cache/yb/tools/nodejs/node-12.19.0/bin"
+				"/tmp/TestNode251636990/001/node_modules/.bin",
+				"/tmp/TestNode251636990/002/.cache/yb/tools/nodejs/node-12.19.0/bin"
 			],
 			"Output": {
 				"Combined": "djEyLjE5LjAK"

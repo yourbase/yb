@@ -4,48 +4,72 @@
 		"Arch": "amd64"
 	},
 	"Dirs": {
-		"Package": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/001",
-		"Home": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002",
-		"Tools": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools"
+		"Package": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/001",
+		"Home": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002",
+		"Tools": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools"
 	},
 	"JoinedPaths": [
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools",
 				"java",
 				"openjdk8.265+01"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/java/openjdk8.265+01"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/java/openjdk8.265+01"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/java/openjdk8.265+01",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/java/openjdk8.265+01",
 				"Contents",
 				"Home"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home",
 				"bin"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home/bin"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home/bin"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/java/openjdk8.265+01"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/java/openjdk8.265+01"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools",
 				"ant",
 				"apache-ant-1.10.9"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/ant/apache-ant-1.10.9"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/ant/apache-ant-1.10.9"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/ant/apache-ant-1.10.9",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/ant/apache-ant-1.10.9",
 				"bin"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/ant/apache-ant-1.10.9/bin"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/ant/apache-ant-1.10.9/bin"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/ant/apache-ant-1.10.9"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/ant/apache-ant-1.10.9"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/ant/apache-ant-1.10.9.zip"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/ant/apache-ant-1.10.9.zip"
 		},
 		{
 			"Elems": [
@@ -151,19 +175,25 @@
 				"patch.xml"
 			],
 			"Result": "apache-ant-1.10.9/patch.xml"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/ant/apache-ant-1.10.9"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/ant/apache-ant-1.10.9"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/ant/apache-ant-1.10.9"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/ant/apache-ant-1.10.9"
 		}
 	],
-	"CleanedPaths": {
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/ant/apache-ant-1.10.9": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/ant/apache-ant-1.10.9",
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/ant/apache-ant-1.10.9.zip": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/ant/apache-ant-1.10.9.zip",
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/java/openjdk8.265+01": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/java/openjdk8.265+01",
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
-	},
 	"AbsPaths": {
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/ant/apache-ant-1.10.9": true,
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/ant/apache-ant-1.10.9.zip": true,
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/java/openjdk8.265+01": true,
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz": true
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/ant/apache-ant-1.10.9": true,
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/ant/apache-ant-1.10.9.zip": true,
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/java/openjdk8.265+01": true,
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz": true
 	},
 	"Invocations": [
 		{
@@ -171,11 +201,11 @@
 				"python",
 				"-c",
 				"import os, sys; os.stat(sys.argv[1]); sys.stdout.write(os.path.realpath(sys.argv[1]))",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home"
 			],
 			"Output": {
 				"Stdout": "",
-				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0QW50MjI0NzYwOTM3LzAwMi8uY2FjaGUveWIvdG9vbHMvamF2YS9vcGVuamRrOC4yNjUrMDEvQ29udGVudHMvSG9tZScK"
+				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0QW50MDk0OTk1ODczLzAwMi8uY2FjaGUveWIvdG9vbHMvamF2YS9vcGVuamRrOC4yNjUrMDEvQ29udGVudHMvSG9tZScK"
 			},
 			"Error": "local run: exit status 1"
 		},
@@ -183,7 +213,7 @@
 			"Argv": [
 				"mkdir",
 				"-p",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/java/openjdk8.265+01"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/java/openjdk8.265+01"
 			],
 			"Output": {
 				"Stderr": ""
@@ -192,7 +222,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
 			],
 			"StdinSHA256": "f316b154e8c4a99b95bc3d07add3c9b19609c541a2f297112f274c1abce1efb4",
 			"Output": {
@@ -205,11 +235,11 @@
 				"-x",
 				"-z",
 				"-f",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz",
 				"--strip-components",
 				"1"
 			],
-			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/java/openjdk8.265+01",
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/java/openjdk8.265+01",
 			"Output": {
 				"Combined": ""
 			}
@@ -218,7 +248,7 @@
 			"Argv": [
 				"rm",
 				"-f",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
 			],
 			"Output": {
 				"Combined": ""
@@ -229,11 +259,11 @@
 				"python",
 				"-c",
 				"import os, sys; os.stat(sys.argv[1]); sys.stdout.write(os.path.realpath(sys.argv[1]))",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/ant/apache-ant-1.10.9"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/ant/apache-ant-1.10.9"
 			],
 			"Output": {
 				"Stdout": "",
-				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0QW50MjI0NzYwOTM3LzAwMi8uY2FjaGUveWIvdG9vbHMvYW50L2FwYWNoZS1hbnQtMS4xMC45Jwo="
+				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0QW50MDk0OTk1ODczLzAwMi8uY2FjaGUveWIvdG9vbHMvYW50L2FwYWNoZS1hbnQtMS4xMC45Jwo="
 			},
 			"Error": "local run: exit status 1"
 		},
@@ -241,7 +271,7 @@
 			"Argv": [
 				"mkdir",
 				"-p",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/ant/apache-ant-1.10.9"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/ant/apache-ant-1.10.9"
 			],
 			"Output": {
 				"Stderr": ""
@@ -250,7 +280,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/ant/apache-ant-1.10.9.zip"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/ant/apache-ant-1.10.9.zip"
 			],
 			"StdinSHA256": "6e09f110c363f10de95b24532050a028c6e4307b1e8edc0e614edfc32f62ba70",
 			"Output": {
@@ -261,9 +291,9 @@
 			"Argv": [
 				"unzip",
 				"-q",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/ant/apache-ant-1.10.9.zip"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/ant/apache-ant-1.10.9.zip"
 			],
-			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/ant/apache-ant-1.10.9",
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/ant/apache-ant-1.10.9",
 			"Output": {
 				"Combined": ""
 			}
@@ -288,7 +318,7 @@
 				"apache-ant-1.10.9/patch.xml",
 				"."
 			],
-			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/ant/apache-ant-1.10.9",
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/ant/apache-ant-1.10.9",
 			"Output": {
 				"Combined": ""
 			}
@@ -298,7 +328,7 @@
 				"rmdir",
 				"apache-ant-1.10.9"
 			],
-			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/ant/apache-ant-1.10.9",
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/ant/apache-ant-1.10.9",
 			"Output": {
 				"Combined": ""
 			}
@@ -307,7 +337,7 @@
 			"Argv": [
 				"rm",
 				"-f",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/ant/apache-ant-1.10.9.zip"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/ant/apache-ant-1.10.9.zip"
 			],
 			"Output": {
 				"Combined": ""
@@ -319,11 +349,11 @@
 				"-version"
 			],
 			"EnvVars": {
-				"JAVA_HOME": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home"
+				"JAVA_HOME": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home"
 			},
 			"PrependPath": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/ant/apache-ant-1.10.9/bin",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt224760937/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home/bin"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/ant/apache-ant-1.10.9/bin",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestAnt094995873/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home/bin"
 			],
 			"Output": {
 				"Combined": "QXBhY2hlIEFudChUTSkgdmVyc2lvbiAxLjEwLjkgY29tcGlsZWQgb24gU2VwdGVtYmVyIDI3IDIwMjAK"
