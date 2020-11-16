@@ -11,10 +11,12 @@ import (
 	"strings"
 
 	docker "github.com/fsouza/go-dockerclient"
+	"github.com/spf13/pflag"
 	"github.com/yourbase/narwhal"
 	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/internal/build"
+	"github.com/yourbase/yb/internal/config"
 	"github.com/yourbase/yb/internal/ybdata"
 	"zombiezen.com/go/log"
 )
@@ -30,13 +32,12 @@ func connectDockerClient(useDocker bool) (*docker.Client, error) {
 	return dockerClient, nil
 }
 
-const netrcFilename = ".netrc"
-
 type newBiomeOptions struct {
 	packageDir string
 	target     string
 	dataDirs   *ybdata.Dirs
 	baseEnv    biome.Environment
+	netrcFiles []string
 
 	dockerClient    *docker.Client
 	targetContainer *narwhal.ContainerDefinition
@@ -52,6 +53,12 @@ func (opts newBiomeOptions) disableDocker() newBiomeOptions {
 }
 
 func newBiome(ctx context.Context, opts newBiomeOptions) (biome.BiomeCloser, error) {
+	log.Debugf(ctx, "Checking for netrc data in %s",
+		append(append([]string(nil), config.DefaultNetrcFiles()...), opts.netrcFiles...))
+	netrc, err := config.CatFiles(config.DefaultNetrcFiles(), opts.netrcFiles)
+	if err != nil {
+		return nil, fmt.Errorf("set up environment for target %s: %w", opts.target, err)
+	}
 	if opts.dockerClient == nil {
 		l := biome.Local{
 			PackageDir: opts.packageDir,
@@ -62,7 +69,7 @@ func newBiome(ctx context.Context, opts newBiomeOptions) (biome.BiomeCloser, err
 			return nil, fmt.Errorf("set up environment for target %s: %w", opts.target, err)
 		}
 		log.Debugf(ctx, "Home located at %s", l.HomeDir)
-		bio, err := injectNetrc(ctx, l)
+		bio, err := injectNetrc(ctx, l, netrc)
 		if err != nil {
 			return nil, fmt.Errorf("set up environment for target %s: %w", opts.target, err)
 		}
@@ -93,7 +100,7 @@ func newBiome(ctx context.Context, opts newBiomeOptions) (biome.BiomeCloser, err
 	if err != nil {
 		return nil, fmt.Errorf("set up environment for target %s: %w", opts.target, err)
 	}
-	bio, err := injectNetrc(ctx, c)
+	bio, err := injectNetrc(ctx, c, netrc)
 	if err != nil {
 		return nil, fmt.Errorf("set up environment for target %s: %w", opts.target, err)
 	}
@@ -103,15 +110,23 @@ func newBiome(ctx context.Context, opts newBiomeOptions) (biome.BiomeCloser, err
 	}, nil
 }
 
-func injectNetrc(ctx context.Context, bio biome.BiomeCloser) (biome.BiomeCloser, error) {
-	const gitHubTokenVar = "YB_GH_TOKEN"
-	token := os.Getenv(gitHubTokenVar)
-	if token == "" {
+// netrcFlagVar registers the --netrc flag.
+func netrcFlagVar(flags *pflag.FlagSet, netrc *[]string) {
+	// StringArray makes every --netrc flag add to the list.
+	// StringSlice does this too, but also permits comma-separated.
+	// (Not great names. It isn't obvious until you look at the source.)
+	flags.StringArrayVar(netrc, "netrc-file", nil, "Inject a netrc `file` (can be passed multiple times to concatenate)")
+}
+
+func injectNetrc(ctx context.Context, bio biome.BiomeCloser, netrc []byte) (biome.BiomeCloser, error) {
+	if len(netrc) == 0 {
+		log.Debugf(ctx, "No .netrc data, skipping")
 		return bio, nil
 	}
+	const netrcFilename = ".netrc"
 	log.Infof(ctx, "Writing .netrc")
 	netrcPath := bio.JoinPath(bio.Dirs().Home, netrcFilename)
-	err := biome.WriteFile(ctx, bio, netrcPath, bytes.NewReader(generateNetrc(token)))
+	err := biome.WriteFile(ctx, bio, netrcPath, bytes.NewReader(netrc))
 	if err != nil {
 		return nil, fmt.Errorf("write netrc: %w", err)
 	}
@@ -120,7 +135,7 @@ func injectNetrc(ctx context.Context, bio biome.BiomeCloser) (biome.BiomeCloser,
 		// Not fatal. File will be removed later.
 		log.Warnf(ctx, "Making temporary .netrc private: %v", err)
 	}
-	bio = biome.WithClose(bio, func() error {
+	return biome.WithClose(bio, func() error {
 		ctx := context.Background()
 		err := runCommand(ctx, bio,
 			"rm", bio.JoinPath(bio.Dirs().Home, netrcFilename))
@@ -128,24 +143,7 @@ func injectNetrc(ctx context.Context, bio biome.BiomeCloser) (biome.BiomeCloser,
 			log.Warnf(ctx, "Could not clean up .netrc: %v", err)
 		}
 		return nil
-	})
-	return biome.EnvBiome{
-		Biome: bio,
-		Env: biome.Environment{
-			Vars: map[string]string{
-				gitHubTokenVar: token,
-			},
-		},
-	}, nil
-}
-
-func generateNetrc(gitHubToken string) []byte {
-	if gitHubToken == "" {
-		return nil
-	}
-	buf := new(bytes.Buffer)
-	fmt.Fprintf(buf, "machine github.com login x-access-token password %s\n", gitHubToken)
-	return buf.Bytes()
+	}), nil
 }
 
 func runCommand(ctx context.Context, bio biome.Biome, argv ...string) error {

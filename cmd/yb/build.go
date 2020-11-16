@@ -32,6 +32,7 @@ const TIME_FORMAT = "15:04:05 MST"
 
 type buildCmd struct {
 	env              []commandLineEnv
+	netrcFiles       []string
 	execPrefix       string
 	noContainer      bool
 	dependenciesOnly bool
@@ -57,6 +58,7 @@ func newBuildCmd() *cobra.Command {
 		},
 	}
 	envFlagsVar(c.Flags(), &b.env)
+	netrcFlagVar(c.Flags(), &b.netrcFiles)
 	c.Flags().BoolVar(&b.noContainer, "no-container", false, "Avoid using Docker if possible")
 	c.Flags().BoolVar(&b.dependenciesOnly, "deps-only", false, "Install only dependencies, don't do anything else")
 	c.Flags().StringVar(&b.execPrefix, "exec-prefix", "", "Add a prefix to all executed commands (useful for timing or wrapping things)")
@@ -127,6 +129,7 @@ func (b *buildCmd) run(ctx context.Context, buildTargetName string) error {
 		execPrefix:   execPrefix,
 		setupOnly:    b.dependenciesOnly,
 		baseEnv:      baseEnv,
+		netrcFiles:   b.netrcFiles,
 	})
 	if buildError != nil {
 		span.SetStatus(codes.Unknown, buildError.Error())
@@ -155,6 +158,7 @@ type doOptions struct {
 	dockerClient    *docker.Client
 	dockerNetworkID string
 	baseEnv         biome.Environment
+	netrcFiles      []string
 	execPrefix      []string
 	setupOnly       bool
 }
@@ -198,6 +202,7 @@ func doTarget(ctx context.Context, pkg *yb.Package, target *yb.BuildTarget, opts
 		target:          target.Name,
 		dataDirs:        opts.dataDirs,
 		baseEnv:         opts.baseEnv,
+		netrcFiles:      opts.netrcFiles,
 		dockerClient:    opts.dockerClient,
 		targetContainer: target.Container.ToNarwhal(),
 		dockerNetworkID: opts.dockerNetworkID,

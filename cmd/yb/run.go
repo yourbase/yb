@@ -14,6 +14,7 @@ import (
 
 type runCmd struct {
 	env         []commandLineEnv
+	netrcFiles  []string
 	target      string
 	noContainer bool
 }
@@ -33,6 +34,7 @@ func newRunCmd() *cobra.Command {
 		},
 	}
 	envFlagsVar(c.Flags(), &b.env)
+	netrcFlagVar(c.Flags(), &b.netrcFiles)
 	c.Flags().StringVarP(&b.target, "target", "t", "default", "The target to run the command in")
 	c.Flags().BoolVar(&b.noContainer, "no-container", false, "Avoid using Docker if possible")
 	return c
@@ -71,6 +73,7 @@ func (b *runCmd) run(ctx context.Context, args []string) error {
 		dockerNetworkID: dockerNetworkID,
 		dataDirs:        dataDirs,
 		baseEnv:         baseEnv,
+		netrcFiles:      b.netrcFiles,
 	})
 	if err != nil {
 		return err
@@ -83,6 +86,7 @@ func (b *runCmd) run(ctx context.Context, args []string) error {
 		target:          execTarget.Name,
 		dataDirs:        dataDirs,
 		baseEnv:         baseEnv,
+		netrcFiles:      b.netrcFiles,
 		dockerClient:    dockerClient,
 		targetContainer: execTarget.Container.ToNarwhal(),
 		dockerNetworkID: dockerNetworkID,
