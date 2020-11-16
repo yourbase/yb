@@ -4,42 +4,50 @@
 		"Arch": "amd64"
 	},
 	"Dirs": {
-		"Package": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava283071952/001",
-		"Home": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava283071952/002",
-		"Tools": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava283071952/002/.cache/yb/tools"
+		"Package": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava527012392/001",
+		"Home": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava527012392/002",
+		"Tools": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava527012392/002/.cache/yb/tools"
 	},
 	"JoinedPaths": [
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava283071952/002/.cache/yb/tools",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava527012392/002/.cache/yb/tools",
 				"java",
 				"openjdk15+36"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava283071952/002/.cache/yb/tools/java/openjdk15+36"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava527012392/002/.cache/yb/tools/java/openjdk15+36"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava283071952/002/.cache/yb/tools/java/openjdk15+36",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava527012392/002/.cache/yb/tools/java/openjdk15+36",
 				"Contents",
 				"Home"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava283071952/002/.cache/yb/tools/java/openjdk15+36/Contents/Home"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava527012392/002/.cache/yb/tools/java/openjdk15+36/Contents/Home"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava283071952/002/.cache/yb/tools/java/openjdk15+36/Contents/Home",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava527012392/002/.cache/yb/tools/java/openjdk15+36/Contents/Home",
 				"bin"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava283071952/002/.cache/yb/tools/java/openjdk15+36/Contents/Home/bin"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava527012392/002/.cache/yb/tools/java/openjdk15+36/Contents/Home/bin"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava527012392/002/.cache/yb/tools/java/openjdk15+36"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava527012392/002/.cache/yb/tools/java/openjdk15+36"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava527012392/002/.cache/yb/tools/java/openjdk15+36.tar.gz"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava527012392/002/.cache/yb/tools/java/openjdk15+36.tar.gz"
 		}
 	],
-	"CleanedPaths": {
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava283071952/002/.cache/yb/tools/java/openjdk15+36": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava283071952/002/.cache/yb/tools/java/openjdk15+36",
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava283071952/002/.cache/yb/tools/java/openjdk15+36.tar.gz": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava283071952/002/.cache/yb/tools/java/openjdk15+36.tar.gz"
-	},
 	"AbsPaths": {
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava283071952/002/.cache/yb/tools/java/openjdk15+36": true,
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava283071952/002/.cache/yb/tools/java/openjdk15+36.tar.gz": true
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava527012392/002/.cache/yb/tools/java/openjdk15+36": true,
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava527012392/002/.cache/yb/tools/java/openjdk15+36.tar.gz": true
 	},
 	"Invocations": [
 		{
@@ -47,11 +55,11 @@
 				"python",
 				"-c",
 				"import os, sys; os.stat(sys.argv[1]); sys.stdout.write(os.path.realpath(sys.argv[1]))",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava283071952/002/.cache/yb/tools/java/openjdk15+36/Contents/Home"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava527012392/002/.cache/yb/tools/java/openjdk15+36/Contents/Home"
 			],
 			"Output": {
 				"Stdout": "",
-				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0SmF2YTI4MzA3MTk1Mi8wMDIvLmNhY2hlL3liL3Rvb2xzL2phdmEvb3BlbmpkazE1KzM2L0NvbnRlbnRzL0hvbWUnCg=="
+				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0SmF2YTUyNzAxMjM5Mi8wMDIvLmNhY2hlL3liL3Rvb2xzL2phdmEvb3BlbmpkazE1KzM2L0NvbnRlbnRzL0hvbWUnCg=="
 			},
 			"Error": "local run: exit status 1"
 		},
@@ -59,7 +67,7 @@
 			"Argv": [
 				"mkdir",
 				"-p",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava283071952/002/.cache/yb/tools/java/openjdk15+36"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava527012392/002/.cache/yb/tools/java/openjdk15+36"
 			],
 			"Output": {
 				"Stderr": ""
@@ -68,7 +76,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava283071952/002/.cache/yb/tools/java/openjdk15+36.tar.gz"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava527012392/002/.cache/yb/tools/java/openjdk15+36.tar.gz"
 			],
 			"StdinSHA256": "bd1fc774232e2dfee93056a01f5765bd92ffb19d68dd548c233a82bb5c162be4",
 			"Output": {
@@ -81,11 +89,11 @@
 				"-x",
 				"-z",
 				"-f",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava283071952/002/.cache/yb/tools/java/openjdk15+36.tar.gz",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava527012392/002/.cache/yb/tools/java/openjdk15+36.tar.gz",
 				"--strip-components",
 				"1"
 			],
-			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava283071952/002/.cache/yb/tools/java/openjdk15+36",
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava527012392/002/.cache/yb/tools/java/openjdk15+36",
 			"Output": {
 				"Combined": ""
 			}
@@ -94,7 +102,7 @@
 			"Argv": [
 				"rm",
 				"-f",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava283071952/002/.cache/yb/tools/java/openjdk15+36.tar.gz"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava527012392/002/.cache/yb/tools/java/openjdk15+36.tar.gz"
 			],
 			"Output": {
 				"Combined": ""
@@ -106,10 +114,10 @@
 				"--version"
 			],
 			"EnvVars": {
-				"JAVA_HOME": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava283071952/002/.cache/yb/tools/java/openjdk15+36/Contents/Home"
+				"JAVA_HOME": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava527012392/002/.cache/yb/tools/java/openjdk15+36/Contents/Home"
 			},
 			"PrependPath": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava283071952/002/.cache/yb/tools/java/openjdk15+36/Contents/Home/bin"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava527012392/002/.cache/yb/tools/java/openjdk15+36/Contents/Home/bin"
 			],
 			"Output": {
 				"Combined": "b3BlbmpkayAxNSAyMDIwLTA5LTE1Ck9wZW5KREsgUnVudGltZSBFbnZpcm9ubWVudCBBZG9wdE9wZW5KREsgKGJ1aWxkIDE1KzM2KQpPcGVuSkRLIDY0LUJpdCBTZXJ2ZXIgVk0gQWRvcHRPcGVuSkRLIChidWlsZCAxNSszNiwgbWl4ZWQgbW9kZSwgc2hhcmluZykK"
@@ -121,10 +129,10 @@
 				"--version"
 			],
 			"EnvVars": {
-				"JAVA_HOME": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava283071952/002/.cache/yb/tools/java/openjdk15+36/Contents/Home"
+				"JAVA_HOME": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava527012392/002/.cache/yb/tools/java/openjdk15+36/Contents/Home"
 			},
 			"PrependPath": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava283071952/002/.cache/yb/tools/java/openjdk15+36/Contents/Home/bin"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestJava527012392/002/.cache/yb/tools/java/openjdk15+36/Contents/Home/bin"
 			],
 			"Output": {
 				"Combined": "amF2YWMgMTUK"

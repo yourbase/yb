@@ -4,34 +4,42 @@
 		"Arch": "amd64"
 	},
 	"Dirs": {
-		"Package": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc802099951/001",
-		"Home": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc802099951/002",
-		"Tools": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc802099951/002/.cache/yb/tools"
+		"Package": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc928861031/001",
+		"Home": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc928861031/002",
+		"Tools": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc928861031/002/.cache/yb/tools"
 	},
 	"JoinedPaths": [
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc802099951/002/.cache/yb/tools",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc928861031/002/.cache/yb/tools",
 				"protoc",
 				"protoc-3.13.0"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc802099951/002/.cache/yb/tools/protoc/protoc-3.13.0"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc928861031/002/.cache/yb/tools/protoc/protoc-3.13.0"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc802099951/002/.cache/yb/tools/protoc/protoc-3.13.0",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc928861031/002/.cache/yb/tools/protoc/protoc-3.13.0",
 				"bin"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc802099951/002/.cache/yb/tools/protoc/protoc-3.13.0/bin"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc928861031/002/.cache/yb/tools/protoc/protoc-3.13.0/bin"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc928861031/002/.cache/yb/tools/protoc/protoc-3.13.0"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc928861031/002/.cache/yb/tools/protoc/protoc-3.13.0"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc928861031/002/.cache/yb/tools/protoc/protoc-3.13.0.zip"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc928861031/002/.cache/yb/tools/protoc/protoc-3.13.0.zip"
 		}
 	],
-	"CleanedPaths": {
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc802099951/002/.cache/yb/tools/protoc/protoc-3.13.0": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc802099951/002/.cache/yb/tools/protoc/protoc-3.13.0",
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc802099951/002/.cache/yb/tools/protoc/protoc-3.13.0.zip": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc802099951/002/.cache/yb/tools/protoc/protoc-3.13.0.zip"
-	},
 	"AbsPaths": {
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc802099951/002/.cache/yb/tools/protoc/protoc-3.13.0": true,
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc802099951/002/.cache/yb/tools/protoc/protoc-3.13.0.zip": true
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc928861031/002/.cache/yb/tools/protoc/protoc-3.13.0": true,
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc928861031/002/.cache/yb/tools/protoc/protoc-3.13.0.zip": true
 	},
 	"Invocations": [
 		{
@@ -39,11 +47,11 @@
 				"python",
 				"-c",
 				"import os, sys; os.stat(sys.argv[1]); sys.stdout.write(os.path.realpath(sys.argv[1]))",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc802099951/002/.cache/yb/tools/protoc/protoc-3.13.0"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc928861031/002/.cache/yb/tools/protoc/protoc-3.13.0"
 			],
 			"Output": {
 				"Stdout": "",
-				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0UHJvdG9jODAyMDk5OTUxLzAwMi8uY2FjaGUveWIvdG9vbHMvcHJvdG9jL3Byb3RvYy0zLjEzLjAnCg=="
+				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0UHJvdG9jOTI4ODYxMDMxLzAwMi8uY2FjaGUveWIvdG9vbHMvcHJvdG9jL3Byb3RvYy0zLjEzLjAnCg=="
 			},
 			"Error": "local run: exit status 1"
 		},
@@ -51,7 +59,7 @@
 			"Argv": [
 				"mkdir",
 				"-p",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc802099951/002/.cache/yb/tools/protoc/protoc-3.13.0"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc928861031/002/.cache/yb/tools/protoc/protoc-3.13.0"
 			],
 			"Output": {
 				"Stderr": ""
@@ -60,7 +68,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc802099951/002/.cache/yb/tools/protoc/protoc-3.13.0.zip"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc928861031/002/.cache/yb/tools/protoc/protoc-3.13.0.zip"
 			],
 			"StdinSHA256": "a201954cc7d1a309b5f4feacd23a0abcf3ffc20eb15e79c9a0856a5804f6c34c",
 			"Output": {
@@ -71,9 +79,9 @@
 			"Argv": [
 				"unzip",
 				"-q",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc802099951/002/.cache/yb/tools/protoc/protoc-3.13.0.zip"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc928861031/002/.cache/yb/tools/protoc/protoc-3.13.0.zip"
 			],
-			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc802099951/002/.cache/yb/tools/protoc/protoc-3.13.0",
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc928861031/002/.cache/yb/tools/protoc/protoc-3.13.0",
 			"Output": {
 				"Combined": ""
 			}
@@ -82,7 +90,7 @@
 			"Argv": [
 				"rm",
 				"-f",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc802099951/002/.cache/yb/tools/protoc/protoc-3.13.0.zip"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc928861031/002/.cache/yb/tools/protoc/protoc-3.13.0.zip"
 			],
 			"Output": {
 				"Combined": ""
@@ -94,7 +102,7 @@
 				"--version"
 			],
 			"PrependPath": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc802099951/002/.cache/yb/tools/protoc/protoc-3.13.0/bin"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestProtoc928861031/002/.cache/yb/tools/protoc/protoc-3.13.0/bin"
 			],
 			"Output": {
 				"Combined": "bGlicHJvdG9jIDMuMTMuMAo="
