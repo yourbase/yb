@@ -17,6 +17,7 @@ const defaultExecEnvironment = "default"
 type execCmd struct {
 	execEnvName string
 	env         []commandLineEnv
+	netrcFiles  []string
 }
 
 func newExecCmd() *cobra.Command {
@@ -33,8 +34,9 @@ func newExecCmd() *cobra.Command {
 		},
 	}
 	envFlagsVar(c.Flags(), &b.env)
+	netrcFlagVar(c.Flags(), &b.netrcFiles)
 	// TODO(light): Use a less confusing name for this flag when it is using targets.
-	c.Flags().StringVarP(&b.execEnvName, "environment", "", defaultExecEnvironment, "Environment to run as")
+	c.Flags().StringVar(&b.execEnvName, "environment", defaultExecEnvironment, "Environment to run as")
 	return c
 }
 
@@ -66,6 +68,7 @@ func (b *execCmd) run(ctx context.Context) error {
 		target:          b.execEnvName,
 		dataDirs:        dataDirs,
 		baseEnv:         baseEnv,
+		netrcFiles:      b.netrcFiles,
 		dockerClient:    dockerClient,
 		targetContainer: pkg.Manifest.Exec.Container.ToNarwhal(),
 		dockerNetworkID: dockerNetworkID,

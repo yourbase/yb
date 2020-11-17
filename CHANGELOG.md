@@ -10,15 +10,16 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 ### Added
 
--  yb will display a message on startup if the obsolete `$HOME/.yourbase`
-   directory exists, encouraging its deletion to save disk space.
--  A new `--debug` flag shows debug logs for any command.
--  If the `YB_GH_TOKEN` environment variable is set, the environment variable
-   will be available in the build commands' environment and in a temporary
-   [.netrc file](https://ec.haxx.se/usingcurl/usingcurl-netrc).
 -  `yb build`, `yb exec`, and `yb run` now all support two new flags: `--env`
    and `--env-file`. These flags set environment variables in the execution
    environment.
+-  A new `--netrc-file` flag for `build`, `exec`, and `run` inject a
+   [.netrc file](https://ec.haxx.se/usingcurl/usingcurl-netrc) into the build
+   environment. This is combined with any credentials stored in an
+   `$XDG_CONFIG_HOME/yb/netrc` file.
+-  A new `--debug` flag shows debug logs for any command.
+-  yb will display a message on startup if the obsolete `$HOME/.yourbase`
+   directory exists, encouraging its deletion to save disk space.
 
 ### Changed
 
