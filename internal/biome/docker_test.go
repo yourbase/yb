@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	docker "github.com/fsouza/go-dockerclient"
+	"github.com/yourbase/narwhal"
 	"zombiezen.com/go/log/testlog"
 )
 
@@ -48,9 +49,15 @@ func TestContainer(t *testing.T) {
 		t.Skip("Docker not available:", err)
 	}
 	packageDir := t.TempDir()
-	const fname = "foo.txt"
-	const want = "Hello, World!\n"
-	if err := ioutil.WriteFile(filepath.Join(packageDir, fname), []byte(want), 0666); err != nil {
+	const fname1 = "foo.txt"
+	const want1 = "Hello, World!\n"
+	if err := ioutil.WriteFile(filepath.Join(packageDir, fname1), []byte(want1), 0666); err != nil {
+		t.Fatal(err)
+	}
+	mountDir := t.TempDir()
+	const fname2 = "bar.txt"
+	const want2 = "Line from an additional mount...\n"
+	if err := ioutil.WriteFile(filepath.Join(mountDir, fname2), []byte(want2), 0666); err != nil {
 		t.Fatal(err)
 	}
 	tiniResp, err := http.Get(TiniURL)
@@ -65,6 +72,11 @@ func TestContainer(t *testing.T) {
 		HomeDir:    t.TempDir(),
 		TiniExe:    tiniResp.Body,
 		PullOutput: pullOutput,
+		Definition: &narwhal.ContainerDefinition{
+			Mounts: []string{
+				mountDir + ":/mymount",
+			},
+		},
 	})
 	if pullOutput.Len() > 0 {
 		t.Logf("Pull:\n%s", pullOutput)
@@ -81,7 +93,7 @@ func TestContainer(t *testing.T) {
 	stdout := new(strings.Builder)
 	stderr := new(strings.Builder)
 	err = c.Run(ctx, &Invocation{
-		Argv:   []string{"cat", fname},
+		Argv:   []string{"cat", fname1, "/mymount/" + fname2},
 		Stdout: stdout,
 		Stderr: stderr,
 	})
@@ -91,6 +103,7 @@ func TestContainer(t *testing.T) {
 	if stderr.Len() > 0 {
 		t.Logf("stderr:\n%s", stderr)
 	}
+	const want = want1 + want2
 	if got := stdout.String(); got != want {
 		t.Errorf("stdout = %q; want %q", got, want)
 	}
