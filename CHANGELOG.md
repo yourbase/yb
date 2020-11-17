@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog][], and this project adheres to
 -  `yb build`, `yb exec`, and `yb run` now all support two new flags: `--env`
    and `--env-file`. These flags set environment variables in the execution
    environment.
--  A new `--netrc` flag for `build`, `exec`, and `run` inject a
+-  A new `--netrc-file` flag for `build`, `exec`, and `run` inject a
    [.netrc file](https://ec.haxx.se/usingcurl/usingcurl-netrc) into the build
    environment. This is combined with any credentials stored in an
    `$XDG_CONFIG_HOME/yb/netrc` file.
