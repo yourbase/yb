@@ -77,12 +77,12 @@ const containerHome = "/home/yourbase"
 
 func (opts *ContainerOptions) definition() (*narwhal.ContainerDefinition, error) {
 	defn := new(narwhal.ContainerDefinition)
-	var bits [4]byte
 	if opts.Definition != nil {
 		*defn = *opts.Definition
 	}
 	// TODO(light): Randomness is necessary because Narwhal names are not unique
 	// by default.
+	var bits [4]byte
 	if _, err := rand.Read(bits[:]); err != nil {
 		return nil, err
 	}
@@ -93,10 +93,10 @@ func (opts *ContainerOptions) definition() (*narwhal.ContainerDefinition, error)
 	if defn.WorkDir == "" {
 		defn.WorkDir = "/workspace"
 	}
-	defn.Mounts = []string{
-		opts.PackageDir + ":" + defn.WorkDir,
-		opts.HomeDir + ":" + containerHome,
-	}
+	defn.Mounts = append(defn.Mounts,
+		opts.PackageDir+":"+defn.WorkDir,
+		opts.HomeDir+":"+containerHome,
+	)
 	defn.Argv = []string{tiniPath, "-g", "--", "tail", "-f", "/dev/null"}
 	return defn, nil
 }
