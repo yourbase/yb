@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 Version 0.5.1 fixes a major regression in `yb build` behavior.
 
+[0.5.1]: https://github.com/yourbase/yb/releases/tag/v0.5.1
+
 ### Fixed
 
 -  Regression: `yb build` would exit with a zero status code on build failures
