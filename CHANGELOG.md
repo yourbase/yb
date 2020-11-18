@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog][], and this project adheres to
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
 [Unreleased]: https://github.com/yourbase/yb/compare/v0.5.2...HEAD
 
+## [Unreleased][]
+
+### Fixed
+
+-  The Ruby buildpack downloads a pinned version of rbenv and ruby-build rather
+   than following the latest commit.
+
 ## [0.5.2][] - 2020-11-18
 
 Version 0.5.2 fixes a major regression in `yb build` behavior.
@@ -16,8 +23,6 @@ Version 0.5.2 fixes a major regression in `yb build` behavior.
 
 -  Regression: `yb build` would exit with a zero status code on build failures
    in version 0.5. This is now fixed.
--  The Ruby buildpack downloads a pinned version of rbenv and ruby-build rather
-   than following the latest commit.
 
 ## [0.5.1][] - 2020-11-18
 
