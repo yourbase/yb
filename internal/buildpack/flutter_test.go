@@ -65,6 +65,11 @@ func TestFlutterDownloadURL(t *testing.T) {
 			os:      biome.Linux,
 			want:    "https://storage.googleapis.com/flutter_infra/releases/dev/linux/flutter_linux_1.17.0-dev.0.0-dev.tar.xz",
 		},
+		{
+			version: "1.23.0-18.1.pre_beta",
+			os:      biome.Linux,
+			want:    "https://storage.googleapis.com/flutter_infra/releases/beta/linux/flutter_linux_1.23.0-18.1.pre-beta.tar.xz",
+		},
 	}
 	for _, test := range tests {
 		desc := &biome.Descriptor{OS: test.os, Arch: biome.Intel64}
