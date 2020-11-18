@@ -48,5 +48,5 @@ require (
 	gopkg.in/ini.v1 v1.60.2
 	gopkg.in/src-d/go-git.v4 v4.13.1
 	gopkg.in/yaml.v2 v2.3.0
-	zombiezen.com/go/log v1.0.2
+	zombiezen.com/go/log v1.0.3
 )
