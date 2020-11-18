@@ -89,10 +89,10 @@ func flutterDownloadURL(version string, desc *biome.Descriptor) (string, error) 
 
 	data.Version = version
 	switch {
-	case strings.HasSuffix(version, "-beta"):
+	case strings.HasSuffix(version, "-beta") || strings.HasSuffix(version, "_beta"):
 		data.Version = data.Version[:len(data.Version)-len("-beta")]
 		data.Channel = "beta"
-	case strings.HasSuffix(version, "-dev"):
+	case strings.HasSuffix(version, "-dev") || strings.HasSuffix(version, "_dev"):
 		data.Version = data.Version[:len(data.Version)-len("-dev")]
 		data.Channel = "dev"
 	default:

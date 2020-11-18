@@ -12,6 +12,8 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 -  The Ruby buildpack downloads a pinned version of rbenv and ruby-build rather
    than following the latest commit.
+-  The Flutter buildpack now correctly handles the same pre-release version
+   formats as previous versions of yb.
 
 ## [0.5.2][] - 2020-11-18
 
