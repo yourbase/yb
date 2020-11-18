@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 ### Fixed
 
+-  `yb exec` installs the runtime dependencies in its environment. This was a
+   regression from 0.4.
 -  The Ruby buildpack downloads a pinned version of rbenv and ruby-build rather
    than following the latest commit.
 -  The Flutter buildpack now correctly handles the same pre-release version
