@@ -17,4 +17,4 @@
 build_targets:
   - name: default
     commands:
-      - "/bin/true"
+      - "true"
