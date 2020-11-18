@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/internal/build"
 	"github.com/yourbase/yb/internal/ybdata"
@@ -98,6 +100,13 @@ func (b *execCmd) run(ctx context.Context) error {
 		TargetName:          b.execEnvName,
 		Resources:           narwhalContainerMap(pkg.Manifest.Exec.Dependencies.Containers),
 		EnvironmentTemplate: defaultEnv,
+	}
+	for _, dep := range pkg.Manifest.Dependencies.Runtime {
+		spec, err := yb.ParseBuildpackSpec(dep)
+		if err != nil {
+			return fmt.Errorf("runtime dependencies: %w", err)
+		}
+		deps.Buildpacks = append(deps.Buildpacks, spec)
 	}
 	if b.execEnvName != defaultExecEnvironment {
 		overrideEnv, err := biome.MapVars(pkg.Manifest.Exec.Environment[b.execEnvName])

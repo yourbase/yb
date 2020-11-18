@@ -12,6 +12,8 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 -  The Ruby buildpack downloads a pinned version of rbenv and ruby-build rather
    than following the latest commit.
+-  `yb exec` installs the runtime dependencies in its environment. This was a
+   regression from 0.4.
 
 ## [0.5.2][] - 2020-11-18
 
