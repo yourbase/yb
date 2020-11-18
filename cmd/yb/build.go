@@ -146,7 +146,7 @@ func (b *buildCmd) run(ctx context.Context, buildTargetName string) error {
 
 	if buildError != nil {
 		subSection("BUILD FAILED")
-		return err
+		return buildError
 	}
 
 	subSection("BUILD SUCCEEDED")

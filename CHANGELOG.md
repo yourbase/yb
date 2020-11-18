@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog][], and this project adheres to
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
 [Unreleased]: https://github.com/yourbase/yb/compare/v0.5.0...HEAD
 
+## [Unreleased][]
+
+### Fixed
+
+-  Regression: `yb build` would exit with a zero status code on build failures
+   in version 0.5. This is now fixed.
+
 ## [0.5.0][] - 2020-11-18
 
 Version 0.5 provides better reproducibility and isolation than previous
