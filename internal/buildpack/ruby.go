@@ -77,7 +77,7 @@ func installRuby(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (biome.Env
 	if _, err := biome.EvalSymlinks(ctx, sys.Biome, rbenvDir); err != nil {
 		log.Debugf(ctx, "rbenv not found: %v", err)
 		log.Infof(ctx, "Installing rbenv in %s", rbenvDir)
-		err := extract(ctx, sys, rbenvDir, "https://github.com/rbenv/rbenv/archive/master.zip", stripTopDirectory)
+		err := extract(ctx, sys, rbenvDir, "https://github.com/rbenv/rbenv/archive/60c933968584ac9ae7caac6dbed614740f899ec3.zip", stripTopDirectory)
 		if err != nil {
 			return biome.Environment{}, fmt.Errorf("download rbenv: %w", err)
 		}
@@ -86,7 +86,7 @@ func installRuby(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (biome.Env
 	if _, err := biome.EvalSymlinks(ctx, sys.Biome, rubyBuildDir); err != nil {
 		log.Debugf(ctx, "ruby-build not found: %v", err)
 		log.Infof(ctx, "Installing ruby-build plugin in %s", rubyBuildDir)
-		err := extract(ctx, sys, rubyBuildDir, "https://github.com/rbenv/ruby-build/archive/master.zip", stripTopDirectory)
+		err := extract(ctx, sys, rubyBuildDir, "https://github.com/rbenv/ruby-build/archive/v20201118.zip", stripTopDirectory)
 		if err != nil {
 			return biome.Environment{}, fmt.Errorf("download ruby-build plugin: %w", err)
 		}

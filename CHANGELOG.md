@@ -30,6 +30,13 @@ Version 0.5.1 was a botched release.
 
 [0.5.2]: https://github.com/yourbase/yb/releases/tag/v0.5.1
 
+## [Unreleased][]
+
+### Fixed
+
+-  The Ruby buildpack downloads a pinned version of rbenv and ruby-build rather
+   than following the latest commit.
+
 ## [0.5.0][] - 2020-11-18
 
 Version 0.5 provides better reproducibility and isolation than previous
