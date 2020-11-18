@@ -12,6 +12,8 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 -  Regression: `yb build` would exit with a zero status code on build failures
    in version 0.5. This is now fixed.
+-  The Ruby buildpack downloads a pinned version of rbenv and ruby-build rather
+   than following the latest commit.
 
 ## [0.5.0][] - 2020-11-18
 
