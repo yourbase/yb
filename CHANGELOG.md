@@ -4,9 +4,11 @@ The format is based on [Keep a Changelog][], and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
-[Unreleased]: https://github.com/yourbase/yb/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/yourbase/yb/compare/v0.5.1...HEAD
 
-## [Unreleased][]
+## [0.5.1][] - 2020-11-18
+
+Version 0.5.1 fixes a major regression in `yb build` behavior.
 
 ### Fixed
 
