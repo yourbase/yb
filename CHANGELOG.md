@@ -4,7 +4,20 @@ The format is based on [Keep a Changelog][], and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
-[Unreleased]: https://github.com/yourbase/yb/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/yourbase/yb/compare/v0.5.1...HEAD
+
+## [0.5.1][] - 2020-11-18
+
+Version 0.5.1 fixes a major regression in `yb build` behavior.
+
+[0.5.1]: https://github.com/yourbase/yb/releases/tag/v0.5.1
+
+### Fixed
+
+-  Regression: `yb build` would exit with a zero status code on build failures
+   in version 0.5. This is now fixed.
+-  The Ruby buildpack downloads a pinned version of rbenv and ruby-build rather
+   than following the latest commit.
 
 ## [0.5.0][] - 2020-11-18
 
