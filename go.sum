@@ -739,5 +739,5 @@ rsc.io/quote/v3 v3.1.0/go.mod h1:yEA65RcK8LyAZtP9Kv3t0HmxON59tX3rD+tICJqUlj0=
 rsc.io/sampler v1.3.0/go.mod h1:T1hPZKmBbMNahiBKFy5HrXp6adAjACjK9JXDnKaTXpA=
 sourcegraph.com/sqs/pbtypes v0.0.0-20180604144634-d3ebe8f20ae4/go.mod h1:ketZ/q3QxT9HOBeFhu6RdvsftgpsbFHBF5Cas6cDKZ0=
 zombiezen.com/go/log v1.0.0/go.mod h1:Eos1rXF8JpgK+h6NYITdTJslqFJJA3SaIJHMU75Sqfg=
-zombiezen.com/go/log v1.0.2 h1:j18x5k2u8ZqMG6HqVU1PyIBscsDz/8VKOEzgspjMUHc=
-zombiezen.com/go/log v1.0.2/go.mod h1:Eos1rXF8JpgK+h6NYITdTJslqFJJA3SaIJHMU75Sqfg=
+zombiezen.com/go/log v1.0.3 h1:0yWbV4MEh1ZehEUoXChvTHJ7Xryt5kVV8TySgOfqdxQ=
+zombiezen.com/go/log v1.0.3/go.mod h1:Eos1rXF8JpgK+h6NYITdTJslqFJJA3SaIJHMU75Sqfg=
