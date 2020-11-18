@@ -4,9 +4,27 @@ The format is based on [Keep a Changelog][], and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
-[Unreleased]: https://github.com/yourbase/yb/compare/v0.4.4...HEAD
+[Unreleased]: https://github.com/yourbase/yb/compare/v0.5.0...HEAD
 
-## [Unreleased][]
+## [0.5.0][] - 2020-11-18
+
+Version 0.5 provides better reproducibility and isolation than previous
+releases, making it easier to debug your YourBase builds locally.
+
+Notable improvements:
+
+-  `yb run` now runs in the exact same environment as what a build target would
+   use, including in a container. You can use `yb run bash` to pull up an
+   interactive shell and inspect your environment, `yb run python --version` to
+   verify the target's Python version, and more!
+-  Non-container builds isolate their environment variables and create a
+   per-build-target home directory inside your `~/.cache/yourbase` directory.
+   This makes builds far more reproducible and reduces the likelihood that a
+   build will interfere with the host system.
+-  Build containers get shut down at the end of a build. No more floating
+   Docker containers!
+
+[0.5.0]: https://github.com/yourbase/yb/releases/tag/v0.5.0
 
 ### Added
 
