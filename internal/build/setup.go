@@ -142,7 +142,7 @@ func startContainers(ctx context.Context, sys Sys, defs map[string]*narwhal.Cont
 		}
 	}
 	if len(containers) == 0 {
-		return containersExpansion{}, func() error { return nil }, nil
+		return exp, func() error { return nil }, nil
 	}
 	if sys.DockerClient == nil {
 		names := make([]string, 0, len(containers))
