@@ -32,7 +32,7 @@ Version 0.5.2 fixes a major regression in `yb build` behavior.
 
 Version 0.5.1 was a botched release.
 
-[0.5.2]: https://github.com/yourbase/yb/releases/tag/v0.5.1
+[0.5.1]: https://github.com/yourbase/yb/releases/tag/v0.5.1
 
 ## [0.5.0][] - 2020-11-18
 
