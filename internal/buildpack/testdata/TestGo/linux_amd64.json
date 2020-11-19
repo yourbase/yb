@@ -4,55 +4,62 @@
 		"Arch": "amd64"
 	},
 	"Dirs": {
-		"Package": "/tmp/TestGo652507690/001",
-		"Home": "/tmp/TestGo652507690/002",
-		"Tools": "/tmp/TestGo652507690/002/.cache/yb/tools"
+		"Package": "/tmp/TestGo854418970/001",
+		"Home": "/tmp/TestGo854418970/002",
+		"Tools": "/tmp/TestGo854418970/002/.cache/yb/tools"
 	},
 	"JoinedPaths": [
 		{
 			"Elems": [
-				"/tmp/TestGo652507690/002/.cache/yb/tools",
+				"/tmp/TestGo854418970/002/.cache/yb/tools",
 				"go"
 			],
-			"Result": "/tmp/TestGo652507690/002/.cache/yb/tools/go"
+			"Result": "/tmp/TestGo854418970/002/.cache/yb/tools/go"
 		},
 		{
 			"Elems": [
-				"/tmp/TestGo652507690/002/.cache/yb/tools/go",
+				"/tmp/TestGo854418970/002/.cache/yb/tools/go",
 				"go1.15.2"
 			],
-			"Result": "/tmp/TestGo652507690/002/.cache/yb/tools/go/go1.15.2"
+			"Result": "/tmp/TestGo854418970/002/.cache/yb/tools/go/go1.15.2"
 		},
 		{
 			"Elems": [
-				"/tmp/TestGo652507690/002/.cache/yb/tools/go",
+				"/tmp/TestGo854418970/002/.cache/yb/tools/go",
 				"gopath"
 			],
-			"Result": "/tmp/TestGo652507690/002/.cache/yb/tools/go/gopath"
+			"Result": "/tmp/TestGo854418970/002/.cache/yb/tools/go/gopath"
 		},
 		{
 			"Elems": [
-				"/tmp/TestGo652507690/002/.cache/yb/tools/go/go1.15.2",
+				"/tmp/TestGo854418970/002/.cache/yb/tools/go/gopath",
 				"bin"
 			],
-			"Result": "/tmp/TestGo652507690/002/.cache/yb/tools/go/go1.15.2/bin"
+			"Result": "/tmp/TestGo854418970/002/.cache/yb/tools/go/gopath/bin"
 		},
 		{
 			"Elems": [
-				"/tmp/TestGo652507690/002/.cache/yb/tools/go/go1.15.2"
+				"/tmp/TestGo854418970/002/.cache/yb/tools/go/go1.15.2",
+				"bin"
 			],
-			"Result": "/tmp/TestGo652507690/002/.cache/yb/tools/go/go1.15.2"
+			"Result": "/tmp/TestGo854418970/002/.cache/yb/tools/go/go1.15.2/bin"
 		},
 		{
 			"Elems": [
-				"/tmp/TestGo652507690/002/.cache/yb/tools/go/go1.15.2.tar.gz"
+				"/tmp/TestGo854418970/002/.cache/yb/tools/go/go1.15.2"
 			],
-			"Result": "/tmp/TestGo652507690/002/.cache/yb/tools/go/go1.15.2.tar.gz"
+			"Result": "/tmp/TestGo854418970/002/.cache/yb/tools/go/go1.15.2"
+		},
+		{
+			"Elems": [
+				"/tmp/TestGo854418970/002/.cache/yb/tools/go/go1.15.2.tar.gz"
+			],
+			"Result": "/tmp/TestGo854418970/002/.cache/yb/tools/go/go1.15.2.tar.gz"
 		}
 	],
 	"AbsPaths": {
-		"/tmp/TestGo652507690/002/.cache/yb/tools/go/go1.15.2": true,
-		"/tmp/TestGo652507690/002/.cache/yb/tools/go/go1.15.2.tar.gz": true
+		"/tmp/TestGo854418970/002/.cache/yb/tools/go/go1.15.2": true,
+		"/tmp/TestGo854418970/002/.cache/yb/tools/go/go1.15.2.tar.gz": true
 	},
 	"Invocations": [
 		{
@@ -60,7 +67,7 @@
 				"readlink",
 				"--canonicalize-existing",
 				"--no-newline",
-				"/tmp/TestGo652507690/002/.cache/yb/tools/go/go1.15.2"
+				"/tmp/TestGo854418970/002/.cache/yb/tools/go/go1.15.2"
 			],
 			"Output": {
 				"Stdout": "",
@@ -72,7 +79,7 @@
 			"Argv": [
 				"mkdir",
 				"-p",
-				"/tmp/TestGo652507690/002/.cache/yb/tools/go/go1.15.2"
+				"/tmp/TestGo854418970/002/.cache/yb/tools/go/go1.15.2"
 			],
 			"Output": {
 				"Stderr": ""
@@ -81,7 +88,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/tmp/TestGo652507690/002/.cache/yb/tools/go/go1.15.2.tar.gz"
+				"/tmp/TestGo854418970/002/.cache/yb/tools/go/go1.15.2.tar.gz"
 			],
 			"StdinSHA256": "b49fda1ca29a1946d6bb2a5a6982cf07ccd2aba849289508ee0f9918f6bb4552",
 			"Output": {
@@ -94,11 +101,11 @@
 				"-x",
 				"-z",
 				"-f",
-				"/tmp/TestGo652507690/002/.cache/yb/tools/go/go1.15.2.tar.gz",
+				"/tmp/TestGo854418970/002/.cache/yb/tools/go/go1.15.2.tar.gz",
 				"--strip-components",
 				"1"
 			],
-			"Dir": "/tmp/TestGo652507690/002/.cache/yb/tools/go/go1.15.2",
+			"Dir": "/tmp/TestGo854418970/002/.cache/yb/tools/go/go1.15.2",
 			"Output": {
 				"Combined": ""
 			}
@@ -107,7 +114,7 @@
 			"Argv": [
 				"rm",
 				"-f",
-				"/tmp/TestGo652507690/002/.cache/yb/tools/go/go1.15.2.tar.gz"
+				"/tmp/TestGo854418970/002/.cache/yb/tools/go/go1.15.2.tar.gz"
 			],
 			"Output": {
 				"Combined": ""
@@ -119,15 +126,50 @@
 				"version"
 			],
 			"EnvVars": {
-				"GOPATH": "/tmp/TestGo652507690/002/.cache/yb/tools/go/gopath:/tmp/TestGo652507690/001",
-				"GOROOT": "/tmp/TestGo652507690/002/.cache/yb/tools/go/go1.15.2"
+				"GOPATH": "/tmp/TestGo854418970/002/.cache/yb/tools/go/gopath:/tmp/TestGo854418970/001",
+				"GOROOT": "/tmp/TestGo854418970/002/.cache/yb/tools/go/go1.15.2"
 			},
 			"PrependPath": [
-				"/tmp/TestGo652507690/002/.cache/yb/tools/go/gopath",
-				"/tmp/TestGo652507690/002/.cache/yb/tools/go/go1.15.2/bin"
+				"/tmp/TestGo854418970/002/.cache/yb/tools/go/gopath/bin",
+				"/tmp/TestGo854418970/002/.cache/yb/tools/go/go1.15.2/bin"
 			],
 			"Output": {
 				"Combined": "Z28gdmVyc2lvbiBnbzEuMTUuMiBsaW51eC9hbWQ2NAo="
+			}
+		},
+		{
+			"Argv": [
+				"go",
+				"get",
+				"golang.org/x/tools/cmd/stringer"
+			],
+			"EnvVars": {
+				"GOPATH": "/tmp/TestGo854418970/002/.cache/yb/tools/go/gopath:/tmp/TestGo854418970/001",
+				"GOROOT": "/tmp/TestGo854418970/002/.cache/yb/tools/go/go1.15.2"
+			},
+			"PrependPath": [
+				"/tmp/TestGo854418970/002/.cache/yb/tools/go/gopath/bin",
+				"/tmp/TestGo854418970/002/.cache/yb/tools/go/go1.15.2/bin"
+			],
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"stringer",
+				"-help"
+			],
+			"EnvVars": {
+				"GOPATH": "/tmp/TestGo854418970/002/.cache/yb/tools/go/gopath:/tmp/TestGo854418970/001",
+				"GOROOT": "/tmp/TestGo854418970/002/.cache/yb/tools/go/go1.15.2"
+			},
+			"PrependPath": [
+				"/tmp/TestGo854418970/002/.cache/yb/tools/go/gopath/bin",
+				"/tmp/TestGo854418970/002/.cache/yb/tools/go/go1.15.2/bin"
+			],
+			"Output": {
+				"Combined": "VXNhZ2Ugb2Ygc3RyaW5nZXI6CglzdHJpbmdlciBbZmxhZ3NdIC10eXBlIFQgW2RpcmVjdG9yeV0KCXN0cmluZ2VyIFtmbGFnc10gLXR5cGUgVCBmaWxlcy4uLiAjIE11c3QgYmUgYSBzaW5nbGUgcGFja2FnZQpGb3IgbW9yZSBpbmZvcm1hdGlvbiwgc2VlOgoJaHR0cHM6Ly9wa2cuZ28uZGV2L2dvbGFuZy5vcmcveC90b29scy9jbWQvc3RyaW5nZXIKRmxhZ3M6CiAgLWxpbmVjb21tZW50CiAgICAJdXNlIGxpbmUgY29tbWVudCB0ZXh0IGFzIHByaW50ZWQgdGV4dCB3aGVuIHByZXNlbnQKICAtb3V0cHV0IHN0cmluZwogICAgCW91dHB1dCBmaWxlIG5hbWU7IGRlZmF1bHQgc3JjZGlyLzx0eXBlPl9zdHJpbmcuZ28KICAtdGFncyBzdHJpbmcKICAgIAljb21tYS1zZXBhcmF0ZWQgbGlzdCBvZiBidWlsZCB0YWdzIHRvIGFwcGx5CiAgLXRyaW1wcmVmaXggcHJlZml4CiAgICAJdHJpbSB0aGUgcHJlZml4IGZyb20gdGhlIGdlbmVyYXRlZCBjb25zdGFudCBuYW1lcwogIC10eXBlIHN0cmluZwogICAgCWNvbW1hLXNlcGFyYXRlZCBsaXN0IG9mIHR5cGUgbmFtZXM7IG11c3QgYmUgc2V0Cg=="
 			}
 		}
 	]

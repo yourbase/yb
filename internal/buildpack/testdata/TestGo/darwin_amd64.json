@@ -4,55 +4,62 @@
 		"Arch": "amd64"
 	},
 	"Dirs": {
-		"Package": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo799850857/001",
-		"Home": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo799850857/002",
-		"Tools": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo799850857/002/.cache/yb/tools"
+		"Package": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/001",
+		"Home": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002",
+		"Tools": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools"
 	},
 	"JoinedPaths": [
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo799850857/002/.cache/yb/tools",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools",
 				"go"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo799850857/002/.cache/yb/tools/go"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools/go"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo799850857/002/.cache/yb/tools/go",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools/go",
 				"go1.15.2"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo799850857/002/.cache/yb/tools/go/go1.15.2"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools/go/go1.15.2"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo799850857/002/.cache/yb/tools/go",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools/go",
 				"gopath"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo799850857/002/.cache/yb/tools/go/gopath"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools/go/gopath"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo799850857/002/.cache/yb/tools/go/go1.15.2",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools/go/gopath",
 				"bin"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo799850857/002/.cache/yb/tools/go/go1.15.2/bin"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools/go/gopath/bin"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo799850857/002/.cache/yb/tools/go/go1.15.2"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools/go/go1.15.2",
+				"bin"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo799850857/002/.cache/yb/tools/go/go1.15.2"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools/go/go1.15.2/bin"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo799850857/002/.cache/yb/tools/go/go1.15.2.tar.gz"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools/go/go1.15.2"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo799850857/002/.cache/yb/tools/go/go1.15.2.tar.gz"
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools/go/go1.15.2"
+		},
+		{
+			"Elems": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools/go/go1.15.2.tar.gz"
+			],
+			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools/go/go1.15.2.tar.gz"
 		}
 	],
 	"AbsPaths": {
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo799850857/002/.cache/yb/tools/go/go1.15.2": true,
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo799850857/002/.cache/yb/tools/go/go1.15.2.tar.gz": true
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools/go/go1.15.2": true,
+		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools/go/go1.15.2.tar.gz": true
 	},
 	"Invocations": [
 		{
@@ -60,11 +67,11 @@
 				"python",
 				"-c",
 				"import os, sys; os.stat(sys.argv[1]); sys.stdout.write(os.path.realpath(sys.argv[1]))",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo799850857/002/.cache/yb/tools/go/go1.15.2"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools/go/go1.15.2"
 			],
 			"Output": {
 				"Stdout": "",
-				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0R283OTk4NTA4NTcvMDAyLy5jYWNoZS95Yi90b29scy9nby9nbzEuMTUuMicK"
+				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0R283MzcwNzgyMTYvMDAyLy5jYWNoZS95Yi90b29scy9nby9nbzEuMTUuMicK"
 			},
 			"Error": "local run: exit status 1"
 		},
@@ -72,7 +79,7 @@
 			"Argv": [
 				"mkdir",
 				"-p",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo799850857/002/.cache/yb/tools/go/go1.15.2"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools/go/go1.15.2"
 			],
 			"Output": {
 				"Stderr": ""
@@ -81,7 +88,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo799850857/002/.cache/yb/tools/go/go1.15.2.tar.gz"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools/go/go1.15.2.tar.gz"
 			],
 			"StdinSHA256": "9bd39600d9fa1fa4a5ccce8761d249f7421cffe671376f791293c4138f3d7c62",
 			"Output": {
@@ -94,11 +101,11 @@
 				"-x",
 				"-z",
 				"-f",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo799850857/002/.cache/yb/tools/go/go1.15.2.tar.gz",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools/go/go1.15.2.tar.gz",
 				"--strip-components",
 				"1"
 			],
-			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo799850857/002/.cache/yb/tools/go/go1.15.2",
+			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools/go/go1.15.2",
 			"Output": {
 				"Combined": ""
 			}
@@ -107,7 +114,7 @@
 			"Argv": [
 				"rm",
 				"-f",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo799850857/002/.cache/yb/tools/go/go1.15.2.tar.gz"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools/go/go1.15.2.tar.gz"
 			],
 			"Output": {
 				"Combined": ""
@@ -119,15 +126,50 @@
 				"version"
 			],
 			"EnvVars": {
-				"GOPATH": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo799850857/002/.cache/yb/tools/go/gopath:/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo799850857/001",
-				"GOROOT": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo799850857/002/.cache/yb/tools/go/go1.15.2"
+				"GOPATH": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools/go/gopath:/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/001",
+				"GOROOT": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools/go/go1.15.2"
 			},
 			"PrependPath": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo799850857/002/.cache/yb/tools/go/gopath",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo799850857/002/.cache/yb/tools/go/go1.15.2/bin"
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools/go/gopath/bin",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools/go/go1.15.2/bin"
 			],
 			"Output": {
 				"Combined": "Z28gdmVyc2lvbiBnbzEuMTUuMiBkYXJ3aW4vYW1kNjQK"
+			}
+		},
+		{
+			"Argv": [
+				"go",
+				"get",
+				"golang.org/x/tools/cmd/stringer"
+			],
+			"EnvVars": {
+				"GOPATH": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools/go/gopath:/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/001",
+				"GOROOT": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools/go/go1.15.2"
+			},
+			"PrependPath": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools/go/gopath/bin",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools/go/go1.15.2/bin"
+			],
+			"Output": {
+				"Combined": ""
+			}
+		},
+		{
+			"Argv": [
+				"stringer",
+				"-help"
+			],
+			"EnvVars": {
+				"GOPATH": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools/go/gopath:/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/001",
+				"GOROOT": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools/go/go1.15.2"
+			},
+			"PrependPath": [
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools/go/gopath/bin",
+				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestGo737078216/002/.cache/yb/tools/go/go1.15.2/bin"
+			],
+			"Output": {
+				"Combined": "VXNhZ2Ugb2Ygc3RyaW5nZXI6CglzdHJpbmdlciBbZmxhZ3NdIC10eXBlIFQgW2RpcmVjdG9yeV0KCXN0cmluZ2VyIFtmbGFnc10gLXR5cGUgVCBmaWxlcy4uLiAjIE11c3QgYmUgYSBzaW5nbGUgcGFja2FnZQpGb3IgbW9yZSBpbmZvcm1hdGlvbiwgc2VlOgoJaHR0cHM6Ly9wa2cuZ28uZGV2L2dvbGFuZy5vcmcveC90b29scy9jbWQvc3RyaW5nZXIKRmxhZ3M6CiAgLWxpbmVjb21tZW50CiAgICAJdXNlIGxpbmUgY29tbWVudCB0ZXh0IGFzIHByaW50ZWQgdGV4dCB3aGVuIHByZXNlbnQKICAtb3V0cHV0IHN0cmluZwogICAgCW91dHB1dCBmaWxlIG5hbWU7IGRlZmF1bHQgc3JjZGlyLzx0eXBlPl9zdHJpbmcuZ28KICAtdGFncyBzdHJpbmcKICAgIAljb21tYS1zZXBhcmF0ZWQgbGlzdCBvZiBidWlsZCB0YWdzIHRvIGFwcGx5CiAgLXRyaW1wcmVmaXggcHJlZml4CiAgICAJdHJpbSB0aGUgcHJlZml4IGZyb20gdGhlIGdlbmVyYXRlZCBjb25zdGFudCBuYW1lcwogIC10eXBlIHN0cmluZwogICAgCWNvbW1hLXNlcGFyYXRlZCBsaXN0IG9mIHR5cGUgbmFtZXM7IG11c3QgYmUgc2V0Cg=="
 			}
 		}
 	]
