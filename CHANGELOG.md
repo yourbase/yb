@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog][], and this project adheres to
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
 [Unreleased]: https://github.com/yourbase/yb/compare/v0.5.3...HEAD
 
+## [Unreleased][]
+
+### Fixed
+
+-  The Go buildpack now adds `$GOPATH/bin` to `PATH`. This was a regression
+   from 0.4.
+
 ## [0.5.3][] - 2020-11-19
 
 Version 0.5.3 fixes minor regressions from 0.4.
