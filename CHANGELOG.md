@@ -4,33 +4,7 @@ The format is based on [Keep a Changelog][], and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
-[Unreleased]: https://github.com/yourbase/yb/compare/v0.5.2...HEAD
-
-## [Unreleased][]
-
-### Fixed
-
--  The Ruby buildpack downloads a pinned version of rbenv and ruby-build rather
-   than following the latest commit.
--  The Flutter buildpack now correctly handles the same pre-release version
-   formats as previous versions of yb.
-
-## [0.5.2][] - 2020-11-18
-
-Version 0.5.2 fixes a major regression in `yb build` behavior.
-
-[0.5.2]: https://github.com/yourbase/yb/releases/tag/v0.5.2
-
-### Fixed
-
--  Regression: `yb build` would exit with a zero status code on build failures
-   in version 0.5. This is now fixed.
-
-## [0.5.1][] - 2020-11-18
-
-Version 0.5.1 was a botched release.
-
-[0.5.2]: https://github.com/yourbase/yb/releases/tag/v0.5.1
+[Unreleased]: https://github.com/yourbase/yb/compare/v0.5.3...HEAD
 
 ## [Unreleased][]
 
@@ -49,6 +23,42 @@ Version 0.5.1 was a botched release.
 
 -  The `exec.ports` stanza in .yourbase.yml was previously accepted but did
    nothing. `exec.container.ports` should be used instead.
+
+## [0.5.3][] - 2020-11-19
+
+Version 0.5.3 fixes minor regressions from 0.4.
+
+[0.5.3]: https://github.com/yourbase/yb/releases/tag/v0.5.3
+
+### Fixed
+
+-  `yb exec` installs the runtime dependencies in its environment. This was a
+   regression from 0.4.
+-  Container IP addresses in the yb environment are respected in configuration
+   environment variable expansions. This was a regression from 0.4.
+-  The Ruby buildpack downloads a pinned version of rbenv and ruby-build rather
+   than following the latest commit.
+-  The Flutter buildpack now correctly handles the same pre-release version
+   formats as previous versions of yb.
+-  Using yb with the Docker on the Mac will no longer create directories with
+   zero permissions.
+
+## [0.5.2][] - 2020-11-18
+
+Version 0.5.2 fixes a major regression in `yb build` behavior.
+
+[0.5.2]: https://github.com/yourbase/yb/releases/tag/v0.5.2
+
+### Fixed
+
+-  Regression: `yb build` would exit with a zero status code on build failures
+   in version 0.5. This is now fixed.
+
+## [0.5.1][] - 2020-11-18
+
+Version 0.5.1 was a botched release.
+
+[0.5.1]: https://github.com/yourbase/yb/releases/tag/v0.5.1
 
 ## [0.5.0][] - 2020-11-18
 
