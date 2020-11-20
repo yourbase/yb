@@ -19,7 +19,7 @@ func installGo(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (biome.Envir
 			"GOPATH": gopathDir + ":" + sys.Biome.Dirs().Package,
 		},
 		PrependPath: []string{
-			gopathDir,
+			sys.Biome.JoinPath(gopathDir, "bin"),
 			sys.Biome.JoinPath(golangDir, "bin"),
 		},
 	}

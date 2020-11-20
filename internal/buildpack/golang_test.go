@@ -42,4 +42,29 @@ func TestGo(t *testing.T) {
 	if got := versionOutput.String(); !strings.Contains(got, version) {
 		t.Errorf("go version output does not include %q", version)
 	}
+
+	// Verify that we can run `go install`'d binaries.
+	// The local biome does use the ambient PATH, so this may have false
+	// positives, but most people don't have stringer installed and it has
+	// relatively few dependencies, so it's a good candidate.
+	getOutput := new(strings.Builder)
+	err = goBiome.Run(ctx, &biome.Invocation{
+		Argv:   []string{"go", "get", "golang.org/x/tools/cmd/stringer"},
+		Stdout: getOutput,
+		Stderr: getOutput,
+	})
+	t.Logf("go get output:\n%s", getOutput)
+	if err != nil {
+		t.Fatalf("go get: %v", err)
+	}
+	stringerOutput := new(strings.Builder)
+	err = goBiome.Run(ctx, &biome.Invocation{
+		Argv:   []string{"stringer", "-help"},
+		Stdout: stringerOutput,
+		Stderr: stringerOutput,
+	})
+	t.Logf("stringer output:\n%s", stringerOutput)
+	if err != nil {
+		t.Fatalf("stringer: %v", err)
+	}
 }
