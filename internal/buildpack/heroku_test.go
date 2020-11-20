@@ -26,17 +26,16 @@ import (
 )
 
 func TestHeroku(t *testing.T) {
+	// The Heroku CLI seems to daemonize a version cache that races
+	// with the `rm -rf TEMPDIR`.
+	t.Skip("Skipping due to https://app.clubhouse.io/yourbaseio/story/3131")
+
 	ctx := testlog.WithTB(context.Background(), t)
 
 	// TODO(light): This test is not reproducible, since there's no ability to pin
 	// to a specific Heroku version. Instead, we just always run this test without
 	// record/replay.
 	bio := newLocalTestBiome(t)
-	if bio.Describe().OS == biome.MacOS {
-		// The Heroku CLI seems to daemonize a version cache on macOS that races
-		// with the `rm -rf TEMPDIR`.
-		t.Skip("Heroku tests don't clean up properly on macOS. Skipping.")
-	}
 	herokuEnv, err := runTestInstall(ctx, t, bio, "heroku:latest")
 	if err != nil {
 		t.Fatal(err)
