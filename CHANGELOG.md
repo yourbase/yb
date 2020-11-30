@@ -12,6 +12,8 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 -  The Go buildpack now adds `$GOPATH/bin` to `PATH`. This was a regression
    from 0.4.
+-  `yb exec --environment=foo` no longer crashes if the `default` environment
+   is empty.
 
 ## [0.5.3][] - 2020-11-19
 
