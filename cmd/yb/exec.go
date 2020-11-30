@@ -113,6 +113,9 @@ func (b *execCmd) run(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+		if len(overrideEnv) > 0 && deps.EnvironmentTemplate == nil {
+			deps.EnvironmentTemplate = make(map[string]string)
+		}
 		for k, v := range overrideEnv {
 			deps.EnvironmentTemplate[k] = v
 		}
