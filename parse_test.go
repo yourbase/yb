@@ -183,6 +183,40 @@ func TestLoadPackage(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "ExecEmptyDefault",
+			want: &Package{
+				ExecEnvironments: map[string]*Target{
+					"default": {
+						Name: "default",
+						Container: &narwhal.ContainerDefinition{
+							Image: DefaultContainerImage,
+						},
+						Buildpacks: map[string]BuildpackSpec{
+							"python": "python:3.7.7",
+						},
+						Commands: []string{
+							"honcho start",
+						},
+					},
+					"staging": {
+						Name: "staging",
+						Container: &narwhal.ContainerDefinition{
+							Image: DefaultContainerImage,
+						},
+						Buildpacks: map[string]BuildpackSpec{
+							"python": "python:3.7.7",
+						},
+						Env: map[string]EnvTemplate{
+							"YB_ENVIRONMENT": "staging",
+						},
+						Commands: []string{
+							"honcho start",
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
