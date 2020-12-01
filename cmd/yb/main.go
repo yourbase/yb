@@ -82,8 +82,11 @@ func main() {
 		},
 	})
 
-	ctx := context.Background()
-	if err := rootCmd.ExecuteContext(ctx); err != nil {
+	ctx, cancel := context.WithCancel(context.Background())
+	setupSignals(cancel)
+	err := rootCmd.ExecuteContext(ctx)
+	cancel()
+	if err != nil {
 		initLog(false)
 		log.Errorf(ctx, "%v", err)
 		os.Exit(1)
