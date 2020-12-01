@@ -33,7 +33,26 @@ import (
 	"zombiezen.com/go/log"
 )
 
-func download(ctx context.Context, client *http.Client, dst io.Writer, url string) (err error) {
+// Downloader manages a download cache.
+type Downloader struct {
+	// Client is the HTTP client to use to fetch URLs.
+	// This can only be changed before the first call to Download.
+	Client *http.Client
+
+	dir string
+}
+
+// NewDownloader returns a Downloader that maintains a cache in the
+// given directory. The Downloader will create the directory if it
+// does not exist.
+func NewDownloader(dir string) *Downloader {
+	return &Downloader{
+		Client: http.DefaultClient,
+		dir:    dir,
+	}
+}
+
+func (d *Downloader) download(ctx context.Context, dst io.Writer, url string) (err error) {
 	ctx, span := ybtrace.Start(ctx, "Download "+url,
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(
@@ -54,7 +73,7 @@ func download(ctx context.Context, client *http.Client, dst io.Writer, url strin
 		return fmt.Errorf("download %s: %w", url, err)
 	}
 	log.Infof(ctx, "Downloading %s", url)
-	resp, err := client.Do(req)
+	resp, err := d.Client.Do(req)
 	if err != nil {
 		return fmt.Errorf("download %s: %w", url, err)
 	}
@@ -75,31 +94,11 @@ func download(ctx context.Context, client *http.Client, dst io.Writer, url strin
 	return nil
 }
 
-// IsNotFound reports whether e indicates an HTTP 404 Not Found or
-// 410 Gone response.
-func IsNotFound(e error) bool {
-	var httpErr httpError
-	if !errors.As(e, &httpErr) {
-		return false
-	}
-	return httpErr.statusCode == http.StatusNotFound ||
-		httpErr.statusCode == http.StatusGone
-}
-
-type httpError struct {
-	status     string
-	statusCode int
-}
-
-func (e httpError) Error() string {
-	return "http " + e.status
-}
-
 // Download downloads a URL to the local filesystem and returns a handle to
-// the file. Download maintains a cache in dataDirs. If the URL could not be
-// found on the server, then IsNotFound(err) will return true.
-func Download(ctx context.Context, client *http.Client, dataDirs *Dirs, url string) (_ *os.File, err error) {
-	cacheFilename := filepath.Join(dataDirs.Downloads(), cacheFilenameForURL(url))
+// the file. If the URL could not be found on the server, then IsNotFound(err)
+// will return true.
+func (d *Downloader) Download(ctx context.Context, url string) (_ *os.File, err error) {
+	cacheFilename := filepath.Join(d.dir, cacheFilenameForURL(url))
 	if err := os.MkdirAll(filepath.Dir(cacheFilename), 0777); err != nil {
 		return nil, fmt.Errorf("download %s: %w", url, err)
 	}
@@ -120,7 +119,7 @@ func Download(ctx context.Context, client *http.Client, dataDirs *Dirs, url stri
 		}
 	}()
 
-	cacheErr := validateDownloadCache(ctx, client, f, url)
+	cacheErr := d.validateDownloadCache(ctx, f, url)
 	if cacheErr == nil {
 		log.Infof(ctx, "Reusing cached version of %s", url)
 		return f, nil
@@ -133,7 +132,7 @@ func Download(ctx context.Context, client *http.Client, dataDirs *Dirs, url stri
 	if err := f.Truncate(0); err != nil {
 		return nil, fmt.Errorf("download %s: %w", url, err)
 	}
-	if err := download(ctx, client, f, url); err != nil {
+	if err := d.download(ctx, f, url); err != nil {
 		return nil, fmt.Errorf("download %s: %w", url, err)
 	}
 	if _, err := f.Seek(0, io.SeekStart); err != nil {
@@ -142,7 +141,7 @@ func Download(ctx context.Context, client *http.Client, dataDirs *Dirs, url stri
 	return f, nil
 }
 
-func validateDownloadCache(ctx context.Context, client *http.Client, statter interface{ Stat() (os.FileInfo, error) }, url string) (err error) {
+func (d *Downloader) validateDownloadCache(ctx context.Context, statter interface{ Stat() (os.FileInfo, error) }, url string) (err error) {
 	ctx, span := ybtrace.Start(ctx, "Validate cache for "+url,
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(
@@ -165,7 +164,7 @@ func validateDownloadCache(ctx context.Context, client *http.Client, statter int
 	if err != nil {
 		return fmt.Errorf("validate %s download cache: %w", url, err)
 	}
-	resp, err := client.Do(req)
+	resp, err := d.Client.Do(req)
 	if err != nil {
 		return fmt.Errorf("validate %s download cache: %w", url, err)
 	}
@@ -189,4 +188,24 @@ var cacheFilenameUnsafeChars = regexp.MustCompile(`[^a-zA-Z0-9.]+`)
 func cacheFilenameForURL(url string) string {
 	// TODO(light): Use a hash-based scheme.
 	return cacheFilenameUnsafeChars.ReplaceAllString(url, "")
+}
+
+// IsNotFound reports whether e indicates an HTTP 404 Not Found or
+// 410 Gone response.
+func IsNotFound(e error) bool {
+	var httpErr httpError
+	if !errors.As(e, &httpErr) {
+		return false
+	}
+	return httpErr.statusCode == http.StatusNotFound ||
+		httpErr.statusCode == http.StatusGone
+}
+
+type httpError struct {
+	status     string
+	statusCode int
+}
+
+func (e httpError) Error() string {
+	return "http " + e.status
 }

@@ -6,7 +6,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"net/http"
 	"os"
 	"strings"
 
@@ -35,6 +34,7 @@ func connectDockerClient(useDocker bool) (*docker.Client, error) {
 type newBiomeOptions struct {
 	packageDir string
 	target     string
+	downloader *ybdata.Downloader
 	dataDirs   *ybdata.Dirs
 	baseEnv    biome.Environment
 	netrcFiles []string
@@ -84,7 +84,7 @@ func newBiome(ctx context.Context, opts newBiomeOptions) (biome.BiomeCloser, err
 		return nil, fmt.Errorf("set up environment for target %s: %w", opts.target, err)
 	}
 	log.Debugf(ctx, "Home located at %s", home)
-	tiniFile, err := ybdata.Download(ctx, http.DefaultClient, opts.dataDirs, biome.TiniURL)
+	tiniFile, err := opts.downloader.Download(ctx, biome.TiniURL)
 	if err != nil {
 		return nil, fmt.Errorf("set up environment for target %s: %w", opts.target, err)
 	}

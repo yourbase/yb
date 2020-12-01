@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -47,6 +46,7 @@ func (b *execCmd) run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	downloader := ybdata.NewDownloader(dataDirs.Downloads())
 	baseEnv, err := envFromCommandLine(b.env)
 	if err != nil {
 		return err
@@ -69,6 +69,7 @@ func (b *execCmd) run(ctx context.Context) error {
 		packageDir:      pkg.Path,
 		target:          b.execEnvName,
 		dataDirs:        dataDirs,
+		downloader:      downloader,
 		baseEnv:         baseEnv,
 		netrcFiles:      b.netrcFiles,
 		dockerClient:    dockerClient,
@@ -85,8 +86,7 @@ func (b *execCmd) run(ctx context.Context) error {
 	}()
 	sys := build.Sys{
 		Biome:           bio,
-		DataDirs:        dataDirs,
-		HTTPClient:      http.DefaultClient,
+		Downloader:      downloader,
 		DockerClient:    dockerClient,
 		DockerNetworkID: dockerNetworkID,
 		Stdout:          os.Stdout,
