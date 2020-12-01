@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog][], and this project adheres to
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
 [Unreleased]: https://github.com/yourbase/yb/compare/v0.5.4...HEAD
 
+## [Unreleased][]
+
+### Fixed
+
+-  Trying to run a program in a target with `./foo` now works correctly when
+   the `--no-container` flag is passed. This was a regression from 0.4.
+
 ## [0.5.4][] - 2020-11-30
 
 Version 0.5.4 fixes more regressions from 0.4.
