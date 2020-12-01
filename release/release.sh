@@ -64,9 +64,10 @@ dryrunnable() {
 srcroot="$(dirname "$(dirname "${BASH_SOURCE[0]}")" )"
 case "$mode" in
   zip)
-    zipname="$( "$srcroot/release/package.sh" )"
-    dryrunnable aws s3 cp "${zipname}_cats.zip" "s3://yourbase-cats-bundles/${zipname}.zip"
-    echo "::set-output name=file::${zipname}.zip"
+    triple="$( "$srcroot/release/package.sh" )"
+    dryrunnable aws s3 cp "yb_${triple}_cats.zip" "s3://yourbase-cats-bundles/yb_${triple}.zip"
+    dryrunnable aws s3 cp "yb-next_${triple}_cats.zip" "s3://yourbase-cats-bundles/yb-next_${triple}.zip"
+    echo "::set-output name=file::yb_${triple}.zip"
     ;;
   debian)
     debfile="$( "$srcroot/release/debpackage.sh" )"

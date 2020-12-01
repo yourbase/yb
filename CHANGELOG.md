@@ -4,7 +4,22 @@ The format is based on [Keep a Changelog][], and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
-[Unreleased]: https://github.com/yourbase/yb/compare/v0.5.3...HEAD
+[Unreleased]: https://github.com/yourbase/yb/compare/v0.5.4...HEAD
+
+## [0.5.4][] - 2020-11-30
+
+Version 0.5.4 fixes more regressions from 0.4.
+
+[0.5.4]: https://github.com/yourbase/yb/releases/tag/v0.5.4
+
+### Fixed
+
+-  The Go buildpack now adds `$GOPATH/bin` to `PATH`. This was a regression
+   from 0.4.
+-  `yb exec --environment=foo` no longer crashes if the `default` environment
+   is empty. This was a regression from 0.4.
+-  Setting `container.ports` on `exec` or a `build_target` in `.yourbase.yml`
+   no longer causes a panic.
 
 ## [Unreleased][]
 
