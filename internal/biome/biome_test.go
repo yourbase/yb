@@ -18,7 +18,10 @@ package biome
 
 import (
 	"context"
+	"io/ioutil"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -42,6 +45,118 @@ var (
 	} = ExecPrefix{}
 )
 
+func TestLocal(t *testing.T) {
+	truePath, err := exec.LookPath("true")
+	if err != nil {
+		t.Skip("Cannot find true:", err)
+	}
+	falsePath, err := exec.LookPath("false")
+	if err != nil {
+		t.Skip("Cannot find false:", err)
+	}
+
+	trueExe, err := ioutil.ReadFile(truePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	packageDir := t.TempDir()
+	if err := os.Mkdir(filepath.Join(packageDir, "foo"), 0777); err != nil {
+		t.Fatal(err)
+	}
+	if err := ioutil.WriteFile(filepath.Join(packageDir, "foo", "xyzzy"), trueExe, 0777); err != nil {
+		t.Fatal(err)
+	}
+	homeDir := t.TempDir()
+
+	tests := []struct {
+		name    string
+		invoke  *Invocation
+		wantErr bool
+	}{
+		{
+			name: "EmptyArgv",
+			invoke: &Invocation{
+				Argv: []string{},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AbsPathExe/Success",
+			invoke: &Invocation{
+				Argv: []string{truePath},
+			},
+			wantErr: false,
+		},
+		{
+			name: "AbsPathExe/Failure",
+			invoke: &Invocation{
+				Argv: []string{falsePath},
+			},
+			wantErr: true,
+		},
+		{
+			name: "JustNameExe/Success",
+			invoke: &Invocation{
+				Argv: []string{"true"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "JustNameExe/Failure",
+			invoke: &Invocation{
+				Argv: []string{"false"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "RelativeExe",
+			invoke: &Invocation{
+				// Not using filepath.Join because it cleans away the "./".
+				Argv: []string{filepath.FromSlash("./foo/xyzzy")},
+			},
+			wantErr: false,
+		},
+		{
+			name: "RelativeSubdirExe",
+			invoke: &Invocation{
+				// Not using filepath.Join because it cleans away the "./".
+				Argv: []string{filepath.FromSlash("./xyzzy")},
+				Dir:  "foo",
+			},
+			wantErr: false,
+		},
+		{
+			name: "RelativePATH",
+			invoke: &Invocation{
+				Argv: []string{"xyzzy"},
+				Env: Environment{
+					AppendPath: []string{"foo"},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := testlog.WithTB(context.Background(), t)
+			l := Local{
+				PackageDir: packageDir,
+				HomeDir:    homeDir,
+			}
+			if err := l.Run(ctx, test.invoke); err != nil {
+				t.Log("Run:", err)
+				if !test.wantErr {
+					t.Fail()
+				}
+				return
+			}
+			if test.wantErr {
+				t.Error("Run succeeded")
+			}
+		})
+	}
+}
+
 func TestExecPrefix(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -55,7 +170,7 @@ func TestExecPrefix(t *testing.T) {
 			want: []string{"echo", "Hello, World!"},
 		},
 		{
-			name:        "NoPrefix",
+			name:        "WithPrefix",
 			prependArgv: []string{"sudo", "--"},
 			argv:        []string{"echo", "Hello, World!"},
 			want:        []string{"sudo", "--", "echo", "Hello, World!"},
