@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog][], and this project adheres to
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
 [Unreleased]: https://github.com/yourbase/yb/compare/v0.5.4...HEAD
 
+## [Unreleased][]
+
+### Fixed
+
+-  Interrupting yb now cleans up any running processes or containers and reports
+   the error like other build failures.
+
 ## [0.5.4][] - 2020-11-30
 
 Version 0.5.4 fixes more regressions from 0.4.
