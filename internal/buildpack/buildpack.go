@@ -8,8 +8,10 @@ import (
 	"net/http"
 	"strings"
 	"text/template"
+	"time"
 
 	docker "github.com/fsouza/go-dockerclient"
+	"github.com/yourbase/commons/xcontext"
 	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/internal/ybdata"
@@ -104,6 +106,7 @@ func extract(ctx context.Context, sys Sys, dstDir, url string, extractMode bool)
 		tarGZExt  = ".tar.gz"
 		tarBZ2Ext = ".tar.bz2"
 	)
+	const cleanupTimeout = 10 * time.Second
 	exts := []string{
 		zipExt,
 		tarXZExt,
@@ -130,6 +133,8 @@ func extract(ctx context.Context, sys Sys, dstDir, url string, extractMode bool)
 	defer func() {
 		// Attempt to clean up if unarchive fails.
 		if err != nil {
+			ctx, cancel := context.WithTimeout(xcontext.IgnoreDeadline(ctx), cleanupTimeout)
+			defer cancel()
 			rmErr := sys.Biome.Run(ctx, &biome.Invocation{
 				Argv:   []string{"rm", "-rf", dstDir},
 				Stdout: sys.Stdout,
@@ -146,6 +151,8 @@ func extract(ctx context.Context, sys Sys, dstDir, url string, extractMode bool)
 	}
 	dstFile := dstDir + ext
 	defer func() {
+		ctx, cancel := context.WithTimeout(xcontext.IgnoreDeadline(ctx), cleanupTimeout)
+		defer cancel()
 		rmErr := sys.Biome.Run(ctx, &biome.Invocation{
 			Argv:   []string{"rm", "-f", dstFile},
 			Stdout: sys.Stdout,

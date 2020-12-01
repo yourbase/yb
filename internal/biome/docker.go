@@ -253,6 +253,35 @@ func (c *Container) Run(ctx context.Context, invoke *Invocation) error {
 		return fmt.Errorf("run in container %s: %w", c.id, err)
 	}
 
+	// Unfortunately, there's no way to signal a particular exec:
+	// https://github.com/moby/moby/issues/9098
+	//
+	// So if the Context is cancelled, we restart the container, which may take
+	// down other running processes, but usually the biome is going down anyway.
+	runDone := make(chan struct{})
+	interrupterDone := make(chan struct{})
+	go func() {
+		defer close(interrupterDone)
+		select {
+		case <-ctx.Done():
+			log.Infof(ctx, "Interrupted. Stopping container %s...", c.id)
+			if err := c.client.StopContainer(c.id, 10); err != nil {
+				log.Warnf(ctx, "Could not stop container %s: %v", c.id, err)
+				return
+			}
+			err := c.client.StartContainerWithContext(
+				c.id,
+				&docker.HostConfig{},
+				xcontext.IgnoreDeadline(ctx),
+			)
+			if err != nil {
+				log.Warnf(ctx, "Could not restart container %s after interrupt: %v", c.id, err)
+				return
+			}
+		case <-runDone:
+		}
+	}()
+
 	stdout := ioutil.Discard
 	if invoke.Stdout != nil {
 		stdout = invoke.Stdout
@@ -268,6 +297,8 @@ func (c *Container) Run(ctx context.Context, invoke *Invocation) error {
 		ErrorStream:  stderr,
 		// TODO(light): Tty can't be set true or it fails with "Unrecognized input header: 114".
 	})
+	close(runDone)
+	<-interrupterDone
 	if err != nil {
 		return fmt.Errorf("run in container %s: %w", c.id, err)
 	}
