@@ -181,7 +181,11 @@ func (l Local) Run(ctx context.Context, invoke *Invocation) error {
 	}
 	log.Infof(ctx, "Run: %s", strings.Join(invoke.Argv, " "))
 	log.Debugf(ctx, "Environment:\n%v", invoke.Env)
-	program, err := l.lookPath(invoke.Env, invoke.Argv[0])
+	dir := invoke.Dir
+	if !filepath.IsAbs(invoke.Dir) {
+		dir = filepath.Join(l.PackageDir, invoke.Dir)
+	}
+	program, err := l.lookPath(invoke.Env, dir, invoke.Argv[0])
 	if err != nil {
 		return fmt.Errorf("local run: %w", err)
 	}
@@ -194,11 +198,7 @@ func (l Local) Run(ctx context.Context, invoke *Invocation) error {
 		"TZ=UTC",
 	}
 	c.Env = invoke.Env.appendTo(c.Env, os.Getenv("PATH"), filepath.ListSeparator)
-	if filepath.IsAbs(invoke.Dir) {
-		c.Dir = invoke.Dir
-	} else {
-		c.Dir = filepath.Join(l.PackageDir, invoke.Dir)
-	}
+	c.Dir = dir
 	c.Stdin = invoke.Stdin
 	c.Stdout = invoke.Stdout
 	c.Stderr = invoke.Stderr
@@ -208,14 +208,20 @@ func (l Local) Run(ctx context.Context, invoke *Invocation) error {
 	return nil
 }
 
-func (l Local) lookPath(env Environment, program string) (string, error) {
+func (l Local) lookPath(env Environment, dir string, program string) (string, error) {
+	abs := func(path string) string {
+		if filepath.IsAbs(path) {
+			return filepath.Clean(path)
+		}
+		return filepath.Join(dir, path)
+	}
 	if strings.ContainsRune(program, filepath.Separator) {
-		return exec.LookPath(program)
+		return exec.LookPath(abs(program))
 	}
 	envPATH := env.computePATH(os.Getenv("PATH"), filepath.ListSeparator)
 	envPATH = envPATH[len("PATH="):]
 	for _, p := range filepath.SplitList(envPATH) {
-		if found, err := exec.LookPath(filepath.Join(p, program)); err == nil {
+		if found, err := exec.LookPath(abs(filepath.Join(p, program))); err == nil {
 			return found, nil
 		}
 	}
