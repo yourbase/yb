@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 ### Fixed
 
+-  Interrupting yb now cleans up any running processes or containers and reports
+   the error like other build failures.
 -  Trying to run a program in a target with `./foo` now works correctly when
    the `--no-container` flag is passed. This was a regression from 0.4.
 
