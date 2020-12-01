@@ -15,11 +15,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# package.sh builds two zip archives:
-# 1. The minimal archive sent to our fleet release system, suffixed "_cats.zip".
-# 2. The full archive to be consumed by end-users, suffixed ".zip".
+# package.sh builds three zip archives:
+# 1. The minimal archive sent to our fleet release system. This will be named
+#    something like "yb_v1.2.3_linux_amd64_cats.zip".
+# 2. A second minimal archive sent to our fleet release system with the
+#    executable name "yb-next". This will be named something like
+#    "yb-next_v1.2.3_linux_amd64_cats.zip".
+# 3. The full archive to be consumed by end-users. This will be named something
+#    like "yb_v1.2.3_linux_amd64.zip".
 #
-# Upon success, it prints the base name of the archives to stdout.
+# Upon success, it prints the VERSION/GOOS/GOARCH triple to stdout. This will
+# be something like "v1.2.3_linux_amd64".
 
 set -euo pipefail
 
@@ -43,23 +49,27 @@ GOOS="$( go env GOOS )"
 export GOOS
 GOARCH="$( go env GOARCH )"
 export GOARCH
-bundle="yb_${VERSION}_${GOOS}_${GOARCH}"
-distroot="$stageroot/$bundle"
+triple="${VERSION}_${GOOS}_${GOARCH}"
+distname="yb_${triple}"
+distroot="$stageroot/$distname"
 
 # mkzip creates a zip archive of $distroot in the current directory with the
 # name given as the first argument.
 mkzip() {
   rm -f "$1" 1>&2
-  ( cd "$stageroot" && zip -r "$outdir/$1" "$bundle" ) 1>&2
+  ( cd "$stageroot" && zip -r "$outdir/$1" "$distname" ) 1>&2
 }
 
-# First: create minimal fleet distribution.
-"$srcroot/release/build.sh" "$distroot/yb"
-mkzip "${bundle}_cats.zip"
+# First: create minimal fleet distributions.
+"$srcroot/release/build.sh" "$distroot/yb-next"
+mkzip "yb-next_${triple}_cats.zip"
+
+mv "$distroot/yb-next" "$distroot/yb"
+mkzip "yb_${triple}_cats.zip"
 
 # Next: create end-user-friendly distribution.
 cp "$srcroot/README.md" "$srcroot/LICENSE" "$srcroot/CHANGELOG.md" "$distroot/"
-mkzip "${bundle}.zip"
+mkzip "yb_${triple}.zip"
 
-# Output base name of bundle.
-echo "$bundle"
+# Output triple.
+echo "$triple"

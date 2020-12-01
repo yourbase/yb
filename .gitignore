@@ -5,6 +5,7 @@
 /cmd/yb/yb
 .DS_Store
 /yb_*_*_*.zip
+/yb-next_*_*_*.zip
 /yb-*-*-*.tgz
 *.deb
 *.rpm
