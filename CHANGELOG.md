@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog][], and this project adheres to
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
 [Unreleased]: https://github.com/yourbase/yb/compare/v0.5.5...HEAD
 
+## [Unreleased][]
+
+### Fixed
+
+-  Mapping ports in the container no longer emits a seemingly empty log message.
+
 ## [0.5.5][] - 2020-12-01
 
 Version 0.5.5 fixes more regressions from 0.4.
