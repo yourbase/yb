@@ -72,15 +72,25 @@ func (dirs *Dirs) Downloads() string {
 }
 
 // BuildHome finds or creates a directory to store cached data for a target.
-//
-// TODO(ch2755): This should get moved to a directory physically in the package
-// directory.
 func (dirs *Dirs) BuildHome(packageDir, target string, desc *biome.Descriptor) (string, error) {
-	h := sha256.Sum256([]byte(packageDir))
-	workspaceHash := hex.EncodeToString(h[:hex.DecodedLen(12)])
-	path := filepath.Join(dirs.workspaces, workspaceHash, target, desc.OS, desc.Arch)
+	path := dirs.FindBuildHome(packageDir, target, desc)
 	if err := os.MkdirAll(path, 0777); err != nil {
 		return "", fmt.Errorf("create build home: %w", err)
 	}
 	return path, nil
+}
+
+// FindBuildHome finds a directory to store cached data for a target.
+func (dirs *Dirs) FindBuildHome(packageDir, target string, desc *biome.Descriptor) string {
+	return filepath.Join(dirs.BuildHomeRoot(packageDir), target, desc.OS, desc.Arch)
+}
+
+// BuildHomeRoot finds the directory that contains the targets' home directories.
+//
+// TODO(ch2755): This should get moved to a directory physically in the package
+// directory.
+func (dirs *Dirs) BuildHomeRoot(packageDir string) string {
+	h := sha256.Sum256([]byte(packageDir))
+	workspaceHash := hex.EncodeToString(h[:hex.DecodedLen(12)])
+	return filepath.Join(dirs.workspaces, workspaceHash)
 }

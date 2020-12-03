@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 ## [Unreleased][]
 
+### Added
+
+-  The new `yb clean` command deletes the cache for the package or specific
+   targets.
+
 ### Fixed
 
 -  Mapping ports in the container no longer emits a seemingly empty log message.
