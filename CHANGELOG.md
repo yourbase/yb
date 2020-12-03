@@ -8,6 +8,22 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 ## [Unreleased][]
 
+### Added
+
+-  `github.com/yourbase/yb` is now a Go package for reading
+   `.yourbase.yml` files. The API is mostly stable, but may still change before
+   yb 1.0.
+
+### Changed
+
+-  Unknown keys in `.yourbase.yml` objects will now cause errors. Previously
+   they were ignored.
+
+### Removed
+
+-  The `exec.ports` stanza in .yourbase.yml was previously accepted but did
+   nothing. `exec.container.ports` should be used instead.
+
 ### Fixed
 
 -  Mapping ports in the container no longer emits a seemingly empty log message.
@@ -39,24 +55,6 @@ Version 0.5.4 fixes more regressions from 0.4.
    is empty. This was a regression from 0.4.
 -  Setting `container.ports` on `exec` or a `build_target` in `.yourbase.yml`
    no longer causes a panic.
-
-## [Unreleased][]
-
-### Added
-
--  `github.com/yourbase/yb` is now a Go package for reading
-   `.yourbase.yml` files. The API is mostly stable, but may still change before
-   yb 1.0.
-
-### Changed
-
--  Unknown keys in `.yourbase.yml` objects will now cause errors. Previously
-   they were ignored.
-
-### Removed
-
--  The `exec.ports` stanza in .yourbase.yml was previously accepted but did
-   nothing. `exec.container.ports` should be used instead.
 
 ## [0.5.3][] - 2020-11-19
 
