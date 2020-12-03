@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 ### Added
 
+-  The new `yb clean` command deletes the cache for the package or specific
+   targets.
 -  `github.com/yourbase/yb` is now a Go package for reading
    `.yourbase.yml` files. The API is mostly stable, but may still change before
    yb 1.0.

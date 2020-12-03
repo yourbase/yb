@@ -73,6 +73,11 @@ type Descriptor struct {
 	Arch string
 }
 
+// Equal reports whether two descriptors are equivalent.
+func (desc *Descriptor) Equal(desc2 *Descriptor) bool {
+	return *desc == *desc2
+}
+
 // Operating systems. Values are based off GOOS.
 const (
 	Linux   = "linux"
