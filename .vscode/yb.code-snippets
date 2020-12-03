@@ -1,0 +1,30 @@
+{
+	"command": {
+		"scope": "go",
+		"prefix": "command",
+		"body": [
+			"type ${1}Cmd struct {",
+			"}",
+			"",
+			"func new${1/^(.)/${1:/upcase}/}Cmd() *cobra.Command {",
+			"\tcmd := new(${1}Cmd)",
+			"\tc := &cobra.Command{",
+			"\t\tUse:   \"${1} [flags]\",",
+			"\t\tShort: \"${2:Do something}\",",
+			"\t\tArgs:  ${3:cobra.NoArgs},",
+			"\t\tRunE: func(cc *cobra.Command, args []string) error {",
+			"\t\t\treturn cmd.run(cc.Context())",
+			"\t\t},",
+			"\t\tDisableFlagsInUseLine: true,",
+			"\t}",
+			"\t// TODO: c.Flags()",
+			"\treturn c",
+			"}",
+			"",
+			"func (cmd *${1}Cmd) run(ctx context.Context) error {",
+			"\t${0:return nil}",
+			"}"
+		],
+		"description": "Cobra command"
+	}
+}

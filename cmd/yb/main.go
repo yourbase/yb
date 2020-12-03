@@ -53,6 +53,7 @@ func main() {
 	rootCmd.AddCommand(
 		newBuildCmd(),
 		newCheckConfigCmd(),
+		newCleanCmd(),
 		newConfigCmd(),
 		newExecCmd(),
 		newLoginCmd(),
