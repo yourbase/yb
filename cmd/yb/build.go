@@ -43,13 +43,13 @@ func newBuildCmd() *cobra.Command {
 		Use:   "build [options] [TARGET]",
 		Short: "Build a target",
 		Long: `Builds a target in the current package. If no argument is given, ` +
-			`uses the target named "default", if there is one.`,
+			`uses the target named "` + yb.DefaultTarget + `", if there is one.`,
 		Args:                  cobra.MaximumNArgs(1),
 		DisableFlagsInUseLine: true,
 		SilenceErrors:         true,
 		SilenceUsage:          true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			target := "default"
+			target := yb.DefaultTarget
 			if len(args) > 0 {
 				target = args[0]
 			}
@@ -111,17 +111,15 @@ func (b *buildCmd) run(ctx context.Context, buildTargetName string) error {
 	if err != nil {
 		return err
 	}
-
-	// Determine targets to build.
-	buildTargets, err := targetPackage.Manifest.BuildOrder(buildTargetName)
-	if err != nil {
-		return fmt.Errorf("%w\nValid build targets: %s", err, strings.Join(targetPackage.Manifest.BuildTargetList(), ", "))
+	desired := targetPackage.Targets[buildTargetName]
+	if desired == nil {
+		return fmt.Errorf("%s: no such target (found: %s)", buildTargetName, strings.Join(listTargetNames(targetPackage.Targets), ", "))
 	}
+	buildTargets := yb.BuildOrder(desired)
 
 	// Do the build!
 	startSection("BUILD")
 	log.Debugf(ctx, "Building package %s in %s...", targetPackage.Name, targetPackage.Path)
-	log.Debugf(ctx, "Checksum of dependencies: %s", targetPackage.Manifest.BuildDependenciesChecksum())
 
 	buildError := doTargetList(ctx, targetPackage, buildTargets, &doOptions{
 		dockerClient: dockerClient,
@@ -165,7 +163,7 @@ type doOptions struct {
 	setupOnly       bool
 }
 
-func doTargetList(ctx context.Context, pkg *yb.Package, targets []*yb.BuildTarget, opts *doOptions) error {
+func doTargetList(ctx context.Context, pkg *yb.Package, targets []*yb.Target, opts *doOptions) error {
 	if len(targets) == 0 {
 		return nil
 	}
@@ -198,7 +196,7 @@ func doTargetList(ctx context.Context, pkg *yb.Package, targets []*yb.BuildTarge
 	return nil
 }
 
-func doTarget(ctx context.Context, pkg *yb.Package, target *yb.BuildTarget, opts *doOptions) error {
+func doTarget(ctx context.Context, pkg *yb.Package, target *yb.Target, opts *doOptions) error {
 	biomeOpts := newBiomeOptions{
 		packageDir:      pkg.Path,
 		target:          target.Name,
@@ -207,7 +205,7 @@ func doTarget(ctx context.Context, pkg *yb.Package, target *yb.BuildTarget, opts
 		baseEnv:         opts.baseEnv,
 		netrcFiles:      opts.netrcFiles,
 		dockerClient:    opts.dockerClient,
-		targetContainer: target.Container.ToNarwhal(),
+		targetContainer: target.Container,
 		dockerNetworkID: opts.dockerNetworkID,
 	}
 	if target.HostOnly {
@@ -230,11 +228,7 @@ func doTarget(ctx context.Context, pkg *yb.Package, target *yb.BuildTarget, opts
 		Stdout:          os.Stdout,
 		Stderr:          os.Stderr,
 	}
-	phaseDeps, err := targetToPhaseDeps(target)
-	if err != nil {
-		return err
-	}
-	execBiome, err := build.Setup(ctx, sys, phaseDeps)
+	execBiome, err := build.Setup(ctx, sys, target)
 	if err != nil {
 		return err
 	}
@@ -253,11 +247,7 @@ func doTarget(ctx context.Context, pkg *yb.Package, target *yb.BuildTarget, opts
 
 	subSection(fmt.Sprintf("Build target: %s", target.Name))
 	log.Infof(ctx, "Executing build steps...")
-	err = build.Execute(ctx, sys, targetToPhase(target))
-	if err != nil {
-		return err
-	}
-	return nil
+	return build.Execute(ctx, sys, target)
 }
 
 // A traceSink records spans in memory. The zero value is an empty sink.

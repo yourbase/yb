@@ -26,6 +26,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
 	"zombiezen.com/go/log/testlog"
 )
@@ -38,20 +39,22 @@ func TestExecute(t *testing.T) {
 	}
 	tests := []struct {
 		name      string
-		phase     *Phase
+		target    *yb.Target
 		errorOn   map[string]struct{}
 		want      []commandRecord
 		wantError bool
 	}{
 		{
-			name:  "NoCommands",
-			phase: &Phase{TargetName: "default"},
-			want:  nil,
+			name: "NoCommands",
+			target: &yb.Target{
+				Name: yb.DefaultTarget,
+			},
+			want: nil,
 		},
 		{
 			name: "CommandSequence",
-			phase: &Phase{
-				TargetName: "default",
+			target: &yb.Target{
+				Name: yb.DefaultTarget,
 				Commands: []string{
 					`echo "Hello, World!"`,
 					`cat < foo.txt > bar.txt`, // intentionally using shell-like syntax
@@ -64,8 +67,8 @@ func TestExecute(t *testing.T) {
 		},
 		{
 			name: "ErrorStopsExecution",
-			phase: &Phase{
-				TargetName: "default",
+			target: &yb.Target{
+				Name: yb.DefaultTarget,
 				Commands: []string{
 					`echo "Before"`,
 					`bork`,
@@ -81,8 +84,8 @@ func TestExecute(t *testing.T) {
 		},
 		{
 			name: "EmptyCommand",
-			phase: &Phase{
-				TargetName: "default",
+			target: &yb.Target{
+				Name: yb.DefaultTarget,
 				Commands: []string{
 					`echo "Hello, World!"`,
 					`   `,
@@ -91,10 +94,10 @@ func TestExecute(t *testing.T) {
 			wantError: true,
 		},
 		{
-			name: "Root",
-			phase: &Phase{
-				TargetName: "default",
-				Root:       "foo",
+			name: "RunDir",
+			target: &yb.Target{
+				Name:   yb.DefaultTarget,
+				RunDir: "foo",
 				Commands: []string{
 					`echo "Hello, World!"`,
 				},
@@ -105,8 +108,8 @@ func TestExecute(t *testing.T) {
 		},
 		{
 			name: "Chdir",
-			phase: &Phase{
-				TargetName: "default",
+			target: &yb.Target{
+				Name: yb.DefaultTarget,
 				Commands: []string{
 					`cd foo`,
 					`echo "Hello, World!"`,
@@ -118,8 +121,8 @@ func TestExecute(t *testing.T) {
 		},
 		{
 			name: "Chdir/Empty",
-			phase: &Phase{
-				TargetName: "default",
+			target: &yb.Target{
+				Name: yb.DefaultTarget,
 				Commands: []string{
 					`echo "Hello, World!"`,
 					`cd `,
@@ -161,7 +164,7 @@ func TestExecute(t *testing.T) {
 					return nil
 				},
 			}
-			err := Execute(ctx, Sys{Biome: bio}, test.phase)
+			err := Execute(ctx, Sys{Biome: bio}, test.target)
 			if err != nil {
 				if test.wantError {
 					t.Logf("Build: %v (expected)", err)

@@ -18,7 +18,6 @@ package biome
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"sort"
 	"strings"
@@ -33,32 +32,6 @@ type Environment struct {
 	PrependPath []string
 	// AppendPath is a list of paths to append to PATH.
 	AppendPath []string
-}
-
-// MapVars creates a map of variables from a list of variables in the
-// form "key=value". If the list contains duplicate variables, only the last
-// value in the slice for each duplicate key is used.
-func MapVars(vars []string) (map[string]string, error) {
-	if len(vars) == 0 {
-		return nil, nil
-	}
-	m := make(map[string]string, len(vars))
-	for _, kv := range vars {
-		k, v, err := parseVar(kv)
-		if err != nil {
-			return nil, err
-		}
-		m[k] = v
-	}
-	return m, nil
-}
-
-func parseVar(kv string) (k, v string, err error) {
-	i := strings.IndexByte(kv, '=')
-	if i == -1 {
-		return "", "", fmt.Errorf("invalid variable %q", kv)
-	}
-	return kv[:i], kv[i+1:], nil
 }
 
 // IsEmpty reports whether env contains no variables.

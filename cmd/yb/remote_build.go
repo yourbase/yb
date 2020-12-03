@@ -55,13 +55,13 @@ func newRemoteCmd() *cobra.Command {
 		Use:   "remotebuild [options] [TARGET]",
 		Short: "Build a target remotely",
 		Long: `Builds a target using YourBase infrastructure. If no argument is given, ` +
-			`uses the target named "default", if there is one.`,
+			`uses the target named "` + yb.DefaultTarget + `", if there is one.`,
 		Args:                  cobra.MaximumNArgs(1),
 		DisableFlagsInUseLine: true,
 		SilenceErrors:         true,
 		SilenceUsage:          true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			p.target = "default"
+			p.target = yb.DefaultTarget
 			if len(args) > 0 {
 				p.target = args[0]
 			}
@@ -86,22 +86,9 @@ func (p *remoteCmd) run(ctx context.Context) error {
 		return err
 	}
 
-	manifest := targetPackage.Manifest
-
-	var target *yb.BuildTarget
-
-	if len(manifest.BuildTargets) == 0 {
-		target = manifest.Build
-		if len(target.Commands) == 0 {
-			return fmt.Errorf("default build command has no steps and no targets described")
-		}
-	} else {
-		var err error
-		target, err = manifest.BuildTarget(p.target)
-		if err != nil {
-			return fmt.Errorf("build target %s specified but it doesn't exist!\nValid build targets: %s",
-				p.target, strings.Join(manifest.BuildTargetList(), ", "))
-		}
+	target := targetPackage.Targets[p.target]
+	if target == nil {
+		return fmt.Errorf("%s: no such target (found: %s)", p.target, strings.Join(listTargetNames(targetPackage.Targets), ", "))
 	}
 
 	p.repoDir = targetPackage.Path
@@ -464,7 +451,16 @@ func buildIDFromLogURL(u *url.URL) (string, error) {
 	return id, nil
 }
 
-func (p *remoteCmd) fetchProject(ctx context.Context, urls []string) (*yb.Project, error) {
+// An apiProject is a YourBase project as returned by the API.
+type apiProject struct {
+	ID          int    `json:"id"`
+	Label       string `json:"label"`
+	Description string `json:"description"`
+	Repository  string `json:"repository"`
+	OrgSlug     string `json:"organization_slug"`
+}
+
+func (p *remoteCmd) fetchProject(ctx context.Context, urls []string) (*apiProject, error) {
 	v := url.Values{}
 	fmt.Println()
 	log.Infof(ctx, "URLs used to search: %s", urls)
@@ -508,12 +504,12 @@ func (p *remoteCmd) fetchProject(ctx context.Context, urls []string) (*yb.Projec
 	if err != nil {
 		return nil, err
 	}
-	var project yb.Project
-	err = json.Unmarshal(body, &project)
+	project := new(apiProject)
+	err = json.Unmarshal(body, project)
 	if err != nil {
 		return nil, err
 	}
-	return &project, nil
+	return project, nil
 }
 
 func (cmd *remoteCmd) savePatch() error {
@@ -527,7 +523,7 @@ func (cmd *remoteCmd) savePatch() error {
 	return nil
 }
 
-func (cmd *remoteCmd) submitBuild(ctx context.Context, project *yb.Project, tagMap map[string]string) error {
+func (cmd *remoteCmd) submitBuild(ctx context.Context, project *apiProject, tagMap map[string]string) error {
 
 	startTime := time.Now()
 

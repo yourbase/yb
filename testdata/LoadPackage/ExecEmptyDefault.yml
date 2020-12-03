@@ -1,0 +1,9 @@
+dependencies:
+  runtime:
+    - python:3.7.7
+exec:
+  environment:
+    staging:
+      - YB_ENVIRONMENT=staging
+  commands:
+    - honcho start

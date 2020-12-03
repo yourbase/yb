@@ -12,6 +12,19 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 -  The new `yb clean` command deletes the cache for the package or specific
    targets.
+-  `github.com/yourbase/yb` is now a Go package for reading
+   `.yourbase.yml` files. The API is mostly stable, but may still change before
+   yb 1.0.
+
+### Changed
+
+-  Unknown keys in `.yourbase.yml` objects will now cause errors. Previously
+   they were ignored.
+
+### Removed
+
+-  The `exec.ports` stanza in .yourbase.yml was previously accepted but did
+   nothing. `exec.container.ports` should be used instead.
 
 ### Fixed
 

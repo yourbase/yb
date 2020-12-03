@@ -30,51 +30,6 @@ var _ interface {
 	symlinkEvaler
 } = EnvBiome{}
 
-func TestMapVars(t *testing.T) {
-	tests := []struct {
-		vars      []string
-		want      map[string]string
-		wantError bool
-	}{
-		{
-			vars: nil,
-			want: nil,
-		},
-		{
-			vars: []string{"FOO=BAR"},
-			want: map[string]string{"FOO": "BAR"},
-		},
-		{
-			vars: []string{"FOO=BAR", "BAZ=QUUX"},
-			want: map[string]string{"FOO": "BAR", "BAZ": "QUUX"},
-		},
-		{
-			vars: []string{"FOO=BAR", "FOO=BAZ"},
-			want: map[string]string{"FOO": "BAZ"},
-		},
-		{
-			vars:      []string{"FOO"},
-			wantError: true,
-		},
-	}
-	for _, test := range tests {
-		got, err := MapVars(test.vars)
-		if err != nil {
-			t.Logf("MapVars(%q) = _, %v", test.vars, err)
-			if !test.wantError {
-				t.Fail()
-			}
-			continue
-		}
-		if test.wantError {
-			t.Errorf("MapVars(%q) = %v; want error", test.vars, got)
-		}
-		if diff := cmp.Diff(test.want, got, cmpopts.EquateEmpty()); diff != "" {
-			t.Errorf("MapVars(%q) (-want +got):\n%s", test.vars, diff)
-		}
-	}
-}
-
 func TestEnvironmentMerge(t *testing.T) {
 	tests := []struct {
 		env1, env2, want Environment

@@ -21,16 +21,35 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
-	"gopkg.in/yaml.v2"
+	"github.com/yourbase/narwhal"
 )
 
+const docsURL = "https://docs.yourbase.io"
+
+// DefaultTarget is the name of the target that should be built when no
+// arguments are given to yb build.
+const DefaultTarget = "default"
+
+// DefaultExecEnvironment is the name of the execution environment variable set
+// that should be used when no options are given to yb exec.
+const DefaultExecEnvironment = "default"
+
+// Package is a parsed build configuration (from .yourbase.yml).
 type Package struct {
-	Name     string
-	Path     string
-	Manifest *BuildManifest
+	// Name is the name of the package directory.
+	Name string
+	// Path is the absolute path to the package directory.
+	Path string
+	// Targets is the set of targets in the package, keyed by target name.
+	Targets map[string]*Target
+	// ExecEnvironments is the set of targets representing the exec phase
+	// in the configuration, keyed by environment name.
+	ExecEnvironments map[string]*Target
 }
 
+// LoadPackage loads the package for the given .yourbase.yml file.
 func LoadPackage(configPath string) (*Package, error) {
 	configPath, err := filepath.Abs(configPath)
 	if err != nil {
@@ -38,58 +57,80 @@ func LoadPackage(configPath string) (*Package, error) {
 	}
 	configYAML, err := ioutil.ReadFile(configPath)
 	if os.IsNotExist(err) {
-		return nil, fmt.Errorf("load package %s: %w\nTry running in the package directory or creating %s if it is missing. See %s", configPath, err, filepath.Base(configPath), DOCS_URL)
+		return nil, fmt.Errorf("load package %s: %w\nTry running in the package directory or creating %s if it is missing. See %s", configPath, err, filepath.Base(configPath), docsURL)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("load package %s: %w", configPath, err)
 	}
-	manifest := new(BuildManifest)
-	if err := yaml.Unmarshal([]byte(configYAML), &manifest); err != nil {
-		return nil, fmt.Errorf("load package %s: %w", configPath, err)
-	}
-	err = mergeDeps(manifest)
+	pkg, err := parse(configYAML)
 	if err != nil {
 		return nil, fmt.Errorf("load package %s: %w", configPath, err)
 	}
+	// TODO(light): Validate the package for dependency cycles.
 	dir := filepath.Dir(configPath)
-	return &Package{
-		Name:     filepath.Base(dir),
-		Path:     dir,
-		Manifest: manifest,
-	}, nil
+	pkg.Name = filepath.Base(dir)
+	pkg.Path = dir
+	return pkg, nil
 }
 
-// mergeDeps overrides and merge build dependencies into
-// the BuildTarget.Dependencies.Build field. Adding globally defined deps to
-// per-build target defined dependencies, where it wasn't added.
-func mergeDeps(b *BuildManifest) error {
-	globalDepsMap := make(map[string]string) // tool -> version
-	globalDeps := b.Dependencies.Build
-	targetList := b.BuildTargets
+// A Target is a buildable unit.
+type Target struct {
+	Name    string
+	Package *Package
+	Deps    map[*Target]struct{}
+	Tags    map[string]string
 
-	for _, dep := range globalDeps {
-		spec, err := ParseBuildpackSpec(dep)
-		if err != nil {
-			return fmt.Errorf("merging/overriding build localDeps: %w", err)
-		}
-		globalDepsMap[spec.Name()] = spec.Version()
-	}
-	for _, tgt := range targetList {
-		tgtToolMap := make(map[string]string)
-		for tool, version := range globalDepsMap {
-			tgtToolMap[tool] = version
-		}
-		for _, dep := range tgt.Dependencies.Build {
-			spec, err := ParseBuildpackSpec(dep)
-			if err != nil {
-				return fmt.Errorf("merging/overriding build localDeps: %w", err)
-			}
-			tgtToolMap[spec.Name()] = spec.Version()
-		}
-		tgt.Dependencies.Build = tgt.Dependencies.Build[:0]
-		for tool, version := range tgtToolMap {
-			tgt.Dependencies.Build = append(tgt.Dependencies.Build, tool+":"+version)
-		}
-	}
-	return nil
+	Commands   []string
+	RunDir     string
+	Container  *narwhal.ContainerDefinition
+	Env        map[string]EnvTemplate
+	Buildpacks map[string]BuildpackSpec
+	Resources  map[string]*narwhal.ContainerDefinition
+	HostOnly   bool
 }
+
+// BuildOrder returns a topological sort of the targets needed to build the
+// given target. The last element in the slice is always the argument.
+func BuildOrder(desired *Target) []*Target {
+	// TODO(ch2750): This only handles direct dependencies.
+	// TODO(light): This only handles one target.
+	var targetList []*Target
+	for dep := range desired.Deps {
+		targetList = append(targetList, dep)
+	}
+	targetList = append(targetList, desired)
+	return targetList
+}
+
+// BuildpackSpec is a buildpack specifier, consisting of a name and a version.
+type BuildpackSpec string
+
+// ParseBuildpackSpec validates a buildpack specifier string.
+func ParseBuildpackSpec(s string) (BuildpackSpec, error) {
+	i := strings.IndexByte(s, ':')
+	if i == -1 {
+		return "", fmt.Errorf("parse buildpack %q: no version specified (missing ':')", s)
+	}
+	return BuildpackSpec(s), nil
+}
+
+func (spec BuildpackSpec) Name() string {
+	i := strings.IndexByte(string(spec), ':')
+	if i == -1 {
+		panic("Name() called on invalid spec: " + string(spec))
+	}
+	return string(spec[:i])
+}
+
+func (spec BuildpackSpec) Version() string {
+	i := strings.IndexByte(string(spec), ':')
+	if i == -1 {
+		panic("Version() called on invalid spec: " + string(spec))
+	}
+	return string(spec[i+1:])
+}
+
+// EnvTemplate is an expression for an environment variable value. It's mostly a
+// literal string, but may include substitutions for container IP addresses in
+// the form `{{ .Containers.IP "mycontainer" }}`.
+type EnvTemplate string

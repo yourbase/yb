@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/google/shlex"
+	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/internal/buildpack"
 	"github.com/yourbase/yb/internal/ybtrace"
@@ -35,21 +36,11 @@ import (
 // Sys holds dependencies provided by the caller needed to run builds.
 type Sys = buildpack.Sys
 
-// Phase is a sequence of commands to run to accomplish an outcome.
-//
-// TODO(ch2285): This should be moved out of this package and into a separate
-// loader package.
-type Phase struct {
-	TargetName string
-	Commands   []string
-	Root       string
-}
-
 // Execute runs the given phase. It assumes that the phase's dependencies are
 // already available in the biome.
-func Execute(ctx context.Context, sys Sys, target *Phase) (err error) {
-	ctx, span := ybtrace.Start(ctx, "Build "+target.TargetName, trace.WithAttributes(
-		label.String("target", target.TargetName),
+func Execute(ctx context.Context, sys Sys, target *yb.Target) (err error) {
+	ctx, span := ybtrace.Start(ctx, "Build "+target.Name, trace.WithAttributes(
+		label.String("target", target.Name),
 	))
 	defer func() {
 		if err != nil {
@@ -59,22 +50,22 @@ func Execute(ctx context.Context, sys Sys, target *Phase) (err error) {
 	}()
 
 	workDir := ""
-	if target.Root != "" {
-		if isSlashAbs(target.Root) {
-			return fmt.Errorf("build %s: root %s is absolute", target.TargetName, target.Root)
+	if target.RunDir != "" {
+		if isSlashAbs(target.RunDir) {
+			return fmt.Errorf("build %s: root %s is absolute", target.Name, target.RunDir)
 		}
-		workDir = joinSlashPath(sys.Biome, "", target.Root)
+		workDir = joinSlashPath(sys.Biome, "", target.RunDir)
 	}
 	// Validate commands before running them.
 	for _, cmdString := range target.Commands {
 		if err := validateCommand(cmdString); err != nil {
-			return fmt.Errorf("build %s: %w", target.TargetName, err)
+			return fmt.Errorf("build %s: %w", target.Name, err)
 		}
 	}
 	for _, cmdString := range target.Commands {
 		newWorkDir, err := runCommand(ctx, sys, workDir, cmdString)
 		if err != nil {
-			return fmt.Errorf("build %s: %w", target.TargetName, err)
+			return fmt.Errorf("build %s: %w", target.Name, err)
 		}
 		workDir = newWorkDir
 	}

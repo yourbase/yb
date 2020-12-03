@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
 	"zombiezen.com/go/log/testlog"
 )
@@ -42,9 +43,9 @@ func TestSetup(t *testing.T) {
 	}
 	// Should not require Docker: no containers in dependencies.
 	sys := Sys{Biome: bio}
-	gotBiome, err := Setup(ctx, sys, &PhaseDeps{
-		TargetName: "default",
-		EnvironmentTemplate: map[string]string{
+	gotBiome, err := Setup(ctx, sys, &yb.Target{
+		Name: yb.DefaultTarget,
+		Env: map[string]yb.EnvTemplate{
 			"FOO": "BAR",
 		},
 	})
