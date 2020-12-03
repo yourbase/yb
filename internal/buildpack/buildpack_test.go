@@ -71,13 +71,17 @@ func testInstall(ctx context.Context, tb testing.TB, specs ...yb.BuildpackSpec) 
 // runTestInstall installs the specified buildpacks in the given biome.
 func runTestInstall(ctx context.Context, tb testing.TB, bio biome.Biome, specs ...yb.BuildpackSpec) (biome.Environment, error) {
 	tb.Helper()
+	dirs, err := ybdata.DirsFromEnv()
+	if err != nil {
+		return biome.Environment{}, err
+	}
 	installOutput := new(strings.Builder)
 	sys := Sys{
-		Biome:      bio,
-		DataDirs:   ybdata.NewDirs(tb.TempDir()),
-		HTTPClient: http.DefaultClient,
-		Stdout:     installOutput,
-		Stderr:     installOutput,
+		Biome:  bio,
+		Stdout: installOutput,
+		Stderr: installOutput,
+		// Using the user's download cache so that downloads persist between runs.
+		Downloader: ybdata.NewDownloader(dirs.Downloads()),
 	}
 	var mergedEnv biome.Environment
 	for _, spec := range specs {
@@ -217,11 +221,11 @@ func TestExtract(t *testing.T) {
 			output := new(strings.Builder)
 			sys := Sys{
 				Biome:      bio,
-				DataDirs:   ybdata.NewDirs(t.TempDir()),
-				HTTPClient: srv.Client(),
 				Stdout:     output,
 				Stderr:     output,
+				Downloader: ybdata.NewDownloader(t.TempDir()),
 			}
+			sys.Downloader.Client = srv.Client()
 
 			dstDir := bio.JoinPath(bio.HomeDir, "extractpoint")
 			if err := extract(ctx, sys, dstDir, srv.URL+wantPath, test.mode); err != nil {

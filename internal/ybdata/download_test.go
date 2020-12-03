@@ -69,9 +69,11 @@ func TestDownload(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			srv := httptest.NewServer(test.handle)
 			t.Cleanup(srv.Close)
-			dataDirs := NewDirs(t.TempDir())
+			dir := t.TempDir()
+			d := NewDownloader(dir)
+			d.Client = srv.Client()
 
-			f, err := Download(context.Background(), srv.Client(), dataDirs, srv.URL)
+			f, err := d.Download(context.Background(), srv.URL)
 			if err != nil {
 				t.Logf("download: %v", err)
 				if !test.wantError {
@@ -80,7 +82,7 @@ func TestDownload(t *testing.T) {
 				if got := IsNotFound(err); got != test.wantNotFound {
 					t.Errorf("is not found error = %t; want %t", got, test.wantNotFound)
 				}
-				files, err := ioutil.ReadDir(dataDirs.Downloads())
+				files, err := ioutil.ReadDir(dir)
 				if err != nil && !os.IsNotExist(err) {
 					t.Error(err)
 				}
@@ -185,7 +187,9 @@ func TestValidateDownloadCache(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			err = validateDownloadCache(context.Background(), srv.Client(), f, srv.URL)
+			d := NewDownloader(dir)
+			d.Client = srv.Client()
+			err = d.validateDownloadCache(context.Background(), f, srv.URL)
 			if err != nil {
 				t.Logf("validateDownloadCache: %v", err)
 				if !test.wantError {

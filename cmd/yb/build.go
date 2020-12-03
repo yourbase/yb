@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"strings"
 	"sync"
@@ -79,6 +78,7 @@ func (b *buildCmd) run(ctx context.Context, buildTargetName string) error {
 	if err != nil {
 		return err
 	}
+	downloader := ybdata.NewDownloader(dataDirs.Downloads())
 	baseEnv, err := envFromCommandLine(b.env)
 	if err != nil {
 		return err
@@ -124,6 +124,7 @@ func (b *buildCmd) run(ctx context.Context, buildTargetName string) error {
 	buildError := doTargetList(ctx, targetPackage, buildTargets, &doOptions{
 		dockerClient: dockerClient,
 		dataDirs:     dataDirs,
+		downloader:   downloader,
 		execPrefix:   execPrefix,
 		setupOnly:    b.dependenciesOnly,
 		baseEnv:      baseEnv,
@@ -153,6 +154,7 @@ func (b *buildCmd) run(ctx context.Context, buildTargetName string) error {
 
 type doOptions struct {
 	dataDirs        *ybdata.Dirs
+	downloader      *ybdata.Downloader
 	dockerClient    *docker.Client
 	dockerNetworkID string
 	baseEnv         biome.Environment
@@ -199,6 +201,7 @@ func doTarget(ctx context.Context, pkg *yb.Package, target *yb.Target, opts *doO
 		packageDir:      pkg.Path,
 		target:          target.Name,
 		dataDirs:        opts.dataDirs,
+		downloader:      opts.downloader,
 		baseEnv:         opts.baseEnv,
 		netrcFiles:      opts.netrcFiles,
 		dockerClient:    opts.dockerClient,
@@ -219,8 +222,7 @@ func doTarget(ctx context.Context, pkg *yb.Package, target *yb.Target, opts *doO
 	}()
 	sys := build.Sys{
 		Biome:           bio,
-		DataDirs:        opts.dataDirs,
-		HTTPClient:      http.DefaultClient,
+		Downloader:      opts.downloader,
 		DockerClient:    opts.dockerClient,
 		DockerNetworkID: opts.dockerNetworkID,
 		Stdout:          os.Stdout,

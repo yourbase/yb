@@ -7,7 +7,6 @@ import (
 	"github.com/blang/semver"
 	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
-	"github.com/yourbase/yb/internal/ybdata"
 	"zombiezen.com/go/log"
 )
 
@@ -39,7 +38,7 @@ func installAnaconda(ctx context.Context, sys Sys, pyMajor int, version string) 
 			return biome.Environment{}, err
 		}
 
-		localScript, err := ybdata.Download(ctx, sys.HTTPClient, sys.DataDirs, downloadURL)
+		localScript, err := sys.Downloader.Download(ctx, downloadURL)
 		if err != nil {
 			return biome.Environment{}, err
 		}

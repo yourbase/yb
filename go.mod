@@ -35,13 +35,14 @@ require (
 	github.com/ulikunitz/xz v0.5.8
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	github.com/yourbase/commons v0.7.0
-	github.com/yourbase/narwhal v0.6.4
+	github.com/yourbase/narwhal v0.6.5
 	go.opentelemetry.io/otel v0.11.0
 	go.opentelemetry.io/otel/sdk v0.11.0
 	go4.org v0.0.0-20200411211856-f5505b9728dd
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a // indirect
 	golang.org/x/mod v0.3.0
 	golang.org/x/net v0.0.0-20200822124328-c89045814202 // indirect
+	golang.org/x/sys v0.0.0-20200831180312-196b9ba8737a
 	google.golang.org/genproto v0.0.0-20200831141814-d751682dd103 // indirect
 	google.golang.org/grpc v1.31.1 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
