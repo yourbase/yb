@@ -463,8 +463,8 @@ github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 h1:nIPpBwaJSVYIxUFsDv3M8ofm
 github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8/go.mod h1:HUYIGzjTL3rfEspMxjDjgmT5uz5wzYJKVo23qUhYTos=
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=
 github.com/yourbase/commons v0.1.0/go.mod h1:33VOfAZFfHwouAocNBqM9o5ZpCIwwSQq3vqjKpYK8sc=
-github.com/yourbase/commons v0.7.0 h1:3MERfss4oaeOurX15BZiyEGihtnygttet8Shc2X+VUs=
-github.com/yourbase/commons v0.7.0/go.mod h1:Puc7zTNtP4J7cRK9LkAUWYdORUQ0f7ZcgFFu2lxOe4Y=
+github.com/yourbase/commons v0.8.0 h1:Q7CPO9MicvxJVe6QEBVnYoSJwdvq+VfCqVuKIBiA7eE=
+github.com/yourbase/commons v0.8.0/go.mod h1:Puc7zTNtP4J7cRK9LkAUWYdORUQ0f7ZcgFFu2lxOe4Y=
 github.com/yourbase/narwhal v0.6.5 h1:pMkI9TmIN9GmnnMTqxqSJCs0eDHCqatNFlDy5eWa1e8=
 github.com/yourbase/narwhal v0.6.5/go.mod h1:X1FC2daND8bK/vrhDsa00VtR4vnwYcmPUAzKF/FXdyw=
 go.etcd.io/bbolt v1.3.2/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
