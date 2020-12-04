@@ -144,8 +144,10 @@ func TestLoadPackage(t *testing.T) {
 						Buildpacks: map[string]BuildpackSpec{
 							"python": "python:3.7.7",
 						},
-						Resources: map[string]*narwhal.ContainerDefinition{
-							"db": {Image: "yourbase/api_dev_db"},
+						Resources: map[string]*ResourceDefinition{
+							"db": {ContainerDefinition: narwhal.ContainerDefinition{
+								Image: "yourbase/api_dev_db",
+							}},
 						},
 						Env: map[string]EnvTemplate{
 							"DATABASE_URL":   `postgres://yourbase:yourbase@{{ .Containers.IP "db" }}/yourbase`,
@@ -168,8 +170,10 @@ func TestLoadPackage(t *testing.T) {
 						Buildpacks: map[string]BuildpackSpec{
 							"python": "python:3.7.7",
 						},
-						Resources: map[string]*narwhal.ContainerDefinition{
-							"db": {Image: "yourbase/api_dev_db"},
+						Resources: map[string]*ResourceDefinition{
+							"db": {ContainerDefinition: narwhal.ContainerDefinition{
+								Image: "yourbase/api_dev_db",
+							}},
 						},
 						Env: map[string]EnvTemplate{
 							"DATABASE_URL":   `postgres://yourbase:yourbase@{{ .Containers.IP "db" }}/yourbase`,

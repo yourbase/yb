@@ -22,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/yourbase/narwhal"
 )
@@ -85,8 +86,14 @@ type Target struct {
 	Container  *narwhal.ContainerDefinition
 	Env        map[string]EnvTemplate
 	Buildpacks map[string]BuildpackSpec
-	Resources  map[string]*narwhal.ContainerDefinition
+	Resources  map[string]*ResourceDefinition
 	HostOnly   bool
+}
+
+type ResourceDefinition struct {
+	narwhal.ContainerDefinition
+
+	HealthCheckTimeout time.Duration
 }
 
 // BuildOrder returns a topological sort of the targets needed to build the

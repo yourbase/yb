@@ -115,7 +115,7 @@ type container struct {
 
 // startContainers starts containers for the given set of container definitions,
 // returning a map of container IP addresses and function to stop the containers.
-func startContainers(ctx context.Context, sys Sys, defs map[string]*narwhal.ContainerDefinition) (_ containersExpansion, closeFunc func() error, err error) {
+func startContainers(ctx context.Context, sys Sys, defs map[string]*yb.ResourceDefinition) (_ containersExpansion, closeFunc func() error, err error) {
 	exp := containersExpansion{
 		ips: make(map[string]string),
 	}
@@ -180,16 +180,16 @@ func startContainers(ctx context.Context, sys Sys, defs map[string]*narwhal.Cont
 }
 
 // startContainer starts a single container with the given definition.
-func startContainer(ctx context.Context, sys Sys, resourceName string, cd *narwhal.ContainerDefinition) (_ *container, err error) {
+func startContainer(ctx context.Context, sys Sys, resourceName string, cd *yb.ResourceDefinition) (_ *container, err error) {
 	log.Infof(ctx, "Starting container %s...", resourceName)
-	id, err := narwhal.CreateContainer(ctx, sys.DockerClient, sys.Stderr, cd)
+	narwhalContainer, err := narwhal.CreateContainer(ctx, sys.DockerClient, sys.Stderr, &cd.ContainerDefinition)
 	if err != nil {
 		return nil, fmt.Errorf("start resource %s: %w", resourceName, err)
 	}
 	c := &container{
 		client:       sys.DockerClient,
 		resourceName: resourceName,
-		id:           id,
+		id:           narwhalContainer.ID,
 	}
 	defer func() {
 		if err != nil {
@@ -198,40 +198,28 @@ func startContainer(ctx context.Context, sys Sys, resourceName string, cd *narwh
 	}()
 	err = sys.DockerClient.ConnectNetwork(sys.DockerNetworkID, docker.NetworkConnectionOptions{
 		Context:   ctx,
-		Container: id,
+		Container: c.id,
 		EndpointConfig: &docker.EndpointConfig{
 			NetworkID: sys.DockerNetworkID,
 		},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("start resource %s: connect %s to %s: %w", resourceName, id, sys.DockerNetworkID, err)
+		return nil, fmt.Errorf("start resource %s: connect %s to %s: %w", resourceName, c.id, sys.DockerNetworkID, err)
 	}
-	if err := narwhal.StartContainer(ctx, sys.DockerClient, id); err != nil {
+	if err := narwhal.StartContainer(ctx, sys.DockerClient, c.id); err != nil {
 		return nil, fmt.Errorf("start resource %s: %w", resourceName, err)
 	}
-	c.ip, err = narwhal.IPv4Address(ctx, sys.DockerClient, id)
+	c.ip, err = narwhal.IPv4Address(ctx, sys.DockerClient, c.id)
 	if err != nil {
 		return nil, fmt.Errorf("start resource %s: %w", resourceName, err)
 	}
 
-	if cd.PortWaitCheck.Port != 0 {
+	if narwhalContainer.HealthCheckAddr != nil {
 		// Wait for port to be reachable.
-		addr := &net.TCPAddr{
-			IP:   c.ip,
-			Port: cd.PortWaitCheck.Port,
-		}
-		if cd.PortWaitCheck.LocalPortMap != 0 {
-			addr = &net.TCPAddr{
-				IP:   net.IPv4(127, 0, 0, 1),
-				Port: cd.PortWaitCheck.LocalPortMap,
-			}
-		}
-
-		timeout := time.Duration(cd.PortWaitCheck.Timeout) * time.Second
-		log.Infof(ctx, "Waiting up to %v for %s to be ready... ", timeout, resourceName)
-		ctx, cancel := context.WithTimeout(ctx, timeout)
+		log.Infof(ctx, "Waiting up to %v for %s to be ready... ", cd.HealthCheckTimeout, resourceName)
+		ctx, cancel := context.WithTimeout(ctx, cd.HealthCheckTimeout)
 		defer cancel()
-		if err := waitForTCPPort(ctx, addr.String()); err != nil {
+		if err := waitForTCPPort(ctx, narwhalContainer.HealthCheckAddr.String()); err != nil {
 			return nil, fmt.Errorf("start resource %s: %w", resourceName, err)
 		}
 	}
