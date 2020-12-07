@@ -28,6 +28,7 @@ import (
 	"os"
 	slashpath "path"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	docker "github.com/fsouza/go-dockerclient"
@@ -97,6 +98,22 @@ func (opts *ContainerOptions) definition() (*narwhal.ContainerDefinition, error)
 	if defn.WorkDir == "" {
 		defn.WorkDir = "/workspace"
 	}
+	homeDirConsistency := ""
+	if runtime.GOOS == "darwin" {
+		// On Docker-on-Mac, there's a translation layer for volumes to go from the
+		// Linux VM running Docker to the macOS host folder. This introduces heavy
+		// overhead for our case where the home directory is largely cache and
+		// doesn't need to be strongly consistent on the host side.
+		//
+		// We hint to Docker that we only want eventual consistency for this volume,
+		// which means that writes to the volume from the container might not be
+		// propagated if Docker crashes. In these cases, a `yb clean` fixes things.
+		//
+		// See https://tkacz.pro/docker-volumes-cached-vs-delegated/ for a longer
+		// discussion of the option. Unfortunately, Docker has deleted their
+		// upstream reference docs for this upstream. :(
+		homeDirConsistency = "delegated"
+	}
 	defn.Mounts = append(defn.Mounts[:len(defn.Mounts):len(defn.Mounts)],
 		docker.HostMount{
 			Source: opts.PackageDir,
@@ -104,9 +121,10 @@ func (opts *ContainerOptions) definition() (*narwhal.ContainerDefinition, error)
 			Type:   BindMount,
 		},
 		docker.HostMount{
-			Source: opts.HomeDir,
-			Target: containerHome,
-			Type:   BindMount,
+			Source:      opts.HomeDir,
+			Target:      containerHome,
+			Type:        BindMount,
+			Consistency: homeDirConsistency,
 		},
 	)
 	defn.Argv = []string{tiniPath, "-g", "--", "tail", "-f", "/dev/null"}

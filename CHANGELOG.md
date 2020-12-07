@@ -31,7 +31,11 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 ### Fixed
 
+-  Docker I/O performance on macOS has been improved by using
+   [`delegated` consistency][] for the build home directory.
 -  Mapping ports in the container no longer emits a seemingly empty log message.
+
+[`delegated` consistency]: https://tkacz.pro/docker-volumes-cached-vs-delegated/
 
 ## [0.5.5][] - 2020-12-01
 
