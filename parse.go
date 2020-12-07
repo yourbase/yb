@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/yourbase/narwhal"
 	"gopkg.in/yaml.v2"
@@ -123,14 +124,14 @@ func parseTarget(globalDeps map[string]BuildpackSpec, tgt *buildTarget) (*Target
 	}
 	parsed := &Target{
 		Name:       tgt.Name,
-		Container:  tgt.Container.toNarwhal(),
+		Container:  &tgt.Container.toResource().ContainerDefinition,
 		Commands:   tgt.Commands,
 		RunDir:     tgt.Root,
 		Tags:       tgt.Tags,
 		Env:        make(map[string]EnvTemplate),
 		Buildpacks: make(map[string]BuildpackSpec),
 		HostOnly:   tgt.HostOnly,
-		Resources:  containerMapToNarwhal(tgt.Dependencies.Containers),
+		Resources:  makeResourceMap(tgt.Dependencies.Containers),
 	}
 	for tool, spec := range globalDeps {
 		parsed.Buildpacks[tool] = spec
@@ -201,12 +202,12 @@ func parseExecPhase(pkg *Package, manifest *buildManifest) (map[string]*Target, 
 	defaultTarget := &Target{
 		Name:       DefaultExecEnvironment,
 		Package:    pkg,
-		Container:  manifest.Exec.Container.toNarwhal(),
+		Container:  &manifest.Exec.Container.toResource().ContainerDefinition,
 		Commands:   manifest.Exec.Commands,
 		Env:        make(map[string]EnvTemplate),
 		Buildpacks: buildpacks,
 		HostOnly:   manifest.Exec.HostOnly,
-		Resources:  containerMapToNarwhal(manifest.Exec.Dependencies.Containers),
+		Resources:  makeResourceMap(manifest.Exec.Dependencies.Containers),
 	}
 	if err := parseEnv(defaultTarget.Env, manifest.Exec.Environment[defaultTarget.Name]); err != nil {
 		return nil, fmt.Errorf("exec environment: %s: %w", defaultTarget.Name, err)
@@ -248,38 +249,43 @@ type containerDefinition struct {
 	Label         string        `yaml:"label"`
 }
 
-func (def *containerDefinition) toNarwhal() *narwhal.ContainerDefinition {
+func (def *containerDefinition) toResource() *ResourceDefinition {
 	image := DefaultContainerImage
 	if def == nil {
-		return &narwhal.ContainerDefinition{Image: image}
+		return &ResourceDefinition{
+			ContainerDefinition: narwhal.ContainerDefinition{
+				Image: image,
+			},
+		}
 	}
 	if def.Image != "" {
 		image = def.Image
 	}
-	return &narwhal.ContainerDefinition{
-		Image:       image,
-		Mounts:      append([]string(nil), def.Mounts...),
-		Ports:       append([]string(nil), def.Ports...),
-		Environment: append([]string(nil), def.Environment...),
-		Argv:        strings.Fields(def.Command),
-		WorkDir:     def.WorkDir,
-		PortWaitCheck: narwhal.PortWaitCheck{
-			Port:    def.PortWaitCheck.Port,
-			Timeout: def.PortWaitCheck.Timeout,
+	return &ResourceDefinition{
+		ContainerDefinition: narwhal.ContainerDefinition{
+			Image:       image,
+			Mounts:      append([]string(nil), def.Mounts...),
+			Ports:       append([]string(nil), def.Ports...),
+			Environment: append([]string(nil), def.Environment...),
+			Argv:        strings.Fields(def.Command),
+			WorkDir:     def.WorkDir,
+
+			HealthCheckPort: def.PortWaitCheck.Port,
+			Label:           def.Label,
 		},
-		Label: def.Label,
+		HealthCheckTimeout: time.Duration(def.PortWaitCheck.Timeout) * time.Second,
 	}
 }
 
-func containerMapToNarwhal(m map[string]*containerDefinition) map[string]*narwhal.ContainerDefinition {
+func makeResourceMap(m map[string]*containerDefinition) map[string]*ResourceDefinition {
 	if m == nil {
 		return nil
 	}
-	nmap := make(map[string]*narwhal.ContainerDefinition, len(m))
+	rmap := make(map[string]*ResourceDefinition, len(m))
 	for k, cd := range m {
-		nmap[k] = cd.toNarwhal()
+		rmap[k] = cd.toResource()
 	}
-	return nmap
+	return rmap
 }
 
 type portWaitCheck struct {
