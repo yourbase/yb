@@ -54,7 +54,7 @@ func installR(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (_ biome.Envi
 		// Remove build directory on failure to prevent subsequent invocations from
 		// using a corrupt installation.
 		if err != nil {
-			rmCtx, cancel := context.WithTimeout(xcontext.IgnoreDeadline(ctx), 10*time.Second)
+			rmCtx, cancel := xcontext.KeepAlive(ctx, 10*time.Second)
 			defer cancel()
 			rmErr := sys.Biome.Run(rmCtx, &biome.Invocation{
 				Argv:   []string{"rm", "-rf", rlangDir},
