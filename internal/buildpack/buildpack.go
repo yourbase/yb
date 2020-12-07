@@ -130,7 +130,7 @@ func extract(ctx context.Context, sys Sys, dstDir, url string, extractMode bool)
 	defer func() {
 		// Attempt to clean up if unarchive fails.
 		if err != nil {
-			ctx, cancel := context.WithTimeout(xcontext.IgnoreDeadline(ctx), cleanupTimeout)
+			ctx, cancel := xcontext.KeepAlive(ctx, cleanupTimeout)
 			defer cancel()
 			rmErr := sys.Biome.Run(ctx, &biome.Invocation{
 				Argv:   []string{"rm", "-rf", dstDir},
@@ -148,7 +148,7 @@ func extract(ctx context.Context, sys Sys, dstDir, url string, extractMode bool)
 	}
 	dstFile := dstDir + ext
 	defer func() {
-		ctx, cancel := context.WithTimeout(xcontext.IgnoreDeadline(ctx), cleanupTimeout)
+		ctx, cancel := xcontext.KeepAlive(ctx, cleanupTimeout)
 		defer cancel()
 		rmErr := sys.Biome.Run(ctx, &biome.Invocation{
 			Argv:   []string{"rm", "-f", dstFile},
