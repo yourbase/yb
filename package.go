@@ -37,6 +37,10 @@ const DefaultTarget = "default"
 // that should be used when no options are given to yb exec.
 const DefaultExecEnvironment = "default"
 
+// PackageConfigFilename is the name of the file at the base of a package
+// directory containing the package's configuration.
+const PackageConfigFilename = ".yourbase.yml"
+
 // Package is a parsed build configuration (from .yourbase.yml).
 type Package struct {
 	// Name is the name of the package directory.
