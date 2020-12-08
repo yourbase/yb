@@ -189,10 +189,8 @@ func newDockerNetwork(ctx context.Context, client *docker.Client) (string, func(
 	}, nil
 }
 
-const packageConfigFileName = ".yourbase.yml"
-
 func GetTargetPackage() (*yb.Package, error) {
-	return yb.LoadPackage(packageConfigFileName)
+	return yb.LoadPackage(yb.PackageConfigFilename)
 }
 
 func listTargetNames(targets map[string]*yb.Target) []string {

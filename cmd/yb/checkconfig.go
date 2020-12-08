@@ -26,7 +26,7 @@ func newCheckConfigCmd() *cobra.Command {
 			return b.run(cmd.Context())
 		},
 	}
-	c.Flags().StringVar(&b.file, "file", packageConfigFileName, "YAML file to check")
+	c.Flags().StringVar(&b.file, "file", yb.PackageConfigFilename, "YAML file to check")
 	return c
 }
 
