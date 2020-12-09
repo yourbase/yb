@@ -19,9 +19,11 @@ package yb
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 
+	docker "github.com/fsouza/go-dockerclient"
 	"github.com/yourbase/narwhal"
 	"gopkg.in/yaml.v2"
 )
@@ -36,12 +38,16 @@ type buildManifest struct {
 	CI           *ciInfo        `yaml:"ci"`
 }
 
-func parse(b []byte) (*Package, error) {
+// parse parses YAML data into a *Package. dir must be an absolute path.
+func parse(dir string, b []byte) (*Package, error) {
 	manifest := new(buildManifest)
 	if err := yaml.UnmarshalStrict(b, manifest); err != nil {
 		return nil, err
 	}
-	pkg := new(Package)
+	pkg := &Package{
+		Name: filepath.Base(dir),
+		Path: dir,
+	}
 	var err error
 	pkg.Targets, err = parseTargets(pkg, manifest)
 	if err != nil {
@@ -90,7 +96,7 @@ func parseTargets(pkg *Package, manifest *buildManifest) (map[string]*Target, er
 		if targetMap[tgt.Name] != nil {
 			return nil, fmt.Errorf("multiple targets with name %q", tgt.Name)
 		}
-		parsed, err := parseTarget(globalBuildDeps, tgt)
+		parsed, err := parseTarget(pkg.Path, globalBuildDeps, tgt)
 		if err != nil {
 			return nil, err
 		}
@@ -118,20 +124,28 @@ func parseTargets(pkg *Package, manifest *buildManifest) (map[string]*Target, er
 
 // parseTarget parses a target's data attributes (i.e. anything that doesn't
 // refer to other targets).
-func parseTarget(globalDeps map[string]BuildpackSpec, tgt *buildTarget) (*Target, error) {
+func parseTarget(packageDir string, globalDeps map[string]BuildpackSpec, tgt *buildTarget) (*Target, error) {
 	if tgt.Name == "" {
 		return nil, errors.New("found target without name")
 	}
+	container, err := tgt.Container.toResource(packageDir)
+	if err != nil {
+		return nil, fmt.Errorf("target %s: container: %w", tgt.Name, err)
+	}
+	resources, err := makeResourceMap(packageDir, tgt.Dependencies.Containers)
+	if err != nil {
+		return nil, fmt.Errorf("target %s: dependencies: containers: %w", tgt.Name, err)
+	}
 	parsed := &Target{
 		Name:       tgt.Name,
-		Container:  &tgt.Container.toResource().ContainerDefinition,
+		Container:  &container.ContainerDefinition,
 		Commands:   tgt.Commands,
 		RunDir:     tgt.Root,
 		Tags:       tgt.Tags,
 		Env:        make(map[string]EnvTemplate),
 		Buildpacks: make(map[string]BuildpackSpec),
 		HostOnly:   tgt.HostOnly,
-		Resources:  makeResourceMap(tgt.Dependencies.Containers),
+		Resources:  resources,
 	}
 	for tool, spec := range globalDeps {
 		parsed.Buildpacks[tool] = spec
@@ -199,15 +213,23 @@ func parseExecPhase(pkg *Package, manifest *buildManifest) (map[string]*Target, 
 	if err := parseBuildpacks(buildpacks, manifest.Dependencies.Runtime); err != nil {
 		return nil, fmt.Errorf("top-level runtime dependencies: %w", err)
 	}
+	container, err := manifest.Exec.Container.toResource(pkg.Path)
+	if err != nil {
+		return nil, fmt.Errorf("exec container: %w", err)
+	}
+	resources, err := makeResourceMap(pkg.Path, manifest.Exec.Dependencies.Containers)
+	if err != nil {
+		return nil, fmt.Errorf("exec dependencies: %w", err)
+	}
 	defaultTarget := &Target{
 		Name:       DefaultExecEnvironment,
 		Package:    pkg,
-		Container:  &manifest.Exec.Container.toResource().ContainerDefinition,
+		Container:  &container.ContainerDefinition,
 		Commands:   manifest.Exec.Commands,
 		Env:        make(map[string]EnvTemplate),
 		Buildpacks: buildpacks,
 		HostOnly:   manifest.Exec.HostOnly,
-		Resources:  makeResourceMap(manifest.Exec.Dependencies.Containers),
+		Resources:  resources,
 	}
 	if err := parseEnv(defaultTarget.Env, manifest.Exec.Environment[defaultTarget.Name]); err != nil {
 		return nil, fmt.Errorf("exec environment: %s: %w", defaultTarget.Name, err)
@@ -249,22 +271,30 @@ type containerDefinition struct {
 	Label         string        `yaml:"label"`
 }
 
-func (def *containerDefinition) toResource() *ResourceDefinition {
+func (def *containerDefinition) toResource(packageDir string) (*ResourceDefinition, error) {
 	image := DefaultContainerImage
 	if def == nil {
 		return &ResourceDefinition{
 			ContainerDefinition: narwhal.ContainerDefinition{
 				Image: image,
 			},
-		}
+		}, nil
 	}
 	if def.Image != "" {
 		image = def.Image
 	}
+	var mounts []docker.HostMount
+	for _, s := range def.Mounts {
+		mount, err := parseHostMount(packageDir, s)
+		if err != nil {
+			return nil, err
+		}
+		mounts = append(mounts, mount)
+	}
 	return &ResourceDefinition{
 		ContainerDefinition: narwhal.ContainerDefinition{
 			Image:       image,
-			Mounts:      append([]string(nil), def.Mounts...),
+			Mounts:      mounts,
 			Ports:       append([]string(nil), def.Ports...),
 			Environment: append([]string(nil), def.Environment...),
 			Argv:        strings.Fields(def.Command),
@@ -274,18 +304,38 @@ func (def *containerDefinition) toResource() *ResourceDefinition {
 			Label:           def.Label,
 		},
 		HealthCheckTimeout: time.Duration(def.PortWaitCheck.Timeout) * time.Second,
-	}
+	}, nil
 }
 
-func makeResourceMap(m map[string]*containerDefinition) map[string]*ResourceDefinition {
-	if m == nil {
-		return nil
+func parseHostMount(packageDir string, s string) (docker.HostMount, error) {
+	parts := strings.Split(s, ":")
+	if len(parts) != 2 {
+		return docker.HostMount{}, fmt.Errorf("parse mount %q: must contain exactly one ':'", parts)
+	}
+	mount := docker.HostMount{
+		Source: filepath.FromSlash(parts[0]),
+		Target: parts[1],
+		Type:   "bind",
+	}
+	if !filepath.IsAbs(mount.Source) {
+		mount.Source = filepath.Join(packageDir, mount.Source)
+	}
+	return mount, nil
+}
+
+func makeResourceMap(packageDir string, m map[string]*containerDefinition) (map[string]*ResourceDefinition, error) {
+	if len(m) == 0 {
+		return nil, nil
 	}
 	rmap := make(map[string]*ResourceDefinition, len(m))
 	for k, cd := range m {
-		rmap[k] = cd.toResource()
+		var err error
+		rmap[k], err = cd.toResource(packageDir)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", k, err)
+		}
 	}
-	return rmap
+	return rmap, nil
 }
 
 type portWaitCheck struct {

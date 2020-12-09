@@ -17,18 +17,18 @@
 package yb
 
 import (
-	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
 
+	docker "github.com/fsouza/go-dockerclient"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/yourbase/narwhal"
 )
 
 func TestLoadPackage(t *testing.T) {
-	workingDir, err := os.Getwd()
+	packageDir, err := filepath.Abs(filepath.Join("testdata", "LoadPackage"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,6 +123,34 @@ func TestLoadPackage(t *testing.T) {
 						Buildpacks: map[string]BuildpackSpec{
 							"go":   "go:1.14.1",
 							"java": "java:1.8",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Mounts",
+			want: &Package{
+				Targets: map[string]*Target{
+					"default": {
+						Name: "default",
+						Container: &narwhal.ContainerDefinition{
+							Image: DefaultContainerImage,
+							Mounts: []docker.HostMount{
+								{
+									Source: filepath.Join(packageDir, "relative"),
+									Target: "/foo",
+									Type:   "bind",
+								},
+								{
+									Source: "/absolute",
+									Target: "/bar",
+									Type:   "bind",
+								},
+							},
+						},
+						Commands: []string{
+							"/bin/true",
 						},
 					},
 				},
@@ -224,7 +252,7 @@ func TestLoadPackage(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			configPath := filepath.Join(workingDir, "testdata", "LoadPackage", filepath.FromSlash(test.name+".yml"))
+			configPath := filepath.Join(packageDir, filepath.FromSlash(test.name+".yml"))
 			got, err := LoadPackage(configPath)
 			if err != nil {
 				t.Fatal("LoadPackage:", err)

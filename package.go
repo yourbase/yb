@@ -67,14 +67,11 @@ func LoadPackage(configPath string) (*Package, error) {
 	if err != nil {
 		return nil, fmt.Errorf("load package %s: %w", configPath, err)
 	}
-	pkg, err := parse(configYAML)
+	pkg, err := parse(filepath.Dir(configPath), configYAML)
 	if err != nil {
 		return nil, fmt.Errorf("load package %s: %w", configPath, err)
 	}
 	// TODO(light): Validate the package for dependency cycles.
-	dir := filepath.Dir(configPath)
-	pkg.Name = filepath.Base(dir)
-	pkg.Path = dir
 	return pkg, nil
 }
 

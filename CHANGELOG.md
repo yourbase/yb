@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 -  Unknown keys in `.yourbase.yml` objects will now cause errors. Previously
    they were ignored.
+-  `yb checkconfig` will now display errors about invalid container mounts.
 
 ### Removed
 

@@ -181,6 +181,14 @@ func startContainers(ctx context.Context, sys Sys, defs map[string]*yb.ResourceD
 
 // startContainer starts a single container with the given definition.
 func startContainer(ctx context.Context, sys Sys, resourceName string, cd *yb.ResourceDefinition) (_ *container, err error) {
+	for _, mount := range cd.Mounts {
+		if mount.Type != biome.BindMount {
+			continue
+		}
+		if err := makeMount(mount.Source); err != nil {
+			return nil, fmt.Errorf("start resource %s: %w", resourceName, err)
+		}
+	}
 	log.Infof(ctx, "Starting container %s...", resourceName)
 	narwhalContainer, err := narwhal.CreateContainer(ctx, sys.DockerClient, sys.Stderr, &cd.ContainerDefinition)
 	if err != nil {
@@ -225,6 +233,17 @@ func startContainer(ctx context.Context, sys Sys, resourceName string, cd *yb.Re
 	}
 
 	return c, nil
+}
+
+// makeMount ensures that the given path on the host exists for mounting,
+// creating a directory as needed.
+func makeMount(hostPath string) error {
+	if _, err := os.Stat(hostPath); err == nil {
+		// If the path already exists (regardless of directory or file), that's all
+		// we need.
+		return nil
+	}
+	return os.MkdirAll(hostPath, 0o777)
 }
 
 func (c *container) remove(ctx context.Context) {
