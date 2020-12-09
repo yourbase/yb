@@ -310,7 +310,7 @@ func (def *containerDefinition) toResource(packageDir string) (*ResourceDefiniti
 func parseHostMount(packageDir string, s string) (docker.HostMount, error) {
 	parts := strings.Split(s, ":")
 	if len(parts) != 2 {
-		return docker.HostMount{}, fmt.Errorf("parse mount %q: must contain exactly one ':'", parts)
+		return docker.HostMount{}, fmt.Errorf("parse mount %q: must contain exactly one ':'", s)
 	}
 	mount := docker.HostMount{
 		Source: filepath.FromSlash(parts[0]),
