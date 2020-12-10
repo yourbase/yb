@@ -142,20 +142,20 @@ func CreateContainer(ctx context.Context, client *docker.Client, opts *Container
 		pullOutput = ioutil.Discard
 	}
 	log.Infof(ctx, "Creating %s container...", defn.Image)
-	container, err := narwhal.CreateContainer(ctx, client, pullOutput, defn)
+	containerID, err := narwhal.CreateContainer(ctx, client, pullOutput, defn)
 	if err != nil {
 		return nil, fmt.Errorf("create build container: %w", err)
 	}
-	span.SetAttribute("docker.container_id", container.ID)
+	span.SetAttribute("docker.container_id", containerID)
 	defer func() {
 		if err != nil {
 			rmErr := client.RemoveContainer(docker.RemoveContainerOptions{
 				Context: xcontext.IgnoreDeadline(ctx),
-				ID:      container.ID,
+				ID:      containerID,
 				Force:   true,
 			})
 			if rmErr != nil {
-				log.Warnf(ctx, "Cleaning up container %s: %v", container.ID, rmErr)
+				log.Warnf(ctx, "Cleaning up container %s: %v", containerID, rmErr)
 			}
 		}
 	}()
@@ -163,7 +163,7 @@ func CreateContainer(ctx context.Context, client *docker.Client, opts *Container
 	if opts.NetworkID != "" {
 		err := client.ConnectNetwork(opts.NetworkID, docker.NetworkConnectionOptions{
 			Context:   ctx,
-			Container: container.ID,
+			Container: containerID,
 			EndpointConfig: &docker.EndpointConfig{
 				NetworkID: opts.NetworkID,
 			},
@@ -172,18 +172,18 @@ func CreateContainer(ctx context.Context, client *docker.Client, opts *Container
 			return nil, fmt.Errorf("create build container: %w", err)
 		}
 	}
-	if err := uploadTini(ctx, client, container.ID, opts.TiniExe); err != nil {
+	if err := uploadTini(ctx, client, containerID, opts.TiniExe); err != nil {
 		return nil, fmt.Errorf("create build container: %w", err)
 	}
-	if err := narwhal.MkdirAll(ctx, client, container.ID, containerHome, nil); err != nil {
+	if err := narwhal.MkdirAll(ctx, client, containerID, containerHome, nil); err != nil {
 		return nil, fmt.Errorf("create build container: create home: %w", err)
 	}
-	if err := narwhal.StartContainer(ctx, client, container.ID); err != nil {
+	if err := narwhal.StartContainer(ctx, client, containerID, defn.HealthCheckPort); err != nil {
 		return nil, fmt.Errorf("create build container: %w", err)
 	}
 	return &Container{
 		client: client,
-		id:     container.ID,
+		id:     containerID,
 		dirs: Dirs{
 			Home:    containerHome,
 			Package: defn.WorkDir,
