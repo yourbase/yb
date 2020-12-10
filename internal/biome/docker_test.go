@@ -73,8 +73,12 @@ func TestContainer(t *testing.T) {
 		TiniExe:    tiniResp.Body,
 		PullOutput: pullOutput,
 		Definition: &narwhal.ContainerDefinition{
-			Mounts: []string{
-				mountDir + ":/mymount",
+			Mounts: []docker.HostMount{
+				{
+					Source: mountDir,
+					Target: "/mymount",
+					Type:   BindMount,
+				},
 			},
 		},
 	})

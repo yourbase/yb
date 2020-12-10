@@ -181,15 +181,23 @@ func startContainers(ctx context.Context, sys Sys, defs map[string]*yb.ResourceD
 
 // startContainer starts a single container with the given definition.
 func startContainer(ctx context.Context, sys Sys, resourceName string, cd *yb.ResourceDefinition) (_ *container, err error) {
+	for _, mount := range cd.Mounts {
+		if mount.Type != biome.BindMount {
+			continue
+		}
+		if err := makeMount(mount.Source); err != nil {
+			return nil, fmt.Errorf("start resource %s: %w", resourceName, err)
+		}
+	}
 	log.Infof(ctx, "Starting container %s...", resourceName)
-	narwhalContainer, err := narwhal.CreateContainer(ctx, sys.DockerClient, sys.Stderr, &cd.ContainerDefinition)
+	containerID, err := narwhal.CreateContainer(ctx, sys.DockerClient, sys.Stderr, &cd.ContainerDefinition)
 	if err != nil {
 		return nil, fmt.Errorf("start resource %s: %w", resourceName, err)
 	}
 	c := &container{
 		client:       sys.DockerClient,
 		resourceName: resourceName,
-		id:           narwhalContainer.ID,
+		id:           containerID,
 	}
 	defer func() {
 		if err != nil {
@@ -206,25 +214,31 @@ func startContainer(ctx context.Context, sys Sys, resourceName string, cd *yb.Re
 	if err != nil {
 		return nil, fmt.Errorf("start resource %s: connect %s to %s: %w", resourceName, c.id, sys.DockerNetworkID, err)
 	}
-	if err := narwhal.StartContainer(ctx, sys.DockerClient, c.id); err != nil {
+	if cd.HealthCheckTimeout > 0 {
+		log.Infof(ctx, "Waiting up to %v for %s to be ready... ", cd.HealthCheckTimeout, resourceName)
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, cd.HealthCheckTimeout)
+		defer cancel()
+	}
+	if err := narwhal.StartContainer(ctx, sys.DockerClient, c.id, cd.HealthCheckPort); err != nil {
 		return nil, fmt.Errorf("start resource %s: %w", resourceName, err)
 	}
 	c.ip, err = narwhal.IPv4Address(ctx, sys.DockerClient, c.id)
 	if err != nil {
 		return nil, fmt.Errorf("start resource %s: %w", resourceName, err)
 	}
-
-	if narwhalContainer.HealthCheckAddr != nil {
-		// Wait for port to be reachable.
-		log.Infof(ctx, "Waiting up to %v for %s to be ready... ", cd.HealthCheckTimeout, resourceName)
-		ctx, cancel := context.WithTimeout(ctx, cd.HealthCheckTimeout)
-		defer cancel()
-		if err := waitForTCPPort(ctx, narwhalContainer.HealthCheckAddr.String()); err != nil {
-			return nil, fmt.Errorf("start resource %s: %w", resourceName, err)
-		}
-	}
-
 	return c, nil
+}
+
+// makeMount ensures that the given path on the host exists for mounting,
+// creating a directory as needed.
+func makeMount(hostPath string) error {
+	if _, err := os.Stat(hostPath); err == nil {
+		// If the path already exists (regardless of directory or file), that's all
+		// we need.
+		return nil
+	}
+	return os.MkdirAll(hostPath, 0o777)
 }
 
 func (c *container) remove(ctx context.Context) {
@@ -236,25 +250,6 @@ func (c *container) remove(ctx context.Context) {
 	if err != nil {
 		// These errors aren't actionable, so log them instead of returning them.
 		log.Warnf(ctx, "Leaked %s container %s: %v", c.resourceName, c.id, err)
-	}
-}
-
-func waitForTCPPort(ctx context.Context, addr string) error {
-	dialer := new(net.Dialer)
-	ticker := time.NewTicker(1 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		c, err := dialer.DialContext(ctx, "tcp", addr)
-		if err == nil {
-			c.Close()
-			return nil
-		}
-		select {
-		case <-ticker.C:
-		case <-ctx.Done():
-			return fmt.Errorf("wait for %q: %w", addr, err)
-		}
 	}
 }
 

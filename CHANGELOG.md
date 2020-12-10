@@ -15,11 +15,14 @@ The format is based on [Keep a Changelog][], and this project adheres to
 -  `github.com/yourbase/yb` is now a Go package for reading
    `.yourbase.yml` files. The API is mostly stable, but may still change before
    yb 1.0.
+-  Container mounts in `.yourbase.yml` can now refer to relative paths in the
+   package directory.
 
 ### Changed
 
 -  Unknown keys in `.yourbase.yml` objects will now cause errors. Previously
    they were ignored.
+-  `yb checkconfig` will now display errors about invalid container mounts.
 
 ### Removed
 

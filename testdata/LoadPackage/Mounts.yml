@@ -1,0 +1,8 @@
+build_targets:
+  - name: default
+    container:
+      mounts:
+        - relative:/foo
+        - /absolute:/bar
+    commands:
+      - /bin/true
