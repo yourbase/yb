@@ -56,6 +56,7 @@ func main() {
 		newCleanCmd(),
 		newConfigCmd(),
 		newExecCmd(),
+		newInitCmd(),
 		newLoginCmd(),
 		newRemoteCmd(),
 		newRunCmd(),
