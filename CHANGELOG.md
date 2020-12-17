@@ -10,6 +10,9 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 ### Added
 
+-  `yb init` is a new command that generates a `.yourbase.yml` file to get
+   started. It does basic programming language detection based on files already
+   in the directory.
 -  The new `yb clean` command deletes the cache for the package or specific
    targets.
 -  `github.com/yourbase/yb` is now a Go package for reading

@@ -75,24 +75,12 @@ the release into your `PATH`.
 
 ## Getting Started
 
-To use yb you need a `.yourbase.yml` file in your repository with
-enough information to build your project:
+To use yb, you need a `.yourbase.yml` file at the top of your project directory.
+You can run `yb init` to generate one:
 
-```yaml
-dependencies:
-   build:
-     - python:3.7
-
-build_targets:
-   - name: default
-     commands:
-       - pip install -r requirements.txt
-       - python tests/run_tests.py 
-
-ci:
-  builds:
-    - name: tests
-      build_target: default
+```shell
+cd path/to/my/project
+yb init
 ```
 
 The YourBase configuration was designed from the ground up to be a fast,
@@ -116,10 +104,10 @@ If you created a `default` target, you can build it with:
 yb build
 ```
 
-Or if you have a different `build_target`, try:
+If you've changed your target's name or added a new one, for example `foo`, run:
 
 ```sh
-yb build <target name>
+yb build foo
 ```
 
 ### Run the first remote build
