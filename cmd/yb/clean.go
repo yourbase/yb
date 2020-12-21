@@ -46,6 +46,9 @@ func newCleanCmd() *cobra.Command {
 			return cmd.run(cc.Context())
 		},
 		DisableFlagsInUseLine: true,
+		ValidArgsFunction: func(cc *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+			return autocompleteTargetName(toComplete)
+		},
 	}
 	return c
 }

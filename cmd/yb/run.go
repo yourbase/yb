@@ -38,6 +38,9 @@ func newRunCmd() *cobra.Command {
 	netrcFlagVar(c.Flags(), &b.netrcFiles)
 	c.Flags().StringVarP(&b.target, "target", "t", yb.DefaultTarget, "The target to run the command in")
 	c.Flags().BoolVar(&b.noContainer, "no-container", false, "Avoid using Docker if possible")
+	c.RegisterFlagCompletionFunc("target", func(cc *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return autocompleteTargetName(toComplete)
+	})
 	return c
 }
 

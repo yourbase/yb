@@ -61,13 +61,23 @@ mkdir -m 755 \
   "$stageroot/usr/bin" \
   "$stageroot/usr/share" \
   "$stageroot/usr/share/doc" \
-  "$stageroot/usr/share/doc/yb"
+  "$stageroot/usr/share/doc/yb" \
+  "$stageroot/usr/share/bash-completion" \
+  "$stageroot/usr/share/bash-completion/completions" \
+  "$stageroot/usr/share/zsh" \
+  "$stageroot/usr/share/zsh/zsh-completions"
 install -m 644 "$srcroot/debian/control" "$stageroot/DEBIAN/control"
 sed -i -e "s/^Version:.*/Version: $debversion/" "$stageroot/DEBIAN/control"
 sed -i -e "s/^Architecture: any\$/Architecture: $debarch/" "$stageroot/DEBIAN/control"
 install -m 644 "$srcroot/debian/copyright" "$stageroot/usr/share/doc/yb/copyright"
 "$srcroot/release/build.sh" "$stageroot/usr/bin/yb"
 chmod 755 "$stageroot/usr/bin/yb"
+# Generate and stage shell completions.
+"$stageroot/usr/bin/yb" gen-complete -o "$stageroot/usr/share/bash-completion/completions/yb" bash
+"$stageroot/usr/bin/yb" gen-complete -o "$stageroot/usr/share/zsh/zsh-completions/_yb" zsh
+chmod 644 \
+  "$stageroot/usr/share/bash-completion/completions/yb" \
+  "$stageroot/usr/share/zsh/zsh-completions/_yb"
 
 mkdir -m 755 \
   "$stageroot/usr/share/lintian" \

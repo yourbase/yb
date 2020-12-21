@@ -67,6 +67,12 @@ func newRemoteCmd() *cobra.Command {
 			}
 			return p.run(cmd.Context())
 		},
+		ValidArgsFunction: func(cc *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+			if len(args) > 0 {
+				return nil, cobra.ShellCompDirectiveNoFileComp
+			}
+			return autocompleteTargetName(toComplete)
+		},
 	}
 	c.Flags().StringVar(&p.baseCommit, "base-commit", "", "Base commit hash as common ancestor")
 	c.Flags().StringVar(&p.branch, "branch", "", "Branch name")

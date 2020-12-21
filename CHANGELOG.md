@@ -15,6 +15,8 @@ The format is based on [Keep a Changelog][], and this project adheres to
    in the directory.
 -  The new `yb clean` command deletes the cache for the package or specific
    targets.
+-  bash and zsh completion scripts are now included in our binary distributions.
+   These are automatically installed in Homebrew and the Debian packages.
 -  `github.com/yourbase/yb` is now a Go package for reading
    `.yourbase.yml` files. The API is mostly stable, but may still change before
    yb 1.0.
