@@ -110,7 +110,7 @@ If you've changed your target's name or added a new one, for example `foo`, run:
 yb build foo
 ```
 
-### Run the first remote build
+### Run your first remote build
 
 To use remote builds, first you have to sign-in to YourBase.io.
 Run this to get a sign-in URL:
@@ -150,6 +150,29 @@ ci:
     - name: tests
       build_target: default
       when: branch is 'master' OR action is 'pull_request'
+```
+
+### Inspecting the Build Environment
+
+If you want to run tools inside your local build environment, you can use
+`yb run`. This will use the exact same version of the tools as what you
+specified in your `.yourbase.yml` file.
+
+```shell
+yb run python myscript.py
+```
+
+You can even pull up a shell and run commands interactively:
+
+```shell
+yb run bash
+```
+
+`yb run` will use the target named `default` if you do not specify a target.
+If you want to use a different target:
+
+```shell
+yb run --target=foo bash
 ```
 
 ## Documentation
