@@ -69,6 +69,8 @@ mkzip "yb_${triple}_cats.zip"
 
 # Next: create end-user-friendly distribution.
 cp "$srcroot/README.md" "$srcroot/LICENSE" "$srcroot/CHANGELOG.md" "$distroot/"
+"$distroot/yb" gen-complete -o "$distroot/yb_complete.bash" bash
+"$distroot/yb" gen-complete -o "$distroot/yb_complete.zsh" zsh
 mkzip "yb_${triple}.zip"
 
 # Output triple.

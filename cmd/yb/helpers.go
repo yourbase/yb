@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	docker "github.com/fsouza/go-dockerclient"
+	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/yourbase/narwhal"
 	"github.com/yourbase/yb"
@@ -200,4 +201,20 @@ func listTargetNames(targets map[string]*yb.Target) []string {
 	}
 	sort.Strings(names)
 	return names
+}
+
+// autocompleteTargetName provides tab completion suggestions for target names.
+func autocompleteTargetName(toComplete string) ([]string, cobra.ShellCompDirective) {
+	pkg, err := GetTargetPackage()
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveError
+	}
+	names := make([]string, 0, len(pkg.Targets))
+	for k := range pkg.Targets {
+		if strings.HasPrefix(k, toComplete) {
+			names = append(names, k)
+		}
+	}
+	sort.Strings(names)
+	return names, cobra.ShellCompDirectiveNoFileComp
 }
