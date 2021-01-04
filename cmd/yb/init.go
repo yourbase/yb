@@ -121,15 +121,15 @@ func (cmd *initCmd) run(ctx context.Context) (cmdErr error) {
 	var out io.Writer = os.Stdout
 	outPath := cmd.outPath
 	if outPath != stdoutToken {
+		if outPath == "" {
+			outPath = filepath.Join(dir, yb.PackageConfigFilename)
+		}
 		if !cmd.quiet {
-			log.Infof(ctx, "Writing package configuration to %s", cmd.outPath)
+			log.Infof(ctx, "Writing package configuration to %s", outPath)
 		}
 		flags := os.O_WRONLY | os.O_CREATE | os.O_TRUNC
 		if !cmd.overwrite {
 			flags |= os.O_EXCL
-		}
-		if outPath == "" {
-			outPath = filepath.Join(dir, yb.PackageConfigFilename)
 		}
 		f, err := os.OpenFile(outPath, flags, 0o666)
 		if err != nil {
@@ -147,11 +147,11 @@ func (cmd *initCmd) run(ctx context.Context) (cmdErr error) {
 		}()
 	}
 	if _, err := io.WriteString(out, templateData); err != nil {
-		return fmt.Errorf("write %s: %w", cmd.outPath, err)
+		return fmt.Errorf("write %s: %w", outPath, err)
 	}
 	if !cmd.quiet && filepath.Base(outPath) == yb.PackageConfigFilename {
 		log.Infof(ctx, "All done! Try running `yb build` to build your project.")
-		log.Infof(ctx, "Edit %s to configure your build process.", cmd.outPath)
+		log.Infof(ctx, "Edit %s to configure your build process.", outPath)
 	}
 	return nil
 }
