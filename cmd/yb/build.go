@@ -113,7 +113,7 @@ func (b *buildCmd) run(ctx context.Context, buildTargetName string) error {
 	startSection("BUILD PACKAGE SETUP")
 	log.Infof(ctx, "Build started at %s", startTime.Format(TIME_FORMAT))
 
-	targetPackage, err := GetTargetPackage()
+	targetPackage, _, err := findPackage()
 	if err != nil {
 		return err
 	}

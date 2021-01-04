@@ -5,8 +5,10 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -190,8 +192,33 @@ func newDockerNetwork(ctx context.Context, client *docker.Client) (string, func(
 	}, nil
 }
 
-func GetTargetPackage() (*yb.Package, error) {
-	return yb.LoadPackage(yb.PackageConfigFilename)
+// findPackage searches for the package configuration file in the current
+// working directory or any parent directory. If the current working directory
+// is a subdirectory of the package, subdir is the path of the working directory
+// relative to pkg.Path.
+func findPackage() (pkg *yb.Package, subdir string, err error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return nil, "", fmt.Errorf("find package configuration: %w", err)
+	}
+	for {
+		pkg, err = yb.LoadPackage(filepath.Join(dir, yb.PackageConfigFilename))
+		if err == nil {
+			return pkg, subdir, nil
+		}
+		if !errors.Is(err, os.ErrNotExist) {
+			return nil, "", fmt.Errorf("find package configuration: %w", err)
+		}
+
+		// Not found. Move up a directory.
+		parent, name := filepath.Split(dir)
+		if parent == dir {
+			// Hit root.
+			return nil, "", fmt.Errorf("find package configuration: %s not found in this or any parent directories", yb.PackageConfigFilename)
+		}
+		subdir = filepath.Join(name, subdir)
+		dir = filepath.Clean(parent) // strip trailing separators
+	}
 }
 
 func listTargetNames(targets map[string]*yb.Target) []string {
@@ -205,7 +232,7 @@ func listTargetNames(targets map[string]*yb.Target) []string {
 
 // autocompleteTargetName provides tab completion suggestions for target names.
 func autocompleteTargetName(toComplete string) ([]string, cobra.ShellCompDirective) {
-	pkg, err := GetTargetPackage()
+	pkg, _, err := findPackage()
 	if err != nil {
 		return nil, cobra.ShellCompDirectiveError
 	}

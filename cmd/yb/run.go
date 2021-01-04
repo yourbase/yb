@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/yourbase/yb"
@@ -58,7 +60,7 @@ func (b *runCmd) run(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	pkg, err := GetTargetPackage()
+	pkg, subdir, err := findPackage()
 	if err != nil {
 		return err
 	}
@@ -127,12 +129,13 @@ func (b *runCmd) run(ctx context.Context, args []string) error {
 			log.Warnf(ctx, "Clean up environment: %v", err)
 		}
 	}()
-	// TODO(ch2725): Run the command from the subdirectory the process is in.
+	subdirElems := strings.Split(subdir, string(filepath.Separator))
 	return execBiome.Run(ctx, &biome.Invocation{
 		Argv:        args,
 		Stdin:       os.Stdin,
 		Stdout:      os.Stdout,
 		Stderr:      os.Stderr,
+		Dir:         execBiome.JoinPath(subdirElems...),
 		Interactive: true,
 	})
 }

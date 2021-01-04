@@ -58,7 +58,7 @@ func (b *execCmd) run(ctx context.Context) error {
 		return err
 	}
 	defer removeNetwork()
-	pkg, err := GetTargetPackage()
+	pkg, _, err := findPackage()
 	if err != nil {
 		return err
 	}
