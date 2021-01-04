@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 
@@ -27,99 +28,146 @@ func getProfile(cfg *ini.File) string {
 	return cfg.Section("defaults").Key("environment").String()
 }
 
-func apiBaseURL() (string, error) {
-	if url, exists := os.LookupEnv("YOURBASE_API_URL"); exists {
-		return url, nil
+func apiBaseURL() (*url.URL, error) {
+	if u := os.Getenv("YOURBASE_API_URL"); u != "" {
+		parsed, err := url.Parse(u)
+		if err != nil {
+			return nil, fmt.Errorf("determine API URL: %w", err)
+		}
+		return parsed, nil
 	}
 	cfg, err := loadConfigFiles()
 	if err != nil {
-		return "", fmt.Errorf("determine API URL: %w", err)
+		return nil, fmt.Errorf("determine API URL: %w", err)
 	}
-	if url := get(cfg, "yourbase", "api_url"); url != "" {
-		return url, nil
+	if u := get(cfg, "yourbase", "api_url"); u != "" {
+		parsed, err := url.Parse(u)
+		if err != nil {
+			return nil, fmt.Errorf("determine API URL: %w", err)
+		}
+		return parsed, nil
 	}
 	switch profile := getProfile(cfg); profile {
 	case "staging":
-		return "https://api.staging.yourbase.io", nil
+		return &url.URL{
+			Scheme: "https",
+			Host:   "api.staging.yourbase.io",
+		}, nil
 	case "preview":
-		return "https://api.preview.yourbase.io", nil
+		return &url.URL{
+			Scheme: "https",
+			Host:   "api.preview.yourbase.io",
+		}, nil
 	case "development":
-		return "http://localhost:5001", nil
-	case "production":
-		return "https://api.yourbase.io", nil
-	case "":
-		return "https://api.yourbase.io", nil
+		return &url.URL{
+			Scheme: "https",
+			Host:   "localhost:5001",
+		}, nil
+	case "", "production":
+		return &url.URL{
+			Scheme: "https",
+			Host:   "api.yourbase.io",
+		}, nil
 	default:
-		return "", fmt.Errorf("determine API URL: unknown environment %s and no configuration set", profile)
+		return nil, fmt.Errorf("determine API URL: unknown environment %s and no configuration set", profile)
 	}
 }
 
-func APIURL(path string) (string, error) {
+func APIURL(path string) (*url.URL, error) {
 	base, err := apiBaseURL()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return strings.TrimSuffix(base, "/") + "/" + strings.TrimPrefix(path, "/"), nil
+	return appendURLPath(base, path), nil
 }
 
-func TokenValidationURL(apiToken string) (string, error) {
+func TokenValidationURL(apiToken string) (*url.URL, error) {
 	return APIURL("/apikey/validate/" + apiToken)
 }
 
-func uiBaseURL() (string, error) {
-	if url := os.Getenv("YOURBASE_UI_URL"); url != "" {
-		return url, nil
+func uiBaseURL() (*url.URL, error) {
+	if u := os.Getenv("YOURBASE_UI_URL"); u != "" {
+		parsed, err := url.Parse(u)
+		if err != nil {
+			return nil, fmt.Errorf("determine UI URL: %w", err)
+		}
+		return parsed, nil
 	}
 	cfg, err := loadConfigFiles()
 	if err != nil {
-		return "", fmt.Errorf("determine UI URL: %w", err)
+		return nil, fmt.Errorf("determine UI URL: %w", err)
 	}
-	if url := get(cfg, "yourbase", "management_url"); url != "" {
-		return url, nil
+	if u := get(cfg, "yourbase", "management_url"); u != "" {
+		parsed, err := url.Parse(u)
+		if err != nil {
+			return nil, fmt.Errorf("determine UI URL: %w", err)
+		}
+		return parsed, nil
 	}
 	switch profile := getProfile(cfg); profile {
 	case "staging":
-		return "https://app.staging.yourbase.io", nil
+		return &url.URL{
+			Scheme: "https",
+			Host:   "app.staging.yourbase.io",
+		}, nil
 	case "preview":
-		return "https://app.preview.yourbase.io", nil
+		return &url.URL{
+			Scheme: "https",
+			Host:   "app.preview.yourbase.io",
+		}, nil
 	case "development":
-		return "http://localhost:3000", nil
-	case "production":
-		return "https://app.yourbase.io", nil
-	case "":
-		return "https://app.yourbase.io", nil
+		return &url.URL{
+			Scheme: "https",
+			Host:   "localhost:3000",
+		}, nil
+	case "", "production":
+		return &url.URL{
+			Scheme: "https",
+			Host:   "app.yourbase.io",
+		}, nil
 	default:
-		return "", fmt.Errorf("determine UI URL: unknown environment %s and no configuration set", profile)
+		return nil, fmt.Errorf("determine UI URL: unknown environment %s and no configuration set", profile)
 	}
 }
 
-func UIURL(path string) (string, error) {
+func UIURL(path string) (*url.URL, error) {
 	base, err := uiBaseURL()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return strings.TrimSuffix(base, "/") + "/" + strings.TrimPrefix(path, "/"), nil
+	return appendURLPath(base, path), nil
 }
 
-func UserSettingsURL() (string, error) {
+func UserSettingsURL() (*url.URL, error) {
 	return UIURL("/user/settings")
 }
 
-func GitHubAppURL() (gh string) {
+func GitHubAppURL() *url.URL {
 	profile := "production"
 	if cfg, err := loadConfigFiles(); err == nil {
 		profile = getProfile(cfg)
 	}
+	appName := "yourbase"
 	switch profile {
 	case "staging":
-		return "https://github.com/apps/yourbase-staging"
+		appName = "yourbase-staging"
 	case "preview":
-		return "https://github.com/apps/yourbase-preview"
+		appName = "yourbase-preview"
 	case "development":
-		return "https://github.com/apps/yourbase-development"
-	default:
-		return "https://github.com/apps/yourbase"
+		appName = "yourbase-development"
 	}
+	return &url.URL{
+		Scheme: "https",
+		Host:   "github.com",
+		Path:   "/apps/" + appName,
+	}
+}
+
+func appendURLPath(u *url.URL, path string) *url.URL {
+	u2 := new(url.URL)
+	*u2 = *u
+	u2.Path = strings.TrimSuffix(u.Path, "/") + "/" + strings.TrimPrefix(path, "/")
+	return u2
 }
 
 func UserToken() (string, error) {

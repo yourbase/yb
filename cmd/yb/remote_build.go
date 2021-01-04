@@ -24,6 +24,7 @@ import (
 	"github.com/johnewart/archiver"
 	"github.com/spf13/cobra"
 	"github.com/ulikunitz/xz"
+	"github.com/yourbase/commons/http/headers"
 	"github.com/yourbase/yb"
 	ybconfig "github.com/yourbase/yb/internal/config"
 	"gopkg.in/src-d/go-git.v4"
@@ -424,15 +425,19 @@ func postToApi(path string, formData url.Values) (*http.Response, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Couldn't determine API URL: %v", err)
 	}
-	client := &http.Client{}
-	req, err := http.NewRequest("POST", apiURL, strings.NewReader(formData.Encode()))
-	if err != nil {
-		return nil, fmt.Errorf("Couldn't make API call: %v", err)
+	req := &http.Request{
+		Method: http.MethodPost,
+		URL:    apiURL,
+		Header: http.Header{
+			http.CanonicalHeaderKey("YB_API_TOKEN"): {userToken},
+			headers.ContentType:                     {"application/x-www-form-urlencoded"},
+		},
+		GetBody: func() (io.ReadCloser, error) {
+			return ioutil.NopCloser(strings.NewReader(formData.Encode())), nil
+		},
 	}
-
-	req.Header.Set("YB_API_TOKEN", userToken)
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	res, err := client.Do(req)
+	req.Body, _ = req.GetBody()
+	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -623,7 +628,7 @@ func (cmd *remoteCmd) submitBuild(ctx context.Context, project *apiProject, tagM
 	// Construct UI URL to present to the user.
 	// Fine to proceed in the face of errors: this is displayed as a fallback if
 	// other things fail.
-	uiURL := ""
+	var uiURL *url.URL
 	if id, err := buildIDFromLogURL(logURL); err != nil {
 		log.Warnf(ctx, "Could not construct build link: %v", err)
 	} else {
@@ -663,8 +668,8 @@ func (cmd *remoteCmd) submitBuild(ctx context.Context, project *apiProject, tagM
 				} else {
 					log.Errorf(ctx, "Build failed or the connection was interrupted!")
 				}
-				if uiURL != "" {
-					log.Infof(ctx, "Build Log: %s", uiURL)
+				if uiURL != nil {
+					log.Infof(ctx, "Build Log: %v", uiURL)
 				}
 				return nil
 			}
@@ -680,8 +685,8 @@ func (cmd *remoteCmd) submitBuild(ctx context.Context, project *apiProject, tagM
 				if cmd.publicRepo {
 					log.Infof(ctx, "Building a public repository: '%s'", project.Repository)
 				}
-				if uiURL != "" {
-					log.Infof(ctx, "Build Log: %s", uiURL)
+				if uiURL != nil {
+					log.Infof(ctx, "Build Log: %v", uiURL)
 				}
 			}
 			if !buildSuccess {

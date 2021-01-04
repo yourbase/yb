@@ -52,7 +52,7 @@ func (p *loginCmd) run(ctx context.Context) error {
 		return err
 	}
 
-	resp, err := http.Get(validationURL)
+	resp, err := http.Get(validationURL.String())
 	if err != nil {
 		return fmt.Errorf("make validation request: %v", err)
 	}
