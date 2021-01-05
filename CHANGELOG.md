@@ -28,6 +28,11 @@ The format is based on [Keep a Changelog][], and this project adheres to
 -  Unknown keys in `.yourbase.yml` objects will now cause errors. Previously
    they were ignored.
 -  `yb checkconfig` will now display errors about invalid container mounts.
+-  `yb build`, `yb clean`, `yb exec`, `yb remotebuild`, and `yb run` can now
+   be run from a project subdirectory and they will use the `.yourbase.yml` file
+   from the parent directory. `yb run` will start its program in the
+   subdirectory you run it from, but all other commands will be run relative to
+   the directory that the `.yourbase.yml` file is located in.
 
 ### Removed
 

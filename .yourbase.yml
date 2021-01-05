@@ -1,6 +1,6 @@
 dependencies:
   build:
-    - go:1.15
+    - go:1.15.6
 
 build_targets:
   - name: default

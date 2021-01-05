@@ -21,9 +21,13 @@ type execCmd struct {
 func newExecCmd() *cobra.Command {
 	b := new(execCmd)
 	c := &cobra.Command{
-		Use:           "exec",
-		Short:         "Run the package",
-		Long:          `Run the package using the instructions in the .yourbase.yml exec block.`,
+		Use:   "exec",
+		Short: "Run the package",
+		Long: `Run the package using the instructions in the .yourbase.yml exec block.` +
+			"\n\n" +
+			`yb exec will search for the .yourbase.yml file in the current directory ` +
+			`and its parent directories. The exec block's commands will be run in the ` +
+			`directory the .yourbase.yml file appears in.`,
 		Args:          cobra.NoArgs,
 		SilenceErrors: true,
 		SilenceUsage:  true,
@@ -58,7 +62,7 @@ func (b *execCmd) run(ctx context.Context) error {
 		return err
 	}
 	defer removeNetwork()
-	pkg, err := GetTargetPackage()
+	pkg, _, err := findPackage()
 	if err != nil {
 		return err
 	}

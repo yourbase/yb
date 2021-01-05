@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/yourbase/yb"
@@ -23,9 +25,13 @@ type runCmd struct {
 func newRunCmd() *cobra.Command {
 	b := new(runCmd)
 	c := &cobra.Command{
-		Use:                   "run [options] COMMAND [ARG [...]]",
-		Short:                 "Run an arbitrary command",
-		Long:                  `Run a command in the target container.`,
+		Use:   "run [options] COMMAND [ARG [...]]",
+		Short: "Run an arbitrary command",
+		Long: `Run a command in the target build environment.` +
+			"\n\n" +
+			`yb run will search for the .yourbase.yml file in the current directory ` +
+			`and its parent directories. However, the command given in the command ` +
+			`line will be run in the current working directory.`,
 		Args:                  cobra.MinimumNArgs(1),
 		DisableFlagsInUseLine: true,
 		SilenceErrors:         true,
@@ -58,7 +64,7 @@ func (b *runCmd) run(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	pkg, err := GetTargetPackage()
+	pkg, subdir, err := findPackage()
 	if err != nil {
 		return err
 	}
@@ -127,12 +133,13 @@ func (b *runCmd) run(ctx context.Context, args []string) error {
 			log.Warnf(ctx, "Clean up environment: %v", err)
 		}
 	}()
-	// TODO(ch2725): Run the command from the subdirectory the process is in.
+	subdirElems := strings.Split(subdir, string(filepath.Separator))
 	return execBiome.Run(ctx, &biome.Invocation{
 		Argv:        args,
 		Stdin:       os.Stdin,
 		Stdout:      os.Stdout,
 		Stderr:      os.Stderr,
+		Dir:         execBiome.JoinPath(subdirElems...),
 		Interactive: true,
 	})
 }

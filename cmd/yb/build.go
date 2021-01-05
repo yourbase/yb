@@ -43,7 +43,11 @@ func newBuildCmd() *cobra.Command {
 		Use:   "build [options] [TARGET]",
 		Short: "Build a target",
 		Long: `Builds a target in the current package. If no argument is given, ` +
-			`uses the target named "` + yb.DefaultTarget + `", if there is one.`,
+			`uses the target named "` + yb.DefaultTarget + `", if there is one.` +
+			"\n\n" +
+			`yb build will search for the .yourbase.yml file in the current directory ` +
+			`and its parent directories. The target's commands will be run in the ` +
+			`directory the .yourbase.yml file appears in.`,
 		Args:                  cobra.MaximumNArgs(1),
 		DisableFlagsInUseLine: true,
 		SilenceErrors:         true,
@@ -113,7 +117,7 @@ func (b *buildCmd) run(ctx context.Context, buildTargetName string) error {
 	startSection("BUILD PACKAGE SETUP")
 	log.Infof(ctx, "Build started at %s", startTime.Format(TIME_FORMAT))
 
-	targetPackage, err := GetTargetPackage()
+	targetPackage, _, err := findPackage()
 	if err != nil {
 		return err
 	}

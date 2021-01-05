@@ -58,7 +58,7 @@ func (cmd *cleanCmd) run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	pkg, err := GetTargetPackage()
+	pkg, _, err := findPackage()
 	if err != nil {
 		return err
 	}
