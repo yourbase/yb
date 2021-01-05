@@ -56,7 +56,11 @@ func newRemoteCmd() *cobra.Command {
 		Use:   "remotebuild [options] [TARGET]",
 		Short: "Build a target remotely",
 		Long: `Builds a target using YourBase infrastructure. If no argument is given, ` +
-			`uses the target named "` + yb.DefaultTarget + `", if there is one.`,
+			`uses the target named "` + yb.DefaultTarget + `", if there is one.` +
+			"\n\n" +
+			`yb remotebuild will search for the .yourbase.yml file in the current ` +
+			`directory and its parent directories. The target's commands will be run ` +
+			`in the directory the .yourbase.yml file appears in.`,
 		Args:                  cobra.MaximumNArgs(1),
 		DisableFlagsInUseLine: true,
 		SilenceErrors:         true,

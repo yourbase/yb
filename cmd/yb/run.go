@@ -25,9 +25,13 @@ type runCmd struct {
 func newRunCmd() *cobra.Command {
 	b := new(runCmd)
 	c := &cobra.Command{
-		Use:                   "run [options] COMMAND [ARG [...]]",
-		Short:                 "Run an arbitrary command",
-		Long:                  `Run a command in the target container.`,
+		Use:   "run [options] COMMAND [ARG [...]]",
+		Short: "Run an arbitrary command",
+		Long: `Run a command in the target build environment.` +
+			"\n\n" +
+			`yb run will search for the .yourbase.yml file in the current directory ` +
+			`and its parent directories. However, the command given in the command ` +
+			`line will be run in the current working directory.`,
 		Args:                  cobra.MinimumNArgs(1),
 		DisableFlagsInUseLine: true,
 		SilenceErrors:         true,
