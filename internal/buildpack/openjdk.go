@@ -21,6 +21,11 @@ func installJava(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (_ biome.E
 	env := biome.Environment{
 		Vars: map[string]string{
 			"JAVA_HOME": home,
+			// Java seems to read /etc/passwd to fill in the user.home JVM property,
+			// which isn't correct in our build environments. This is used for Maven's
+			// download cache, so it has the incorrect behavior of storing artifacts
+			// in /etc/passwd/home/.m2 instead of $HOME/.m2.
+			"JAVA_TOOL_OPTIONS": "-Duser.home=" + sys.Biome.Dirs().Home,
 		},
 		PrependPath: []string{sys.Biome.JoinPath(home, "bin")},
 	}

@@ -4,79 +4,79 @@
 		"Arch": "amd64"
 	},
 	"Dirs": {
-		"Package": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/001",
-		"Home": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002",
-		"Tools": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools"
+		"Package": "/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/001",
+		"Home": "/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002",
+		"Tools": "/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools"
 	},
 	"JoinedPaths": [
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools",
+				"/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools",
 				"java",
 				"openjdk8.265+01"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/java/openjdk8.265+01"
+			"Result": "/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/java/openjdk8.265+01"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/java/openjdk8.265+01",
+				"/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/java/openjdk8.265+01",
 				"Contents",
 				"Home"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home"
+			"Result": "/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home",
+				"/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home",
 				"bin"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home/bin"
+			"Result": "/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home/bin"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/java/openjdk8.265+01"
+				"/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/java/openjdk8.265+01"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/java/openjdk8.265+01"
+			"Result": "/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/java/openjdk8.265+01"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
+				"/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
+			"Result": "/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools",
+				"/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools",
 				"maven",
 				"apache-maven-3.6.3"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/maven/apache-maven-3.6.3"
+			"Result": "/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/maven/apache-maven-3.6.3"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/maven/apache-maven-3.6.3",
+				"/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/maven/apache-maven-3.6.3",
 				"bin"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/maven/apache-maven-3.6.3/bin"
+			"Result": "/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/maven/apache-maven-3.6.3/bin"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/maven/apache-maven-3.6.3"
+				"/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/maven/apache-maven-3.6.3"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/maven/apache-maven-3.6.3"
+			"Result": "/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/maven/apache-maven-3.6.3"
 		},
 		{
 			"Elems": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/maven/apache-maven-3.6.3.tar.gz"
+				"/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/maven/apache-maven-3.6.3.tar.gz"
 			],
-			"Result": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/maven/apache-maven-3.6.3.tar.gz"
+			"Result": "/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/maven/apache-maven-3.6.3.tar.gz"
 		}
 	],
 	"AbsPaths": {
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/java/openjdk8.265+01": true,
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz": true,
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/maven/apache-maven-3.6.3": true,
-		"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/maven/apache-maven-3.6.3.tar.gz": true
+		"/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/java/openjdk8.265+01": true,
+		"/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz": true,
+		"/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/maven/apache-maven-3.6.3": true,
+		"/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/maven/apache-maven-3.6.3.tar.gz": true
 	},
 	"Invocations": [
 		{
@@ -84,11 +84,11 @@
 				"python",
 				"-c",
 				"import os, sys; os.stat(sys.argv[1]); sys.stdout.write(os.path.realpath(sys.argv[1]))",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home"
+				"/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home"
 			],
 			"Output": {
 				"Stdout": "",
-				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0TWF2ZW4wNTQzODQ5MDIvMDAyLy5jYWNoZS95Yi90b29scy9qYXZhL29wZW5qZGs4LjI2NSswMS9Db250ZW50cy9Ib21lJwo="
+				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy80Mi9tbGdnZGJnOTIwMzR6anczZmxfNTRnX2MwMDAwZ24vVC9UZXN0TWF2ZW4wMjcyMjM1MzcvMDAyLy5jYWNoZS95Yi90b29scy9qYXZhL29wZW5qZGs4LjI2NSswMS9Db250ZW50cy9Ib21lJwo="
 			},
 			"Error": "local run: exit status 1"
 		},
@@ -96,7 +96,7 @@
 			"Argv": [
 				"mkdir",
 				"-p",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/java/openjdk8.265+01"
+				"/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/java/openjdk8.265+01"
 			],
 			"Output": {
 				"Stderr": ""
@@ -105,7 +105,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
+				"/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
 			],
 			"StdinSHA256": "f316b154e8c4a99b95bc3d07add3c9b19609c541a2f297112f274c1abce1efb4",
 			"Output": {
@@ -118,11 +118,11 @@
 				"-x",
 				"-z",
 				"-f",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz",
+				"/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz",
 				"--strip-components",
 				"1"
 			],
-			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/java/openjdk8.265+01",
+			"Dir": "/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/java/openjdk8.265+01",
 			"Output": {
 				"Combined": ""
 			}
@@ -131,7 +131,7 @@
 			"Argv": [
 				"rm",
 				"-f",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
+				"/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/java/openjdk8.265+01.tar.gz"
 			],
 			"Output": {
 				"Combined": ""
@@ -142,11 +142,11 @@
 				"python",
 				"-c",
 				"import os, sys; os.stat(sys.argv[1]); sys.stdout.write(os.path.realpath(sys.argv[1]))",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/maven/apache-maven-3.6.3"
+				"/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/maven/apache-maven-3.6.3"
 			],
 			"Output": {
 				"Stdout": "",
-				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy9nbC84a3hjMXp4NTc0YjJ5Ymp0dnhoNDdqeTQwMDAwa2svVC9UZXN0TWF2ZW4wNTQzODQ5MDIvMDAyLy5jYWNoZS95Yi90b29scy9tYXZlbi9hcGFjaGUtbWF2ZW4tMy42LjMnCg=="
+				"Stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpPU0Vycm9yOiBbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy92YXIvZm9sZGVycy80Mi9tbGdnZGJnOTIwMzR6anczZmxfNTRnX2MwMDAwZ24vVC9UZXN0TWF2ZW4wMjcyMjM1MzcvMDAyLy5jYWNoZS95Yi90b29scy9tYXZlbi9hcGFjaGUtbWF2ZW4tMy42LjMnCg=="
 			},
 			"Error": "local run: exit status 1"
 		},
@@ -154,7 +154,7 @@
 			"Argv": [
 				"mkdir",
 				"-p",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/maven/apache-maven-3.6.3"
+				"/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/maven/apache-maven-3.6.3"
 			],
 			"Output": {
 				"Stderr": ""
@@ -163,7 +163,7 @@
 		{
 			"Argv": [
 				"tee",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/maven/apache-maven-3.6.3.tar.gz"
+				"/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/maven/apache-maven-3.6.3.tar.gz"
 			],
 			"StdinSHA256": "26ad91d751b3a9a53087aefa743f4e16a17741d3915b219cf74112bf87a438c5",
 			"Output": {
@@ -176,11 +176,11 @@
 				"-x",
 				"-z",
 				"-f",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/maven/apache-maven-3.6.3.tar.gz",
+				"/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/maven/apache-maven-3.6.3.tar.gz",
 				"--strip-components",
 				"1"
 			],
-			"Dir": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/maven/apache-maven-3.6.3",
+			"Dir": "/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/maven/apache-maven-3.6.3",
 			"Output": {
 				"Combined": ""
 			}
@@ -189,7 +189,7 @@
 			"Argv": [
 				"rm",
 				"-f",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/maven/apache-maven-3.6.3.tar.gz"
+				"/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/maven/apache-maven-3.6.3.tar.gz"
 			],
 			"Output": {
 				"Combined": ""
@@ -201,14 +201,15 @@
 				"-version"
 			],
 			"EnvVars": {
-				"JAVA_HOME": "/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home"
+				"JAVA_HOME": "/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home",
+				"JAVA_TOOL_OPTIONS": "-Duser.home=/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002"
 			},
 			"PrependPath": [
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/maven/apache-maven-3.6.3/bin",
-				"/var/folders/gl/8kxc1zx574b2ybjtvxh47jy40000kk/T/TestMaven054384902/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home/bin"
+				"/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/maven/apache-maven-3.6.3/bin",
+				"/var/folders/42/mlggdbg92034zjw3fl_54g_c0000gn/T/TestMaven027223537/002/.cache/yb/tools/java/openjdk8.265+01/Contents/Home/bin"
 			],
 			"Output": {
-				"Combined": "QXBhY2hlIE1hdmVuIDMuNi4zIChjZWNlZGQzNDMwMDI2OTZkMGFiYjUwYjMyYjU0MWI4YTZiYTI4ODNmKQpNYXZlbiBob21lOiAvdmFyL2ZvbGRlcnMvZ2wvOGt4YzF6eDU3NGIyeWJqdHZ4aDQ3ank0MDAwMGtrL1QvVGVzdE1hdmVuMDU0Mzg0OTAyLzAwMi8uY2FjaGUveWIvdG9vbHMvbWF2ZW4vYXBhY2hlLW1hdmVuLTMuNi4zCkphdmEgdmVyc2lvbjogMS44LjBfMjY1LCB2ZW5kb3I6IEFkb3B0T3BlbkpESywgcnVudGltZTogL3ByaXZhdGUvdmFyL2ZvbGRlcnMvZ2wvOGt4YzF6eDU3NGIyeWJqdHZ4aDQ3ank0MDAwMGtrL1QvVGVzdE1hdmVuMDU0Mzg0OTAyLzAwMi8uY2FjaGUveWIvdG9vbHMvamF2YS9vcGVuamRrOC4yNjUrMDEvQ29udGVudHMvSG9tZS9qcmUKRGVmYXVsdCBsb2NhbGU6IGVuX1VTLCBwbGF0Zm9ybSBlbmNvZGluZzogVVRGLTgKT1MgbmFtZTogIm1hYyBvcyB4IiwgdmVyc2lvbjogIjEwLjE1LjciLCBhcmNoOiAieDg2XzY0IiwgZmFtaWx5OiAibWFjIgo="
+				"Combined": "UGlja2VkIHVwIEpBVkFfVE9PTF9PUFRJT05TOiAtRHVzZXIuaG9tZT0vdmFyL2ZvbGRlcnMvNDIvbWxnZ2RiZzkyMDM0emp3M2ZsXzU0Z19jMDAwMGduL1QvVGVzdE1hdmVuMDI3MjIzNTM3LzAwMgpBcGFjaGUgTWF2ZW4gMy42LjMgKGNlY2VkZDM0MzAwMjY5NmQwYWJiNTBiMzJiNTQxYjhhNmJhMjg4M2YpCk1hdmVuIGhvbWU6IC92YXIvZm9sZGVycy80Mi9tbGdnZGJnOTIwMzR6anczZmxfNTRnX2MwMDAwZ24vVC9UZXN0TWF2ZW4wMjcyMjM1MzcvMDAyLy5jYWNoZS95Yi90b29scy9tYXZlbi9hcGFjaGUtbWF2ZW4tMy42LjMKSmF2YSB2ZXJzaW9uOiAxLjguMF8yNjUsIHZlbmRvcjogQWRvcHRPcGVuSkRLLCBydW50aW1lOiAvcHJpdmF0ZS92YXIvZm9sZGVycy80Mi9tbGdnZGJnOTIwMzR6anczZmxfNTRnX2MwMDAwZ24vVC9UZXN0TWF2ZW4wMjcyMjM1MzcvMDAyLy5jYWNoZS95Yi90b29scy9qYXZhL29wZW5qZGs4LjI2NSswMS9Db250ZW50cy9Ib21lL2pyZQpEZWZhdWx0IGxvY2FsZTogZW5fVVMsIHBsYXRmb3JtIGVuY29kaW5nOiBVVEYtOApPUyBuYW1lOiAibWFjIG9zIHgiLCB2ZXJzaW9uOiAiMTAuMTYiLCBhcmNoOiAieDg2XzY0IiwgZmFtaWx5OiAibWFjIgo="
 			}
 		}
 	]
