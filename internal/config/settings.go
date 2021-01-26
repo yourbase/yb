@@ -81,8 +81,8 @@ func APIURL(path string) (*url.URL, error) {
 	return appendURLPath(base, path), nil
 }
 
-func TokenValidationURL(apiToken string) (*url.URL, error) {
-	return APIURL("/apikey/validate/" + apiToken)
+func TokenValidationURL() (*url.URL, error) {
+	return APIURL("/users/whoami")
 }
 
 func uiBaseURL() (*url.URL, error) {

@@ -3,9 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
@@ -47,12 +45,18 @@ func (p *loginCmd) run(ctx context.Context) error {
 	apiToken, _ := reader.ReadString('\n')
 	apiToken = strings.TrimSuffix(apiToken, "\n")
 
-	validationURL, err := ybconfig.TokenValidationURL(apiToken)
+	// Using "/users/whoami" to validate the apikey
+	validationURL, err := ybconfig.TokenValidationURL()
 	if err != nil {
 		return err
 	}
-
-	resp, err := http.Get(validationURL.String())
+	req, err := http.NewRequest("GET", validationURL.String(), nil)
+	if err != nil {
+		return fmt.Errorf("building validation requrest: %v", err)
+	}
+	req.Header.Add("YB_API_TOKEN", apiToken)
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("make validation request: %v", err)
 	}
@@ -66,19 +70,6 @@ func (p *loginCmd) run(ctx context.Context) error {
 		return fmt.Errorf("http %s (that's us, not you, please try again later)", resp.Status)
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("parse response body: %w", err)
-	}
-	var tokenResponse struct {
-		TokenOK bool `json:"token_ok"`
-	}
-	if err := json.Unmarshal(body, &tokenResponse); err != nil {
-		return fmt.Errorf("parse response body: %w", err)
-	}
-	if !tokenResponse.TokenOK {
-		return fmt.Errorf("invalid token provided, please check it")
-	}
 	if err := ybconfig.Set("user", "api_key", apiToken); err != nil {
 		return fmt.Errorf("store token: %w", err)
 	}
