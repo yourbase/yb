@@ -50,13 +50,14 @@ func (p *loginCmd) run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest("GET", validationURL.String(), nil)
-	if err != nil {
-		return fmt.Errorf("building validation requrest: %v", err)
+	req := &http.Request{
+		Method: http.MethodGet,
+		URL:    validationURL,
+		Header: http.Header{
+			http.CanonicalHeaderKey("YB_API_TOKEN"): {apiToken},
+		},
 	}
-	req.Header.Add("YB_API_TOKEN", apiToken)
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := http.DefaultClient.Do(req.WithContext(ctx))
 	if err != nil {
 		return fmt.Errorf("make validation request: %v", err)
 	}
