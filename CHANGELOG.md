@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog][], and this project adheres to
 Version 0.6 adds new commands like `init` and `clean`, shell tab completion,
 and improvements to error messages for invalid build configurations.
 
+[0.6.0]: https://github.com/yourbase/yb/releases/tag/v0.6.0
+
 ### Added
 
 -  `yb init` is a new command that generates a `.yourbase.yml` file to get
