@@ -4,9 +4,12 @@ The format is based on [Keep a Changelog][], and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
-[Unreleased]: https://github.com/yourbase/yb/compare/v0.5.5...HEAD
+[Unreleased]: https://github.com/yourbase/yb/compare/v0.6.0...HEAD
 
-## [Unreleased][]
+## [0.6.0][] - 2021-01-26
+
+Version 0.6 adds new commands like `init` and `clean`, shell tab completion,
+and improvements to error messages for invalid build configurations.
 
 ### Added
 
@@ -42,6 +45,7 @@ The format is based on [Keep a Changelog][], and this project adheres to
 ### Fixed
 
 -  Mapping ports in the container no longer emits a seemingly empty log message.
+-  The Java buildpack now uses the build home for the `user.home` property.
 
 ## [0.5.5][] - 2020-12-01
 
