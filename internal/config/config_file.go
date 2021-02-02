@@ -56,10 +56,10 @@ func Save(cfg *ini.File) error {
 		return fmt.Errorf("save configuration: %w", err)
 	}
 	primaryPath := filepath.Join(configRoot, dirName, settingsName)
-	if err := os.MkdirAll(filepath.Dir(primaryPath), 0777); err != nil {
+	if err := os.MkdirAll(filepath.Dir(primaryPath), 0o700); err != nil {
 		return fmt.Errorf("save configuration: %w", err)
 	}
-	if err := ioutil.WriteFile(primaryPath, data, 0666); err != nil {
+	if err := ioutil.WriteFile(primaryPath, data, 0o600); err != nil {
 		return fmt.Errorf("save configuration: %w", err)
 	}
 	return nil
