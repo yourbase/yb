@@ -52,7 +52,9 @@ type remoteCmd struct {
 }
 
 func newRemoteCmd(cfg config.Getter) *cobra.Command {
-	p := new(remoteCmd)
+	p := &remoteCmd{
+		cfg: cfg,
+	}
 	c := &cobra.Command{
 		Use:   "remotebuild [options] [TARGET]",
 		Short: "Build a target remotely",

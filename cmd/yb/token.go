@@ -15,7 +15,7 @@ type tokenCmd struct {
 }
 
 func newTokenCmd(cfg config.Getter) *cobra.Command {
-	p := new(tokenCmd)
+	p := &tokenCmd{cfg: cfg}
 	return &cobra.Command{
 		Use:           "token",
 		Short:         "Print an auth token",
