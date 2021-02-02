@@ -9,15 +9,20 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	ybconfig "github.com/yourbase/yb/internal/config"
+	"github.com/yourbase/commons/ini"
+	"github.com/yourbase/yb/internal/config"
+	"go4.org/xdgdir"
 	"zombiezen.com/go/log"
 )
 
 type loginCmd struct {
+	cfg ini.FileSet
 }
 
-func newLoginCmd() *cobra.Command {
-	b := new(loginCmd)
+func newLoginCmd(cfg ini.FileSet) *cobra.Command {
+	b := &loginCmd{
+		cfg: cfg,
+	}
 	c := &cobra.Command{
 		Use:           "login",
 		Short:         "Log into YourBase",
@@ -33,12 +38,15 @@ func newLoginCmd() *cobra.Command {
 }
 
 func (p *loginCmd) run(ctx context.Context) error {
-	reader := bufio.NewReader(os.Stdin)
-	tokenURL, err := ybconfig.UserSettingsURL()
+	tokenURL, err := config.UserSettingsURL(p.cfg)
 	if err != nil {
 		return err
 	}
+	if len(p.cfg) == 0 {
+		return fmt.Errorf("%v not set", xdgdir.Config)
+	}
 
+	reader := bufio.NewReader(os.Stdin)
 	tokenPrompt := fmt.Sprintf("Open up %s and then paste the token here.", tokenURL)
 	fmt.Println(tokenPrompt)
 	fmt.Print("API Token: ")
@@ -46,7 +54,7 @@ func (p *loginCmd) run(ctx context.Context) error {
 	apiToken = strings.TrimSuffix(apiToken, "\n")
 
 	// Using "/users/whoami" to validate the apikey
-	validationURL, err := ybconfig.TokenValidationURL()
+	validationURL, err := config.TokenValidationURL(p.cfg)
 	if err != nil {
 		return err
 	}
@@ -70,8 +78,8 @@ func (p *loginCmd) run(ctx context.Context) error {
 	default:
 		return fmt.Errorf("http %s (that's us, not you, please try again later)", resp.Status)
 	}
-
-	if err := ybconfig.Set("user", "api_key", apiToken); err != nil {
+	p.cfg.Set(config.ResolveSectionName(p.cfg, "user"), "api_key", apiToken)
+	if err := config.Save(p.cfg[0]); err != nil {
 		return fmt.Errorf("store token: %w", err)
 	}
 	log.Infof(ctx, "API token saved to the config file")
