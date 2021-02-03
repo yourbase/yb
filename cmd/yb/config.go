@@ -5,7 +5,9 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/yourbase/commons/ini"
 	"github.com/yourbase/yb/internal/config"
+	"go4.org/xdgdir"
 	"zombiezen.com/go/log"
 )
 
@@ -13,18 +15,18 @@ var (
 	VARS = []string{"environment", "log-level", "log-section", "no-pretty-output"}
 )
 
-func newConfigCmd() *cobra.Command {
+func newConfigCmd(cfg ini.FileSet) *cobra.Command {
 	group := &cobra.Command{
 		Use:           "config",
 		Short:         "Print or change settings",
 		SilenceErrors: true,
 		SilenceUsage:  true,
 	}
-	group.AddCommand(newConfigGetCmd(), newConfigSetCmd())
+	group.AddCommand(newConfigGetCmd(cfg), newConfigSetCmd(cfg))
 	return group
 }
 
-func newConfigGetCmd() *cobra.Command {
+func newConfigGetCmd(cfg ini.FileSet) *cobra.Command {
 	return &cobra.Command{
 		Use:                   "get KEY",
 		Short:                 "Print configuration setting",
@@ -36,11 +38,7 @@ func newConfigGetCmd() *cobra.Command {
 			k := args[0]
 			for _, configVar := range VARS {
 				if k == configVar {
-					v, err := config.Get("defaults", k)
-					if err != nil {
-						return err
-					}
-					fmt.Println(v)
+					fmt.Println(config.Get(cfg, "defaults", k))
 					return nil
 				}
 			}
@@ -49,7 +47,7 @@ func newConfigGetCmd() *cobra.Command {
 	}
 }
 
-func newConfigSetCmd() *cobra.Command {
+func newConfigSetCmd(cfg ini.FileSet) *cobra.Command {
 	return &cobra.Command{
 		Use:                   "set KEY=VALUE",
 		Short:                 "Change configuration setting",
@@ -71,7 +69,13 @@ func newConfigSetCmd() *cobra.Command {
 			k, v := args[0][:i], args[0][i+1:]
 			for _, configVar := range VARS {
 				if k == configVar {
-					config.Set("defaults", k, v)
+					if len(cfg) == 0 {
+						return fmt.Errorf("%v not set", xdgdir.Config)
+					}
+					cfg.Set("defaults", k, v)
+					if err := config.Save(cfg[0]); err != nil {
+						return err
+					}
 					log.Infof(ctx, "Configuration done")
 					return nil
 				}

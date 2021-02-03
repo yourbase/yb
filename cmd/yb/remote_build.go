@@ -26,7 +26,7 @@ import (
 	"github.com/ulikunitz/xz"
 	"github.com/yourbase/commons/http/headers"
 	"github.com/yourbase/yb"
-	ybconfig "github.com/yourbase/yb/internal/config"
+	"github.com/yourbase/yb/internal/config"
 	"gopkg.in/src-d/go-git.v4"
 	gitplumbing "gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
@@ -34,6 +34,7 @@ import (
 )
 
 type remoteCmd struct {
+	cfg            config.Getter
 	target         string
 	baseCommit     string
 	branch         string
@@ -50,8 +51,10 @@ type remoteCmd struct {
 	remotes        []*url.URL
 }
 
-func newRemoteCmd() *cobra.Command {
-	p := new(remoteCmd)
+func newRemoteCmd(cfg config.Getter) *cobra.Command {
+	p := &remoteCmd{
+		cfg: cfg,
+	}
 	c := &cobra.Command{
 		Use:   "remotebuild [options] [TARGET]",
 		Short: "Build a target remotely",
@@ -143,7 +146,7 @@ func (p *remoteCmd) run(ctx context.Context) error {
 	}
 
 	if project.Repository == "" {
-		projectURL, err := ybconfig.UIURL(fmt.Sprintf("%s/%s", project.OrgSlug, project.Label))
+		projectURL, err := config.UIURL(p.cfg, fmt.Sprintf("%s/%s", project.OrgSlug, project.Label))
 		if err != nil {
 			return err
 		}
@@ -418,14 +421,14 @@ func isBinary(filePath string) (bool, error) {
 	return false, err
 }
 
-func postToApi(path string, formData url.Values) (*http.Response, error) {
-	userToken, err := ybconfig.UserToken()
+func postToAPI(cfg config.Getter, path string, formData url.Values) (*http.Response, error) {
+	userToken, err := config.UserToken(cfg)
 
 	if err != nil {
 		return nil, fmt.Errorf("Couldn't get user token: %v", err)
 	}
 
-	apiURL, err := ybconfig.APIURL(path)
+	apiURL, err := config.APIURL(cfg, path)
 	if err != nil {
 		return nil, fmt.Errorf("Couldn't determine API URL: %v", err)
 	}
@@ -495,7 +498,7 @@ func (p *remoteCmd) fetchProject(ctx context.Context, urls []string) (*apiProjec
 		p.remotes = append(p.remotes, rem)
 		v.Add("urls[]", u)
 	}
-	resp, err := postToApi("search/projects", v)
+	resp, err := postToAPI(p.cfg, "search/projects", v)
 	if err != nil {
 		return nil, fmt.Errorf("Couldn't lookup project on api server: %v", err)
 	}
@@ -509,7 +512,7 @@ func (p *remoteCmd) fetchProject(ctx context.Context, urls []string) (*apiProjec
 		case http.StatusUnauthorized:
 			return nil, fmt.Errorf("Unauthorized, authentication failed.\nPlease `yb login` again.")
 		case http.StatusPreconditionFailed, http.StatusNotFound:
-			return nil, fmt.Errorf("Please verify if this private repository has %s installed.", ybconfig.GitHubAppURL())
+			return nil, fmt.Errorf("Please verify if this private repository has %s installed.", config.GitHubAppURL())
 		default:
 			return nil, fmt.Errorf("This is us, not you, please try again in a few minutes.")
 		}
@@ -542,7 +545,7 @@ func (cmd *remoteCmd) submitBuild(ctx context.Context, project *apiProject, tagM
 
 	startTime := time.Now()
 
-	userToken, err := ybconfig.UserToken()
+	userToken, err := config.UserToken(cmd.cfg)
 	if err != nil {
 		return err
 	}
@@ -592,7 +595,7 @@ func (cmd *remoteCmd) submitBuild(ctx context.Context, project *apiProject, tagM
 		formData.Add("disable-skipper", "True")
 	}
 
-	resp, err := postToApi("builds/cli", formData)
+	resp, err := postToAPI(cmd.cfg, "builds/cli", formData)
 	if err != nil {
 		return err
 	}
@@ -613,7 +616,7 @@ func (cmd *remoteCmd) submitBuild(ctx context.Context, project *apiProject, tagM
 		}
 	case 412:
 		// TODO Show helpful message with App URL to fix GH App installation issue
-		return fmt.Errorf("Please verify if this specific repo has %s installed", ybconfig.GitHubAppURL())
+		return fmt.Errorf("Please verify if this specific repo has %s installed", config.GitHubAppURL())
 	case 500:
 		return fmt.Errorf("Internal server error")
 	}
@@ -636,7 +639,7 @@ func (cmd *remoteCmd) submitBuild(ctx context.Context, project *apiProject, tagM
 	if id, err := buildIDFromLogURL(logURL); err != nil {
 		log.Warnf(ctx, "Could not construct build link: %v", err)
 	} else {
-		uiURL, err = ybconfig.UIURL("/" + project.OrgSlug + "/" + project.Label + "/builds/" + id)
+		uiURL, err = config.UIURL(cmd.cfg, "/"+project.OrgSlug+"/"+project.Label+"/builds/"+id)
 		if err != nil {
 			log.Warnf(ctx, "Could not construct build link: %v", err)
 		}

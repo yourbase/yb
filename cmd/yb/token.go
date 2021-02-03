@@ -10,10 +10,12 @@ import (
 
 // tokenCmd represents an invocation of `yb token`, which outputs the saved
 // token from `yb login` to stdout. This can be used
-type tokenCmd struct{}
+type tokenCmd struct {
+	cfg config.Getter
+}
 
-func newTokenCmd() *cobra.Command {
-	p := new(tokenCmd)
+func newTokenCmd(cfg config.Getter) *cobra.Command {
+	p := &tokenCmd{cfg: cfg}
 	return &cobra.Command{
 		Use:           "token",
 		Short:         "Print an auth token",
@@ -27,11 +29,8 @@ func newTokenCmd() *cobra.Command {
 	}
 }
 
-func (*tokenCmd) run(ctx context.Context) error {
-	token, err := config.Get("user", "api_key")
-	if err != nil {
-		return fmt.Errorf("get auth token: %w", err)
-	}
-	_, err = fmt.Println(token)
+func (cmd *tokenCmd) run(ctx context.Context) error {
+	token := config.Get(cmd.cfg, "user", "api_key")
+	_, err := fmt.Println(token)
 	return err
 }

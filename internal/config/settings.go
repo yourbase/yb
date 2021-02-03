@@ -4,31 +4,29 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
-
-	"gopkg.in/ini.v1"
 )
 
-func ShouldUploadBuildLogs() bool {
-	if v, err := Get("user", "upload_build_logs"); err == nil {
-		if v == "true" {
-			return true
-		}
+func ShouldUploadBuildLogs(cfg Getter) bool {
+	v, err := strconv.ParseBool(Get(cfg, "user", "upload_build_logs"))
+	if err != nil {
+		return false
 	}
-	return false
+	return v
 }
 
-func getProfile(cfg *ini.File) string {
+func getProfile(cfg Getter) string {
 	if profile := os.Getenv("YOURBASE_PROFILE"); profile != "" {
 		return profile
 	}
 	if profile := os.Getenv("YB_PROFILE"); profile != "" {
 		return profile
 	}
-	return cfg.Section("defaults").Key("environment").String()
+	return cfg.Get("defaults", "environment")
 }
 
-func apiBaseURL() (*url.URL, error) {
+func apiBaseURL(cfg Getter) (*url.URL, error) {
 	if u := os.Getenv("YOURBASE_API_URL"); u != "" {
 		parsed, err := url.Parse(u)
 		if err != nil {
@@ -36,11 +34,7 @@ func apiBaseURL() (*url.URL, error) {
 		}
 		return parsed, nil
 	}
-	cfg, err := loadConfigFiles()
-	if err != nil {
-		return nil, fmt.Errorf("determine API URL: %w", err)
-	}
-	if u := get(cfg, "yourbase", "api_url"); u != "" {
+	if u := Get(cfg, "yourbase", "api_url"); u != "" {
 		parsed, err := url.Parse(u)
 		if err != nil {
 			return nil, fmt.Errorf("determine API URL: %w", err)
@@ -73,19 +67,19 @@ func apiBaseURL() (*url.URL, error) {
 	}
 }
 
-func APIURL(path string) (*url.URL, error) {
-	base, err := apiBaseURL()
+func APIURL(cfg Getter, path string) (*url.URL, error) {
+	base, err := apiBaseURL(cfg)
 	if err != nil {
 		return nil, err
 	}
 	return appendURLPath(base, path), nil
 }
 
-func TokenValidationURL() (*url.URL, error) {
-	return APIURL("/users/whoami")
+func TokenValidationURL(cfg Getter) (*url.URL, error) {
+	return APIURL(cfg, "/users/whoami")
 }
 
-func uiBaseURL() (*url.URL, error) {
+func uiBaseURL(cfg Getter) (*url.URL, error) {
 	if u := os.Getenv("YOURBASE_UI_URL"); u != "" {
 		parsed, err := url.Parse(u)
 		if err != nil {
@@ -93,11 +87,7 @@ func uiBaseURL() (*url.URL, error) {
 		}
 		return parsed, nil
 	}
-	cfg, err := loadConfigFiles()
-	if err != nil {
-		return nil, fmt.Errorf("determine UI URL: %w", err)
-	}
-	if u := get(cfg, "yourbase", "management_url"); u != "" {
+	if u := Get(cfg, "yourbase", "management_url"); u != "" {
 		parsed, err := url.Parse(u)
 		if err != nil {
 			return nil, fmt.Errorf("determine UI URL: %w", err)
@@ -130,23 +120,20 @@ func uiBaseURL() (*url.URL, error) {
 	}
 }
 
-func UIURL(path string) (*url.URL, error) {
-	base, err := uiBaseURL()
+func UIURL(cfg Getter, path string) (*url.URL, error) {
+	base, err := uiBaseURL(cfg)
 	if err != nil {
 		return nil, err
 	}
 	return appendURLPath(base, path), nil
 }
 
-func UserSettingsURL() (*url.URL, error) {
-	return UIURL("/user/settings")
+func UserSettingsURL(cfg Getter) (*url.URL, error) {
+	return UIURL(cfg, "/user/settings")
 }
 
 func GitHubAppURL() *url.URL {
 	profile := "production"
-	if cfg, err := loadConfigFiles(); err == nil {
-		profile = getProfile(cfg)
-	}
 	appName := "yourbase"
 	switch profile {
 	case "staging":
@@ -170,14 +157,11 @@ func appendURLPath(u *url.URL, path string) *url.URL {
 	return u2
 }
 
-func UserToken() (string, error) {
+func UserToken(cfg Getter) (string, error) {
 	if token := os.Getenv("YB_USER_TOKEN"); token != "" {
 		return token, nil
 	}
-	token, err := Get("user", "api_key")
-	if err != nil {
-		return "", fmt.Errorf("get API token: %w", err)
-	}
+	token := Get(cfg, "user", "api_key")
 	if token == "" {
 		return "", fmt.Errorf("get API token: not found in configuration or environment. " +
 			"Use 'yb login' to log into YourBase.")

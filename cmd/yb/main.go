@@ -12,7 +12,7 @@ import (
 	"github.com/matishsiao/goInfo"
 	"github.com/spf13/cobra"
 	"github.com/yourbase/commons/envvar"
-	ybconfig "github.com/yourbase/yb/internal/config"
+	"github.com/yourbase/yb/internal/config"
 	"zombiezen.com/go/log"
 )
 
@@ -37,6 +37,15 @@ func versionString() string {
 }
 
 func main() {
+	ctx, cancel := context.WithCancel(context.Background())
+	setupSignals(cancel)
+	cfg, err := config.Load()
+	if err != nil {
+		initLog(cfg, false)
+		log.Errorf(ctx, "%v", err)
+		os.Exit(1)
+	}
+
 	rootCmd := &cobra.Command{
 		Use:           "yb",
 		Short:         "Build tool optimized for local + remote development",
@@ -46,7 +55,7 @@ func main() {
 	}
 	showDebug := rootCmd.PersistentFlags().Bool("debug", false, "show debug logs")
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
-		initLog(*showDebug)
+		initLog(cfg, *showDebug)
 		displayOldDirectoryWarning(cmd.Context())
 	}
 
@@ -54,14 +63,14 @@ func main() {
 		newBuildCmd(),
 		newCheckConfigCmd(),
 		newCleanCmd(),
-		newConfigCmd(),
+		newConfigCmd(cfg),
 		newExecCmd(),
 		newGenCompleteCmd(),
 		newInitCmd(),
-		newLoginCmd(),
-		newRemoteCmd(),
+		newLoginCmd(cfg),
+		newRemoteCmd(cfg),
 		newRunCmd(),
-		newTokenCmd(),
+		newTokenCmd(cfg),
 	)
 	rootCmd.AddCommand(&cobra.Command{
 		Use:           "platform",
@@ -85,12 +94,10 @@ func main() {
 		},
 	})
 
-	ctx, cancel := context.WithCancel(context.Background())
-	setupSignals(cancel)
-	err := rootCmd.ExecuteContext(ctx)
+	err = rootCmd.ExecuteContext(ctx)
 	cancel()
 	if err != nil {
-		initLog(false)
+		initLog(cfg, false)
 		log.Errorf(ctx, "%v", err)
 		os.Exit(1)
 	}
@@ -117,13 +124,13 @@ type logger struct {
 
 var logInitOnce sync.Once
 
-func initLog(showDebug bool) {
+func initLog(cfg config.Getter, showDebug bool) {
 	logInitOnce.Do(func() {
 		log.SetDefault(&log.LevelFilter{
-			Min: configuredLogLevel(showDebug),
+			Min: configuredLogLevel(cfg, showDebug),
 			Output: &logger{
 				color:      colorLogs(),
-				showLevels: showLogLevels(),
+				showLevels: showLogLevels(cfg),
 			},
 		})
 	})
@@ -172,11 +179,11 @@ func (l *logger) LogEnabled(entry log.Entry) bool {
 	return true
 }
 
-func configuredLogLevel(showDebug bool) log.Level {
+func configuredLogLevel(cfg config.Getter, showDebug bool) log.Level {
 	if showDebug {
 		return log.Debug
 	}
-	l, _ := ybconfig.Get("defaults", "log-level")
+	l := config.Get(cfg, "defaults", "log-level")
 	switch strings.ToLower(l) {
 	case "debug":
 		return log.Debug
@@ -193,8 +200,8 @@ func colorLogs() bool {
 	return b
 }
 
-func showLogLevels() bool {
-	out, _ := ybconfig.Get("defaults", "no-pretty-output")
+func showLogLevels(cfg config.Getter) bool {
+	out := config.Get(cfg, "defaults", "no-pretty-output")
 	if out != "" {
 		b, _ := strconv.ParseBool(out)
 		return !b
