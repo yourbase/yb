@@ -4,13 +4,36 @@ The format is based on [Keep a Changelog][], and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
-[Unreleased]: https://github.com/yourbase/yb/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/yourbase/yb/compare/v0.6.1...HEAD
 
-## [Unreleased][]
+## [0.6.1][] - 2021-02-11
+
+Version 0.6.1 fixes a build environment keychain issue for macOS and stores its
+configuration files with more secure permissions.
+
+[0.6.1]: https://github.com/yourbase/yb/releases/tag/v0.6.1
 
 ### Fixed
 
--  On Mac, yb will now create an empty, default keychain in the build
+-  On macOS, yb will now create an empty, default keychain in the build
+   environment. Previously, there was not a keychain inside the build
+   environment.
+
+### Security
+
+-  `$XDG_CONFIG_HOME/yb/settings.ini` is no longer created with world-readable
+   permissions. This file stores YourBase login credentials, so this prevents
+   other users on the same system from accessing the login token.
+
+## [0.5.6][] - 2021-02-11
+
+Version 0.5.6 fixes a build environment keychain issue for macOS.
+
+[0.5.6]: https://github.com/yourbase/yb/releases/tag/v0.5.6
+
+### Fixed
+
+-  On macOS, yb will now create an empty, default keychain in the build
    environment. Previously, there was not a keychain inside the build
    environment.
 
