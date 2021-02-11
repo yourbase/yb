@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog][], and this project adheres to
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
 [Unreleased]: https://github.com/yourbase/yb/compare/v0.6.0...HEAD
 
+## [Unreleased][]
+
+### Fixed
+
+-  On Mac, yb will now create an empty, default keychain in the build
+   environment. Previously, there was not a keychain inside the build
+   environment.
+
 ## [0.6.0][] - 2021-01-26
 
 Version 0.6 adds new commands like `init` and `clean`, shell tab completion,
