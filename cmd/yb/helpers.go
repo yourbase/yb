@@ -69,6 +69,9 @@ func newBiome(ctx context.Context, opts newBiomeOptions) (biome.BiomeCloser, err
 			return nil, fmt.Errorf("set up environment for target %s: %w", opts.target, err)
 		}
 		log.Debugf(ctx, "Home located at %s", l.HomeDir)
+		if err := ensureKeychain(ctx, l); err != nil {
+			return nil, fmt.Errorf("set up environment for target %s: %w", opts.target, err)
+		}
 		bio, err := injectNetrc(ctx, l, netrc)
 		if err != nil {
 			return nil, fmt.Errorf("set up environment for target %s: %w", opts.target, err)

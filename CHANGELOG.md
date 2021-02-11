@@ -4,7 +4,19 @@ The format is based on [Keep a Changelog][], and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
-[Unreleased]: https://github.com/yourbase/yb/compare/v0.5.5...HEAD
+[Unreleased]: https://github.com/yourbase/yb/compare/v0.5.6...HEAD
+
+## [0.5.6][] - 2021-02-11
+
+Version 0.5.6 fixes a build environment keychain issue for macOS.
+
+[0.5.6]: https://github.com/yourbase/yb/releases/tag/v0.5.6
+
+### Fixed
+
+-  On macOS, yb will now create an empty, default keychain in the build
+   environment. Previously, there was not a keychain inside the build
+   environment.
 
 ## [0.5.5][] - 2020-12-01
 
