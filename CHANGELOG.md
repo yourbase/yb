@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog][], and this project adheres to
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
 [Unreleased]: https://github.com/yourbase/yb/compare/v0.6.1...HEAD
 
+## [Unreleased][]
+
+### Changed
+
+-  The build environment now sets `LANG` and other locale environment variables
+   to `C.UTF-8` or the closest approximation thereof. Previously, these
+   variables were unset, which caused problems with programs that required a
+   UTF-8 character set to function properly, like those written in Ruby or Python.
+
+### Fixed
+
+-  The `TZ` environment variable is now set to `UTC0` by default. Previously,
+   it was set to `UTC`, which is not a POSIX-conforming value.
+
 ## [0.6.1][] - 2021-02-11
 
 Version 0.6.1 fixes a build environment keychain issue for macOS and stores its

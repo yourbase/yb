@@ -271,8 +271,8 @@ func (c *Container) Run(ctx context.Context, invoke *Invocation) error {
 	opts.Env = []string{
 		// TODO(light): Set LOGNAME and USER.
 		"HOME=" + c.dirs.Home,
-		"TZ=UTC",
 	}
+	opts.Env = appendStandardEnv(opts.Env, c.Describe().OS)
 	opts.Env = invoke.Env.appendTo(opts.Env, c.path, ':')
 	if slashpath.IsAbs(invoke.Dir) {
 		opts.WorkingDir = invoke.Dir
