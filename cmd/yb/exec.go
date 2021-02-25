@@ -16,6 +16,7 @@ type execCmd struct {
 	execEnvName string
 	env         []commandLineEnv
 	netrcFiles  []string
+	mode        executionMode
 }
 
 func newExecCmd() *cobra.Command {
@@ -37,6 +38,7 @@ func newExecCmd() *cobra.Command {
 	}
 	envFlagsVar(c.Flags(), &b.env)
 	netrcFlagVar(c.Flags(), &b.netrcFiles)
+	executionModeVar(c.Flags(), &b.mode)
 	// TODO(light): Use a less confusing name for this flag when it is using targets.
 	c.Flags().StringVar(&b.execEnvName, "environment", yb.DefaultExecEnvironment, "Environment to run as")
 	return c
@@ -53,7 +55,7 @@ func (b *execCmd) run(ctx context.Context) error {
 		return err
 	}
 	const useDocker = true
-	dockerClient, err := connectDockerClient(useDocker)
+	dockerClient, err := connectDockerClient(b.mode)
 	if err != nil {
 		return err
 	}
@@ -70,21 +72,16 @@ func (b *execCmd) run(ctx context.Context) error {
 	if execTarget == nil {
 		return fmt.Errorf("exec %s: no such environment", b.execEnvName)
 	}
-	biomeOpts := newBiomeOptions{
+	bio, err := newBiome(ctx, execTarget, newBiomeOptions{
 		packageDir:      pkg.Path,
-		target:          execTarget.Name,
 		dataDirs:        dataDirs,
 		downloader:      downloader,
 		baseEnv:         baseEnv,
 		netrcFiles:      b.netrcFiles,
+		executionMode:   b.mode,
 		dockerClient:    dockerClient,
-		targetContainer: execTarget.Container,
 		dockerNetworkID: dockerNetworkID,
-	}
-	if execTarget.HostOnly {
-		biomeOpts = biomeOpts.disableDocker()
-	}
-	bio, err := newBiome(ctx, biomeOpts)
+	})
 	if err != nil {
 		return err
 	}

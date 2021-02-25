@@ -137,15 +137,15 @@ func parseTarget(packageDir string, globalDeps map[string]BuildpackSpec, tgt *bu
 		return nil, fmt.Errorf("target %s: dependencies: containers: %w", tgt.Name, err)
 	}
 	parsed := &Target{
-		Name:       tgt.Name,
-		Container:  &container.ContainerDefinition,
-		Commands:   tgt.Commands,
-		RunDir:     tgt.Root,
-		Tags:       tgt.Tags,
-		Env:        make(map[string]EnvTemplate),
-		Buildpacks: make(map[string]BuildpackSpec),
-		HostOnly:   tgt.HostOnly,
-		Resources:  resources,
+		Name:         tgt.Name,
+		Container:    &container.ContainerDefinition,
+		UseContainer: tgt.Container != nil,
+		Commands:     tgt.Commands,
+		RunDir:       tgt.Root,
+		Tags:         tgt.Tags,
+		Env:          make(map[string]EnvTemplate),
+		Buildpacks:   make(map[string]BuildpackSpec),
+		Resources:    resources,
 	}
 	for tool, spec := range globalDeps {
 		parsed.Buildpacks[tool] = spec
@@ -222,14 +222,14 @@ func parseExecPhase(pkg *Package, manifest *buildManifest) (map[string]*Target, 
 		return nil, fmt.Errorf("exec dependencies: %w", err)
 	}
 	defaultTarget := &Target{
-		Name:       DefaultExecEnvironment,
-		Package:    pkg,
-		Container:  &container.ContainerDefinition,
-		Commands:   manifest.Exec.Commands,
-		Env:        make(map[string]EnvTemplate),
-		Buildpacks: buildpacks,
-		HostOnly:   manifest.Exec.HostOnly,
-		Resources:  resources,
+		Name:         DefaultExecEnvironment,
+		Package:      pkg,
+		Container:    &container.ContainerDefinition,
+		UseContainer: manifest.Exec.Container != nil,
+		Commands:     manifest.Exec.Commands,
+		Env:          make(map[string]EnvTemplate),
+		Buildpacks:   buildpacks,
+		Resources:    resources,
 	}
 	if err := parseEnv(defaultTarget.Env, manifest.Exec.Environment[defaultTarget.Name]); err != nil {
 		return nil, fmt.Errorf("exec environment: %s: %w", defaultTarget.Name, err)

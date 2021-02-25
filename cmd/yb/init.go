@@ -82,7 +82,7 @@ func (cmd *initCmd) run(ctx context.Context) (cmdErr error) {
 	}
 
 	// Do a quick check to see if Docker works.
-	client, err := connectDockerClient(true)
+	client, err := connectDockerClient(useContainer)
 	if err != nil {
 		return err
 	}

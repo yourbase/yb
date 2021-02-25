@@ -33,7 +33,7 @@ type buildCmd struct {
 	env              []commandLineEnv
 	netrcFiles       []string
 	execPrefix       string
-	noContainer      bool
+	mode             executionMode
 	dependenciesOnly bool
 }
 
@@ -68,7 +68,7 @@ func newBuildCmd() *cobra.Command {
 	}
 	envFlagsVar(c.Flags(), &b.env)
 	netrcFlagVar(c.Flags(), &b.netrcFiles)
-	c.Flags().BoolVar(&b.noContainer, "no-container", false, "Avoid using Docker if possible")
+	executionModeVar(c.Flags(), &b.mode)
 	c.Flags().BoolVar(&b.dependenciesOnly, "deps-only", false, "Install only dependencies, don't do anything else")
 	c.Flags().StringVar(&b.execPrefix, "exec-prefix", "", "Add a prefix to all executed commands (useful for timing or wrapping things)")
 	return c
@@ -97,7 +97,7 @@ func (b *buildCmd) run(ctx context.Context, buildTargetName string) error {
 	if err != nil {
 		return fmt.Errorf("parse --exec-prefix: %w", err)
 	}
-	dockerClient, err := connectDockerClient(!b.noContainer)
+	dockerClient, err := connectDockerClient(b.mode)
 	if err != nil {
 		return err
 	}
@@ -132,13 +132,14 @@ func (b *buildCmd) run(ctx context.Context, buildTargetName string) error {
 	log.Debugf(ctx, "Building package %s in %s...", targetPackage.Name, targetPackage.Path)
 
 	buildError := doTargetList(ctx, targetPackage, buildTargets, &doOptions{
-		dockerClient: dockerClient,
-		dataDirs:     dataDirs,
-		downloader:   downloader,
-		execPrefix:   execPrefix,
-		setupOnly:    b.dependenciesOnly,
-		baseEnv:      baseEnv,
-		netrcFiles:   b.netrcFiles,
+		executionMode: b.mode,
+		dockerClient:  dockerClient,
+		dataDirs:      dataDirs,
+		downloader:    downloader,
+		execPrefix:    execPrefix,
+		setupOnly:     b.dependenciesOnly,
+		baseEnv:       baseEnv,
+		netrcFiles:    b.netrcFiles,
 	})
 	if buildError != nil {
 		span.SetStatus(codes.Unknown, buildError.Error())
@@ -165,6 +166,7 @@ func (b *buildCmd) run(ctx context.Context, buildTargetName string) error {
 type doOptions struct {
 	dataDirs        *ybdata.Dirs
 	downloader      *ybdata.Downloader
+	executionMode   executionMode
 	dockerClient    *docker.Client
 	dockerNetworkID string
 	baseEnv         biome.Environment
@@ -207,21 +209,16 @@ func doTargetList(ctx context.Context, pkg *yb.Package, targets []*yb.Target, op
 }
 
 func doTarget(ctx context.Context, pkg *yb.Package, target *yb.Target, opts *doOptions) error {
-	biomeOpts := newBiomeOptions{
+	bio, err := newBiome(ctx, target, newBiomeOptions{
 		packageDir:      pkg.Path,
-		target:          target.Name,
 		dataDirs:        opts.dataDirs,
 		downloader:      opts.downloader,
 		baseEnv:         opts.baseEnv,
 		netrcFiles:      opts.netrcFiles,
+		executionMode:   opts.executionMode,
 		dockerClient:    opts.dockerClient,
-		targetContainer: target.Container,
 		dockerNetworkID: opts.dockerNetworkID,
-	}
-	if target.HostOnly {
-		biomeOpts = biomeOpts.disableDocker()
-	}
-	bio, err := newBiome(ctx, biomeOpts)
+	})
 	if err != nil {
 		return fmt.Errorf("target %s: %w", target.Name, err)
 	}

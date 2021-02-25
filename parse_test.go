@@ -149,6 +149,7 @@ func TestLoadPackage(t *testing.T) {
 								},
 							},
 						},
+						UseContainer: true,
 						Commands: []string{
 							"/bin/true",
 						},
@@ -169,6 +170,7 @@ func TestLoadPackage(t *testing.T) {
 								"5001",
 							},
 						},
+						UseContainer: true,
 						Buildpacks: map[string]BuildpackSpec{
 							"python": "python:3.7.7",
 						},
@@ -195,6 +197,7 @@ func TestLoadPackage(t *testing.T) {
 								"5001",
 							},
 						},
+						UseContainer: true,
 						Buildpacks: map[string]BuildpackSpec{
 							"python": "python:3.7.7",
 						},

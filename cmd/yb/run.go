@@ -16,10 +16,10 @@ import (
 )
 
 type runCmd struct {
-	env         []commandLineEnv
-	netrcFiles  []string
-	target      string
-	noContainer bool
+	env        []commandLineEnv
+	netrcFiles []string
+	target     string
+	mode       executionMode
 }
 
 func newRunCmd() *cobra.Command {
@@ -42,8 +42,8 @@ func newRunCmd() *cobra.Command {
 	}
 	envFlagsVar(c.Flags(), &b.env)
 	netrcFlagVar(c.Flags(), &b.netrcFiles)
+	executionModeVar(c.Flags(), &b.mode)
 	c.Flags().StringVarP(&b.target, "target", "t", yb.DefaultTarget, "The target to run the command in")
-	c.Flags().BoolVar(&b.noContainer, "no-container", false, "Avoid using Docker if possible")
 	c.RegisterFlagCompletionFunc("target", func(cc *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return autocompleteTargetName(toComplete)
 	})
@@ -60,7 +60,7 @@ func (b *runCmd) run(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	dockerClient, err := connectDockerClient(!b.noContainer)
+	dockerClient, err := connectDockerClient(b.mode)
 	if err != nil {
 		return err
 	}
@@ -81,6 +81,7 @@ func (b *runCmd) run(ctx context.Context, args []string) error {
 
 	// Build dependencies before running command.
 	err = doTargetList(ctx, pkg, targets[:len(targets)-1], &doOptions{
+		executionMode:   b.mode,
 		dockerClient:    dockerClient,
 		dockerNetworkID: dockerNetworkID,
 		dataDirs:        dataDirs,
@@ -93,21 +94,16 @@ func (b *runCmd) run(ctx context.Context, args []string) error {
 	}
 
 	// Run command.
-	biomeOpts := newBiomeOptions{
+	bio, err := newBiome(ctx, execTarget, newBiomeOptions{
+		executionMode:   b.mode,
 		packageDir:      pkg.Path,
-		target:          execTarget.Name,
 		dataDirs:        dataDirs,
 		downloader:      downloader,
 		baseEnv:         baseEnv,
 		netrcFiles:      b.netrcFiles,
 		dockerClient:    dockerClient,
-		targetContainer: execTarget.Container,
 		dockerNetworkID: dockerNetworkID,
-	}
-	if execTarget.HostOnly {
-		biomeOpts = biomeOpts.disableDocker()
-	}
-	bio, err := newBiome(ctx, biomeOpts)
+	})
 	if err != nil {
 		return err
 	}

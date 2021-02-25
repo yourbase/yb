@@ -10,12 +10,12 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"github.com/yourbase/narwhal"
 	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/internal/config"
@@ -23,8 +23,60 @@ import (
 	"zombiezen.com/go/log"
 )
 
-func connectDockerClient(useDocker bool) (*docker.Client, error) {
-	if !useDocker {
+type executionMode int
+
+const (
+	noContainer  executionMode = -1
+	preferHost   executionMode = 0
+	useContainer executionMode = 1
+)
+
+func (mode executionMode) String() string {
+	switch mode {
+	case noContainer:
+		return "no-container"
+	case preferHost:
+		return "host"
+	case useContainer:
+		return "container"
+	default:
+		return fmt.Sprint(int(mode))
+	}
+}
+
+func (mode executionMode) Set(s string) error {
+	switch strings.ToLower(s) {
+	case "no-container":
+		mode = noContainer
+	case "host":
+		mode = preferHost
+	case "container":
+		mode = useContainer
+	default:
+		return fmt.Errorf("invalid execution mode %q", s)
+	}
+	return nil
+}
+
+func (mode executionMode) Type() string {
+	return "host|container|no-container"
+}
+
+// executionModeVar registers the --mode flag.
+func executionModeVar(flags *pflag.FlagSet, mode *executionMode) {
+	flags.Var(mode, "mode", "how to execute commands in target")
+	flags.AddFlag(&pflag.Flag{
+		Name:        "no-container",
+		Value:       noContainerFlag{mode},
+		Usage:       "Avoid using Docker if possible",
+		DefValue:    "false",
+		NoOptDefVal: "true",
+		Hidden:      true,
+	})
+}
+
+func connectDockerClient(mode executionMode) (*docker.Client, error) {
+	if mode <= noContainer {
 		return nil, nil
 	}
 	dockerClient, err := docker.NewVersionedClientFromEnv("1.39")
@@ -36,48 +88,42 @@ func connectDockerClient(useDocker bool) (*docker.Client, error) {
 
 type newBiomeOptions struct {
 	packageDir string
-	target     string
 	downloader *ybdata.Downloader
 	dataDirs   *ybdata.Dirs
 	baseEnv    biome.Environment
 	netrcFiles []string
 
+	executionMode   executionMode
 	dockerClient    *docker.Client
-	targetContainer *narwhal.ContainerDefinition
 	dockerNetworkID string
 }
 
-func (opts newBiomeOptions) disableDocker() newBiomeOptions {
-	// Operating on copy, so free to modify fields.
-	opts.dockerClient = nil
-	opts.targetContainer = nil
-	opts.dockerNetworkID = ""
-	return opts
-}
-
-func newBiome(ctx context.Context, opts newBiomeOptions) (biome.BiomeCloser, error) {
+func newBiome(ctx context.Context, target *yb.Target, opts newBiomeOptions) (biome.BiomeCloser, error) {
+	if target.UseContainer && opts.dockerClient == nil {
+		return nil, fmt.Errorf("set up environment for target %s: docker required but unavailable", target.Name)
+	}
 	log.Debugf(ctx, "Checking for netrc data in %s",
 		append(append([]string(nil), config.DefaultNetrcFiles()...), opts.netrcFiles...))
 	netrc, err := config.CatFiles(config.DefaultNetrcFiles(), opts.netrcFiles)
 	if err != nil {
-		return nil, fmt.Errorf("set up environment for target %s: %w", opts.target, err)
+		return nil, fmt.Errorf("set up environment for target %s: %w", target.Name, err)
 	}
-	if opts.dockerClient == nil {
+	if opts.executionMode < useContainer {
 		l := biome.Local{
 			PackageDir: opts.packageDir,
 		}
 		var err error
-		l.HomeDir, err = opts.dataDirs.BuildHome(opts.packageDir, opts.target, l.Describe())
+		l.HomeDir, err = opts.dataDirs.BuildHome(opts.packageDir, target.Name, l.Describe())
 		if err != nil {
-			return nil, fmt.Errorf("set up environment for target %s: %w", opts.target, err)
+			return nil, fmt.Errorf("set up environment for target %s: %w", target.Name, err)
 		}
 		log.Debugf(ctx, "Home located at %s", l.HomeDir)
 		if err := ensureKeychain(ctx, l); err != nil {
-			return nil, fmt.Errorf("set up environment for target %s: %w", opts.target, err)
+			return nil, fmt.Errorf("set up environment for target %s: %w", target.Name, err)
 		}
 		bio, err := injectNetrc(ctx, l, netrc)
 		if err != nil {
-			return nil, fmt.Errorf("set up environment for target %s: %w", opts.target, err)
+			return nil, fmt.Errorf("set up environment for target %s: %w", target.Name, err)
 		}
 		return biome.EnvBiome{
 			Biome: bio,
@@ -85,30 +131,30 @@ func newBiome(ctx context.Context, opts newBiomeOptions) (biome.BiomeCloser, err
 		}, nil
 	}
 
-	home, err := opts.dataDirs.BuildHome(opts.packageDir, opts.target, biome.DockerDescriptor())
+	home, err := opts.dataDirs.BuildHome(opts.packageDir, target.Name, biome.DockerDescriptor())
 	if err != nil {
-		return nil, fmt.Errorf("set up environment for target %s: %w", opts.target, err)
+		return nil, fmt.Errorf("set up environment for target %s: %w", target.Name, err)
 	}
 	log.Debugf(ctx, "Home located at %s", home)
 	tiniFile, err := opts.downloader.Download(ctx, biome.TiniURL)
 	if err != nil {
-		return nil, fmt.Errorf("set up environment for target %s: %w", opts.target, err)
+		return nil, fmt.Errorf("set up environment for target %s: %w", target.Name, err)
 	}
 	defer tiniFile.Close()
 	c, err := biome.CreateContainer(ctx, opts.dockerClient, &biome.ContainerOptions{
 		PackageDir: opts.packageDir,
 		HomeDir:    home,
 		TiniExe:    tiniFile,
-		Definition: opts.targetContainer,
+		Definition: target.Container,
 		NetworkID:  opts.dockerNetworkID,
 		PullOutput: os.Stderr,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("set up environment for target %s: %w", opts.target, err)
+		return nil, fmt.Errorf("set up environment for target %s: %w", target.Name, err)
 	}
 	bio, err := injectNetrc(ctx, c, netrc)
 	if err != nil {
-		return nil, fmt.Errorf("set up environment for target %s: %w", opts.target, err)
+		return nil, fmt.Errorf("set up environment for target %s: %w", target.Name, err)
 	}
 	return biome.EnvBiome{
 		Biome: bio,
@@ -247,4 +293,29 @@ func autocompleteTargetName(toComplete string) ([]string, cobra.ShellCompDirecti
 	}
 	sort.Strings(names)
 	return names, cobra.ShellCompDirectiveNoFileComp
+}
+
+type noContainerFlag struct {
+	mode *executionMode
+}
+
+func (f noContainerFlag) String() string {
+	return strconv.FormatBool(*f.mode == noContainer)
+}
+
+func (f noContainerFlag) Set(s string) error {
+	v, err := strconv.ParseBool(s)
+	if err != nil {
+		return err
+	}
+	if v {
+		*f.mode = noContainer
+	} else {
+		*f.mode = preferHost
+	}
+	return nil
+}
+
+func (f noContainerFlag) Type() string {
+	return "bool"
 }
