@@ -1,6 +1,6 @@
 module github.com/yourbase/yb
 
-go 1.15
+go 1.16
 
 require (
 	gg-scm.io/pkg/git v0.5.0

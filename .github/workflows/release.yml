@@ -31,7 +31,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
-        go-version: "^1.15"
+        go-version: "^1.16"
     - name: Check out code
       uses: actions/checkout@v2
     - name: Download dependencies
@@ -69,7 +69,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
-        go-version: "^1.15"
+        go-version: "^1.16"
     - name: Check out code
       uses: actions/checkout@v2
     - name: Download dependencies
@@ -107,7 +107,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
-        go-version: "^1.15"
+        go-version: "^1.16"
     - name: Check out code
       uses: actions/checkout@v2
     - name: Download dependencies
