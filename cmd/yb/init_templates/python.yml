@@ -1,0 +1,20 @@
+# YourBase build configuration
+# See https://docs.yourbase.io/ for reference.
+
+dependencies:
+  build:
+    - python:3.6.3
+
+build_targets:
+  - name: default
+    commands:
+      - pip install -r requirements.txt
+      - python tests.py
+
+# This section configures which targets get built on CI.
+ci:
+  builds:
+    - name: default
+      build_target: default
+      # If you only want certain events, uncomment the following line.
+      # when: branch IS 'main' OR action IS 'pull_request'

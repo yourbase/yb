@@ -1,0 +1,19 @@
+# YourBase build configuration
+# See https://docs.yourbase.io/ for reference.
+
+dependencies:
+  build:
+    - go:1.16
+
+build_targets:
+  - name: default
+    commands:
+      - go test ./...
+
+# This section configures which targets get built on CI.
+ci:
+  builds:
+    - name: default
+      build_target: default
+      # If you only want certain events, uncomment the following line.
+      # when: branch IS 'main' OR action IS 'pull_request'

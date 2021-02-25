@@ -18,11 +18,14 @@ package main
 
 import (
 	"context"
+	"io/fs"
 	"io/ioutil"
 	"os"
+	slashpath "path"
 	"path/filepath"
 	"testing"
 
+	"github.com/yourbase/yb"
 	"zombiezen.com/go/log/testlog"
 )
 
@@ -104,6 +107,30 @@ func TestDetectLanguage(t *testing.T) {
 			got, err := detectLanguage(ctx, dir)
 			if got != test.want || err != nil {
 				t.Errorf("detectLanguage(%q) = %q, %v; want %q, <nil>", dir, got, err, test.want)
+			}
+		})
+	}
+}
+
+func TestPackageConfigTemplates(t *testing.T) {
+	const dir = "init_templates"
+	entries, err := fs.ReadDir(packageConfigTemplateFiles, dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, ent := range entries {
+		name := ent.Name()
+		t.Run(name, func(t *testing.T) {
+			dst := filepath.Join(t.TempDir(), yb.PackageConfigFilename)
+			data, err := fs.ReadFile(packageConfigTemplateFiles, slashpath.Join(dir, name))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := ioutil.WriteFile(dst, []byte(data), 0o666); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := yb.LoadPackage(dst); err != nil {
+				t.Errorf("Load file: %v", err)
 			}
 		})
 	}
