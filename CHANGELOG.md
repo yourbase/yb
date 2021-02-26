@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog][], and this project adheres to
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
 [Unreleased]: https://github.com/yourbase/yb/compare/v0.6.1...HEAD
 
+## [Unreleased][]
+
+### Fixed
+
+-  If a container dependency exits while waiting for it to become healthy,
+   yb will now display a container's logs rather than waiting for the full
+   timeout and giving an unhelpful error message.
+
 ## [0.6.1][] - 2021-02-11
 
 Version 0.6.1 fixes a build environment keychain issue for macOS and stores its
