@@ -383,8 +383,8 @@ github.com/yourbase/commons v0.9.0 h1:IGuX6kYAuRG/VLRdWLxNOBGhKh14fr+n+JYqX1ao2c
 github.com/yourbase/commons v0.9.0/go.mod h1:Puc7zTNtP4J7cRK9LkAUWYdORUQ0f7ZcgFFu2lxOe4Y=
 github.com/yourbase/commons v0.9.1 h1:yC/xUsdBz2HewMMMEqh1kVGf3a8uzoDe+hWFloXXRDI=
 github.com/yourbase/commons v0.9.1/go.mod h1:Puc7zTNtP4J7cRK9LkAUWYdORUQ0f7ZcgFFu2lxOe4Y=
-github.com/yourbase/narwhal v0.10.0 h1:4d9dGQPPJrT0bTFL6A7d6cErK72T2XTfcXKahJvloR8=
-github.com/yourbase/narwhal v0.10.0/go.mod h1:yavgfqT9OGAeyyQJijsZpAvBPVY9HExOuwpMxe2he+g=
+github.com/yourbase/narwhal v0.10.1 h1:uigoE/juOSyAZV86SdTvPxscvymHXH5onjsM1Meehec=
+github.com/yourbase/narwhal v0.10.1/go.mod h1:0ZmQOO4YJxy1XOVwAqlqiLmAH1GIbv9KfXIRqSYcPX8=
 go.etcd.io/bbolt v1.3.2/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
 go.opencensus.io v0.21.0/go.mod h1:mSImk1erAIZhrmZN+AvHh14ztQfjbGwt4TtuofqLduU=
 go.opencensus.io v0.22.0/go.mod h1:+kGneAE2xo2IficOXnaByMWTGM9T73dGwxeWcUqIpI8=
@@ -471,6 +471,8 @@ golang.org/x/sync v0.0.0-20190227155943-e225da77a7e6/go.mod h1:RxMgew5VJxzue5/jJ
 golang.org/x/sync v0.0.0-20190423024810-112230192c58/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e h1:vcxGaoTs7kV8m5Np9uUNQin4BrLOthgV7252N8V+FwY=
 golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
+golang.org/x/sync v0.0.0-20210220032951-036812b2e83c h1:5KslGYwFpkhGh+Q16bwMP3cOontH8FOep7tGV86Y7SQ=
+golang.org/x/sync v0.0.0-20210220032951-036812b2e83c/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sys v0.0.0-20180329131831-378d26f46672/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/sys v0.0.0-20180823144017-11551d06cbcc/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/sys v0.0.0-20180830151530-49385e6e1522/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
