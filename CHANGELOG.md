@@ -4,9 +4,14 @@ The format is based on [Keep a Changelog][], and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
-[Unreleased]: https://github.com/yourbase/yb/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/yourbase/yb/compare/v0.6.2...HEAD
 
-## [Unreleased][]
+## [0.6.2][] - 2021-03-01
+
+Version 0.6.2 fixes a locale environment variable issue and improves the output
+for builds with containers that don't start up.
+
+[0.6.2]: https://github.com/yourbase/yb/releases/tag/v0.6.2
 
 ### Changed
 
@@ -20,6 +25,24 @@ The format is based on [Keep a Changelog][], and this project adheres to
 -  If a container dependency exits while waiting for it to become healthy,
    yb will now display a container's logs rather than waiting for the full
    timeout and giving an unhelpful error message.
+-  The `TZ` environment variable is now set to `UTC0` by default. Previously,
+   it was set to `UTC`, which is not a POSIX-conforming value.
+
+## [0.5.7][] - 2021-03-01
+
+Version 0.5.7 backports a fix for a locale environment variable issue.
+
+[0.5.7]: https://github.com/yourbase/yb/releases/tag/v0.5.7
+
+### Changed
+
+-  The build environment now sets `LANG` and other locale environment variables
+   to `C.UTF-8` or the closest approximation thereof. Previously, these
+   variables were unset, which caused problems with programs that required a
+   UTF-8 character set to function properly, like those written in Ruby or Python.
+
+### Fixed
+
 -  The `TZ` environment variable is now set to `UTC0` by default. Previously,
    it was set to `UTC`, which is not a POSIX-conforming value.
 
