@@ -8,11 +8,20 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 ## [Unreleased][]
 
+### Changed
+
+-  The build environment now sets `LANG` and other locale environment variables
+   to `C.UTF-8` or the closest approximation thereof. Previously, these
+   variables were unset, which caused problems with programs that required a
+   UTF-8 character set to function properly, like those written in Ruby or Python.
+
 ### Fixed
 
 -  If a container dependency exits while waiting for it to become healthy,
    yb will now display a container's logs rather than waiting for the full
    timeout and giving an unhelpful error message.
+-  The `TZ` environment variable is now set to `UTC0` by default. Previously,
+   it was set to `UTC`, which is not a POSIX-conforming value.
 
 ## [0.6.1][] - 2021-02-11
 
