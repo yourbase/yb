@@ -4,7 +4,25 @@ The format is based on [Keep a Changelog][], and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
-[Unreleased]: https://github.com/yourbase/yb/compare/v0.5.6...HEAD
+[Unreleased]: https://github.com/yourbase/yb/compare/v0.5.7...HEAD
+
+## [0.5.7][] - 2021-03-01
+
+Version 0.5.7 backports a fix for a locale environment variable issue.
+
+[0.5.7]: https://github.com/yourbase/yb/releases/tag/v0.5.7
+
+### Changed
+
+-  The build environment now sets `LANG` and other locale environment variables
+   to `C.UTF-8` or the closest approximation thereof. Previously, these
+   variables were unset, which caused problems with programs that required a
+   UTF-8 character set to function properly, like those written in Ruby or Python.
+
+### Fixed
+
+-  The `TZ` environment variable is now set to `UTC0` by default. Previously,
+   it was set to `UTC`, which is not a POSIX-conforming value.
 
 ## [0.5.6][] - 2021-02-11
 

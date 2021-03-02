@@ -195,8 +195,8 @@ func (l Local) Run(ctx context.Context, invoke *Invocation) error {
 		"HOME=" + l.HomeDir,
 		"LOGNAME=" + os.Getenv("LOGNAME"),
 		"USER=" + os.Getenv("USER"),
-		"TZ=UTC",
 	}
+	c.Env = appendStandardEnv(c.Env, runtime.GOOS)
 	c.Env = invoke.Env.appendTo(c.Env, os.Getenv("PATH"), filepath.ListSeparator)
 	c.Dir = dir
 	c.Stdin = invoke.Stdin
@@ -206,6 +206,16 @@ func (l Local) Run(ctx context.Context, invoke *Invocation) error {
 		return fmt.Errorf("local run: %w", err)
 	}
 	return nil
+}
+
+func appendStandardEnv(env []string, biomeOS string) []string {
+	env = append(env, "TZ=UTC0")
+	if biomeOS == MacOS {
+		env = append(env, "LANG=C", "LC_CTYPE=UTF-8")
+	} else {
+		env = append(env, "LANG=C.UTF-8", "LC_ALL=C.UTF-8")
+	}
+	return env
 }
 
 func (l Local) lookPath(env Environment, dir string, program string) (string, error) {

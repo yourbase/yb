@@ -22,6 +22,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -155,6 +157,84 @@ func TestLocal(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestStandardEnv(t *testing.T) {
+	stdenv := appendStandardEnv(nil, runtime.GOOS)
+
+	t.Run("TZ", func(t *testing.T) {
+		found := false
+		for _, e := range stdenv {
+			const prefix = "TZ="
+			if !strings.HasPrefix(e, prefix) {
+				continue
+			}
+			found = true
+			if got, want := e[len(prefix):], "UTC0"; got != want {
+				t.Errorf("TZ = %q; want %q", got, want)
+			}
+		}
+		if !found {
+			t.Error("TZ not set")
+		}
+	})
+
+	t.Run("LANG", func(t *testing.T) {
+		found := false
+		for _, e := range stdenv {
+			const prefix = "LANG="
+			if !strings.HasPrefix(e, prefix) {
+				continue
+			}
+			found = true
+			if got, want1, want2 := e[len(prefix):], "C.UTF-8", "C"; got != want1 && got != want2 {
+				t.Errorf("LANG = %q; want %q or %q", got, want1, want2)
+			}
+		}
+		if !found {
+			t.Error("LANG not set")
+		}
+	})
+
+	t.Run("Charmap", func(t *testing.T) {
+		// Run locale tool to get character encoding.
+		// https://pubs.opengroup.org/onlinepubs/9699919799/utilities/locale.html
+		c := exec.Command("locale", "-k", "charmap")
+		c.Env = stdenv
+		stdout := new(strings.Builder)
+		stderr := new(strings.Builder)
+		c.Stdout = stdout
+		c.Stderr = stderr
+		err := c.Run()
+		if stderr.Len() > 0 {
+			t.Logf("stderr:\n%s", stderr)
+		}
+		if err != nil {
+			t.Error("locale:", err)
+		}
+		got := parseLocaleOutput(stdout.String())["charmap"]
+		const want = "UTF-8"
+		if got != want {
+			t.Errorf("charmap = %q; want %q", got, want)
+		}
+	})
+}
+
+func parseLocaleOutput(out string) map[string]string {
+	m := make(map[string]string)
+	for _, line := range strings.Split(out, "\n") {
+		eq := strings.Index(line, "=")
+		if eq == -1 {
+			continue
+		}
+		k, v := line[:eq], line[eq+1:]
+		if strings.HasPrefix(v, `"`) {
+			v = strings.TrimPrefix(v, `"`)
+			v = strings.TrimSuffix(v, `"`)
+		}
+		m[k] = v
+	}
+	return m
 }
 
 func TestExecPrefix(t *testing.T) {
