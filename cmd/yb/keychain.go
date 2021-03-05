@@ -78,7 +78,7 @@ func ensureKeychain(ctx context.Context, bio biome.Biome) error {
 	keychainList := parseKeychainOutput(stdout.String())
 
 	// Create a passwordless keychain.
-	const keychainName = "yb.keychain"
+	const keychainName = "login.keychain"
 	if err := runCommand(ctx, bio, "security", "create-keychain", "-p", "", keychainName); err != nil {
 		return fmt.Errorf("ensure build environment keychain: %w", err)
 	}
