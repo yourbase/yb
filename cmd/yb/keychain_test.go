@@ -18,6 +18,7 @@ package main
 
 import (
 	"context"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -72,8 +73,13 @@ func TestEnsureKeychain(t *testing.T) {
 	if err != nil {
 		t.Error("security default-keychain:", err)
 	}
-	if len(parseKeychainOutput(stdout.String())) == 0 {
+	if keychains := parseKeychainOutput(stdout.String()); len(keychains) == 0 {
 		t.Error("No default keychain set")
+	} else if got, want := keychains[0], "login.keychain-db"; filepath.Base(got) != want {
+		// Many tools depend on the default keychain name being "login", so turn the
+		// implicit interface into an explicit test.
+		// See https://app.clubhouse.io/yourbaseio/story/4145 for more details.
+		t.Errorf("default keychain = %q; want name to be %q", got, want)
 	}
 
 	// Verify that running multiple times does not return an error and does not
