@@ -93,8 +93,8 @@ configuration formats like Dockerfile. It uses containers underneath and you can
 still run things on the side like MySQL, Postgres, Redis or any service from a
 container image.
 
-For more examples and a complete reference to the YAML configuration syntax,
-see https://docs.yourbase.io/configuration/yourbase_yaml.html
+For more information, see the [complete YAML configuration syntax
+reference](docs/configuration.md).
 
 ### Run your first local build
 
