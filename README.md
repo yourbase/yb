@@ -177,7 +177,7 @@ yb run --target=foo bash
 
 ## Documentation
 
-More documentation available at http://docs.yourbase.io
+More documentation available in the [docs folder](docs).
 
 ## Contributing 
 
