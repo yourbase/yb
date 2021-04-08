@@ -99,9 +99,6 @@ func (cmd *initCmd) run(ctx context.Context) (cmdErr error) {
 		if !cmd.quiet {
 			log.Infof(ctx, "Detecting your programming language...")
 		}
-		if err != nil {
-			return err
-		}
 		language, err = detectLanguage(ctx, dir)
 		if err != nil {
 			return err

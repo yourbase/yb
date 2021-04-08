@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog][], and this project adheres to
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
 [Unreleased]: https://github.com/yourbase/yb/compare/v0.6.3...HEAD
 
+## [Unreleased][]
+
+### Fixed
+
+-  `yb init` no longer crashes when not given a `--lang` flag if there was
+   a problem connecting to the Docker daemon.
+
 ## [0.6.3][] - 2021-03-08
 
 Version 0.6.3 changes the build environment keychain name.
