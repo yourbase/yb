@@ -69,6 +69,7 @@ func main() {
 		newInitCmd(),
 		newLoginCmd(cfg),
 		newRemoteCmd(cfg),
+		newRemoteShellCmd(),
 		newRunCmd(),
 		newTokenCmd(cfg),
 	)
