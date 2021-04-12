@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -33,12 +32,13 @@ import (
 	slashpath "path"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/jpillora/backoff"
 	"github.com/yourbase/commons/http/headers"
-	"github.com/yourbase/commons/retry"
 	"github.com/yourbase/yb/internal/biome"
 	"golang.org/x/sync/errgroup"
+	"zombiezen.com/go/log"
 )
 
 type Biome struct {
@@ -194,31 +194,9 @@ func (b *Biome) Run(ctx context.Context, invoke *biome.Invocation) error {
 	}
 	var result *commandResult
 	grp.Go(func() error {
-		strategy := &backoff.Backoff{}
-		return retry.Do(grpCtx, "wait for command to finish", strategy, func() error {
-			req := &http.Request{
-				Method: http.MethodGet,
-				URL:    addURLPath(b.base, fmt.Sprintf("/commands/%s/", command.ID)),
-				Header: http.Header{
-					headers.Accept: {"application/json"},
-				},
-			}
-			resp, err := do(b.client, req, "application/json")
-			if err != nil {
-				return err
-			}
-			var refreshedCommand struct {
-				Result *commandResult
-			}
-			if err := readJSONBody(&refreshedCommand, resp.Body); err != nil {
-				return err
-			}
-			if refreshedCommand.Result == nil {
-				return errors.New("not ready yet")
-			}
-			result = refreshedCommand.Result
-			return nil
-		})
+		var err error
+		result, err = b.waitForCommand(ctx, command.ID)
+		return err
 	})
 	if err := grp.Wait(); err != nil {
 		return fmt.Errorf("run remote: %w", err)
@@ -232,6 +210,54 @@ func (b *Biome) Run(ctx context.Context, invoke *biome.Invocation) error {
 type commandResult struct {
 	Success      bool   `json:"success"`
 	ErrorMessage string `json:"error,omitempty"`
+}
+
+func (b *Biome) waitForCommand(ctx context.Context, commandID string) (*commandResult, error) {
+	backoffStrategy := &backoff.Backoff{
+		Factor: 2.0,
+		Jitter: true,
+		Min:    5 * time.Millisecond,
+		Max:    5 * time.Second,
+	}
+	t := time.NewTimer(backoffStrategy.Duration())
+	defer t.Stop()
+	for {
+		select {
+		case <-t.C:
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+		req := &http.Request{
+			Method: http.MethodGet,
+			URL:    addURLPath(b.base, fmt.Sprintf("/commands/%s/", commandID)),
+			Header: http.Header{
+				headers.Accept: {"application/json"},
+			},
+		}
+		resp, err := do(b.client, req, "application/json")
+		if err != nil {
+			d := backoffStrategy.Duration()
+			log.Errorf(ctx, "While waiting for command to %q finish: %v (will retry in %v)", commandID, err, d)
+			t.Reset(d)
+			continue
+		}
+		var refreshedCommand struct {
+			Result *commandResult
+		}
+		if err := readJSONBody(&refreshedCommand, resp.Body); err != nil {
+			d := backoffStrategy.Duration()
+			log.Errorf(ctx, "While waiting for command %q to finish: %v (will retry in %v)", commandID, err, d)
+			t.Reset(d)
+			continue
+		}
+		if refreshedCommand.Result != nil {
+			return refreshedCommand.Result, nil
+		}
+
+		d := backoffStrategy.Duration()
+		log.Debugf(ctx, "Command %q not finished yet (will retry in %v)", commandID, d)
+		t.Reset(d)
+	}
 }
 
 func (b *Biome) copyInputStream(ctx context.Context, path string, src io.Reader) error {
