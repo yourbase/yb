@@ -1,4 +1,4 @@
-## Getting Started
+# Getting Started
 
 To use yb, you need a `.yourbase.yml` file at the top of your project directory.
 You can run `yb init` to generate one:
@@ -21,7 +21,7 @@ container image.
 For more information, see the [complete YAML configuration syntax
 reference](docs/configuration.md).
 
-### Run your first local build
+## Run your first local build
 
 If you created a `default` target, you can build it with:
 
@@ -35,7 +35,7 @@ If you've changed your target's name or added a new one, for example `foo`, run:
 yb build foo
 ```
 
-### Run your first remote build
+## Run your first remote build
 
 To use remote builds, first you have to sign-in to YourBase.io.
 Run this to get a sign-in URL:
@@ -58,7 +58,7 @@ yb remotebuild <target>
 
 You can watch the build/test stream both locally and in the build dashboard at https://app.yourbase.io
 
-### Triggering Builds from GitHub pushes
+## Triggering Builds from GitHub pushes
 
 You can also build code after every push to a GitHub repository. Install the
 [GitHub application](https://github.com/apps/yourbase), then push a change to
@@ -77,7 +77,7 @@ ci:
       when: branch is 'master' OR action is 'pull_request'
 ```
 
-### Inspecting the Build Environment
+## Inspecting the Build Environment
 
 If you want to run tools inside your local build environment, you can use
 `yb run`. This will use the exact same version of the tools as what you

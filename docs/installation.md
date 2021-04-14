@@ -1,11 +1,11 @@
-## Installation
+# Installation
 
 yb uses Docker for isolating the build environment. You can install Docker here:
 https://hub.docker.com/search/?type=edition&offering=community
 
 If you're using WSL on Windows, you will need to use [Docker in WSL2](https://code.visualstudio.com/blogs/2020/03/02/docker-in-wsl2).
 
-### macOS
+## macOS
 
 You can install `yb` using [Homebrew][]:
 
@@ -19,7 +19,7 @@ in your `PATH`.
 [Homebrew]: https://brew.sh/
 [latest GitHub release]: https://github.com/yourbase/yb/releases/latest
 
-### Linux (and WSL2)
+## Linux (and WSL2)
 
 On Debian-based distributions (including Ubuntu), you can use our APT
 repository:
