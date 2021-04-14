@@ -31,7 +31,23 @@ The primary features of the YB tooling are:
   to offload the work.
 
 ![magic!](http://www.reactiongifs.com/r/mgc.gif)
+## Installation
 
+yb is available for Mac via Homebrew, and Linux/WSL2 via `apt-get`.
+Installation instructions are available at https://docs.yourbase.io/installation.html.
+
+## Getting Started
+
+To use yb, you need a `.yourbase.yml` file at the top of your project directory.
+You can run `yb init` to generate one:
+
+```shell
+cd path/to/my/project
+yb init
+yb build
+\```
+
+For a more in-depth tutorial, see https://docs.yourbase.io/getting-started.html
 ## Documentation
 
 More documentation available in the [docs folder](docs).
@@ -46,4 +62,3 @@ for more information.
 ## License 
 
 This project is licensed under an [Apache 2.0 license](LICENSE.md).
-
