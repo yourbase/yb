@@ -34,7 +34,7 @@ The primary features of the YB tooling are:
 ## Installation
 
 yb is available for Mac via Homebrew, and Linux/WSL2 via `apt-get`.
-Installation instructions are available at https://docs.yourbase.io/installation.html.
+Instructions are available at https://docs.yourbase.io/installation.html
 
 ## Getting Started
 
@@ -45,9 +45,10 @@ You can run `yb init` to generate one:
 cd path/to/my/project
 yb init
 yb build
-\```
+```
 
 For a more in-depth tutorial, see https://docs.yourbase.io/getting-started.html
+
 ## Documentation
 
 More documentation available in the [docs folder](docs).
