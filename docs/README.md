@@ -2,8 +2,8 @@
 
 # CI and CLI Documentation
 
-- [Installation](../README.md#installation)
-- [Getting Started](../README.md#getting-started)
+- [Installation](installation.md)
+- [Getting Started](getting-started.md)
 - [List of Build Packs](buildpacks.md)
 - [Package Configuration Reference](configuration.md)
 - [Design Philosophy](design-philosophy.md)
