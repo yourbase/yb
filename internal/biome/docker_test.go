@@ -41,7 +41,7 @@ func TestContainer(t *testing.T) {
 	}
 
 	ctx := testlog.WithTB(context.Background(), t)
-	dockerClient, err := docker.NewVersionedClient("unix:///var/run/docker.sock", "1.39")
+	dockerClient, err := docker.NewVersionedClientFromEnv("1.39")
 	if err != nil {
 		t.Fatal(err)
 	}
