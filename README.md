@@ -31,6 +31,7 @@ The primary features of the YB tooling are:
   to offload the work.
 
 ![magic!](http://www.reactiongifs.com/r/mgc.gif)
+
 ## Installation
 
 yb is available for Mac via Homebrew, and Linux/WSL2 via `apt-get`.
@@ -51,7 +52,7 @@ For a more in-depth tutorial, see https://docs.yourbase.io/getting-started.html
 
 ## Documentation
 
-More documentation available in the [docs folder](docs).
+Documentation is available at [docs.yourbase.io](https://docs.yourbase.io/)
 
 ## Contributing 
 
