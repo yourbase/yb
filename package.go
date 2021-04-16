@@ -82,13 +82,18 @@ type Target struct {
 	Deps    map[*Target]struct{}
 	Tags    map[string]string
 
+	// Container specifies the container environment that should be used to run
+	// the commands in if container execution is requested. It will never be nil.
+	Container *narwhal.ContainerDefinition
+	// UseContainer indicates whether this target requires executing the commands
+	// inside a container.
+	UseContainer bool
+
 	Commands   []string
 	RunDir     string
-	Container  *narwhal.ContainerDefinition
 	Env        map[string]EnvTemplate
 	Buildpacks map[string]BuildpackSpec
 	Resources  map[string]*ResourceDefinition
-	HostOnly   bool
 }
 
 type ResourceDefinition struct {

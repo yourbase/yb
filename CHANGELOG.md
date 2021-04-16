@@ -10,12 +10,27 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 ### Added
 
+-  A new `--mode` option for `build`, `exec`, and `run` allows specifying
+   whether commands should be run inside or outside Docker.
 -  yb now obeys the `DOCKER_HOST` environment variable.
+
+### Changed
+
+-  Commands run as part of `build`, `exec`, or `run` now run without Docker by
+   default. You can get the old behavior by running with `--mode=container`.
 
 ### Fixed
 
 -  `yb init` no longer crashes when not given a `--lang` flag if there was
    a problem connecting to the Docker daemon.
+
+### Deprecated
+
+-  The `host_only` property in `.yourbase.yml` is now ignored. It may be removed
+   in a future version.
+-  The `--no-container` option in `build` and `run` is now equivalent to
+   `--mode=no-container`. It is still recognized, but no longer shown in
+   documentation and may be removed in a future version.
 
 ## [0.6.3][] - 2021-03-08
 
@@ -78,6 +93,8 @@ Version 0.5.7 backports a fix for a locale environment variable issue.
 
 -  The `TZ` environment variable is now set to `UTC0` by default. Previously,
    it was set to `UTC`, which is not a POSIX-conforming value.
+
+## [Unreleased][]
 
 ## [0.6.1][] - 2021-02-11
 
