@@ -1,0 +1,20 @@
+# YourBase build configuration
+# See https://docs.yourbase.io/ for reference.
+
+# We couldn't determine what programming language your project uses,
+# so we generated a generic build configuration.
+
+build_targets:
+  - name: default
+    # Change 'make' to run the command you want.
+    # You can also add more commands to be run in the list.
+    commands:
+      - make
+
+# This section configures which targets get built on CI.
+ci:
+  builds:
+    - name: default
+      build_target: default
+      # If you only want certain events, uncomment the following line.
+      # when: branch IS 'main' OR action IS 'pull_request'

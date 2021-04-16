@@ -18,8 +18,11 @@ package main
 
 import (
 	"context"
+	"embed"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -109,9 +112,9 @@ func (cmd *initCmd) run(ctx context.Context) (cmdErr error) {
 			log.Infof(ctx, "Found %s!", language)
 		}
 	}
-	templateData := packageConfigTemplates[language]
-	if templateData == "" {
-		return fmt.Errorf("unknown language %q", language)
+	templateData, err := packageConfigTemplate(language)
+	if err != nil {
+		return err
 	}
 
 	// Write template to requested file.
@@ -186,4 +189,27 @@ func detectLanguage(ctx context.Context, dir string) (string, error) {
 		}
 	}
 	return detected, nil
+}
+
+//go:embed init_templates/*.yml
+var packageConfigTemplateFiles embed.FS
+
+func packageConfigTemplate(name string) (string, error) {
+	path := "init_templates/" + name + ".yml"
+	if name == langGenericFlagValue {
+		path = "init_templates/generic.yml"
+	}
+	f, err := packageConfigTemplateFiles.Open(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return "", fmt.Errorf("unknown language %q", name)
+	}
+	if err != nil {
+		return "", fmt.Errorf("load template for language %q: %w", name, err)
+	}
+	defer f.Close()
+	out := new(strings.Builder)
+	if _, err := io.Copy(out, f); err != nil {
+		return "", fmt.Errorf("load template for language %q: %w", name, err)
+	}
+	return out.String(), nil
 }
