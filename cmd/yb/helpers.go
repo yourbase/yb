@@ -27,7 +27,7 @@ func connectDockerClient(useDocker bool) (*docker.Client, error) {
 	if !useDocker {
 		return nil, nil
 	}
-	dockerClient, err := docker.NewVersionedClient("unix:///var/run/docker.sock", "1.39")
+	dockerClient, err := docker.NewVersionedClientFromEnv("1.39")
 	if err != nil {
 		return nil, err
 	}

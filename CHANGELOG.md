@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 ## [Unreleased][]
 
+### Added
+
+-  yb now obeys the `DOCKER_HOST` environment variable.
+
 ### Fixed
 
 -  `yb init` no longer crashes when not given a `--lang` flag if there was
