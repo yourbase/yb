@@ -186,7 +186,7 @@ func (p *remoteCmd) run(ctx context.Context) error {
 	// Show feedback: end of bootstrap
 	endTime := time.Now()
 	bootTime := endTime.Sub(startTime)
-	log.Infof(ctx, "Bootstrap finished at %s, taking %s", endTime.Format(TIME_FORMAT), bootTime.Truncate(time.Millisecond))
+	log.Infof(ctx, "Bootstrap finished at %s, taking %s", endTime.Format(longTimeFormat), bootTime.Truncate(time.Millisecond))
 
 	// Process patches
 	startTime = time.Now()
@@ -277,7 +277,7 @@ func (p *remoteCmd) run(ctx context.Context) error {
 	// Show feedback: end of patch generation
 	endTime = time.Now()
 	patchTime := endTime.Sub(startTime)
-	log.Infof(ctx, "Patch finished at %s, taking %s", endTime.Format(TIME_FORMAT), patchTime.Truncate(time.Millisecond))
+	log.Infof(ctx, "Patch finished at %s, taking %s", endTime.Format(longTimeFormat), patchTime.Truncate(time.Millisecond))
 	if len(p.patchPath) > 0 && len(p.patchData) > 0 {
 		if err := p.savePatch(); err != nil {
 			log.Warnf(ctx, "Unable to save copy of generated patch: %v", err)
@@ -647,7 +647,7 @@ func (cmd *remoteCmd) submitBuild(ctx context.Context, project *apiProject, tagM
 
 	endTime := time.Now()
 	submitTime := endTime.Sub(startTime)
-	log.Infof(ctx, "Submission finished at %s, taking %s", endTime.Format(TIME_FORMAT), submitTime.Truncate(time.Millisecond))
+	log.Infof(ctx, "Submission finished at %s, taking %s", endTime.Format(longTimeFormat), submitTime.Truncate(time.Millisecond))
 
 	startTime = time.Now()
 
@@ -688,7 +688,7 @@ func (cmd *remoteCmd) submitBuild(ctx context.Context, project *apiProject, tagM
 				buildSetupFinished = true
 				endTime := time.Now()
 				setupTime := endTime.Sub(startTime)
-				log.Infof(ctx, "Set up finished at %s, taking %s", endTime.Format(TIME_FORMAT), setupTime.Truncate(time.Millisecond))
+				log.Infof(ctx, "Set up finished at %s, taking %s", endTime.Format(longTimeFormat), setupTime.Truncate(time.Millisecond))
 				if cmd.publicRepo {
 					log.Infof(ctx, "Building a public repository: '%s'", project.Repository)
 				}

@@ -3,11 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"strings"
-	"sync"
 	"time"
 
 	docker "github.com/fsouza/go-dockerclient"
@@ -22,12 +20,9 @@ import (
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/codes"
-	exporttrace "go.opentelemetry.io/otel/sdk/export/trace"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"zombiezen.com/go/log"
 )
-
-const TIME_FORMAT = "15:04:05 MST"
 
 type buildCmd struct {
 	env              []commandLineEnv
@@ -115,7 +110,7 @@ func (b *buildCmd) run(ctx context.Context, buildTargetName string) error {
 	gi.VarDump()
 
 	startSection("BUILD PACKAGE SETUP")
-	log.Infof(ctx, "Build started at %s", startTime.Format(TIME_FORMAT))
+	log.Infof(ctx, "Build started at %s", startTime.Format(longTimeFormat))
 
 	targetPackage, _, err := findPackage()
 	if err != nil {
@@ -149,7 +144,7 @@ func (b *buildCmd) run(ctx context.Context, buildTargetName string) error {
 	buildTime := endTime.Sub(startTime)
 
 	log.Infof(ctx, "")
-	log.Infof(ctx, "Build finished at %s, taking %s", endTime.Format(TIME_FORMAT), buildTime)
+	log.Infof(ctx, "Build finished at %s, taking %s", endTime.Format(longTimeFormat), buildTime)
 	log.Infof(ctx, "")
 
 	log.Infof(ctx, "%s", buildTraces.dump())
@@ -257,76 +252,6 @@ func doTarget(ctx context.Context, pkg *yb.Package, target *yb.Target, opts *doO
 	return build.Execute(ctx, sys, target)
 }
 
-// A traceSink records spans in memory. The zero value is an empty sink.
-type traceSink struct {
-	mu        sync.Mutex
-	rootSpans []*exporttrace.SpanData
-	children  map[trace.SpanID][]*exporttrace.SpanData
-}
-
-// ExportSpan saves the trace span. It is safe to be called concurrently.
-func (sink *traceSink) ExportSpan(_ context.Context, span *exporttrace.SpanData) {
-	sink.mu.Lock()
-	defer sink.mu.Unlock()
-	if !span.ParentSpanID.IsValid() {
-		sink.rootSpans = append(sink.rootSpans, span)
-		return
-	}
-	if sink.children == nil {
-		sink.children = make(map[trace.SpanID][]*exporttrace.SpanData)
-	}
-	sink.children[span.ParentSpanID] = append(sink.children[span.ParentSpanID], span)
-}
-
-const (
-	traceDumpStartWidth   = 14
-	traceDumpEndWidth     = 14
-	traceDumpElapsedWidth = 14
-)
-
-// dump formats the recorded traces as a hierarchial table of spans in the order
-// received. It is safe to call concurrently, including with ExportSpan.
-func (sink *traceSink) dump() string {
-	sb := new(strings.Builder)
-	fmt.Fprintf(sb, "%-*s %-*s %-*s\n",
-		traceDumpStartWidth, "Start",
-		traceDumpEndWidth, "End",
-		traceDumpElapsedWidth, "Elapsed",
-	)
-	sink.mu.Lock()
-	sink.dumpLocked(sb, trace.SpanID{}, 0)
-	sink.mu.Unlock()
-	return sb.String()
-}
-
-func (sink *traceSink) dumpLocked(sb *strings.Builder, parent trace.SpanID, depth int) {
-	const indent = "  "
-	list := sink.rootSpans
-	if parent.IsValid() {
-		list = sink.children[parent]
-	}
-	if depth >= 3 {
-		if len(list) > 0 {
-			writeSpaces(sb, traceDumpStartWidth+traceDumpEndWidth+traceDumpElapsedWidth+3)
-			for i := 0; i < depth; i++ {
-				sb.WriteString(indent)
-			}
-			sb.WriteString("...\n")
-		}
-		return
-	}
-	for _, span := range list {
-		elapsed := span.EndTime.Sub(span.StartTime)
-		fmt.Fprintf(sb, "%-*s %-*s %*.3fs %s\n",
-			traceDumpStartWidth, span.StartTime.Format(TIME_FORMAT),
-			traceDumpEndWidth, span.EndTime.Format(TIME_FORMAT),
-			traceDumpElapsedWidth-1, elapsed.Seconds(),
-			strings.Repeat(indent, depth)+span.Name,
-		)
-		sink.dumpLocked(sb, span.SpanContext.SpanID, depth+1)
-	}
-}
-
 // Because, why not?
 // Based on https://github.com/sindresorhus/is-docker/blob/master/index.js and https://github.com/moby/moby/issues/18355
 // Discussion is not settled yet: https://stackoverflow.com/questions/23513045/how-to-check-if-a-process-is-running-inside-docker-container#25518538
@@ -352,10 +277,4 @@ func startSection(name string) {
 
 func subSection(name string) {
 	fmt.Printf(" -- %s -- \n", name)
-}
-
-func writeSpaces(w io.ByteWriter, n int) {
-	for i := 0; i < n; i++ {
-		w.WriteByte(' ')
-	}
 }
