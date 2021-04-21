@@ -187,12 +187,12 @@ func doTargetList(ctx context.Context, pkg *yb.Package, targets []*yb.Target, op
 	log.Debugf(ctx, "%s", orderMsg)
 
 	// Create a Docker network, if needed.
-	if opts.dockerClient != nil && opts.dockerNetworkID == "" {
+	if opts.dockerNetworkID == "" {
 		opts2 := new(doOptions)
 		*opts2 = *opts
 		var cleanup func()
 		var err error
-		opts2.dockerNetworkID, cleanup, err = newDockerNetwork(ctx, opts.dockerClient)
+		opts2.dockerNetworkID, cleanup, err = newDockerNetwork(ctx, opts.dockerClient, opts.executionMode, targets)
 		if err != nil {
 			return err
 		}
