@@ -44,14 +44,14 @@ func (mode executionMode) String() string {
 	}
 }
 
-func (mode executionMode) Set(s string) error {
+func (mode *executionMode) Set(s string) error {
 	switch strings.ToLower(s) {
 	case "no-container":
-		mode = noContainer
+		*mode = noContainer
 	case "host":
-		mode = preferHost
+		*mode = preferHost
 	case "container":
-		mode = useContainer
+		*mode = useContainer
 	default:
 		return fmt.Errorf("invalid execution mode %q", s)
 	}
@@ -214,8 +214,8 @@ func runCommand(ctx context.Context, bio biome.Biome, argv ...string) error {
 	return nil
 }
 
-func newDockerNetwork(ctx context.Context, client *docker.Client) (string, func(), error) {
-	if client == nil {
+func newDockerNetwork(ctx context.Context, client *docker.Client, mode executionMode, targets []*yb.Target) (string, func(), error) {
+	if client == nil || !shouldCreateDockerNetwork(mode, targets) {
 		return "", func() {}, nil
 	}
 	var bits [8]byte
@@ -239,6 +239,21 @@ func newDockerNetwork(ctx context.Context, client *docker.Client) (string, func(
 			log.Warnf(ctx, "Unable to remove Docker network %s (%s): %v", name, id, err)
 		}
 	}, nil
+}
+
+func shouldCreateDockerNetwork(mode executionMode, targets []*yb.Target) bool {
+	if mode >= useContainer {
+		return true
+	}
+	if mode <= noContainer {
+		return false
+	}
+	for _, target := range targets {
+		if target.UseContainer {
+			return true
+		}
+	}
+	return false
 }
 
 // findPackage searches for the package configuration file in the current

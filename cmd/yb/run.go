@@ -73,7 +73,7 @@ func (b *runCmd) run(ctx context.Context, args []string) error {
 		return fmt.Errorf("%s: no such target", b.target)
 	}
 	targets := yb.BuildOrder(execTarget)
-	dockerNetworkID, removeNetwork, err := newDockerNetwork(ctx, dockerClient)
+	dockerNetworkID, removeNetwork, err := newDockerNetwork(ctx, dockerClient, b.mode, targets)
 	if err != nil {
 		return err
 	}

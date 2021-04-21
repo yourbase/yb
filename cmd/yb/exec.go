@@ -59,11 +59,6 @@ func (b *execCmd) run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	dockerNetworkID, removeNetwork, err := newDockerNetwork(ctx, dockerClient)
-	if err != nil {
-		return err
-	}
-	defer removeNetwork()
 	pkg, _, err := findPackage()
 	if err != nil {
 		return err
@@ -72,6 +67,11 @@ func (b *execCmd) run(ctx context.Context) error {
 	if execTarget == nil {
 		return fmt.Errorf("exec %s: no such environment", b.execEnvName)
 	}
+	dockerNetworkID, removeNetwork, err := newDockerNetwork(ctx, dockerClient, b.mode, []*yb.Target{execTarget})
+	if err != nil {
+		return err
+	}
+	defer removeNetwork()
 	bio, err := newBiome(ctx, execTarget, newBiomeOptions{
 		packageDir:      pkg.Path,
 		dataDirs:        dataDirs,
