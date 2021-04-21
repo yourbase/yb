@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 -  Commands run as part of `build`, `exec`, or `run` now run without Docker by
    default. You can get the old behavior by running with `--mode=container`.
+-  `yb platform` is now an alias for `yb version`.
 
 ### Fixed
 

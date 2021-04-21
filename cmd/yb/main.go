@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/matishsiao/goInfo"
@@ -21,9 +22,11 @@ var (
 )
 
 func versionString() string {
+	gi := goInfo.GetInfo()
 	sb := new(strings.Builder)
 	fmt.Fprintln(sb, version)
 	fmt.Fprintln(sb, "Channel:", channel)
+	fmt.Fprintf(sb, "Host OS: %s/%s %s (%d cores)\n", runtime.GOOS, runtime.GOARCH, gi.Core, runtime.NumCPU())
 	if date != "" {
 		fmt.Fprintln(sb, "Date:", date)
 	}
@@ -70,19 +73,9 @@ func main() {
 		newTokenCmd(cfg),
 	)
 	rootCmd.AddCommand(&cobra.Command{
-		Use:           "platform",
-		Short:         "Show platform information",
-		SilenceErrors: true,
-		SilenceUsage:  true,
-		Args:          cobra.NoArgs,
-		Run: func(cmd *cobra.Command, args []string) {
-			gi := goInfo.GetInfo()
-			gi.VarDump()
-		},
-	})
-	rootCmd.AddCommand(&cobra.Command{
 		Use:           "version",
-		Short:         "Show version info",
+		Short:         "Show version information",
+		Aliases:       []string{"platform"},
 		SilenceErrors: true,
 		SilenceUsage:  true,
 		Args:          cobra.NoArgs,

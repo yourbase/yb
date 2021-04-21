@@ -10,7 +10,6 @@ import (
 
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/google/shlex"
-	"github.com/matishsiao/goInfo"
 	"github.com/spf13/cobra"
 	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
@@ -101,15 +100,6 @@ func (b *buildCmd) run(ctx context.Context, buildTargetName string) error {
 	ctx, span := ybtrace.Start(ctx, "Build", trace.WithNewRoot())
 	defer span.End()
 
-	if insideTheMatrix() {
-		startSection("BUILD")
-	} else {
-		startSection("BUILD HOST")
-	}
-	gi := goInfo.GetInfo()
-	gi.VarDump()
-
-	startSection("BUILD PACKAGE SETUP")
 	log.Infof(ctx, "Build started at %s", startTime.Format(longTimeFormat))
 
 	targetPackage, _, err := findPackage()
