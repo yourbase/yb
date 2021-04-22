@@ -230,7 +230,7 @@ const (
 // received. It is safe to call concurrently, including with ExportSpan.
 func (sink *traceSink) dump() string {
 	sb := new(strings.Builder)
-	fmt.Fprintf(sb, "%-*s %-*s %-*s\n",
+	fmt.Fprintf(sb, "%-*s %-*s %*s\n",
 		traceDumpStartWidth, "Start",
 		traceDumpEndWidth, "End",
 		traceDumpElapsedWidth, "Elapsed",
