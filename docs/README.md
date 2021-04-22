@@ -8,3 +8,7 @@
 - [Package Configuration Reference](configuration.md)
 - [CI Acceleration and Caching](ci-caching.md)
 - [Design Philosophy](design-philosophy.md)
+
+# Quick Start Acceleration
+
+- [YourBase Ruby Acceleration](yourbase-ruby.md)
