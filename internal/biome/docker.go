@@ -255,7 +255,7 @@ func (c *Container) Run(ctx context.Context, invoke *Invocation) error {
 		return fmt.Errorf("run in container %s: argv empty", c.id)
 	}
 
-	log.Infof(ctx, "Run (Docker): %s", strings.Join(invoke.Argv, " "))
+	log.Debugf(ctx, "Run (Docker): %s", strings.Join(invoke.Argv, " "))
 	log.Debugf(ctx, "Running in container %s", c.id)
 	log.Debugf(ctx, "Environment:\n%v", invoke.Env)
 

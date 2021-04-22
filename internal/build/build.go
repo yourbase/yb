@@ -38,7 +38,9 @@ type Sys = buildpack.Sys
 
 // Execute runs the given phase. It assumes that the phase's dependencies are
 // already available in the biome.
-func Execute(ctx context.Context, sys Sys, target *yb.Target) (err error) {
+//
+// announce is called before every command run if not nil.
+func Execute(ctx context.Context, sys Sys, announce func(string), target *yb.Target) (err error) {
 	ctx, span := ybtrace.Start(ctx, "Build "+target.Name, trace.WithAttributes(
 		label.String("target", target.Name),
 	))
@@ -63,6 +65,9 @@ func Execute(ctx context.Context, sys Sys, target *yb.Target) (err error) {
 		}
 	}
 	for _, cmdString := range target.Commands {
+		if announce != nil {
+			announce(cmdString)
+		}
 		newWorkDir, err := runCommand(ctx, sys, workDir, cmdString)
 		if err != nil {
 			return fmt.Errorf("build %s: %w", target.Name, err)

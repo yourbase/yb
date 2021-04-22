@@ -81,6 +81,7 @@ func (b *runCmd) run(ctx context.Context, args []string) error {
 
 	// Build dependencies before running command.
 	err = doTargetList(ctx, pkg, targets[:len(targets)-1], &doOptions{
+		output:          os.Stderr,
 		executionMode:   b.mode,
 		dockerClient:    dockerClient,
 		dockerNetworkID: dockerNetworkID,
@@ -120,7 +121,7 @@ func (b *runCmd) run(ctx context.Context, args []string) error {
 		Stdout:          os.Stdout,
 		Stderr:          os.Stderr,
 	}
-	execBiome, err := build.Setup(ctx, sys, execTarget)
+	execBiome, err := build.Setup(withLogPrefix(ctx, execTarget.Name+setupLogPrefix), sys, execTarget)
 	if err != nil {
 		return err
 	}

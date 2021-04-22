@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -87,10 +88,26 @@ func main() {
 	err = rootCmd.ExecuteContext(ctx)
 	cancel()
 	if err != nil {
-		initLog(cfg, false)
-		log.Errorf(ctx, "%v", err)
+		if !errors.As(err, new(alreadyLoggedError)) {
+			initLog(cfg, false)
+			log.Errorf(ctx, "%v", err)
+		}
 		os.Exit(1)
 	}
+}
+
+// alreadyLoggedError wraps another error to signal that it has already been
+// shown to the user. If returned from a subcommand, then main() will not log it.
+type alreadyLoggedError struct {
+	err error
+}
+
+func (e alreadyLoggedError) Error() string {
+	return e.err.Error()
+}
+
+func (e alreadyLoggedError) Unwrap() error {
+	return e.err
 }
 
 func displayOldDirectoryWarning(ctx context.Context) {

@@ -183,7 +183,7 @@ func (l Local) Run(ctx context.Context, invoke *Invocation) error {
 	if len(invoke.Argv) == 0 {
 		return fmt.Errorf("local run: argv empty")
 	}
-	log.Infof(ctx, "Run: %s", strings.Join(invoke.Argv, " "))
+	log.Debugf(ctx, "Run: %s", strings.Join(invoke.Argv, " "))
 	log.Debugf(ctx, "Environment:\n%v", invoke.Env)
 	dir := invoke.Dir
 	if !filepath.IsAbs(invoke.Dir) {

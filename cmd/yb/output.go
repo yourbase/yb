@@ -17,26 +17,32 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"os"
-	"strconv"
 	"strings"
 	"sync"
+	"time"
 
-	"github.com/yourbase/commons/envvar"
 	"github.com/yourbase/yb/internal/config"
 	"go.opentelemetry.io/otel/api/trace"
 	exporttrace "go.opentelemetry.io/otel/sdk/export/trace"
 	"zombiezen.com/go/log"
 )
 
-const longTimeFormat = "15:04:05 MST"
+const (
+	shortTimeFormat = "15:04:05"
+	longTimeFormat  = "15:04:05 MST"
+)
+
+// setupLogPrefix is the log prefix used with withLogPrefix when running a
+// target's setup.
+const setupLogPrefix = ".deps"
 
 type logger struct {
-	color      bool
-	showLevels bool
+	color termStyles
 
 	mu  sync.Mutex
 	buf []byte
@@ -49,50 +55,49 @@ func initLog(cfg config.Getter, showDebug bool) {
 		log.SetDefault(&log.LevelFilter{
 			Min: configuredLogLevel(cfg, showDebug),
 			Output: &logger{
-				color:      colorLogs(),
-				showLevels: showLogLevels(cfg),
+				color: termStylesFromEnv(),
 			},
 		})
 	})
 }
 
 func (l *logger) Log(ctx context.Context, entry log.Entry) {
+	logToStdout, _ := ctx.Value(logToStdoutKey{}).(bool)
+	logToStdout = logToStdout && entry.Level < log.Warn
+	var colorSequence string
+	switch {
+	case entry.Level < log.Info:
+		colorSequence = l.color.debug()
+	case entry.Level >= log.Error:
+		colorSequence = l.color.failure()
+	}
+	prefix, _ := ctx.Value(logPrefixKey{}).(string)
+
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
 	l.buf = l.buf[:0]
-	if l.showLevels {
-		if l.color {
-			switch {
-			case entry.Level >= log.Error:
-				// Red text
-				l.buf = append(l.buf, "\x1b[31m"...)
-			case entry.Level >= log.Warn:
-				// Yellow text
-				l.buf = append(l.buf, "\x1b[33m"...)
-			default:
-				// Cyan text
-				l.buf = append(l.buf, "\x1b[36m"...)
-			}
-		}
+	l.buf = append(l.buf, colorSequence...)
+	for _, line := range strings.Split(strings.TrimSuffix(entry.Msg, "\n"), "\n") {
+		l.buf = appendLogPrefix(l.buf, entry.Time, prefix)
 		switch {
 		case entry.Level >= log.Error:
-			l.buf = append(l.buf, "ERROR"...)
+			l.buf = append(l.buf, "❌ "...)
 		case entry.Level >= log.Warn:
-			l.buf = append(l.buf, "WARN"...)
-		case entry.Level >= log.Info:
-			l.buf = append(l.buf, "INFO"...)
-		default:
-			l.buf = append(l.buf, "DEBUG"...)
+			l.buf = append(l.buf, "⚠️ "...)
 		}
-		if l.color {
-			l.buf = append(l.buf, "\x1b[0m"...)
-		}
-		l.buf = append(l.buf, ' ')
+		l.buf = append(l.buf, line...)
+		l.buf = append(l.buf, '\n')
 	}
-	l.buf = append(l.buf, entry.Msg...)
-	l.buf = append(l.buf, '\n')
-	os.Stderr.Write(l.buf)
+	if colorSequence != "" {
+		l.buf = append(l.buf, l.color.reset()...)
+	}
+
+	out := os.Stderr
+	if logToStdout {
+		out = os.Stdout
+	}
+	out.Write(l.buf)
 }
 
 func (l *logger) LogEnabled(entry log.Entry) bool {
@@ -115,18 +120,83 @@ func configuredLogLevel(cfg config.Getter, showDebug bool) log.Level {
 	return log.Info
 }
 
-func colorLogs() bool {
-	b, _ := strconv.ParseBool(envvar.Get("CLICOLOR", "1"))
-	return b
+type logToStdoutKey struct{}
+
+func withStdoutLogs(parent context.Context) context.Context {
+	if isPresent, _ := parent.Value(logToStdoutKey{}).(bool); isPresent {
+		return parent
+	}
+	return context.WithValue(parent, logToStdoutKey{}, true)
 }
 
-func showLogLevels(cfg config.Getter) bool {
-	out := config.Get(cfg, "defaults", "no-pretty-output")
-	if out != "" {
-		b, _ := strconv.ParseBool(out)
-		return !b
+type logPrefixKey struct{}
+
+func withLogPrefix(parent context.Context, prefix string) context.Context {
+	parentPrefix, _ := parent.Value(logPrefixKey{}).(string)
+	return context.WithValue(parent, logPrefixKey{}, parentPrefix+prefix)
+}
+
+// linePrefixWriter prepends a timestamp and a prefix string to every line
+// written to it and writes to an underlying writer.
+type linePrefixWriter struct {
+	dst    io.Writer
+	prefix string
+	buf    []byte
+	wrote  bool
+	now    func() time.Time
+}
+
+func newLinePrefixWriter(w io.Writer, prefix string) *linePrefixWriter {
+	return &linePrefixWriter{
+		dst:    w,
+		prefix: prefix,
+		now:    time.Now,
 	}
-	return !envvar.Bool("YB_NO_PRETTY_OUTPUT")
+}
+
+// Write writes p to the underlying writer, inserting line prefixes as required.
+// Write will issue at most one Write call per line on the underlying writer.
+func (lp *linePrefixWriter) Write(p []byte) (int, error) {
+	now := lp.now()
+	origLen := len(p)
+	for next := []byte(nil); len(p) > 0; p = next {
+		line := p
+		next = nil
+		lineEnd := bytes.IndexByte(p, '\n')
+		if lineEnd != -1 {
+			line, next = p[:lineEnd+1], p[lineEnd+1:]
+		}
+		if lp.wrote {
+			// Pass through rest of line if we already wrote the prefix.
+			n, err := lp.dst.Write(line)
+			lp.wrote = lineEnd == -1
+			if err != nil {
+				return origLen - (len(p) + n), err
+			}
+			continue
+		}
+		lp.buf = appendLogPrefix(lp.buf[:0], now, lp.prefix)
+		lp.buf = append(lp.buf, line...)
+		n, err := lp.dst.Write(lp.buf)
+		lp.wrote = n > 0 && (n < len(lp.buf) || lineEnd == -1)
+		if err != nil {
+			n -= len(lp.buf) - len(line) // exclude prefix length
+			return origLen - (len(p) + n), err
+		}
+	}
+	return origLen, nil
+}
+
+// appendLogPrefix formats the given timestamp and label and appends the result
+// to dst.
+func appendLogPrefix(dst []byte, t time.Time, prefix string) []byte {
+	if prefix == "" {
+		return dst
+	}
+	dst = t.AppendFormat(dst, shortTimeFormat)
+	buf := bytes.NewBuffer(dst)
+	fmt.Fprintf(buf, " %-18s| ", prefix)
+	return buf.Bytes()
 }
 
 // A traceSink records spans in memory. The zero value is an empty sink.
