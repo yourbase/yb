@@ -111,7 +111,7 @@ func (b *buildCmd) run(ctx context.Context, buildTargetName string) error {
 		return fmt.Errorf("%s: no such target (found: %s)", buildTargetName, strings.Join(listTargetNames(targetPackage.Targets), ", "))
 	}
 	buildTargets := yb.BuildOrder(desired)
-	showDockerGroupWarningIfNeeded(ctx, b.mode, buildTargets)
+	showDockerWarningsIfNeeded(ctx, b.mode, buildTargets)
 
 	// Do the build!
 	startSection("BUILD")

@@ -67,7 +67,7 @@ func (b *execCmd) run(ctx context.Context) error {
 	if execTarget == nil {
 		return fmt.Errorf("exec %s: no such environment", b.execEnvName)
 	}
-	showDockerGroupWarningIfNeeded(ctx, b.mode, []*yb.Target{execTarget})
+	showDockerWarningsIfNeeded(ctx, b.mode, []*yb.Target{execTarget})
 	dockerNetworkID, removeNetwork, err := newDockerNetwork(ctx, dockerClient, b.mode, []*yb.Target{execTarget})
 	if err != nil {
 		return err
