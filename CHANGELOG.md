@@ -13,6 +13,10 @@ The format is based on [Keep a Changelog][], and this project adheres to
 -  A new `--mode` option for `build`, `exec`, and `run` allows specifying
    whether commands should be run inside or outside Docker.
 -  yb now obeys the `DOCKER_HOST` environment variable.
+-  yb now obeys the [`NO_COLOR` environment variable][] and propagates it to the
+   build environment.
+
+[`NO_COLOR` environment variable]: https://no-color.org/
 
 ### Changed
 

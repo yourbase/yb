@@ -272,6 +272,9 @@ func (c *Container) Run(ctx context.Context, invoke *Invocation) error {
 		// TODO(light): Set LOGNAME and USER.
 		"HOME=" + c.dirs.Home,
 	}
+	if v, ok := os.LookupEnv("NO_COLOR"); ok {
+		opts.Env = append(opts.Env, "NO_COLOR="+v)
+	}
 	opts.Env = appendStandardEnv(opts.Env, c.Describe().OS)
 	opts.Env = invoke.Env.appendTo(opts.Env, c.path, ':')
 	if slashpath.IsAbs(invoke.Dir) {
