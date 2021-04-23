@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/yourbase/commons/envvar"
 	"go4.org/xdgdir"
 )
 
@@ -30,9 +31,16 @@ import (
 // precedence order based on environment variables.
 func DefaultNetrcFiles() []string {
 	paths := xdgdir.Config.SearchPaths()
-	netrcs := make([]string, 0, len(paths))
+	netrcs := make([]string, 0, len(paths)+1)
 	for _, p := range paths {
 		netrcs = append(netrcs, filepath.Join(p, dirName, "netrc"))
+	}
+	var homeNetrc string
+	if home := os.Getenv("HOME"); home != "" {
+		homeNetrc = filepath.Join(home, ".netrc")
+	}
+	if val := envvar.Get("NETRC", homeNetrc); val != "" {
+		netrcs = append(netrcs, val)
 	}
 	return netrcs
 }
