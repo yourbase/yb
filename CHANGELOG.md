@@ -95,8 +95,6 @@ Version 0.5.7 backports a fix for a locale environment variable issue.
 -  The `TZ` environment variable is now set to `UTC0` by default. Previously,
    it was set to `UTC`, which is not a POSIX-conforming value.
 
-## [Unreleased][]
-
 ## [0.6.1][] - 2021-02-11
 
 Version 0.6.1 fixes a build environment keychain issue for macOS and stores its
