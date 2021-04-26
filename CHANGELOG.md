@@ -17,6 +17,8 @@ The format is based on [Keep a Changelog][], and this project adheres to
    `NETRC` environment variable. To revert to the previous behavior, set
    `NETRC=/dev/null`.
 -  yb now obeys the `DOCKER_HOST` environment variable.
+-  yb attempts to detect some common Docker configuration issues and inform the
+   user about them.
 
 ### Changed
 
