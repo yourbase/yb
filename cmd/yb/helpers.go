@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/user"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -99,7 +100,8 @@ type newBiomeOptions struct {
 }
 
 func newBiome(ctx context.Context, target *yb.Target, opts newBiomeOptions) (biome.BiomeCloser, error) {
-	if target.UseContainer && opts.dockerClient == nil {
+	useDocker := willUseDocker(opts.executionMode, []*yb.Target{target})
+	if useDocker && opts.dockerClient == nil {
 		return nil, fmt.Errorf("set up environment for target %s: docker required but unavailable", target.Name)
 	}
 	log.Debugf(ctx, "Checking for netrc data in %s",
@@ -108,7 +110,7 @@ func newBiome(ctx context.Context, target *yb.Target, opts newBiomeOptions) (bio
 	if err != nil {
 		return nil, fmt.Errorf("set up environment for target %s: %w", target.Name, err)
 	}
-	if opts.executionMode < useContainer {
+	if !useDocker {
 		l := biome.Local{
 			PackageDir: opts.packageDir,
 		}
@@ -215,7 +217,7 @@ func runCommand(ctx context.Context, bio biome.Biome, argv ...string) error {
 }
 
 func newDockerNetwork(ctx context.Context, client *docker.Client, mode executionMode, targets []*yb.Target) (string, func(), error) {
-	if client == nil || !shouldCreateDockerNetwork(mode, targets) {
+	if client == nil || !willUseDocker(mode, targets) {
 		return "", func() {}, nil
 	}
 	var bits [8]byte
@@ -241,19 +243,44 @@ func newDockerNetwork(ctx context.Context, client *docker.Client, mode execution
 	}, nil
 }
 
-func shouldCreateDockerNetwork(mode executionMode, targets []*yb.Target) bool {
-	if mode >= useContainer {
-		return true
+func showDockerWarningsIfNeeded(ctx context.Context, mode executionMode, targets []*yb.Target) {
+	if !willUseDocker(mode, targets) {
+		return
 	}
-	if mode <= noContainer {
-		return false
+	dockerGroup, err := user.LookupGroup("docker")
+	if errors.As(err, new(user.UnknownGroupError)) {
+		log.Warnf(ctx, "yb will use Docker, but 'docker' group does not exist. If something goes wrong, check the Docker installation instructions at https://docs.docker.com/engine/install/")
+		return
 	}
+	if err != nil {
+		log.Debugf(ctx, "Could not determine 'docker' group information to display Docker warning: %v", err)
+		return
+	}
+	u, err := user.Current()
+	if err != nil {
+		log.Debugf(ctx, "Could not determine user information to display Docker warning: %v", err)
+		return
+	}
+	gids, err := u.GroupIds()
+	if err != nil {
+		log.Debugf(ctx, "Could not determine groups to display Docker warning: %v", err)
+		return
+	}
+	for _, gid := range gids {
+		if gid == dockerGroup.Gid {
+			return
+		}
+	}
+	log.Warnf(ctx, "yb will use Docker, but %s is not part of the 'docker' group. If something goes wrong, check the Docker installation instructions at https://docs.docker.com/engine/install/", u.Username)
+}
+
+func willUseDocker(mode executionMode, targets []*yb.Target) bool {
 	for _, target := range targets {
 		if target.UseContainer {
 			return true
 		}
 	}
-	return false
+	return mode >= useContainer
 }
 
 // findPackage searches for the package configuration file in the current

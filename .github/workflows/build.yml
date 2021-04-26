@@ -18,11 +18,17 @@ name: Build
 on:
   push:
     branches:
-    - main
-    - release-*
+      - main
+      - release-*
+    paths-ignore:
+      - "*.md"
+      - "docs/**"
   pull_request:
     branches:
-    - main
+      - main
+    paths-ignore:
+      - "*.md"
+      - "docs/**"
 jobs:
   unix:
     name: Unix

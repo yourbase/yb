@@ -34,8 +34,9 @@ func TestLoadPackage(t *testing.T) {
 	}
 	// Source files are under testdata/LoadPackage.
 	tests := []struct {
-		name string
-		want *Package
+		name      string
+		want      *Package
+		wantError bool
 	}{
 		{
 			name: "Empty",
@@ -252,13 +253,28 @@ func TestLoadPackage(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:      "Cycle",
+			wantError: true,
+		},
+		{
+			name:      "SelfCycle",
+			wantError: true,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			configPath := filepath.Join(packageDir, filepath.FromSlash(test.name+".yml"))
 			got, err := LoadPackage(configPath)
 			if err != nil {
-				t.Fatal("LoadPackage:", err)
+				t.Log("LoadPackage:", err)
+				if !test.wantError {
+					t.Fail()
+				}
+				return
+			}
+			if test.wantError {
+				t.Fatal("LoadPackage did not return an error as expected")
 			}
 			if want := filepath.Dir(configPath); got.Path != want {
 				t.Errorf("pkg.Path = %q; want %q", got.Path, want)

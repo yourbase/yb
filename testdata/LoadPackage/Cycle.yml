@@ -1,0 +1,7 @@
+build_targets:
+  - name: foo
+    build_after:
+      - bar
+  - name: bar
+    build_after:
+      - foo

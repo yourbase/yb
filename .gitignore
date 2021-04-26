@@ -9,3 +9,4 @@
 /yb-*-*-*.tgz
 *.deb
 *.rpm
+/.vscode/settings.json

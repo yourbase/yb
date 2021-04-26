@@ -6,5 +6,6 @@
 - [Getting Started](getting-started.md)
 - [List of Build Packs](buildpacks.md)
 - [Package Configuration Reference](configuration.md)
+- [CLI Settings Reference](cli-settings.md)
 - [CI Acceleration and Caching](ci-caching.md)
 - [Design Philosophy](design-philosophy.md)

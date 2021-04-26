@@ -1,0 +1,6 @@
+build_targets:
+  - name: a
+    build_after: [b, c]
+  - name: b
+    build_after: [c]
+  - name: c
