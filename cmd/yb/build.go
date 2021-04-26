@@ -24,6 +24,7 @@ import (
 )
 
 type buildCmd struct {
+	targetNames      []string
 	env              []commandLineEnv
 	netrcFiles       []string
 	execPrefix       string
@@ -34,29 +35,27 @@ type buildCmd struct {
 func newBuildCmd() *cobra.Command {
 	b := new(buildCmd)
 	c := &cobra.Command{
-		Use:   "build [options] [TARGET]",
-		Short: "Build a target",
-		Long: `Builds a target in the current package. If no argument is given, ` +
+		Use:   "build [options] [TARGET [...]]",
+		Short: "Build target(s)",
+		Long: `Builds one or more targets in the current package. If no argument is given, ` +
 			`uses the target named "` + yb.DefaultTarget + `", if there is one.` +
 			"\n\n" +
 			`yb build will search for the .yourbase.yml file in the current directory ` +
 			`and its parent directories. The target's commands will be run in the ` +
 			`directory the .yourbase.yml file appears in.`,
-		Args:                  cobra.MaximumNArgs(1),
+		Args:                  cobra.ArbitraryArgs,
 		DisableFlagsInUseLine: true,
 		SilenceErrors:         true,
 		SilenceUsage:          true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			target := yb.DefaultTarget
-			if len(args) > 0 {
-				target = args[0]
+			if len(args) == 0 {
+				b.targetNames = []string{yb.DefaultTarget}
+			} else {
+				b.targetNames = args
 			}
-			return b.run(cmd.Context(), target)
+			return b.run(cmd.Context())
 		},
 		ValidArgsFunction: func(cc *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			if len(args) > 0 {
-				return nil, cobra.ShellCompDirectiveNoFileComp
-			}
 			return autocompleteTargetName(toComplete)
 		},
 	}
@@ -68,7 +67,7 @@ func newBuildCmd() *cobra.Command {
 	return c
 }
 
-func (b *buildCmd) run(ctx context.Context, buildTargetName string) error {
+func (b *buildCmd) run(ctx context.Context) error {
 	// Set up trace sink.
 	buildTraces := new(traceSink)
 	tp, err := sdktrace.NewProvider(sdktrace.WithSyncer(buildTraces))
@@ -106,11 +105,15 @@ func (b *buildCmd) run(ctx context.Context, buildTargetName string) error {
 	if err != nil {
 		return err
 	}
-	desired := targetPackage.Targets[buildTargetName]
-	if desired == nil {
-		return fmt.Errorf("%s: no such target (found: %s)", buildTargetName, strings.Join(listTargetNames(targetPackage.Targets), ", "))
+	desired := make([]*yb.Target, 0, len(b.targetNames))
+	for _, name := range b.targetNames {
+		target := targetPackage.Targets[name]
+		if target == nil {
+			return fmt.Errorf("%s: no such target (found: %s)", name, strings.Join(listTargetNames(targetPackage.Targets), ", "))
+		}
+		desired = append(desired, target)
 	}
-	buildTargets := yb.BuildOrder(desired)
+	buildTargets := yb.BuildOrder(desired...)
 	showDockerWarningsIfNeeded(ctx, b.mode, buildTargets)
 
 	// Do the build!

@@ -71,7 +71,13 @@ func LoadPackage(configPath string) (*Package, error) {
 	if err != nil {
 		return nil, fmt.Errorf("load package %s: %w", configPath, err)
 	}
-	// TODO(light): Validate the package for dependency cycles.
+	targets := make([]*Target, 0, len(pkg.Targets))
+	for _, target := range pkg.Targets {
+		targets = append(targets, target)
+	}
+	if _, err := buildOrder(targets); err != nil {
+		return nil, fmt.Errorf("load package %s: %w", configPath, err)
+	}
 	return pkg, nil
 }
 
@@ -103,16 +109,83 @@ type ResourceDefinition struct {
 }
 
 // BuildOrder returns a topological sort of the targets needed to build the
-// given target. The last element in the slice is always the argument.
-func BuildOrder(desired *Target) []*Target {
-	// TODO(ch2750): This only handles direct dependencies.
-	// TODO(light): This only handles one target.
-	var targetList []*Target
-	for dep := range desired.Deps {
-		targetList = append(targetList, dep)
+// given target(s). If a single argument is passed, then the last element in the
+// returned slice is always the argument.
+func BuildOrder(desired ...*Target) []*Target {
+	targetList, err := buildOrder(desired)
+	if err != nil {
+		panic(err)
 	}
-	targetList = append(targetList, desired)
 	return targetList
+}
+
+func buildOrder(desired []*Target) ([]*Target, error) {
+	type stackFrame struct {
+		target *Target
+		done   bool
+	}
+	stk := make([]stackFrame, 0, len(desired))
+	for i := len(desired) - 1; i >= 0; i-- {
+		stk = append(stk, stackFrame{target: desired[i]})
+	}
+
+	var targetList []*Target
+	marks := make(map[*Target]int)
+	for len(stk) > 0 {
+		curr := stk[len(stk)-1]
+		stk = stk[:len(stk)-1]
+
+		if curr.done {
+			marks[curr.target] = 2
+			targetList = append(targetList, curr.target)
+			continue
+		}
+		switch marks[curr.target] {
+		case 0:
+			// First visit. Revisit once all dependencies have been added to the list.
+			marks[curr.target] = 1
+			stk = append(stk, stackFrame{target: curr.target, done: true})
+			for dep := range curr.target.Deps {
+				stk = append(stk, stackFrame{target: dep})
+			}
+		case 1:
+			// Cycle.
+			intermediaries := findCycle(curr.target)
+			formatted := new(strings.Builder)
+			for _, target := range intermediaries {
+				formatted.WriteString(target.Name)
+				formatted.WriteString(" -> ")
+			}
+			formatted.WriteString(curr.target.Name)
+			return nil, fmt.Errorf("target %s has a cycle: %s", curr.target.Name, formatted)
+		}
+	}
+	return targetList, nil
+}
+
+func findCycle(target *Target) []*Target {
+	var paths [][]*Target
+	for dep := range target.Deps {
+		paths = append(paths, []*Target{dep})
+	}
+	for {
+		// Dequeue.
+		curr := paths[0]
+		copy(paths, paths[1:])
+		paths[len(paths)-1] = nil
+		paths = paths[:len(paths)-1]
+
+		// Check if the path leads back to the original target.
+		deps := curr[len(curr)-1].Deps
+		if _, done := deps[target]; done {
+			return curr
+		}
+
+		// Advance paths.
+		for dep := range deps {
+			paths = append(paths, append(curr[:len(curr):len(curr)], dep))
+		}
+	}
 }
 
 // BuildpackSpec is a buildpack specifier, consisting of a name and a version.

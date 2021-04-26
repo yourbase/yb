@@ -1,0 +1,4 @@
+build_targets:
+  - name: a
+    build_after: [b]
+  - name: b

@@ -12,11 +12,14 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 -  A new `--mode` option for `build`, `exec`, and `run` allows specifying
    whether commands should be run inside or outside Docker.
+-  `yb build` can now build multiple targets in one invocation.
 -  Build environments will now pick up credentials from `$HOME/.netrc` after any
    credentials from `$XDG_CONFIG_HOME/yb/netrc`. This can be overridden with the
    `NETRC` environment variable. To revert to the previous behavior, set
    `NETRC=/dev/null`.
 -  yb now obeys the `DOCKER_HOST` environment variable.
+-  `yb checkconfig` and other commands that read `.yourbase.yml` will display an
+   error if the targets have a dependency cycle.
 -  yb attempts to detect some common Docker configuration issues and inform the
    user about them.
 
@@ -30,6 +33,8 @@ The format is based on [Keep a Changelog][], and this project adheres to
 
 -  `yb init` no longer crashes when not given a `--lang` flag if there was
    a problem connecting to the Docker daemon.
+-  `yb build` and `yb run` now build indirect dependencies, not just
+   direct dependencies.
 
 ### Deprecated
 
