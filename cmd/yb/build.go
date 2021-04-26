@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -98,6 +98,7 @@ func (b *buildCmd) run(ctx context.Context) error {
 	startTime := time.Now()
 	ctx, span := ybtrace.Start(ctx, "Build", trace.WithNewRoot())
 	defer span.End()
+	ctx = withStdoutLogs(ctx)
 
 	log.Infof(ctx, "Build started at %s", startTime.Format(longTimeFormat))
 
@@ -117,10 +118,10 @@ func (b *buildCmd) run(ctx context.Context) error {
 	showDockerWarningsIfNeeded(ctx, b.mode, buildTargets)
 
 	// Do the build!
-	startSection("BUILD")
 	log.Debugf(ctx, "Building package %s in %s...", targetPackage.Name, targetPackage.Path)
 
 	buildError := doTargetList(ctx, targetPackage, buildTargets, &doOptions{
+		output:        os.Stdout,
 		executionMode: b.mode,
 		dockerClient:  dockerClient,
 		dataDirs:      dataDirs,
@@ -132,27 +133,27 @@ func (b *buildCmd) run(ctx context.Context) error {
 	})
 	if buildError != nil {
 		span.SetStatus(codes.Unknown, buildError.Error())
+		log.Errorf(ctx, "%v", buildError)
 	}
 	span.End()
 	endTime := time.Now()
 	buildTime := endTime.Sub(startTime)
 
-	log.Infof(ctx, "")
-	log.Infof(ctx, "Build finished at %s, taking %s", endTime.Format(longTimeFormat), buildTime)
-	log.Infof(ctx, "")
+	fmt.Printf("\nBuild finished at %s, taking %v\n\n", endTime.Format(longTimeFormat), buildTime.Truncate(time.Millisecond))
+	fmt.Println(buildTraces.dump())
 
-	log.Infof(ctx, "%s", buildTraces.dump())
-
+	style := termStylesFromEnv()
 	if buildError != nil {
-		subSection("BUILD FAILED")
-		return buildError
+		fmt.Printf("%sBUILD FAILED%s ❌\n", style.buildResult(false), style.reset())
+		return alreadyLoggedError{buildError}
 	}
 
-	subSection("BUILD SUCCEEDED")
+	fmt.Printf("%sBUILD PASSED%s ️✔️\n", style.buildResult(true), style.reset())
 	return nil
 }
 
 type doOptions struct {
+	output          io.Writer
 	dataDirs        *ybdata.Dirs
 	downloader      *ybdata.Downloader
 	executionMode   executionMode
@@ -198,6 +199,11 @@ func doTargetList(ctx context.Context, pkg *yb.Package, targets []*yb.Target, op
 }
 
 func doTarget(ctx context.Context, pkg *yb.Package, target *yb.Target, opts *doOptions) error {
+	style := termStylesFromEnv()
+	fmt.Printf("\n🎯 %sTarget: %s%s\n", style.target(), target.Name, style.reset())
+
+	ctx = withLogPrefix(ctx, target.Name)
+
 	bio, err := newBiome(ctx, target, newBiomeOptions{
 		packageDir:      pkg.Path,
 		dataDirs:        opts.dataDirs,
@@ -216,15 +222,17 @@ func doTarget(ctx context.Context, pkg *yb.Package, target *yb.Target, opts *doO
 			log.Warnf(ctx, "Clean up environment: %v", err)
 		}
 	}()
+	output := newLinePrefixWriter(opts.output, target.Name)
 	sys := build.Sys{
 		Biome:           bio,
 		Downloader:      opts.downloader,
 		DockerClient:    opts.dockerClient,
 		DockerNetworkID: opts.dockerNetworkID,
-		Stdout:          os.Stdout,
-		Stderr:          os.Stderr,
+
+		Stdout: output,
+		Stderr: output,
 	}
-	execBiome, err := build.Setup(ctx, sys, target)
+	execBiome, err := build.Setup(withLogPrefix(ctx, setupLogPrefix), sys, target)
 	if err != nil {
 		return err
 	}
@@ -241,34 +249,15 @@ func doTarget(ctx context.Context, pkg *yb.Package, target *yb.Target, opts *doO
 		return nil
 	}
 
-	subSection(fmt.Sprintf("Build target: %s", target.Name))
-	log.Infof(ctx, "Executing build steps...")
-	return build.Execute(ctx, sys, target)
+	return build.Execute(withStdoutLogs(ctx), sys, announceCommand, target)
 }
 
-// Because, why not?
-// Based on https://github.com/sindresorhus/is-docker/blob/master/index.js and https://github.com/moby/moby/issues/18355
-// Discussion is not settled yet: https://stackoverflow.com/questions/23513045/how-to-check-if-a-process-is-running-inside-docker-container#25518538
-func insideTheMatrix() bool {
-	hasDockerEnv := pathExists("/.dockerenv")
-	hasDockerCGroup := false
-	dockerCGroupPath := "/proc/self/cgroup"
-	if pathExists(dockerCGroupPath) {
-		contents, _ := ioutil.ReadFile(dockerCGroupPath)
-		hasDockerCGroup = strings.Count(string(contents), "docker") > 0
-	}
-	return hasDockerEnv || hasDockerCGroup
+func announceCommand(cmdString string) {
+	style := termStylesFromEnv()
+	fmt.Printf("%s> %s%s\n", style.command(), cmdString, style.reset())
 }
 
 func pathExists(path string) bool {
 	_, err := os.Lstat(path)
 	return !os.IsNotExist(err)
-}
-
-func startSection(name string) {
-	fmt.Printf(" === %s ===\n", name)
-}
-
-func subSection(name string) {
-	fmt.Printf(" -- %s -- \n", name)
 }

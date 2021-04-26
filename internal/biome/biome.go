@@ -183,7 +183,7 @@ func (l Local) Run(ctx context.Context, invoke *Invocation) error {
 	if len(invoke.Argv) == 0 {
 		return fmt.Errorf("local run: argv empty")
 	}
-	log.Infof(ctx, "Run: %s", strings.Join(invoke.Argv, " "))
+	log.Debugf(ctx, "Run: %s", strings.Join(invoke.Argv, " "))
 	log.Debugf(ctx, "Environment:\n%v", invoke.Env)
 	dir := invoke.Dir
 	if !filepath.IsAbs(invoke.Dir) {
@@ -199,6 +199,9 @@ func (l Local) Run(ctx context.Context, invoke *Invocation) error {
 		"HOME=" + l.HomeDir,
 		"LOGNAME=" + os.Getenv("LOGNAME"),
 		"USER=" + os.Getenv("USER"),
+	}
+	if v, ok := os.LookupEnv("NO_COLOR"); ok {
+		c.Env = append(c.Env, "NO_COLOR="+v)
 	}
 	c.Env = appendStandardEnv(c.Env, runtime.GOOS)
 	c.Env = invoke.Env.appendTo(c.Env, os.Getenv("PATH"), filepath.ListSeparator)

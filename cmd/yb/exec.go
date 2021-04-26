@@ -99,7 +99,7 @@ func (b *execCmd) run(ctx context.Context) error {
 		Stdout:          os.Stdout,
 		Stderr:          os.Stderr,
 	}
-	execBiome, err := build.Setup(ctx, sys, execTarget)
+	execBiome, err := build.Setup(withLogPrefix(ctx, execTarget.Name+setupLogPrefix), sys, execTarget)
 	if err != nil {
 		return err
 	}
@@ -109,5 +109,5 @@ func (b *execCmd) run(ctx context.Context) error {
 			log.Errorf(ctx, "Clean up environment %s: %v", b.execEnvName, err)
 		}
 	}()
-	return build.Execute(ctx, sys, execTarget)
+	return build.Execute(ctx, sys, announceCommand, execTarget)
 }

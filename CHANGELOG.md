@@ -22,11 +22,17 @@ The format is based on [Keep a Changelog][], and this project adheres to
    error if the targets have a dependency cycle.
 -  yb attempts to detect some common Docker configuration issues and inform the
    user about them.
+-  yb now obeys the [`NO_COLOR` environment variable][] and propagates it to the
+   build environment.
+
+[`NO_COLOR` environment variable]: https://no-color.org/
 
 ### Changed
 
 -  Commands run as part of `build`, `exec`, or `run` now run without Docker by
    default. You can get the old behavior by running with `--mode=container`.
+-  Tool output has been changed to be more compact, to be easier to trace
+   command output, and to include more timing information.
 -  `yb platform` is now an alias for `yb version`.
 
 ### Fixed
