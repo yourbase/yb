@@ -148,7 +148,7 @@ func (b *buildCmd) run(ctx context.Context) error {
 		return alreadyLoggedError{buildError}
 	}
 
-	fmt.Printf("%sBUILD SUCCEEDED%s ️✔️\n", style.buildResult(true), style.reset())
+	fmt.Printf("%sBUILD PASSED%s ️✔️\n", style.buildResult(true), style.reset())
 	return nil
 }
 
