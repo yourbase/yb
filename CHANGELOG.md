@@ -20,6 +20,8 @@ The format is based on [Keep a Changelog][], and this project adheres to
 -  yb now obeys the `DOCKER_HOST` environment variable.
 -  `yb checkconfig` and other commands that read `.yourbase.yml` will display an
    error if the targets have a dependency cycle.
+-  yb attempts to detect some common Docker configuration issues and inform the
+   user about them.
 
 ### Changed
 

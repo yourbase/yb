@@ -114,6 +114,7 @@ func (b *buildCmd) run(ctx context.Context) error {
 		desired = append(desired, target)
 	}
 	buildTargets := yb.BuildOrder(desired...)
+	showDockerWarningsIfNeeded(ctx, b.mode, buildTargets)
 
 	// Do the build!
 	startSection("BUILD")
