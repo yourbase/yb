@@ -20,10 +20,9 @@ import (
 	"context"
 	"errors"
 	"os"
-	"runtime"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"github.com/yourbase/yb/internal/biome"
 	"github.com/yourbase/yb/internal/ybdata"
 	"zombiezen.com/go/log"
 )
@@ -70,24 +69,13 @@ func (cmd *cleanCmd) run(ctx context.Context) error {
 		return os.RemoveAll(dir)
 	}
 
-	descriptors := []*biome.Descriptor{
-		{
-			OS:   runtime.GOOS,
-			Arch: runtime.GOARCH,
-		},
-	}
-	if dockerDesc := biome.DockerDescriptor(); !dockerDesc.Equal(descriptors[0]) {
-		descriptors = append(descriptors, dockerDesc)
-	}
 	ok := true
 	for _, tgt := range cmd.targets {
-		for _, desc := range descriptors {
-			homeDir := dirs.FindBuildHome(pkg.Path, tgt, desc)
-			log.Debugf(ctx, "Deleting %s", homeDir)
-			if err := os.RemoveAll(homeDir); err != nil {
-				log.Errorf(ctx, "Failed to remove directory: %v", err)
-				ok = false
-			}
+		dir := filepath.Join(dirs.BuildHomeRoot(pkg.Path), tgt)
+		log.Debugf(ctx, "Deleting %s", dir)
+		if err := os.RemoveAll(dir); err != nil {
+			log.Errorf(ctx, "Failed to remove directory: %v", err)
+			ok = false
 		}
 	}
 	if !ok {

@@ -133,7 +133,11 @@ func newBiome(ctx context.Context, target *yb.Target, opts newBiomeOptions) (bio
 		}, nil
 	}
 
-	home, err := opts.dataDirs.BuildHome(opts.packageDir, target.Name, biome.DockerDescriptor())
+	dockerDesc, err := biome.DockerDescriptor(ctx, opts.dockerClient)
+	if err != nil {
+		return nil, fmt.Errorf("set up environment for target %s: %w", target.Name, err)
+	}
+	home, err := opts.dataDirs.BuildHome(opts.packageDir, target.Name, dockerDesc)
 	if err != nil {
 		return nil, fmt.Errorf("set up environment for target %s: %w", target.Name, err)
 	}

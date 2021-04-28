@@ -45,6 +45,7 @@ const BindMount = "bind"
 // Container is a biome that executes processes inside a Docker container.
 type Container struct {
 	client *docker.Client
+	desc   Descriptor
 	id     string
 	path   string
 	dirs   Dirs
@@ -124,6 +125,10 @@ func CreateContainer(ctx context.Context, client *docker.Client, opts *Container
 		span.End()
 	}()
 
+	desc, err := DockerDescriptor(ctx, client)
+	if err != nil {
+		return nil, fmt.Errorf("create build container: %w", err)
+	}
 	defn, err := opts.definition()
 	if err != nil {
 		return nil, fmt.Errorf("create build container: %w", err)
@@ -183,6 +188,7 @@ func CreateContainer(ctx context.Context, client *docker.Client, opts *Container
 	}
 	return &Container{
 		client: client,
+		desc:   *desc,
 		id:     containerID,
 		dirs: Dirs{
 			Home:    containerHome,
@@ -231,17 +237,27 @@ func (c *Container) Close() error {
 	})
 }
 
-// Describe returns DockerDescriptor().
+// Describe returns the Docker daemon's operating system and architecture
+// information.
 func (c *Container) Describe() *Descriptor {
-	return DockerDescriptor()
+	return &c.desc
 }
 
-// DockerDescriptor returns Linux/Intel64.
-func DockerDescriptor() *Descriptor {
-	return &Descriptor{
-		OS:   Linux,
-		Arch: Intel64,
+// DockerDescriptor returns a descriptor for Docker daemon's container
+// environment.
+func DockerDescriptor(ctx context.Context, client *docker.Client) (*Descriptor, error) {
+	// TODO(someday): There's no method that accepts Context.
+	info, err := client.Info()
+	if err != nil {
+		return nil, fmt.Errorf("docker info: %w", err)
 	}
+	if info.OSType == "" || info.Architecture == "" {
+		return nil, fmt.Errorf("docker info: missing OSType and/or Architecture")
+	}
+	return &Descriptor{
+		OS:   info.OSType,
+		Arch: info.Architecture,
+	}, nil
 }
 
 // Dirs returns special directories.
