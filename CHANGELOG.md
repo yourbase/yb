@@ -41,6 +41,7 @@ The format is based on [Keep a Changelog][], and this project adheres to
    a problem connecting to the Docker daemon.
 -  `yb build` and `yb run` now build indirect dependencies, not just
    direct dependencies.
+-  yb no longer assumes that Docker build environments are `linux/amd64`.
 
 ### Deprecated
 
