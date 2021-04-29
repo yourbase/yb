@@ -1,5 +1,10 @@
 <img alt="YourBase" src="images/Logo-Horiz-On-White@1x.jpg" width="384" height="112">
 
+# Quick Start Acceleration
+
+- [YourBase Ruby Acceleration](yourbase-ruby.md)
+
+
 # CI and CLI Documentation
 
 - [Installation](installation.md)
@@ -9,6 +14,3 @@
 - [CI Acceleration and Caching](ci-caching.md)
 - [Design Philosophy](design-philosophy.md)
 
-# Quick Start Acceleration
-
-- [YourBase Ruby Acceleration](yourbase-ruby.md)
