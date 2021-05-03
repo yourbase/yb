@@ -3,6 +3,7 @@
 # Quick Start Acceleration
 
 - [YourBase Ruby Acceleration](yourbase-ruby.md)
+- [YourBase Python Acceleration](https://pypi.org/project/yourbase/)
 
 
 # CI and CLI Documentation
