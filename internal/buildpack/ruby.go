@@ -77,7 +77,7 @@ func installRuby(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (biome.Env
 	if _, err := biome.EvalSymlinks(ctx, sys.Biome, rbenvDir); err != nil {
 		log.Debugf(ctx, "rbenv not found: %v", err)
 		log.Infof(ctx, "Installing rbenv in %s", rbenvDir)
-		err := extract(ctx, sys, rbenvDir, "https://github.com/rbenv/rbenv/archive/60c933968584ac9ae7caac6dbed614740f899ec3.zip", stripTopDirectory)
+		err := extract(ctx, sys, rbenvDir, "https://github.com/rbenv/rbenv/archive/633436706fa9227b014b89390892db9e74f5d435.zip", stripTopDirectory)
 		if err != nil {
 			return biome.Environment{}, fmt.Errorf("download rbenv: %w", err)
 		}
@@ -86,15 +86,22 @@ func installRuby(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (biome.Env
 	if _, err := biome.EvalSymlinks(ctx, sys.Biome, rubyBuildDir); err != nil {
 		log.Debugf(ctx, "ruby-build not found: %v", err)
 		log.Infof(ctx, "Installing ruby-build plugin in %s", rubyBuildDir)
-		err := extract(ctx, sys, rubyBuildDir, "https://github.com/rbenv/ruby-build/archive/v20201118.zip", stripTopDirectory)
+		err := extract(ctx, sys, rubyBuildDir, "https://github.com/rbenv/ruby-build/archive/v20210423.zip", stripTopDirectory)
 		if err != nil {
 			return biome.Environment{}, fmt.Errorf("download ruby-build plugin: %w", err)
 		}
 	}
+
+    buildEnv := map[string]string{"RBENV_ROOT": rbenvDir}
+    // Special bits for older Ruby on M1 
+    if desc.OS == "darwin" && desc.Arch == "arm64" {
+        log.Debugf(ctx, "Setting RUBY_CFLAGS=-DUSE_FFI_CLOSURE_ALLOC to support Apple M1 with older Ruby versions")
+        buildEnv["RUBY_CFLAGS"] = "-DUSE_FFI_CLOSURE_ALLOC"
+    }
 	err := sys.Biome.Run(ctx, &biome.Invocation{
 		Argv: []string{"rbenv", "install", spec.Version()},
 		Env: biome.Environment{
-			Vars: map[string]string{"RBENV_ROOT": rbenvDir},
+			Vars: buildEnv,
 			PrependPath: []string{
 				sys.Biome.JoinPath(rbenvDir, "bin"),
 			},
