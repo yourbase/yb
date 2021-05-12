@@ -16,7 +16,7 @@ Once you have a token, simply follow the steps below:
 bundle add yourbase-rspec --git "https://${YOURBASE_DOWNLOAD_TOKEN?}:x-oauth-basic@github.com/yourbase/yourbase-rspec-skipper-engine.git" && bundle install
 ```
 
-> After installing yourbase-rspec, if you are not using Rails you must add
+> Note: After installing yourbase-rspec, if you are not using Rails you must add
 "require 'yourbase-rspec'" to in your spec folder.
 
 ```sh
@@ -35,7 +35,9 @@ Run your tests with the same command you typically use. You should see a rocket 
 
 The first time you run your tests with `yourbase-rspec` will take the typical amount of time as it records tracing data to map dependencies (a "cold build"). If you run the same test again without changing any code, you should see everything skipped!  Subsequent runs will only run examples that are new or depend on changed files. 
 
-After the run finishes, running again will skip all tests. Modifying a dependency will run only tests whose code paths touched the changed code. You're YourBased! 🚀
+After the run finishes, running again will skip all tests. Modifying a dependency will run only tests whose code paths touched the changed code. 
+
+You're YourBased! 🚀
 
 ## RSpec Output
 
@@ -76,5 +78,5 @@ Instead of a single rocketship, you’ll see the following at the top of the rsp
 And then at the bottom, below the RSpec summary, you should see this: 
 `🚀 YourBase observation mode: all "skipped" example groups passed successfully! 🚀`
 
-If you instead see: `🚀 YourBase observation mode: some \"skipped\" example groups contained failures 🛸` followed by one or more example group names, it means that yourbase-spec would have skipped at least one test that failed when it was actually run. We hope you'll never see this, and we hope that you'll email us if you do, at: <??@yourbase.io>
+If you instead see: `🚀 YourBase observation mode: some "skipped" example groups contained failures 🛸` followed by one or more example group names, it means that yourbase-spec would have skipped at least one test that failed when it was actually run. We hope you'll never see this, and we hope that you'll email us if you do, at: <support@yourbase.io>
 
