@@ -2,26 +2,30 @@
 
 Tests are important. For large monoliths, they're also a major source of drag on velocity.
 
-YourBase is a tool that traces your tests to determine which functions each test depends on. It can later use this information to determine which tests do not need to run because their code paths have not changed. These tests are skipped automatically.
+YourBase is a tool that traces your tests to determine which files they depend on. It uses this information to determine which tests must run, because they are new or have changed dependencies. Tests without changed dependencies are skipped.
 
-YourBase works with Ruby versions >= 2.3
+YourBase works with Ruby versions >= 2.3 and RSpec 3+.
 
 ## Getting Started
-No configuration, setup, or babysitting required. To get started, you need the YourBase gem and a download token.  To request a token, please visit [YourBase.io](https://yourbase.io/download)
+1. Add `gem 'yourbase-rspec', '~> 0.5.6',` to your Gemfile. If you have a `:test` group, add it there.
+2. `bundle install` from the command line.
+3. If you are not in a Rails project, you will also need to `require 'yourbase-rspec` your spec_helper (or at the top of the spec file you want to run).
 
 Once you have a token, simply follow the steps below:
 ```sh
 bundle add yourbase-rspec --git "https://${YOURBASE_DOWNLOAD_TOKEN?}:x-oauth-basic@github.com/yourbase/yourbase-rspec-skipper-engine.git" && bundle install
 ```
 
-## First run
-After installing yourbase-rspec, if you are not using Rails you must add
-"require 'yourbase-rspec'" in your spec folder.
+> After installing yourbase-rspec, if you are not using Rails you must add
+"require 'yourbase-rspec'" to in your spec folder.
 
 ```sh
-# Add require for non Rails projects
+# Add require 'yourbase-rspec' for non Rails projects.
 echo "require 'yourbase-rspec'" >> spec/yourbase_spec.rb
 ```
+## First run
+
+> Note: If you are using Spring, please run `spring stop` before starting your tests.
 
 Run your tests with the same command you typically use. You should see a rocket ship at the beginning the RSpec test section.
 
@@ -29,45 +33,48 @@ Run your tests with the same command you typically use. You should see a rocket 
 🚀
 ```
 
-The first run will be cold, so if you just want to see YourBase in action and your tests are going to take a while, you can run a subset of tests. Tracing data for the subset will be used correctly even if you later run all tests.
+The first time you run your tests with `yourbase-rspec` will take the typical amount of time as it records tracing data to map dependencies (a "cold build"). If you run the same test again without changing any code, you should see everything skipped!  Subsequent runs will only run examples that are new or depend on changed files. 
 
 After the run finishes, running again will skip all tests. Modifying a dependency will run only tests whose code paths touched the changed code. You're YourBased! 🚀
 
 ## RSpec Output
 
-YourBase enhances the output so that you can clearly see the results of the Gem.
+YourBase adds to the RSpec output to give you information while about if examples are being run or skipped, and why. 
 
-For an accelerated run, you will see the number of skipped tested added to your
-RSpec summary line:
+The default RSpec output from the `ProgressFormatter` (`.....*..... F........`) will print a `.` in yellow (or the color you have set for `:pending`) when an example is skipped.  
+
+The `DocumentationFormatter` will add the reason an example group is being run in green (or the color your have set for `:success`), and the reason an example group is being skipped in yellow (or the color you have set for `:pending`). 
+
+The summary line will show how show how many examples were skipped! 🚀  
 ```plain
 1 examples, 0 failures, 1 skipped with YourBase🚀
 ```
 
-YourBase adds additional details when using the RSpec formatter option with the
-progress and documentation formatters.
+## Parallelization and  Sharding
+The `yourbase-rspec` gem supports your workflows for both parallelization (running tests in more than one process at a time on the same machine) and sharding (running tests on more than one machine). Dependency histories are keyed off of the code state (git hash), and all tracing data derived from an identical code state is grouped for future use.  
 
-## Cohorting / Sharding
-YourBase supports sharding your tests without negatively affecting tracing or acceleration. It uses consistent hashing to split tests into cohorts that stay the same between runs, even as the test pool grows or shrinks.
+The environment variables `YOURBASE_ACTIVE_COHORT` and `YOURBASE_COHORT COUNT` control which tests **might** run. Tests that are in the active cohort will be checked against dependency changes, and _tests that are not in the active cohort will be automatically skipped_.  
 
-1) Set YB_COHORT_COUNT to the number of cohorts your tests should be split into. This should be the same among all shards.
-1) Set YB_TEST_COHORT to the cohort ID this run should identify as, starting with 1. This should be different among all shards.
-Without these set, YourBase assumes a value of "1" for both, meaning one shard will run one cohort; that cohort will contain all tests.
+YourBase cohorts are assigned based on consistent hashing of the example group name AND the number of cohorts. An example group that is in cohort `1` will always be in cohort `1` unless either the `YOURBASE_COHORT_COUNT` OR example group name are changed.  
 
-Note that tests are only guaranteed to remain in the same cohort as long as
-YB_COHORT_COUNT doesn't change.
+The `YOURBASE_ACTIVE_COHORT` is 1-indexed (it starts at 1, not 0). If you are sharding with YourBase cohorts, and you set `YOURBASE_COHORT_COUNT=2`, then one of your shard should have `YOURBASE_ACTIVE_COHORT=1` and the other should have `YOURBASE_ACTIVE_COHORT=2`.  
+
+Unless the value of `YOURBASE_COHORT_COUNT` is set and is greater than 1, cohorts are turned off.  
 
 ## Observation Mode
-The yourbase-rspec gem includes an "observation mode" which will run all [command-line specified] examples. "Observation mode" allows you to test drive the plugin without actually skipping any tests. 
+The yourbase-rspec gem includes an "observation mode" which allows you to test drive the gem without actually skipping any tests.  
 
-To enable observation mode, set YOURBASE_OBSERVATION_MODE to true in the environment. The documentation formatter isn't strictly required, but it will print the reasons why YourBase would run or skip a given example group.
+In “observation mode” all [command-line specified] examples will be run, but `yourbase-rspec` will monitor if our test selection would have skipped any examples that ultimately failed. At the end,  it will print out the names of any example group that would have been incorrectly skipped, or it will confirm that none were.  
 
-```sh
-YOURBASE_OBSERVATION_MODE=true bundle exec rspec --format documentation
-```
+To access observation mode, set `YOURBASE_OBSERVATION_MODE=true` in the environment, and run your specs. The documentation formatter isn’t required, but it will print the reasons why YourBase would select to run or skip a given example group.  
 
-Instead of a single rocketship, you'll see the following at the top of the rspec output for observation mode:
+`$ YOURBASE_OBSERVATION_MODE=true bundle exec rspec --format documentation`
 
-```plain
-🚀 YourBase test selection is in observation mode. All example groups will be run. 🚀
-```
+Instead of a single rocketship, you’ll see the following at the top of the rspec output for observation mode:
+`:rocket: YourBase test selection is in observation mode. All example groups will be run. :rocket:`
+
+And then at the bottom, below the RSpec summary, you should see this: 
+`🚀 YourBase observation mode: all "skipped" example groups passed successfully! 🚀`
+
+If you instead see: `🚀 YourBase observation mode: some \"skipped\" example groups contained failures 🛸` followed by one or more example group names, it means that yourbase-spec would have skipped at least one test that failed when it was actually run. We hope you'll never see this, and we hope that you'll email us if you do, at: <??@yourbase.io>
 
