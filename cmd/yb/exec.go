@@ -59,6 +59,8 @@ func (b *execCmd) run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	ctx = withLogOutput(ctx, os.Stdout)
 	pkg, _, err := findPackage()
 	if err != nil {
 		return err
@@ -109,5 +111,5 @@ func (b *execCmd) run(ctx context.Context) error {
 			log.Errorf(ctx, "Clean up environment %s: %v", b.execEnvName, err)
 		}
 	}()
-	return build.Execute(ctx, sys, announceCommand, execTarget)
+	return build.Execute(ctx, sys, announceCommand(os.Stdout), execTarget)
 }

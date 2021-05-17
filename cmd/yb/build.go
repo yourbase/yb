@@ -98,7 +98,7 @@ func (b *buildCmd) run(ctx context.Context) error {
 	startTime := time.Now()
 	ctx, span := ybtrace.Start(ctx, "Build", trace.WithNewRoot())
 	defer span.End()
-	ctx = withStdoutLogs(ctx)
+	ctx = withLogOutput(ctx, os.Stdout)
 
 	log.Infof(ctx, "Build started at %s", startTime.Format(longTimeFormat))
 
@@ -199,8 +199,7 @@ func doTargetList(ctx context.Context, pkg *yb.Package, targets []*yb.Target, op
 }
 
 func doTarget(ctx context.Context, pkg *yb.Package, target *yb.Target, opts *doOptions) error {
-	style := termStylesFromEnv()
-	fmt.Printf("\n🎯 %sTarget: %s%s\n", style.target(), target.Name, style.reset())
+	announceTarget(opts.output, target.Name)
 
 	ctx = withLogPrefix(ctx, target.Name)
 
@@ -249,12 +248,19 @@ func doTarget(ctx context.Context, pkg *yb.Package, target *yb.Target, opts *doO
 		return nil
 	}
 
-	return build.Execute(withStdoutLogs(ctx), sys, announceCommand, target)
+	return build.Execute(withLogOutput(ctx, opts.output), sys, announceCommand(opts.output), target)
 }
 
-func announceCommand(cmdString string) {
+func announceTarget(out io.Writer, targetName string) {
 	style := termStylesFromEnv()
-	fmt.Printf("%s> %s%s\n", style.command(), cmdString, style.reset())
+	fmt.Fprintf(out, "\n🎯 %sTarget: %s%s\n", style.target(), targetName, style.reset())
+}
+
+func announceCommand(out io.Writer) func(string) {
+	return func(cmdString string) {
+		style := termStylesFromEnv()
+		fmt.Fprintf(out, "%s> %s%s\n", style.command(), cmdString, style.reset())
+	}
 }
 
 func pathExists(path string) bool {

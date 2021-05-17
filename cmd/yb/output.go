@@ -62,8 +62,13 @@ func initLog(cfg config.Getter, showDebug bool) {
 }
 
 func (l *logger) Log(ctx context.Context, entry log.Entry) {
-	logToStdout, _ := ctx.Value(logToStdoutKey{}).(bool)
-	logToStdout = logToStdout && entry.Level < log.Warn
+	var out io.Writer = os.Stderr
+	if entry.Level < log.Warn {
+		ctxOut, _ := ctx.Value(logOutputKey{}).(io.Writer)
+		if ctxOut != nil {
+			out = ctxOut
+		}
+	}
 	var colorSequence string
 	switch {
 	case entry.Level < log.Info:
@@ -93,10 +98,6 @@ func (l *logger) Log(ctx context.Context, entry log.Entry) {
 		l.buf = append(l.buf, l.color.reset()...)
 	}
 
-	out := os.Stderr
-	if logToStdout {
-		out = os.Stdout
-	}
 	out.Write(l.buf)
 }
 
@@ -120,13 +121,10 @@ func configuredLogLevel(cfg config.Getter, showDebug bool) log.Level {
 	return log.Info
 }
 
-type logToStdoutKey struct{}
+type logOutputKey struct{}
 
-func withStdoutLogs(parent context.Context) context.Context {
-	if isPresent, _ := parent.Value(logToStdoutKey{}).(bool); isPresent {
-		return parent
-	}
-	return context.WithValue(parent, logToStdoutKey{}, true)
+func withLogOutput(parent context.Context, w io.Writer) context.Context {
+	return context.WithValue(parent, logOutputKey{}, w)
 }
 
 type logPrefixKey struct{}
