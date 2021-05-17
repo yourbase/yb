@@ -96,6 +96,7 @@ func (b *runCmd) run(ctx context.Context, args []string) error {
 	}
 
 	// Run command.
+	announceTarget(os.Stderr, execTarget.Name)
 	bio, err := newBiome(ctx, execTarget, newBiomeOptions{
 		executionMode:   b.mode,
 		packageDir:      pkg.Path,
@@ -119,7 +120,7 @@ func (b *runCmd) run(ctx context.Context, args []string) error {
 		Downloader:      downloader,
 		DockerClient:    dockerClient,
 		DockerNetworkID: dockerNetworkID,
-		Stdout:          os.Stdout,
+		Stdout:          os.Stderr,
 		Stderr:          os.Stderr,
 	}
 	execBiome, err := build.Setup(withLogPrefix(ctx, execTarget.Name+setupLogPrefix), sys, execTarget)
@@ -132,6 +133,7 @@ func (b *runCmd) run(ctx context.Context, args []string) error {
 		}
 	}()
 	subdirElems := strings.Split(subdir, string(filepath.Separator))
+	announceCommand(os.Stderr)(strings.Join(args, " "))
 	return execBiome.Run(ctx, &biome.Invocation{
 		Argv:        args,
 		Stdin:       os.Stdin,
