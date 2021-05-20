@@ -1,5 +1,6 @@
 dependencies:
   runtime:
+    - go:1.16.4
     - python:3.7.7
 exec:
   container:
@@ -7,6 +8,9 @@ exec:
       - 5000
       - 5001
   dependencies:
+    runtime:
+      - java:16+36
+      - python:3.9.2
     containers:
       db:
         image: yourbase/api_dev_db

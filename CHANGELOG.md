@@ -24,6 +24,8 @@ The format is based on [Keep a Changelog][], and this project adheres to
    user about them.
 -  yb now obeys the [`NO_COLOR` environment variable][] and propagates it to the
    build environment.
+-  `exec` build packs can now be specified under `exec.dependencies.runtime` in
+   `.yourbase.yml`.
 
 [`NO_COLOR` environment variable]: https://no-color.org/
 

@@ -173,7 +173,9 @@ func TestLoadPackage(t *testing.T) {
 						},
 						UseContainer: true,
 						Buildpacks: map[string]BuildpackSpec{
-							"python": "python:3.7.7",
+							"go":     "go:1.16.4",
+							"java":   "java:16+36",
+							"python": "python:3.9.2",
 						},
 						Resources: map[string]*ResourceDefinition{
 							"db": {ContainerDefinition: narwhal.ContainerDefinition{
@@ -200,7 +202,9 @@ func TestLoadPackage(t *testing.T) {
 						},
 						UseContainer: true,
 						Buildpacks: map[string]BuildpackSpec{
-							"python": "python:3.7.7",
+							"go":     "go:1.16.4",
+							"java":   "java:16+36",
+							"python": "python:3.9.2",
 						},
 						Resources: map[string]*ResourceDefinition{
 							"db": {ContainerDefinition: narwhal.ContainerDefinition{
