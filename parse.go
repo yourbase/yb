@@ -66,7 +66,7 @@ type buildTarget struct {
 	Commands     []string             `yaml:"commands"`
 	HostOnly     bool                 `yaml:"host_only"`
 	Root         string               `yaml:"root"`
-	Environment  []string             `yaml:"environment"`
+	Environment  envObject            `yaml:"environment"`
 	Tags         map[string]string    `yaml:"tags"`
 	BuildAfter   []string             `yaml:"build_after"`
 	Dependencies buildDependencies    `yaml:"dependencies"`
@@ -153,8 +153,8 @@ func parseTarget(packageDir string, globalDeps map[string]BuildpackSpec, tgt *bu
 	if err := parseBuildpacks(parsed.Buildpacks, tgt.Dependencies.Build); err != nil {
 		return nil, fmt.Errorf("target %s: dependencies: build: %w", tgt.Name, err)
 	}
-	if err := parseEnv(parsed.Env, tgt.Environment); err != nil {
-		return nil, fmt.Errorf("target %s: environment: %w", tgt.Name, err)
+	if tgt.Environment != nil {
+		parsed.Env = tgt.Environment
 	}
 	return parsed, nil
 }
@@ -195,7 +195,7 @@ type execPhase struct {
 	Dependencies execDependencies     `yaml:"dependencies"`
 	Container    *containerDefinition `yaml:"container"`
 	Commands     []string             `yaml:"commands"`
-	Environment  map[string][]string  `yaml:"environment"`
+	Environment  map[string]envObject `yaml:"environment"`
 	LogFiles     []string             `yaml:"logfiles"`
 	Sandbox      bool                 `yaml:"sandbox"`
 	HostOnly     bool                 `yaml:"host_only"`
@@ -231,8 +231,8 @@ func parseExecPhase(pkg *Package, manifest *buildManifest) (map[string]*Target, 
 		Buildpacks:   buildpacks,
 		Resources:    resources,
 	}
-	if err := parseEnv(defaultTarget.Env, manifest.Exec.Environment[defaultTarget.Name]); err != nil {
-		return nil, fmt.Errorf("exec environment: %s: %w", defaultTarget.Name, err)
+	if manifest.Exec.Environment != nil {
+		defaultTarget.Env = manifest.Exec.Environment[defaultTarget.Name]
 	}
 
 	// Clone target for different environments.
@@ -249,8 +249,8 @@ func parseExecPhase(pkg *Package, manifest *buildManifest) (map[string]*Target, 
 		for k, v := range defaultTarget.Env {
 			newTarget.Env[k] = v
 		}
-		if err := parseEnv(newTarget.Env, env); err != nil {
-			return nil, fmt.Errorf("exec environment: %s: %w", newTarget.Name, err)
+		for k, v := range env {
+			newTarget.Env[k] = v
 		}
 		targetMap[name] = newTarget
 	}
@@ -264,7 +264,7 @@ type containerDefinition struct {
 	Image         string        `yaml:"image"`
 	Mounts        []string      `yaml:"mounts"`
 	Ports         []string      `yaml:"ports"`
-	Environment   []string      `yaml:"environment"`
+	Environment   envObject     `yaml:"environment"`
 	Command       string        `yaml:"command"`
 	WorkDir       string        `yaml:"workdir"`
 	PortWaitCheck portWaitCheck `yaml:"port_check"`
@@ -283,6 +283,10 @@ func (def *containerDefinition) toResource(packageDir string) (*ResourceDefiniti
 	if def.Image != "" {
 		image = def.Image
 	}
+	var env []string
+	for k, v := range def.Environment {
+		env = append(env, k+"="+string(v))
+	}
 	var mounts []docker.HostMount
 	for _, s := range def.Mounts {
 		mount, err := parseHostMount(packageDir, s)
@@ -296,7 +300,7 @@ func (def *containerDefinition) toResource(packageDir string) (*ResourceDefiniti
 			Image:       image,
 			Mounts:      mounts,
 			Ports:       append([]string(nil), def.Ports...),
-			Environment: append([]string(nil), def.Environment...),
+			Environment: append([]string(nil), env...),
 			Argv:        strings.Fields(def.Command),
 			WorkDir:     def.WorkDir,
 
@@ -343,19 +347,34 @@ type portWaitCheck struct {
 	Timeout int `yaml:"timeout"`
 }
 
-// parseEnv fills a map of variables from a list of variables in the
-// form "key=value". If the list contains duplicate variables, only the last
-// value in the slice for each duplicate key is used.
-func parseEnv(dst map[string]EnvTemplate, vars []string) error {
-	if len(vars) == 0 {
+// envObject is either a YAML map or YAML list that is deserialized into a map
+// of environment variables.
+//
+// If a YAML list is encountered, then it must be a list of strings in the form
+// "key=value". If the list contains duplicate variables, only the last value in
+// the slice for each duplicate key is used.
+type envObject map[string]EnvTemplate
+
+func (eo *envObject) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	if *eo == nil {
+		*eo = make(envObject)
+	}
+	mapErr := unmarshal(map[string]EnvTemplate(*eo))
+	if mapErr == nil {
 		return nil
+	}
+	var vars []string
+	if err := unmarshal(&vars); err != nil {
+		// Prefer presenting the unmarshal-map error, since we want to encourage
+		// that form more.
+		return mapErr
 	}
 	for _, kv := range vars {
 		k, v, err := parseVar(kv)
 		if err != nil {
 			return err
 		}
-		dst[k] = EnvTemplate(v)
+		(*eo)[k] = EnvTemplate(v)
 	}
 	return nil
 }

@@ -37,8 +37,18 @@ build_targets:
 
 - `dependencies`: See the [Dependencies section](#dependencies).
 
-- `environment`: A list of `KEY=VALUE` items that are used as environment
-  variables.
+- `environment`: A map of environment variables.
+
+  ```yaml
+  build_targets:
+    - name: default
+      environment:
+        ENVIRONMENT: development
+        DATABASE_URL: db://localhost:1234/foo
+  ```
+
+  For backwards compatibility, environment variables may also be written as a
+  list of `KEY=VALUE` pairs.
 
   ```yaml
   build_targets:
@@ -91,7 +101,7 @@ build_targets:
       container:
         image: yourbase/yb_ubuntu:18.04
       environment:
-        - DEBIAN_FRONTEND=noninteractive
+        DEBIAN_FRONTEND: noninteractive
       commands:
         - apt-get update
         - apt-get install -y --no-install-recommends cowsay
@@ -194,18 +204,18 @@ build_targets:
         db:
           image: postgres:12
           environment:
-            - POSTGRES_USER=myapp
-            - POSTGRES_PASSWORD=xyzzy
-            - POSTGRES_DB=myapp
+            POSTGRES_USER: myapp
+            POSTGRES_PASSWORD: xyzzy
+            POSTGRES_DB: myapp
           port_check:
             port: 5432
             timeout: 90
     environment:
       # Use whatever environment variables make sense for your test suite.
-      - POSTGRES_HOST={{ .Containers.IP "db" }}
-      - POSTGRES_USER=myapp
-      - POSTGRES_PASSWORD=xyzzy
-      - POSTGRES_DB=myapp
+      POSTGRES_HOST: '{{ .Containers.IP "db" }}'
+      POSTGRES_USER: myapp
+      POSTGRES_PASSWORD: xyzzy
+      POSTGRES_DB: myapp
     commands:
       - ./run_tests.sh
 ```
@@ -227,8 +237,9 @@ syntax.
 - `workdir`: The working directory to run inside the container. Defaults to the
   `WORKDIR` specified in the image's Dockerfile.
 
-- `environment`: A list of `KEY=VALUE` items that are used as environment
-  variables inside the container.
+- `environment`: A map of environment variables inside the container. For
+  backwards compatibility, these may also be written as a list of `KEY=VALUE`
+  pairs.
 
 - `port_check`: If present, yb will wait until a TCP health check passes before
   continuing with the build. The check is specified by two parameters: `port`
@@ -267,8 +278,9 @@ section has the same properties as a target (as described in the
 - Build packs are specified in the top-level `dependencies` section under
   `runtime` instead of under the top-level `exec` section.
 - Executable targets do not support `build_after`.
-- The `environment` attribute is a map of `KEY=VALUE` lists. The `default`
-  environment is used if the `yb exec --environment` flag is not specified.
+- The `environment` attribute is a map of environment names to environment
+  variable maps. The `default` environment is used if the `yb exec --environment`
+  flag is not specified.
 
 ```yaml
 dependencies:
@@ -280,7 +292,7 @@ exec:
       - 8080:8080
   environment:
     default:
-      - DJANGO_SETTINGS_MODULE=mysite.settings
+      DJANGO_SETTINGS_MODULE: mysite.settings
   commands:
     - python manage.py runserver
 ```

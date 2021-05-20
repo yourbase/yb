@@ -25,6 +25,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/yourbase/narwhal"
+	"gopkg.in/yaml.v2"
 )
 
 func TestLoadPackage(t *testing.T) {
@@ -124,6 +125,49 @@ func TestLoadPackage(t *testing.T) {
 						Buildpacks: map[string]BuildpackSpec{
 							"go":   "go:1.14.1",
 							"java": "java:1.8",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Environment",
+			want: &Package{
+				Targets: map[string]*Target{
+					"list": {
+						Name: "list",
+						Container: &narwhal.ContainerDefinition{
+							Image: DefaultContainerImage,
+							Environment: []string{
+								"FOO=XYZZY",
+								"BAZ=QUUX",
+							},
+						},
+						UseContainer: true,
+						Env: map[string]EnvTemplate{
+							"FOO": "XYZZY",
+							"BAZ": "QUUX",
+						},
+						Commands: []string{
+							"/bin/true",
+						},
+					},
+					"kv": {
+						Name: "kv",
+						Container: &narwhal.ContainerDefinition{
+							Image: DefaultContainerImage,
+							Environment: []string{
+								"FOO=BAR",
+								"BAZ=QUUX",
+							},
+						},
+						UseContainer: true,
+						Env: map[string]EnvTemplate{
+							"FOO": "BAR",
+							"BAZ": "QUUX",
+						},
+						Commands: []string{
+							"/bin/true",
 						},
 					},
 				},
@@ -290,9 +334,21 @@ func TestLoadPackage(t *testing.T) {
 				}
 			}
 			diff := cmp.Diff(test.want, got,
+				// Equate empty collections unless it's a set of targets.
 				cmp.FilterPath(func(p cmp.Path) bool {
 					return p.Last().Type() != reflect.TypeOf(map[*Target]struct{}(nil))
 				}, cmpopts.EquateEmpty()),
+				// Ignore order in ContainerDefinition.Environment.
+				cmp.FilterPath(
+					func(p cmp.Path) bool {
+						return p.Index(-2).Type() == reflect.TypeOf(narwhal.ContainerDefinition{}) &&
+							p.Last().(cmp.StructField).Name() == "Environment"
+					},
+					cmpopts.SortSlices(func(s1, s2 string) bool {
+						return s1 < s2
+					}),
+				),
+				// Ignore package fields, since it's environment-dependent.
 				cmpopts.IgnoreFields(Package{}, "Name", "Path"),
 				cmpopts.IgnoreFields(Target{}, "Package"),
 				// Compare Deps by name.
@@ -315,45 +371,53 @@ func TestLoadPackage(t *testing.T) {
 	}
 }
 
-func TestParseEnv(t *testing.T) {
+func TestEnvObjectUnmarshal(t *testing.T) {
 	tests := []struct {
-		vars      []string
-		want      map[string]EnvTemplate
+		yaml      string
+		want      envObject
 		wantError bool
 	}{
 		{
-			vars: nil,
+			yaml: `[]`,
 			want: nil,
 		},
 		{
-			vars: []string{"FOO=BAR"},
-			want: map[string]EnvTemplate{"FOO": "BAR"},
+			yaml: `["FOO=BAR"]`,
+			want: envObject{"FOO": "BAR"},
 		},
 		{
-			vars: []string{"FOO=BAR", "BAZ=QUUX"},
-			want: map[string]EnvTemplate{"FOO": "BAR", "BAZ": "QUUX"},
+			yaml: `["FOO=BAR", "BAZ=QUUX"]`,
+			want: envObject{"FOO": "BAR", "BAZ": "QUUX"},
 		},
 		{
-			vars: []string{"FOO=BAR", "FOO=BAZ"},
-			want: map[string]EnvTemplate{"FOO": "BAZ"},
+			yaml: `["FOO=BAR", "FOO=BAZ"]`,
+			want: envObject{"FOO": "BAZ"},
 		},
 		{
-			vars:      []string{"FOO"},
+			yaml:      `["FOO"]`,
 			wantError: true,
+		},
+		{
+			yaml: "FOO: BAR\n",
+			want: envObject{"FOO": "BAR"},
+		},
+		{
+			yaml: "FOO: 1\n",
+			want: envObject{"FOO": "1"},
 		},
 	}
 	for _, test := range tests {
-		got := make(map[string]EnvTemplate)
-		err := parseEnv(got, test.vars)
+		var got envObject
+		err := yaml.UnmarshalStrict([]byte(test.yaml), &got)
 		if err != nil {
-			t.Logf("parseEnv(m, %q) = %v", test.vars, err)
+			t.Logf("yaml.UnmarshalStrict(%q, &m) = %v", test.yaml, err)
 			if !test.wantError {
 				t.Fail()
 			}
 			continue
 		}
 		if test.wantError {
-			t.Errorf("after parseEnv(m, %q), m = %v; want error", test.vars, got)
+			t.Errorf("after yaml.UnmarshalStrict(%q, &m), m = %v; want error", test.yaml, got)
 		}
 		if diff := cmp.Diff(test.want, got, cmpopts.EquateEmpty()); diff != "" {
 			t.Errorf("map (-want +got):\n%s", diff)
