@@ -1,4 +1,4 @@
-# YourBase Ruby Acceleration
+# YourBase Ruby Test Selection
 
 Tests are important. For large monoliths, they're also a major source of drag on velocity.
 
@@ -14,11 +14,7 @@ YourBase works with Ruby versions >= 2.3 and RSpec 3+.
 ## First run
 
 
-Run your tests with the same command you typically use. You should see a rocket ship at the beginning the RSpec test section.
-
-```plain
-🚀
-```
+Run your tests with the same command you typically use. You should see a rocket ship 🚀 at the beginning the RSpec test section.  The rocket ship signifies that the YourBase Test Selection is properly loaded and tracing your tests.
 
 > Note: If you are using Spring and do not see the rocket ship, please run `spring stop` before running your tests.
 
