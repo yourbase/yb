@@ -17,6 +17,8 @@
 package main
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/yourbase/yb"
@@ -24,9 +26,10 @@ import (
 
 func TestWillUseDocker(t *testing.T) {
 	tests := []struct {
-		mode    executionMode
-		targets []*yb.Target
-		want    bool
+		mode        executionMode
+		targets     []*yb.Target
+		want        bool
+		forCommands bool
 	}{
 		{
 			mode: noContainer,
@@ -34,7 +37,8 @@ func TestWillUseDocker(t *testing.T) {
 				{Name: "default", UseContainer: false},
 				{Name: "foo", UseContainer: false},
 			},
-			want: false,
+			want:        false,
+			forCommands: false,
 		},
 		{
 			mode: preferHost,
@@ -42,7 +46,8 @@ func TestWillUseDocker(t *testing.T) {
 				{Name: "default", UseContainer: false},
 				{Name: "foo", UseContainer: false},
 			},
-			want: false,
+			want:        false,
+			forCommands: false,
 		},
 		{
 			mode: useContainer,
@@ -50,7 +55,8 @@ func TestWillUseDocker(t *testing.T) {
 				{Name: "default", UseContainer: false},
 				{Name: "foo", UseContainer: false},
 			},
-			want: true,
+			want:        true,
+			forCommands: true,
 		},
 		{
 			mode: noContainer,
@@ -58,7 +64,8 @@ func TestWillUseDocker(t *testing.T) {
 				{Name: "default", UseContainer: true},
 				{Name: "foo", UseContainer: false},
 			},
-			want: true,
+			want:        true,
+			forCommands: true,
 		},
 		{
 			mode: preferHost,
@@ -66,7 +73,8 @@ func TestWillUseDocker(t *testing.T) {
 				{Name: "default", UseContainer: true},
 				{Name: "foo", UseContainer: false},
 			},
-			want: true,
+			want:        true,
+			forCommands: true,
 		},
 		{
 			mode: useContainer,
@@ -74,13 +82,52 @@ func TestWillUseDocker(t *testing.T) {
 				{Name: "default", UseContainer: true},
 				{Name: "foo", UseContainer: false},
 			},
-			want: true,
+			want:        true,
+			forCommands: true,
+		},
+		{
+			mode: noContainer,
+			targets: []*yb.Target{
+				{Name: "default", UseContainer: false, Resources: map[string]*yb.ResourceDefinition{"foo": {}}},
+				{Name: "foo", UseContainer: false},
+			},
+			want:        true,
+			forCommands: false,
+		},
+		{
+			mode: preferHost,
+			targets: []*yb.Target{
+				{Name: "default", UseContainer: false, Resources: map[string]*yb.ResourceDefinition{"foo": {}}},
+				{Name: "foo", UseContainer: false},
+			},
+			want:        true,
+			forCommands: false,
+		},
+		{
+			mode: useContainer,
+			targets: []*yb.Target{
+				{Name: "default", UseContainer: false, Resources: map[string]*yb.ResourceDefinition{"foo": {}}},
+				{Name: "foo", UseContainer: false},
+			},
+			want:        true,
+			forCommands: true,
 		},
 	}
+
+	formatTargets := func(targets []*yb.Target) string {
+		stringList := make([]string, 0, len(targets))
+		for _, tgt := range targets {
+			stringList = append(stringList, fmt.Sprintf("{Name:%q UseContainer:%t Resources:%+v}", tgt.Name, tgt.UseContainer, tgt.Resources))
+		}
+		return "[" + strings.Join(stringList, " ") + "]"
+	}
+
 	for _, test := range tests {
-		got := willUseDocker(test.mode, test.targets)
-		if got != test.want {
-			t.Errorf("willUseDocker(%d, %+v) = %t; want %t", test.mode, test.targets, got, test.want)
+		if got := willUseDocker(test.mode, test.targets); got != test.want {
+			t.Errorf("willUseDocker(%d, %s) = %t; want %t", test.mode, formatTargets(test.targets), got, test.want)
+		}
+		if got := willUseDockerForCommands(test.mode, test.targets); got != test.forCommands {
+			t.Errorf("willUseDockerForCommands(%d, %s) = %t; want %t", test.mode, formatTargets(test.targets), got, test.forCommands)
 		}
 	}
 }

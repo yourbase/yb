@@ -100,7 +100,7 @@ type newBiomeOptions struct {
 }
 
 func newBiome(ctx context.Context, target *yb.Target, opts newBiomeOptions) (biome.BiomeCloser, error) {
-	useDocker := willUseDocker(opts.executionMode, []*yb.Target{target})
+	useDocker := willUseDockerForCommands(opts.executionMode, []*yb.Target{target})
 	if useDocker && opts.dockerClient == nil {
 		return nil, fmt.Errorf("set up environment for target %s: docker required but unavailable", target.Name)
 	}
@@ -279,6 +279,15 @@ func showDockerWarningsIfNeeded(ctx context.Context, mode executionMode, targets
 }
 
 func willUseDocker(mode executionMode, targets []*yb.Target) bool {
+	for _, target := range targets {
+		if len(target.Resources) > 0 {
+			return true
+		}
+	}
+	return willUseDockerForCommands(mode, targets)
+}
+
+func willUseDockerForCommands(mode executionMode, targets []*yb.Target) bool {
 	for _, target := range targets {
 		if target.UseContainer {
 			return true
