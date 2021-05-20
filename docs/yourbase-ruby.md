@@ -21,7 +21,7 @@ bundle add yourbase-rspec --git "https://${YOURBASE_DOWNLOAD_TOKEN?}:x-oauth-bas
 
 ```sh
 # Add require 'yourbase-rspec' for non Rails projects.
-echo "require 'yourbase-rspec'" >> spec/yourbase_spec.rb
+If you are not in a Rails project, you will also need to add `require 'yourbase-rspec'` to your `spec_helper.rb` (or another project file which will be loaded, such as the file containing the specs you are running).
 ```
 ## First run
 
@@ -79,4 +79,3 @@ And then at the bottom, below the RSpec summary, you should see this:
 `🚀 YourBase observation mode: all "skipped" example groups passed successfully! 🚀`
 
 If you instead see: `🚀 YourBase observation mode: some "skipped" example groups contained failures 🛸` followed by one or more example group names, it means that yourbase-spec would have skipped at least one test that failed when it was actually run. We hope you'll never see this, and we hope that you'll email us if you do, at: <support@yourbase.io>
-
