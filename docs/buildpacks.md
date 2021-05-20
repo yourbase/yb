@@ -1,5 +1,8 @@
 # List of Build Packs
 
+yb comes with optimized installers for many programming languages. These are
+made available for targets in the [package configuration](configuration.md).
+
 | Build Pack   | Description                                | Example            |
 | ------------ | ------------------------------------------ | ------------------ |
 | `anaconda2`  | Python 2 via [Miniconda][]                 | `anaconda2:2.7.11` |
