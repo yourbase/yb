@@ -7,31 +7,20 @@ YourBase is a tool that traces your tests to determine which files they depend o
 YourBase works with Ruby versions >= 2.3 and RSpec 3+.
 
 ## Getting Started
-1. Add `gem 'yourbase-rspec', '~> 0.5.6',` to your Gemfile. If you have a `:test` group, add it there.
+1. Add `gem 'yourbase-rspec', '~> x.x.x',` to your Gemfile. If you have a `:test` group, add it there.
 2. `bundle install` from the command line.
 3. If you are not in a Rails project, you will also need to `require 'yourbase-rspec` your spec_helper (or at the top of the spec file you want to run).
 
-Once you have a token, simply follow the steps below:
-```sh
-bundle add yourbase-rspec --git "https://${YOURBASE_DOWNLOAD_TOKEN?}:x-oauth-basic@github.com/yourbase/yourbase-rspec-skipper-engine.git" && bundle install
-```
-
-> Note: After installing yourbase-rspec, if you are not using Rails you must add
-"require 'yourbase-rspec'" to in your spec folder.
-
-```sh
-# Add require 'yourbase-rspec' for non Rails projects.
-If you are not in a Rails project, you will also need to add `require 'yourbase-rspec'` to your `spec_helper.rb` (or another project file which will be loaded, such as the file containing the specs you are running).
-```
 ## First run
 
-> Note: If you are using Spring, please run `spring stop` before starting your tests.
 
 Run your tests with the same command you typically use. You should see a rocket ship at the beginning the RSpec test section.
 
 ```plain
 🚀
 ```
+
+> Note: If you are using Spring and do not see the rocket ship, please run `spring stop` before running your tests.
 
 The first time you run your tests with `yourbase-rspec` will take the typical amount of time as it records tracing data to map dependencies (a "cold build"). If you run the same test again without changing any code, you should see everything skipped!  Subsequent runs will only run examples that are new or depend on changed files. 
 
