@@ -202,6 +202,7 @@ type execPhase struct {
 }
 
 type execDependencies struct {
+	Runtime    []string                        `yaml:"runtime"`
 	Containers map[string]*containerDefinition `yaml:"containers"`
 }
 
@@ -212,6 +213,9 @@ func parseExecPhase(pkg *Package, manifest *buildManifest) (map[string]*Target, 
 	buildpacks := make(map[string]BuildpackSpec)
 	if err := parseBuildpacks(buildpacks, manifest.Dependencies.Runtime); err != nil {
 		return nil, fmt.Errorf("top-level runtime dependencies: %w", err)
+	}
+	if err := parseBuildpacks(buildpacks, manifest.Exec.Dependencies.Runtime); err != nil {
+		return nil, fmt.Errorf("exec runtime dependencies: %w", err)
 	}
 	container, err := manifest.Exec.Container.toResource(pkg.Path)
 	if err != nil {

@@ -264,20 +264,18 @@ often used to start a local development server for the project. The `exec`
 section has the same properties as a target (as described in the
 [Build Targets section](#build-targets)), with a few small differences:
 
-- Build packs are specified in the top-level `dependencies` section under
-  `runtime` instead of under the top-level `exec` section.
 - Executable targets do not support `build_after`.
 - The `environment` attribute is a map of `KEY=VALUE` lists. The `default`
   environment is used if the `yb exec --environment` flag is not specified.
 
 ```yaml
-dependencies:
-  runtime:
-    - python:3.9.2
 exec:
   container:
     ports:
       - 8080:8080
+  dependencies:
+    runtime:
+      - python:3.9.2
   environment:
     default:
       - DJANGO_SETTINGS_MODULE=mysite.settings
