@@ -355,6 +355,8 @@ type portWaitCheck struct {
 // the slice for each duplicate key is used.
 type envObject map[string]EnvTemplate
 
+// UnmarshalYAML implements yaml.Unmarshaler.
+// https://pkg.go.dev/gopkg.in/yaml.v2#Unmarshaler
 func (eo *envObject) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if *eo == nil {
 		*eo = make(envObject)
