@@ -13,6 +13,8 @@ The format is based on [Keep a Changelog][], and this project adheres to
 -  A new `--mode` option for `build`, `exec`, and `run` allows specifying
    whether commands should be run inside or outside Docker.
 -  `yb build` can now build multiple targets in one invocation.
+-  Environment variables in `.yourbase.yml` files may now be specified as a map
+   (e.g. `FOO: BAR`) instead of a list (e.g. `- FOO=BAR`).
 -  Build environments will now pick up credentials from `$HOME/.netrc` after any
    credentials from `$XDG_CONFIG_HOME/yb/netrc`. This can be overridden with the
    `NETRC` environment variable. To revert to the previous behavior, set

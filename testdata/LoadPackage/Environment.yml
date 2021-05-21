@@ -1,0 +1,24 @@
+build_targets:
+  - name: list
+    environment:
+      - FOO=BAR
+      - BAZ=QUUX
+      - FOO=XYZZY
+    container:
+      environment:
+        - FOO=BAR
+        - BAZ=QUUX
+        - FOO=XYZZY
+    commands:
+      - /bin/true
+
+  - name: kv
+    environment:
+      FOO: BAR
+      BAZ: QUUX
+    container:
+      environment:
+        FOO: BAR
+        BAZ: QUUX
+    commands:
+      - /bin/true
