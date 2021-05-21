@@ -212,10 +212,10 @@ build_targets:
             timeout: 90
     environment:
       # Use whatever environment variables make sense for your test suite.
-      POSTGRES_HOST: '{{ .Containers.IP "db" }}'
-      POSTGRES_USER: myapp
-      POSTGRES_PASSWORD: xyzzy
-      POSTGRES_DB: myapp
+      PGHOST: '{{ .Containers.IP "db" }}'
+      PGUSER: myapp
+      PGPASSWORD: xyzzy
+      PGDATABASE: myapp
     commands:
       - ./run_tests.sh
 ```
