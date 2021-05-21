@@ -118,13 +118,13 @@ build_targets:
       tags:
         os: darwin
       commands:
-          - brew update
-          - brew install --HEAD usbmuxd
-          - brew link usbmuxd
-          - brew install --HEAD libimobiledevice
-          - brew install ideviceinstaller
-          - brew install ios-deploy
-          - sh build.sh
+        - brew update
+        - brew install --HEAD usbmuxd
+        - brew link usbmuxd
+        - brew install --HEAD libimobiledevice
+        - brew install ideviceinstaller
+        - brew install ios-deploy
+        - sh build.sh
     ```
 
 ## Dependencies
