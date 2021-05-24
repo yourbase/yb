@@ -196,6 +196,8 @@ dependencies:
 Individual targets can also specify Docker containers as dependencies. This is
 especially useful for running a database for integration tests. For example:
 
+<!-- {% raw %} -->
+
 ```yaml
 build_targets:
   - name: default
@@ -224,6 +226,8 @@ Any containers specified will be started with an optional health check before
 running any commands in the target. The target's environment variables can
 reference the container's IP address with the `{{ .Containers.IP "container_name" }}`
 syntax.
+
+<!-- {% endraw %} -->
 
 #### Attributes
 
