@@ -3,7 +3,8 @@
 # Test Acceleration
 
 - [YourBase Python Acceleration](https://pypi.org/project/yourbase/)
-- YourBase Ruby Acceleration - Coming soon!
+- YourBase Ruby Acceleration - Coming soon! Contact us at hi@yourbase.io if you
+  want to join the private beta.  
 
 # CI and CLI Documentation
 
