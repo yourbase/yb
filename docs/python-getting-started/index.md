@@ -183,8 +183,26 @@ below is an example of how to do this — more information can be found on the
 If you've already conducted your CI to parallelize tests, YourBase has you
 covered. YourBase can be configured to work with tests run in cohorts.
 
+1. Set `YOURBASE_COHORT_COUNT` to the number of shards (or processes, or swarms,
+   etc.) that run your tests. For example:
+
+   ```shell
+   export YOURBASE_COHORT_COUNT=12
+   ```
+
+2. Set `YOURBASE_ACTIVE_COHORT` to the ID of the current shard, in the range
+   `[1, $YOURBASE_COHORT_COUNT]`. For example:
+
+   ```shell
+   # First shard
+   export YOURBASE_ACTIVE_COHORT=1
+   # ...
+   # Last shard
+   export YOURBASE_ACTIVE_COHORT=12
+   ```
+
 ## Product Usage Data
 
 By default, YourBase tracks how many tests are run and how many are skipped with
 each build. YourBase also tracks the length of the tests. You can opt out of
-data sharing by setting `YOURBASE_TELEMETRY_DISABLED=1`.
+data sharing by setting `YOURBASE_TELEMETRY=false`.
