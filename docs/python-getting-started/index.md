@@ -187,4 +187,4 @@ covered. YourBase can be configured to work with tests run in cohorts.
 
 By default, YourBase tracks how many tests are run and how many are skipped with
 each build. YourBase also tracks the length of the tests. You can opt out of
-data sharing by setting an environment variable.
+data sharing by setting `YOURBASE_TELEMETRY_DISABLED=1`.
