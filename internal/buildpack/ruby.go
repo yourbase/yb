@@ -92,12 +92,12 @@ func installRuby(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (biome.Env
 		}
 	}
 
-    buildEnv := map[string]string{"RBENV_ROOT": rbenvDir}
-    // Special bits for older Ruby on M1 
-    if desc.OS == "darwin" && desc.Arch == "arm64" {
-        log.Debugf(ctx, "Setting RUBY_CFLAGS=-DUSE_FFI_CLOSURE_ALLOC to support Apple M1 with older Ruby versions")
-        buildEnv["RUBY_CFLAGS"] = "-DUSE_FFI_CLOSURE_ALLOC"
-    }
+	buildEnv := map[string]string{"RBENV_ROOT": rbenvDir}
+	// Special bits for older Ruby on M1
+	if desc.OS == biome.MacOS && desc.Arch == biome.ARM64 {
+		log.Debugf(ctx, "Setting RUBY_CFLAGS=-DUSE_FFI_CLOSURE_ALLOC to support Apple M1 with older Ruby versions")
+		buildEnv["RUBY_CFLAGS"] = "-DUSE_FFI_CLOSURE_ALLOC"
+	}
 	err := sys.Biome.Run(ctx, &biome.Invocation{
 		Argv: []string{"rbenv", "install", spec.Version()},
 		Env: biome.Environment{
