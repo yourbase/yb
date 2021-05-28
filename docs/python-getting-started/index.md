@@ -131,7 +131,7 @@ project (which uses `unittest` to run its tests).
 9. Feel free to experiment with other functions in the source tree and see what
    happens, then go ahead and use `yourbase` in your own project!
 
-## Set up Shared Dependency Graphs
+## Set up Shared Dependency Graph
 
 ### Introduction
 
