@@ -2,7 +2,8 @@
 
 # Test Acceleration
 
-- [YourBase Python Acceleration](https://pypi.org/project/yourbase/)
+- [Getting Started with Python Test Acceleration](python-getting-started/index.md)
+- [YourBase Python on PyPI](https://pypi.org/project/yourbase/)
 - YourBase Ruby Acceleration - Coming soon! Contact us at hi@yourbase.io if you
   want to join the private beta.  
 
