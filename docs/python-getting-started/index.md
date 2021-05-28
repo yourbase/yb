@@ -131,56 +131,45 @@ project (which uses `unittest` to run its tests).
 9. Feel free to experiment with other functions in the source tree and see what
    happens, then go ahead and use `yourbase` in your own project!
 
-## Accelerate Tests in CI
+## Set up Shared Dependency Graphs
 
-To use YourBase in your CI, you will need to set up a few things first in order
-to enable shared Dependency Graph storage. Once you have done that, you can add
-`yourbase` to your project (via `requirements.txt` or whatever mechanism you use
-to install your dependencies) and then use YourBase to accelerate the builds in
-your CI system.
-
-### About the Shared Dependency Graph
+### Introduction
 
 To get acceleration gains across team members, you can store the Dependency
-Graph in the cloud and share it with others working on the same code-base.
+Graph in the cloud and share it with others working on the same codebase.
 YourBase will use information from your project's commit history to determine
 the optimal Dependency Graph for each build. As a result, when you've submitted
 code that is the same as code already tested by your colleagues, YourBase will
 be able to skip those tests anywhere that has access to the shared graph
 storage.
 
-Currently, YourBase supports [S3 buckets][] for graph storage, so you will
-need to create a new (or have an existing) bucket available for storing your
-team's graphs. The graphs are separated by unique project, so you can choose to
-use one bucket per project or one bucket for all of your projects. In order to
-access the shared storage, anywhere that you will use YourBase needs to have
-credentials that have read, write and list permissions to the relevant S3
-bucket.
+### Setup
 
-[S3 buckets]: https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingBucket.html
+YourBase currently supports storing shared graphs in [S3 buckets] https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingBucket.html.
 
-### S3 Configuration for CI
+1. In AWS, either create a new or have an existing S3 bucket for storing your
+team's YourBase [dependency graph](https://yourbase.io/technology/dependency-graph). Note that the graphs are separated by unique project.
 
-YourBase needs the information required to access your S3 bucket; as mentioned
-before you will need to configure credentials (via environment, EC2 role,
-configuration file, etc.) in a way that the default configuration can access
-them. In addition to that you will need to export the S3 bucket information;
-below is an example of how to do this — more information can be found on the
-[PyPI documentation page][].
+2. Name and configure your S3 bucket(s), and have your S3 credentials. Set them to have read, write and list permissions.
 
-1. Get the name of the bucket you want to use, for example
-   `acmecorp-yourbase-graphs`
-2. Export the `YOURBASE_REMOTE_CACHE` variable to be `s3://your-bucket-name`.
-   For example: `export YOURBASE_REMOTE_CACHE="s3://acmecorp-yourbase-graphs"`
-3. Configure your AWS credentials - you can do this one of two ways:
-    1. The standard AWS way (config file, or environment variable, etc), or
-    2. Using a YourBase-specific pair of environment variables (in case you want
-       to have a separate set of credentials just for the graph access), which
-       are `YOURBASE_AWS_ACCESS_KEY_ID` and `YOURBASE_AWS_SECRET_ACCESS_KEY`
+For each codebase, you can use either one bucket per project or use one bucket for all of your projects.
+
+3. Within your project, export an environment variable called `YOURBASE_REMOTE_CACHE` and set it to `s3://YOUR_BUCKET_NAME` with the name of your project's shared graphs S3 bucket. E.g., `export YOURBASE_REMOTE_CACHE="s3://acmecorp-yourbase-graphs"`
+
+4. [Generate or retrieve an AWS access key ID](https://aws.amazon.com/premiumsupport/knowledge-center/create-access-key/) and secret access key. [Configure your AWS credentials the standard AWS way](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) or set them to YourBase-specific environment variables `YOURBASE_AWS_ACCESS_KEY_ID` and `YOURBASE_AWS_SECRET_ACCESS_KEY`.
+
+### For use in a CI
+
+1. After setting up the S3 bucket for your YourBase dependency graph storage in the steps above, add
+`yourbase` to your project (via `requirements.txt` or whatever mechanism you use
+to install your dependencies).
+
+2. Use YourBase to accelerate the builds in your CI system by running your tests like normal.
+
 
 ## Support for Parallelized Tests
 
-If you've already conducted your CI to parallelize tests, YourBase has you
+If you've already configured your CI to parallelize tests, YourBase has you
 covered. YourBase can be configured to work with tests run in cohorts.
 
 1. Set `YOURBASE_COHORT_COUNT` to the number of shards (or processes, or swarms,
@@ -205,4 +194,4 @@ covered. YourBase can be configured to work with tests run in cohorts.
 
 By default, YourBase tracks how many tests are run and how many are skipped with
 each build. YourBase also tracks the length of the tests. You can opt out of
-data sharing by setting `YOURBASE_TELEMETRY=false`.
+data sharing by setting the environment variable `YOURBASE_TELEMETRY` to `false`.
