@@ -152,7 +152,7 @@ team's YourBase [dependency graph](https://yourbase.io/technology/dependency-gra
 
 2. Name and configure your S3 bucket(s), and have your S3 credentials. Set them to have read, write and list permissions.
 
-For each codebase, you can use either one bucket per project or use one bucket for all of your projects.
+  For each codebase, you can use either one bucket per project or use one bucket for all of your projects.
 
 3. Within your project, export an environment variable called `YOURBASE_REMOTE_CACHE` and set it to `s3://YOUR_BUCKET_NAME` with the name of your project's shared graphs S3 bucket. E.g., `export YOURBASE_REMOTE_CACHE="s3://acmecorp-yourbase-graphs"`
 
