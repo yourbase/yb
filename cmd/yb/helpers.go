@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -288,8 +289,10 @@ func willUseDocker(mode executionMode, targets []*yb.Target) bool {
 }
 
 func willUseDockerForCommands(mode executionMode, targets []*yb.Target) bool {
+	networkAvailable, _ := hostHasDockerNetwork()
 	for _, target := range targets {
-		if target.UseContainer {
+		if target.UseContainer ||
+			len(target.Resources) > 0 && !networkAvailable {
 			return true
 		}
 	}
@@ -373,4 +376,25 @@ func (f noContainerFlag) Set(s string) error {
 
 func (f noContainerFlag) Type() string {
 	return "bool"
+}
+
+// hostHasDockerNetwork returns true if the Docker network bridge ("docker0" as
+// reported by ifconfig and brctl) exists, or false otherwise. This interface
+// serves as a network bridge between Docker containers.
+//
+// Common reasons for the interface not existing are that Docker is not
+// installed, or that the host is running macOS or WSL2 (operating systems in
+// which Docker doesn't establish the bridge on the host).
+func hostHasDockerNetwork() (bool, error) {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return false, fmt.Errorf("cannot check for docker bridge: %w", err)
+	}
+
+	for _, i := range interfaces {
+		if i.Name == "docker0" {
+			return true, nil
+		}
+	}
+	return false, nil
 }
