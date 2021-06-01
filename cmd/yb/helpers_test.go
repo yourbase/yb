@@ -25,6 +25,7 @@ import (
 )
 
 func TestWillUseDocker(t *testing.T) {
+	networkAvailable, _ := hostHasDockerNetwork()
 	tests := []struct {
 		mode        executionMode
 		targets     []*yb.Target
@@ -92,7 +93,7 @@ func TestWillUseDocker(t *testing.T) {
 				{Name: "foo", UseContainer: false},
 			},
 			want:        true,
-			forCommands: false,
+			forCommands: !networkAvailable,
 		},
 		{
 			mode: preferHost,
@@ -101,7 +102,7 @@ func TestWillUseDocker(t *testing.T) {
 				{Name: "foo", UseContainer: false},
 			},
 			want:        true,
-			forCommands: false,
+			forCommands: !networkAvailable,
 		},
 		{
 			mode: useContainer,
