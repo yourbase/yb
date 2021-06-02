@@ -18,6 +18,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -25,6 +26,17 @@ import (
 )
 
 func TestWillUseDocker(t *testing.T) {
+	const containerEnvVar = "YB_CONTAINER_ENV_IP"
+	oldEnv, oldEnvExists := os.LookupEnv(containerEnvVar)
+	os.Setenv(containerEnvVar, "1.2.3.4")
+	t.Cleanup(func() {
+		if !oldEnvExists {
+			os.Unsetenv(containerEnvVar)
+		} else {
+			os.Setenv(containerEnvVar, oldEnv)
+		}
+	})
+
 	networkAvailable, _ := hostHasDockerNetwork()
 	tests := []struct {
 		mode        executionMode
@@ -103,6 +115,16 @@ func TestWillUseDocker(t *testing.T) {
 			},
 			want:        true,
 			forCommands: !networkAvailable,
+		},
+		{
+			mode: preferHost,
+			targets: []*yb.Target{
+				// This is provided as YB_CONTAINER_ENV_IP.
+				{Name: "default", UseContainer: false, Resources: map[string]*yb.ResourceDefinition{"env": {}}},
+				{Name: "foo", UseContainer: false},
+			},
+			want:        false,
+			forCommands: false,
 		},
 		{
 			mode: useContainer,

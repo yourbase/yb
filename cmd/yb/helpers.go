@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -20,6 +21,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
+	"github.com/yourbase/yb/internal/build"
 	"github.com/yourbase/yb/internal/config"
 	"github.com/yourbase/yb/internal/ybdata"
 	"zombiezen.com/go/log"
@@ -249,7 +251,7 @@ func newDockerNetwork(ctx context.Context, client *docker.Client, mode execution
 }
 
 func showDockerWarningsIfNeeded(ctx context.Context, mode executionMode, targets []*yb.Target) {
-	if !willUseDocker(mode, targets) {
+	if !willUseDocker(mode, targets) || runtime.GOOS != biome.Linux {
 		return
 	}
 	dockerGroup, err := user.LookupGroup("docker")
@@ -281,8 +283,10 @@ func showDockerWarningsIfNeeded(ctx context.Context, mode executionMode, targets
 
 func willUseDocker(mode executionMode, targets []*yb.Target) bool {
 	for _, target := range targets {
-		if len(target.Resources) > 0 {
-			return true
+		for name := range target.Resources {
+			if os.Getenv(build.ContainerIPEnvVar(name)) == "" {
+				return true
+			}
 		}
 	}
 	return willUseDockerForCommands(mode, targets)
@@ -291,9 +295,13 @@ func willUseDocker(mode executionMode, targets []*yb.Target) bool {
 func willUseDockerForCommands(mode executionMode, targets []*yb.Target) bool {
 	networkAvailable, _ := hostHasDockerNetwork()
 	for _, target := range targets {
-		if target.UseContainer ||
-			len(target.Resources) > 0 && !networkAvailable {
+		if target.UseContainer {
 			return true
+		}
+		for name := range target.Resources {
+			if os.Getenv(build.ContainerIPEnvVar(name)) == "" && !networkAvailable {
+				return true
+			}
 		}
 	}
 	return mode >= useContainer
