@@ -190,6 +190,10 @@ covered. YourBase can be configured to work with tests run in cohorts.
    export YOURBASE_ACTIVE_COHORT=12
    ```
 
+YourBase uses consistent hashing to split your tests across shards so they do not get "reshuffled" when other tests are added or removed. This will give parallelized tests the full benefits of acceleration.
+
+CircleCI users do not have to set the above environment variables as YourBase will inherit them automatically. However you must remove any CircleCI test splitting or globbing, as YourBase will automatically choose which tests to run "just in time".
+
 ## Product Usage Data
 
 By default, YourBase tracks how many tests are run and how many are skipped with
