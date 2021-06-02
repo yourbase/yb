@@ -121,7 +121,7 @@ func startContainers(ctx context.Context, sys Sys, defs map[string]*yb.ResourceD
 	}
 	containers := make(map[string]*container)
 	for name := range defs {
-		ip := os.Getenv("YB_CONTAINER_" + strings.ToUpper(name) + "_IP")
+		ip := os.Getenv(ContainerIPEnvVar(name))
 		if ip != "" {
 			log.Infof(ctx, "Using %s address from environment: %s", name, ip)
 			exp.ips[name] = ip
@@ -177,6 +177,12 @@ func startContainers(ctx context.Context, sys Sys, defs map[string]*yb.ResourceD
 		exp.ips[name] = c.ip.String()
 	}
 	return exp, origCloseFunc, nil
+}
+
+// ContainerIPEnvVar returns the name of the environment variable that
+// optionally provides the IP address of a target's resource.
+func ContainerIPEnvVar(resourceName string) string {
+	return "YB_CONTAINER_" + strings.ToUpper(resourceName) + "_IP"
 }
 
 // startContainer starts a single container with the given definition.
