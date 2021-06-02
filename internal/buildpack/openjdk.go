@@ -6,6 +6,10 @@ import (
 	"strconv"
 	"strings"
 
+	"net/http"
+
+	"golang.org/x/net/html"
+
 	"github.com/yourbase/yb"
 	"github.com/yourbase/yb/internal/biome"
 	"zombiezen.com/go/log"
@@ -15,7 +19,7 @@ func installJava(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (_ biome.E
 	installDir := sys.Biome.JoinPath(sys.Biome.Dirs().Tools, "java", "openjdk"+spec.Version())
 	desc := sys.Biome.Describe()
 	home := installDir
-	if desc.OS == biome.MacOS {
+	if desc.OS == biome.MacOS && desc.Arch != "arm64" {
 		home = sys.Biome.JoinPath(installDir, "Contents", "Home")
 	}
 	env := biome.Environment{
@@ -36,8 +40,13 @@ func installJava(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (_ biome.E
 		return env, nil
 	}
 
-	log.Infof(ctx, "Installing OpenJDK v%s in %s", spec.Version(), installDir)
-	downloadURL, err := javaDownloadURL(spec.Version(), desc)
+	log.Infof(ctx, "Installing OpenJDK v%s (%s:%s) in %s", spec.Version(), desc.Arch, desc.OS, installDir)
+	var downloadURL string
+	if desc.Arch == "arm64" && desc.OS == "darwin" {
+		downloadURL, err = azulJDKDownloadURL(spec.Version(), desc)
+	} else {
+		downloadURL, err = javaDownloadURL(spec.Version(), desc)
+	}
 	if err != nil {
 		return biome.Environment{}, err
 	}
@@ -45,6 +54,130 @@ func installJava(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (_ biome.E
 		return biome.Environment{}, err
 	}
 	return env, nil
+}
+
+func azulJDKDownloadURL(version string, desc *biome.Descriptor) (string, error) {
+	fmt.Println("Downloading Azul JDK...")
+
+	vparts := strings.SplitN(version, "+", 2)
+	subVersion := ""
+	if len(vparts) > 1 {
+		subVersion = vparts[1]
+		version = vparts[0]
+	}
+
+	parts := strings.Split(version, ".")
+
+	majorVersion, err := convertVersionPiece(parts, 0)
+	if err != nil {
+		return "", fmt.Errorf("parse jdk version %q: major: %w", version, err)
+	}
+	minorVersion, err := convertVersionPiece(parts, 1)
+	if err != nil {
+		return "", fmt.Errorf("parse jdk version %q: minor: %w", version, err)
+	}
+	patchVersion, err := convertVersionPiece(parts, 2)
+	if err != nil {
+		return "", fmt.Errorf("parse jdk version %q: patch: %w", version, err)
+	}
+
+	resp, err := http.Get("https://cdn.azul.com/zulu/bin/")
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	doc, err := html.Parse(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	fmt.Printf("%d.%d.%d.%d\n", majorVersion, minorVersion, subVersion, patchVersion)
+	var arch string
+	if desc.Arch == "arm64" {
+		arch = "aarch64"
+	}
+	var os string
+	if desc.OS == "darwin" {
+		os = "macosx"
+	}
+
+	if majorVersion == 8 {
+		patchVersion = minorVersion
+		minorVersion = 0
+	}
+
+	if majorVersion == -1 {
+		return "", fmt.Errorf("No major version provided...")
+	}
+	verMatchStr := fmt.Sprintf("jdk%d", majorVersion)
+	if minorVersion > -1 {
+		verMatchStr = fmt.Sprintf("%s.%d", verMatchStr, minorVersion)
+		if patchVersion > -1 {
+			verMatchStr = fmt.Sprintf("%s.%d", verMatchStr, patchVersion)
+		}
+	}
+
+	osArchStr := fmt.Sprintf("%s_%s.tar.gz", os, arch)
+	fmt.Printf("Search: %s - %s\n", verMatchStr, osArchStr)
+	matches := make([]string, 0)
+	var f func(*html.Node)
+	f = func(n *html.Node) {
+		if n.Type == html.ElementNode && n.Data == "a" {
+			for _, a := range n.Attr {
+				if a.Key == "href" {
+					if strings.Contains(a.Val, verMatchStr) {
+						if strings.Contains(a.Val, osArchStr) {
+							if !strings.Contains(a.Val, "-fx-") {
+								matches = append(matches, a.Val)
+							}
+						}
+					}
+					break
+				}
+			}
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			f(c)
+		}
+	}
+	f(doc)
+
+	// https://cdn.azul.com/zulu/bin/zulu11.48.21-ca-jdk11.0.11-macosx_aarch64.tar.gz
+	baseUrl := "https://cdn.azul.com/zulu/bin"
+	if len(matches) > 1 {
+		maxMinorVersion := int64(-1)
+		maxPatchVersion := int64(-1)
+		for _, m := range matches {
+			fmt.Printf(" * %s\n", m)
+			parts := strings.Split(m, "-")
+			for _, p := range parts {
+				if strings.HasPrefix(p, "jdk") {
+					p = strings.Replace(p, "jdk", "", 0)
+					verBits := strings.Split(p, ".")
+					minor, _ := convertVersionPiece(verBits, 1)
+					patch, _ := convertVersionPiece(verBits, 2)
+					if minor > maxMinorVersion {
+						maxMinorVersion = minor
+					}
+					if patch > maxPatchVersion {
+						maxPatchVersion = patch
+					}
+				}
+			}
+		}
+
+		jdkVersionStr := fmt.Sprintf("jdk%d.%d.%d", majorVersion, maxMinorVersion, maxPatchVersion)
+		for _, ver := range matches {
+			if strings.Contains(ver, jdkVersionStr) {
+				return fmt.Sprintf("%s/%s", baseUrl, ver), nil
+			}
+		}
+	} else {
+		return fmt.Sprintf("%s/%s", baseUrl, matches[0]), nil
+	}
+
+	return "", nil
+	// https://cdn.azul.com/zulu/bin/zulu11.48.21-ca-jdk11.0.11-macosx_x64.tar.gz
 }
 
 func javaDownloadURL(version string, desc *biome.Descriptor) (string, error) {
@@ -149,7 +282,7 @@ func javaDownloadURL(version string, desc *biome.Descriptor) (string, error) {
 
 func convertVersionPiece(parts []string, index int) (int64, error) {
 	if index >= len(parts) {
-		return 0, nil
+		return -1, nil
 	}
 	return strconv.ParseInt(parts[index], 10, 64)
 }

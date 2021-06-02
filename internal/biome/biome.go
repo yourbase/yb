@@ -89,6 +89,7 @@ const (
 const (
 	Intel64 = "amd64"
 	Intel32 = "386"
+	Arm64   = "arm64"
 )
 
 // Dirs holds paths to special directories in a Context.
