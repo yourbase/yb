@@ -7,22 +7,22 @@ Have configuration needs not addressed here? Give us a holler at
 [hi@yourbase.io][hi].
 
 - Common Settings
-  - [`YOURBASE_ACCEPT_TOS`](#YOURBASE_ACCEPT_TOS)
-  - [`YOURBASE_ACTIVE_COHORT`](#YOURBASE_ACTIVE_COHORT)
-  - [`YOURBASE_COHORT_COUNT`](#YOURBASE_COHORT_COUNT)
-  - [`YOURBASE_LICENSE_KEY`](#YOURBASE_LICENSE_KEY)
-  - [`YOURBASE_OBSERVATION_MODE`](#YOURBASE_OBSERVATION_MODE)
-  - [`YOURBASE_REMOTE_CACHE`](#YOURBASE_REMOTE_CACHE)
+  - [`YOURBASE_ACCEPT_TOS`](#yourbase_accept_tos)
+  - [`YOURBASE_ACTIVE_COHORT`](#yourbase_active_cohort)
+  - [`YOURBASE_COHORT_COUNT`](#yourbase_cohort_count)
+  - [`YOURBASE_LICENSE_KEY`](#yourbase_license_key)
+  - [`YOURBASE_OBSERVATION_MODE`](#yourbase_observation_mode)
+  - [`YOURBASE_REMOTE_CACHE`](#yourbase_remote_cache)
 - Uncommon settings
-  - [`YOURBASE_AWS_ACCESS_KEY_ID`](#YOURBASE_AWS_ACCESS_KEY_ID)
-  - [`YOURBASE_AWS_SECRET_ACCESS_KEY`](#YOURBASE_AWS_SECRET_ACCESS_KEY)
-  - [`YOURBASE_DEBUG`](#YOURBASE_DEBUG)
-  - [`YOURBASE_DISABLE`](#YOURBASE_DISABLE)
-  - [`YOURBASE_IGNORE_LOCAL_CACHE`](#YOURBASE_IGNORE_LOCAL_CACHE)
-  - [`YOURBASE_SYNC_DIRTY`](#YOURBASE_SYNC_DIRTY)
-  - [`YOURBASE_TELEMETRY`](#YOURBASE_TELEMETRY)
-  - [`YOURBASE_TIMID`](#YOURBASE_TIMID)
-  - [`YOURBASE_WORKDIR`](#YOURBASE_WORKDIR)
+  - [`YOURBASE_AWS_ACCESS_KEY_ID`](#yourbase_aws_access_key_id)
+  - [`YOURBASE_AWS_SECRET_ACCESS_KEY`](#yourbase_aws_secret_access_key)
+  - [`YOURBASE_DEBUG`](#yourbase_debug)
+  - [`YOURBASE_DISABLE`](#yourbase_disable)
+  - [`YOURBASE_IGNORE_LOCAL_CACHE`](#yourbase_ignore_local_cache)
+  - [`YOURBASE_SYNC_DIRTY`](#yourbase_sync_dirty)
+  - [`YOURBASE_TELEMETRY`](#yourbase_telemetry)
+  - [`YOURBASE_TIMID`](#yourbase_timid)
+  - [`YOURBASE_WORKDIR`](#yourbase_workdir)
 
 ## Common Settings
 
@@ -40,18 +40,18 @@ info messages.
 - **Type:** integer in the range `[1, $YOURBASE_COHORT_COUNT]`
 - **Default:** 1
 
-When set alongside [`YOURBASE_COHORT_COUNT`](#YOURBASE_COHORT_COUNT), tells
+When set alongside [`YOURBASE_COHORT_COUNT`](#yourbase_cohort_count), tells
 YourBase the cohort ID to run. Used for sharded or otherwise parallelized test
 suites.
 
-See [`YOURBASE_COHORT_COUNT`](#YOURBASE_COHORT_COUNT) for more information.
+See [`YOURBASE_COHORT_COUNT`](#yourbase_cohort_count) for more information.
 
 ### `YOURBASE_COHORT_COUNT`
 
 - **Type:** integer
 - **Default:** 1
 
-When set alongside [`YOURBASE_ACTIVE_COHORT`](#YOURBASE_ACTIVE_COHORT), tells
+When set alongside [`YOURBASE_ACTIVE_COHORT`](#yourbase_active_cohort), tells
 YourBase how many cohorts tests should be split into. Used for sharded or
 otherwise parallelized test suites.
 
@@ -113,7 +113,7 @@ location. This setting is recommended for use when using YourBase in CI, as the
 filesystem will not be a dependable store for dependency graphs.
 
 Dependency graphs generated from dirty working trees will not be synchronized,
-as they can poison the cache. See [`YOURBASE_SYNC_DIRTY`](#YOURBASE_SYNC_DIRTY)
+as they can poison the cache. See [`YOURBASE_SYNC_DIRTY`](#yourbase_sync_dirty)
 to override this behavior.
 
 Currently, the only supported protocol is `s3`.
@@ -122,8 +122,8 @@ Currently, the only supported protocol is `s3`.
 
 [System credentials][aws-sys-creds] for AWS will be used if present. To use
 different credentials than the system credentials, see
-[`YOURBASE_AWS_ACCESS_KEY_ID`](#YOURBASE_AWS_ACCESS_KEY_ID) and
-[`YOURBASE_AWS_SECRET_ACCESS_KEY`](#YOURBASE_AWS_SECRET_ACCESS_KEY).
+[`YOURBASE_AWS_ACCESS_KEY_ID`](#yourbase_aws_access_key_id) and
+[`YOURBASE_AWS_SECRET_ACCESS_KEY`](#yourbase_aws_secret_access_key).
 
 [aws-sys-creds]: https://docs.aws.amazon.com/general/latest/gr/aws-access-keys-best-practices.html
 
@@ -145,7 +145,7 @@ export YOURBASE_REMOTE_CACHE=s3://my-bucket-name/my/key/prefix
 - **Default:** _(unset)_
 
 When set alongside
-[`YOURBASE_AWS_SECRET_ACCESS_KEY`](#YOURBASE_AWS_SECRET_ACCESS_KEY), forces
+[`YOURBASE_AWS_SECRET_ACCESS_KEY`](#yourbase_aws_secret_access_key), forces
 YourBase to use these credentials over system credentials when interacting with
 AWS.
 
@@ -157,7 +157,7 @@ are fudged for the sake of your tests.
 - **Type:** AWS secret access key
 - **Default:** _(unset)_
 
-When set alongside [`YOURBASE_AWS_ACCESS_KEY_ID`](#YOURBASE_AWS_ACCESS_KEY_ID),
+When set alongside [`YOURBASE_AWS_ACCESS_KEY_ID`](#yourbase_aws_access_key_id),
 forces YourBase to use these credentials over system credentials when
 interacting with AWS.
 
@@ -192,7 +192,7 @@ Enabling this setting then manually attaching to a test framework using
 - **Default:** off
 
 When on, YourBase will not look in the filesystem for a dependency graph. If
-[`YOURBASE_REMOTE_CACHE`](#YOURBASE_REMOTE_CACHE) is set, it will still be used
+[`YOURBASE_REMOTE_CACHE`](#yourbase_remote_cache) is set, it will still be used
 as normal.
 
 This setting can be used if the local cache is expected to be poisoned. This can
@@ -203,7 +203,7 @@ happen if cohorting is used against a local cache.
 - **Type:** bool-ish (`0`, `false`, `off`, `1`, `true`, `on`)
 - **Default:** off
 
-When on, YourBase will [synchronize graphs](#YOURBASE_REMOTE_CACHE) even if the
+When on, YourBase will [synchronize graphs](#yourbase_remote_cache) even if the
 Git working tree is dirty.
 
 This setting is not recommended for use if you plan to use YourBase on developer
