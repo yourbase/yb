@@ -71,8 +71,8 @@ should appear as if each shard will run the entire test suite.
 Then, set `YOURBASE_ACTIVE_COHORT` to the ID of the current shard or process
 (starting from 1), and set `YOURBASE_COHORT_COUNT` to the total number of shards
 or processes. Under the hood, YourBase will just-in-time deselect tests that
-aren't in the current cohort. Each test will stick to its assigned shard for
-life.
+aren't in the current cohort. This selection is consistent between runs; given
+the same cohort ID and count, tests will be selected to the same shard for life.
 
 ### `YOURBASE_LICENSE_KEY`
 
@@ -89,14 +89,14 @@ key.
 - **Default:** off
 
 When on, YourBase will internally trace, time, and catalogue your tests as
-normal and use this information to make acceleration decisions; however it will
-not act on these decisions, so your test suite will run as if YourBase were not
-enabled.
+normal. From the second run onward it will use this information to make
+acceleration decisions, but it will not act on these decisions; your test suite
+will run as if YourBase were not enabled.
 
-At the end of the run, YourBase will perform a self-check by cross-referencing
-its acceleration decisions with test results. If the self-check passes, it will
-report potential time savings for this test run based on timing data for the
-would-be-skipped tests.
+For each acceleration decision, YourBase will self-check against the final test
+results; the self-check passes only if no test failure would have been hidden by
+a skip. If the self-check passes, potential time savings for this test run will
+be reported to stdout based on timing data for the would-be skipped tests.
 
 If the self-check fails, YourBase will report details of the failure to stderr.
 We encourage you to reach out to [bugs@yourbase.io](bugs-email) if this happens.
@@ -141,6 +141,9 @@ export YOURBASE_REMOTE_CACHE=s3://my-bucket-name/my/key/prefix
 
 ### `YOURBASE_AWS_ACCESS_KEY_ID`
 
+- **Type:** AWS access key ID
+- **Default:** _(unset)_
+
 When set alongside
 [`YOURBASE_AWS_SECRET_ACCESS_KEY`](#YOURBASE_AWS_SECRET_ACCESS_KEY), forces
 YourBase to use these credentials over system credentials when interacting with
@@ -150,6 +153,9 @@ These environment variables are recommended for use if your system credentials
 are fudged for the sake of your tests.
 
 ### `YOURBASE_AWS_SECRET_ACCESS_KEY`
+
+- **Type:** AWS secret access key
+- **Default:** _(unset)_
 
 When set alongside [`YOURBASE_AWS_ACCESS_KEY_ID`](#YOURBASE_AWS_ACCESS_KEY_ID),
 forces YourBase to use these credentials over system credentials when
@@ -217,7 +223,7 @@ If that situation does not apply to you, do not enable this setting.
 When on, YourBase will send anonymized telemetry data to `api.yourbase.io` over
 HTTPS for the purposes of improving the product.
 
-Telemetry data never includes your code.
+Telemetry data **never** includes your code.
 
 ### `YOURBASE_TIMID`
 
