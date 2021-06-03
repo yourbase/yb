@@ -2,10 +2,12 @@
 
 # Test Acceleration
 
-- [Getting Started with Python Test Acceleration](python-getting-started/index.md)
-- [YourBase Python on PyPI](https://pypi.org/project/yourbase/)
-- YourBase Ruby Acceleration - Coming soon! Contact us at hi@yourbase.io if you
-  want to join the private beta.  
+- Python Test Acceleration
+  - [Getting Started](python/getting-started.md)
+  - [Configuration](python/configuration.md)
+  - [PyPI](https://pypi.org/project/yourbase/)
+- Ruby Acceleration - Coming soon! Contact us at hi@yourbase.io if you
+  want to join the private beta.
 
 # CI and CLI Documentation
 
