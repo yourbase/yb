@@ -262,6 +262,11 @@ func DockerDescriptor(ctx context.Context, client *docker.Client) (*Descriptor, 
 		Arch: map[string]string{
 			"x86":    Intel32,
 			"x86_64": Intel64,
+			// macOS uses arm64 and Linux uses aarch64. https://stackoverflow.com/a/47274698
+			// Not sure if we'll encounter the Docker daemon running on macOS directly,
+			// but including both variants for sake of completeness.
+			"arm64":   ARM64,
+			"aarch64": ARM64,
 		}[info.Architecture],
 	}
 	if desc.Arch == "" {
