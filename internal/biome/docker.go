@@ -254,10 +254,20 @@ func DockerDescriptor(ctx context.Context, client *docker.Client) (*Descriptor, 
 	if info.OSType == "" || info.Architecture == "" {
 		return nil, fmt.Errorf("docker info: missing OSType and/or Architecture")
 	}
-	return &Descriptor{
-		OS:   info.OSType,
-		Arch: info.Architecture,
-	}, nil
+	desc := &Descriptor{
+		OS: info.OSType,
+		// While the Docker documentation claims that it uses runtime.GOARCH,
+		// it actually uses the syscall equivalent of `uname -m`.
+		// Source: https://github.com/moby/moby/blob/v20.10.7/pkg/platform/architecture_unix.go
+		Arch: map[string]string{
+			"x86":    Intel32,
+			"x86_64": Intel64,
+		}[info.Architecture],
+	}
+	if desc.Arch == "" {
+		return nil, fmt.Errorf("docker info: unknown architecture %q", info.Architecture)
+	}
+	return desc, nil
 }
 
 // Dirs returns special directories.
