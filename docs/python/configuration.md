@@ -88,20 +88,17 @@ key.
 - **Type:** bool-ish (`0`, `false`, `off`, `1`, `true`, `on`)
 - **Default:** off
 
-When on, YourBase will internally trace, time, and catalogue your tests as
-normal. From the second run onward it will use this information to make
-acceleration decisions, but it will not act on these decisions; your test suite
-will run as if YourBase were not enabled.
+When on, YourBase will not skip tests. Instead, it will record the duration and
+outcome of each test it believes can be skipped.
 
-For each acceleration decision, YourBase will self-check against the final test
-results; the self-check passes only if no test failure would have been hidden by
-a skip. If the self-check passes, potential time savings for this test run will
-be reported to stdout based on timing data for the would-be skipped tests.
+If any of these tests fail, this is a bug in YourBase's tracing or acceleration.
+YourBase will complain loudly and output details; please report these to
+[bugs@yourbase.io][].
 
-If the self-check fails, YourBase will report details of the failure to stderr.
-We encourage you to reach out to [bugs@yourbase.io](bugs-email) if this happens.
+Otherwise, the total amount of time that could have been saved is output to
+stdout.
 
-[bugs-email]: mailto:bugs@yourbase.io
+[bugs@yourbase.io]: mailto:bugs@yourbase.io
 
 ### `YOURBASE_REMOTE_CACHE`
 
