@@ -19,7 +19,7 @@ still run things on the side like MySQL, Postgres, Redis or any service from a
 container image.
 
 For more information, see the [complete YAML configuration syntax
-reference](docs/configuration.md).
+reference](configuration.md).
 
 ## Run your first local build
 
