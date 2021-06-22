@@ -180,6 +180,10 @@ echo ${XDG_STATE_HOME-~/.local/state}/yourbase/python.log
 
 When on, YourBase will not load.
 
+This setting is recommended when using a debugger.  Since YourBase Test
+Selection is designed to skip the execution of code that has not changed, 
+breakpoints will not be hit for tests that are skipped.
+
 Enabling this setting then manually attaching to a test framework using
 `yourbase.attach` produces undefined behavior.
 
