@@ -5,6 +5,17 @@ tests need to run based on which changes were made to code.
 
 All it takes to get started is a `pip install yourbase`.
 
+## Table of Contents
+  * [Accelerate Tests Locally](#accelerate-tests-locally)
+    + [pytest](#pytest)
+    + [unittest](#unittest)
+  * [Set up Shared Dependency Graph](#set-up-shared-dependency-graph)
+    + [Introduction](#introduction)
+    + [Setup](#setup)
+    + [For use in a CI](#for-use-in-a-ci)
+  * [Support for Parallelized Tests](#support-for-parallelized-tests)
+  * [Product Usage Data](#product-usage-data)
+
 ## Accelerate Tests Locally
 
 YourBase intelligent test selection for Python comes in the form of a library
@@ -145,7 +156,7 @@ storage.
 
 ### Setup
 
-YourBase currently supports storing shared graphs in [S3 buckets] https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingBucket.html.
+YourBase currently supports storing shared graphs in [S3 buckets](https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingBucket.html).
 
 1. In AWS, either create a new or have an existing S3 bucket for storing your
    team's YourBase [dependency graph](https://yourbase.io/technology/dependency-graph). Note that the graphs are separated by unique project.
