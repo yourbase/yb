@@ -29,6 +29,7 @@ url: https://docs.yourbase.io
 domain: docs.yourbase.io
 twitter_username: YourBaseIO
 github_username:  yourbase
+matomo_url: https://web-analytics.yourbase.io/
 
 # Build settings
 theme: jekyll-theme-primer
