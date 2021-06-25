@@ -11,8 +11,9 @@
 
 
 <details>
-  <summary>CI and CLI Documentation</summary>
-  
+
+<summary markdown="0">CI and CLI Documentation</summary>
+
 - [Installation](installation.md)
 - [Getting Started](getting-started.md)
 - [List of Build Packs](buildpacks.md)
@@ -20,5 +21,6 @@
 - [CLI Settings Reference](cli-settings.md)
 - [CI Acceleration and Caching](ci-caching.md)
 - [Design Philosophy](design-philosophy.md)
+
 </details>
 

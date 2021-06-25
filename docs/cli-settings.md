@@ -2,7 +2,9 @@
 
 ## Environment
 
-<dl>
+<!-- {% raw %} -->
+
+<dl markdown="0">
    <dt><code>NETRC</code></dt>
    <dd>
       If set to a non-empty value, then yb will copy the named
@@ -45,6 +47,8 @@
       directories. The default is <code>$YB_CACHE_DIR/workspaces</code>.
    </dd>
 </dl>
+
+<!-- {% endraw %} -->
 
 yb obeys the environment variables laid out in the [XDG Base Directory Specification][].
 
