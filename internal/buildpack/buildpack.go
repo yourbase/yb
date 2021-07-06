@@ -52,6 +52,7 @@ var packs = map[string]func(context.Context, Sys, yb.BuildpackSpec) (biome.Envir
 	"r":          installR,
 	"ruby":       installRuby,
 	"rust":       installRust,
+	"sbt":        installSBT,
 	"yarn":       installYarn,
 }
 
@@ -101,14 +102,18 @@ func extract(ctx context.Context, sys Sys, dstDir, url string, extractMode bool)
 		zipExt    = ".zip"
 		tarXZExt  = ".tar.xz"
 		tarGZExt  = ".tar.gz"
+		tgzExt    = ".tgz"
 		tarBZ2Ext = ".tar.bz2"
+		tbz2Ext   = ".tbz2"
 	)
 	const cleanupTimeout = 10 * time.Second
 	exts := []string{
 		zipExt,
 		tarXZExt,
 		tarGZExt,
+		tgzExt,
 		tarBZ2Ext,
+		tbz2Ext,
 	}
 	var ext string
 	for _, testExt := range exts {
@@ -183,7 +188,7 @@ func extract(ctx context.Context, sys Sys, dstDir, url string, extractMode bool)
 		if extractMode == stripTopDirectory {
 			invoke.Argv = append(invoke.Argv, "--strip-components", "1")
 		}
-	case tarGZExt:
+	case tarGZExt, tgzExt:
 		invoke.Argv = []string{
 			"tar",
 			"-x", // extract
@@ -193,7 +198,7 @@ func extract(ctx context.Context, sys Sys, dstDir, url string, extractMode bool)
 		if extractMode == stripTopDirectory {
 			invoke.Argv = append(invoke.Argv, "--strip-components", "1")
 		}
-	case tarBZ2Ext:
+	case tarBZ2Ext, tbz2Ext:
 		invoke.Argv = []string{
 			"tar",
 			"-x", // extract
