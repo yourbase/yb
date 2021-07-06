@@ -4,9 +4,15 @@ The format is based on [Keep a Changelog][], and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
-[Unreleased]: https://github.com/yourbase/yb/compare/v0.6.3...HEAD
+[Unreleased]: https://github.com/yourbase/yb/compare/v0.7.0...HEAD
 
-## [Unreleased][]
+## [0.7.0][] - 2021-07-06
+
+Version 0.7 simplifies installation by making Docker optional in most cases
+and improves the build output. Version 0.7 also fixes a long-standing issue
+where indirect target dependencies were ignored.
+
+[0.7.0]: https://github.com/yourbase/yb/releases/tag/v0.7.0
 
 ### Added
 
