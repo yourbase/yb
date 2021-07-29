@@ -1,7 +1,8 @@
 # Python Test Acceleration Configuration
 
 Python Test Acceleration works out of the box, but can be configured to take
-advantage of your specific environment.
+advantage of your specific environment using the environment variables listed
+below.
 
 Have configuration needs not addressed here? Give us a holler at
 [hi@yourbase.io][hi].
@@ -117,6 +118,9 @@ Currently, the only supported protocol is `s3`.
 
 #### `s3`
 
+Sets an S3 bucket as a remote cache. `Get`, `Put`, and `List` permissions are
+needed.
+
 [System credentials][aws-sys-creds] for AWS will be used if present. To use
 different credentials than the system credentials, see
 [`YOURBASE_AWS_ACCESS_KEY_ID`](#yourbase_aws_access_key_id) and
@@ -188,7 +192,7 @@ Enabling this setting then manually attaching to a test framework using
 - **Type:** bool-ish (`0`, `false`, `off`, `1`, `true`, `on`)
 - **Default:** off
 
-When on, YourBase will not look in the filesystem for a dependency graph. If
+When on, YourBase will not read or write dependency graphs on the filesystem. If
 [`YOURBASE_REMOTE_CACHE`](#yourbase_remote_cache) is set, it will still be used
 as normal.
 
