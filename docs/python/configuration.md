@@ -1,3 +1,6 @@
+---
+nav_order: 2
+---
 # Python Test Acceleration Configuration
 
 Python Test Acceleration works out of the box, but can be configured to take

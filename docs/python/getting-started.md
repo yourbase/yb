@@ -1,3 +1,7 @@
+---
+nav_order: 1
+---
+
 # Getting Started with Python Test Acceleration
 
 YourBase Test Acceleration is a plug-in that automatically determines which

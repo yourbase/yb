@@ -1,3 +1,8 @@
+---
+parent: CI and CLI Documentation
+nav_order: 6
+---
+
 # CI Acceleration and Caching
 
 The [YourBase CI service][] automatically accelerates builds based on their

@@ -1,3 +1,8 @@
+---
+parent: CI and CLI Documentation
+nav_order: 3
+---
+
 # List of Build Packs
 
 yb comes with optimized installers for many programming languages. These are
