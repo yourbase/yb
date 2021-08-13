@@ -1,3 +1,8 @@
+---
+parent: CI and CLI Documentation
+nav_order: 2
+---
+
 # Getting Started
 
 To use yb, you need a `.yourbase.yml` file at the top of your project directory.

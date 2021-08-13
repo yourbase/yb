@@ -1,3 +1,8 @@
+---
+parent: CI and CLI Documentation
+nav_order: 7
+---
+
 # Design Philosophy
 
 The YourBase ecosystem is designed around two primary goals:

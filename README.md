@@ -1,4 +1,4 @@
-<h1><img alt="YourBase" src="docs/images/Logo-Horiz-On-White@1x.jpg" width="384" height="112"></h1>
+<h1><img alt="YourBase" src="docs/images/logo-on-white.jpg" width="384" height="112"></h1>
 
 [![YourBase Community Slack](https://img.shields.io/badge/slack-@yourbase/community-blue.svg?logo=slack)](https://slack.yourbase.io)
 

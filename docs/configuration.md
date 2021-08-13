@@ -1,3 +1,8 @@
+---
+parent: CI and CLI Documentation
+nav_order: 4
+---
+
 # Package Configuration Reference
 
 The .yourbase.yml file has four top-level sections:

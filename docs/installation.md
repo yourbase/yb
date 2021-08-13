@@ -1,3 +1,8 @@
+---
+parent: CI and CLI Documentation
+nav_order: 1
+---
+
 # Installation
 
 ## macOS

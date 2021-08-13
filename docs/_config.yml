@@ -30,9 +30,11 @@ domain: docs.yourbase.io
 twitter_username: YourBaseIO
 github_username:  yourbase
 matomo_url: https://web-analytics.yourbase.io/
+logo: "/images/logo.png"
 
 # Build settings
-theme: jekyll-theme-primer
+remote_theme: pmarsceill/just-the-docs
+color_scheme: yourbase
 
 kramdown:
   input: GFM
