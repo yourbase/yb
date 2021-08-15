@@ -3,8 +3,9 @@ layout: default
 title: Python
 nav_order: 1
 parent: Getting started
+grand_parent: Introduction
 has_children: true
-permalink: /test-acceleration/getting-started/python
+permalink: /test-acceleration/python
 ---
 
 # YourBase Test Acceleration in Python

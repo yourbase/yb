@@ -3,6 +3,7 @@ layout: default
 title: Installation
 nav_order: 2
 parent: Getting started
+grand_parent: Introduction
 has_children: true
 permalink: /test-acceleration/getting-started/python/install
 ---
