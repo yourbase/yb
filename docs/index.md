@@ -1,15 +1,9 @@
 ---
+layout: default
 title: Home
-nav_exclude: true
+nav_order: 1
+permalink: /
 ---
 
-<img alt="YourBase" src="images/logo-on-white.jpg" width="384" height="112">
-
-# Test Acceleration
-
-- Python Test Acceleration
-  - [Getting Started](python/getting-started.md) - ***new users start here!***
-    - [Configuration Options](python/configuration.md)
-  - [PyPI package](https://pypi.org/project/yourbase/)
-- Ruby Test Acceleration - Coming soon! Contact us at [hi@yourbase.io](mailto:hi@yourbase.io) if you
-  want to join the private beta.
+# YourBase
+Some text talking about test acceleration & CI CLI
