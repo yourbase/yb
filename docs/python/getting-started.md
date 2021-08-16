@@ -188,6 +188,27 @@ tools or CIs. See [configuration][config/cohorting] for details.
 
 [config/cohorting]: configuration.md#YOURBASE_ACTIVE_COHORT
 
+## Don't skip specific tests
+If you have some tests you want to always run, such as tests that depend on external
+factors YourBase cannot trace, you can tell YourBase not to accelerate the test:
+
+```python
+# pytest
+import pytest
+
+@pytest.mark.do_not_accelerate
+def test_function():
+   # ...
+
+# unittest
+import yourbase.plugins.unittest as yourbase
+
+@yourbase.do_not_accelerate
+class TestClass(unittest.TestCase):
+   def test_function():
+      # ...
+```
+
 ## Product Usage Data
 
 By default, YourBase tracks how many tests are run and how many are skipped with
