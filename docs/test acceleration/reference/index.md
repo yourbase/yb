@@ -2,7 +2,7 @@
 layout: default
 title: Reference
 nav_order: 6
-parent: Introduction
+parent: Test acceleration
 has_children: true
 permalink: /test-acceleration/reference
 ---

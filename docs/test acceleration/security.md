@@ -2,7 +2,7 @@
 layout: default
 title: Security
 nav_order: 7
-parent: Introduction
+parent: Test acceleration
 has_children: false
 permalink: /test-acceleration/security
 ---

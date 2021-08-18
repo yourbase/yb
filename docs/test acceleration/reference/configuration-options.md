@@ -1,9 +1,9 @@
 ---
 layout: default
 title: Configuration options
-nav_order: 2
+nav_order: 1
 parent: Reference
-grand_parent: Introduction
+grand_parent: Test acceleration
 permalink: /test-acceleration/reference/configuration-options
 ---
 

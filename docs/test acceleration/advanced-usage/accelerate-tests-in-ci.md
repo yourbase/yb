@@ -1,9 +1,9 @@
 ---
 layout: default
 title: Accelerate tests in CI
-nav_order: 5
+nav_order: 4
 parent: Advanced usage
-grand_parent: Introduction
+grand_parent: Test acceleration
 permalink: /test-acceleration/advanced-usage/accelerate-tests-in-ci
 ---
 

@@ -1,10 +1,10 @@
 ---
 layout: default
-title: Pytest
-nav_order: 3
-parent: Python
-grand_parent: Getting started
-permalink: /test-acceleration/python/unittest
+title: Unittest
+nav_order: 2
+parent: Python testing frameworks
+grand_parent: Python testing frameworks
+permalink: /test-acceleration/getting-started/python/unittest
 ---
 
 # Try in unittest

@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Getting started
-nav_order: 3
-parent: Introduction
+nav_order: 2
+parent: Test acceleration
 has_children: true
 permalink: /test-acceleration/getting-started
 ---

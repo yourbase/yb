@@ -1,9 +1,9 @@
 ---
 layout: default
 title: Force run specific tests
-nav_order: 2
+nav_order: 1
 parent: Advanced usage
-grand_parent: Introduction
+grand_parent: Test acceleration
 permalink: /test-acceleration/advanced-usage/force-run-specific-tests
 ---
 

@@ -1,9 +1,9 @@
 ---
 layout: default
 title: Common issues
-nav_order: 3
+nav_order: 2
 parent: Reference
-grand_parent: Introduction
+grand_parent: Test acceleration
 permalink: /test-acceleration/reference/common-issues
 ---
 

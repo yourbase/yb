@@ -1,8 +1,8 @@
 ---
 layout: default
-title: Getting Started
-nav_order: 2
-parent: Introduction
+title: System requirements
+nav_order: 1
+parent: Test acceleration
 has_children: false
 permalink: /test-acceleration/system-requirements
 ---

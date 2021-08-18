@@ -1,9 +1,9 @@
 ---
 layout: default
 title: Accelerate tests locally across developers
-nav_order: 6
+nav_order: 5
 parent: Advanced usage
-grand_parent: Introduction
+grand_parent: Test acceleration
 permalink: /test-acceleration/advanced-usage/accelerate-tests-locally-across-developers
 ---
 

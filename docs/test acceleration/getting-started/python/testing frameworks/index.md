@@ -1,10 +1,11 @@
 ---
 layout: default
 title: Python testing frameworks
-nav_order: 1
+nav_order: 2
 parent: Python
 grand_parent: Getting started
-permalink: /test-acceleration/python/testing-frameworks
+has_children: true
+permalink: /test-acceleration/getting-started/python/testing-frameworks
 ---
 
 # Basic usage with Python testing frameworks

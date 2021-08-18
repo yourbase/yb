@@ -1,9 +1,9 @@
 ---
 layout: default
 title: Verify results
-nav_order: 3
+nav_order: 2
 parent: Advanced usage
-grand_parent: Introduction
+grand_parent: Test acceleration
 permalink: /test-acceleration/advanced-usage/verify-results
 ---
 

@@ -1,8 +1,8 @@
 ---
 layout: default
 title: How it works
-parent: Introduction
 nav_order: 3
+parent: Test acceleration
 permalink: /test-acceleration/how-it-works
 ---
 
