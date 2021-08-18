@@ -26,7 +26,7 @@ email: hi@yourbase.io
 #   Google search results) and in your feed.xml site description.
 baseurl: "" # the subpath of your site, e.g. /blog
 # url: https://docs.yourbase.io
-url: https://prichhazed.github.io/yb/
+url: https://prichhazed.github.io/yb
 #domain: docs.yourbase.io
 domain: prichhazed.github.io
 twitter_username: YourBaseIO
