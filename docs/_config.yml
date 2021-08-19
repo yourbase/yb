@@ -25,10 +25,8 @@ email: hi@yourbase.io
 #   line in _config.yml. It will appear in your document head meta (for
 #   Google search results) and in your feed.xml site description.
 baseurl: "" # the subpath of your site, e.g. /blog
-# url: https://docs.yourbase.io
-url: https://prichhazed.github.io/yb
-#domain: docs.yourbase.io
-domain: prichhazed.github.io
+url: https://docs.yourbase.io
+domain: docs.yourbase.io
 twitter_username: YourBaseIO
 github_username:  yourbase
 matomo_url: https://web-analytics.yourbase.io/
@@ -37,6 +35,13 @@ logo: "/images/logo.png"
 # Build settings
 remote_theme: pmarsceill/just-the-docs
 color_scheme: yourbase
+
+# Footer content
+# appears at the bottom of every page's main content
+
+# Back to top link
+back_to_top: true
+back_to_top_text: "Back to top"
 
 kramdown:
   input: GFM
