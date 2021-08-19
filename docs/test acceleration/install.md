@@ -1,20 +1,20 @@
 ---
 layout: default
-title: Installation
-nav_order: 1
-parent: Python
-grand_parent: Getting started
-permalink: /test-acceleration/getting-started/python/install
+title: Install
+nav_order: 2
+parent: Test acceleration
+has_children: false
+permalink: /test-acceleration/install
 ---
 
-# Python installation
-{: .no_toc }
+# Install
+{:.no_toc}
 
 ## Table of contents
-{: .no_toc }
+{:.no_toc}
 
 1. TOC 
-{ :toc }
+{:toc}
 
 ## Prerequisites
 - YourBase Test Acceleration library supports your technical stack and infrastructure [link to the System Requirements section].

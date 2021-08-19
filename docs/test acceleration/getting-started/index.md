@@ -8,5 +8,4 @@ permalink: /test-acceleration/getting-started
 ---
 
 # Getting started
-This document will guide you to install and learn to use YourBase Test Acceleration library in the language and the testing framework of your choice.
-
+This section gives an introduction on how to get started with running YourBase Test Acceleration in supported testing frameworks. For a full walkthrough of the tool, see [Link to Try in pytest]

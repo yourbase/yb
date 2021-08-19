@@ -2,8 +2,8 @@
 layout: default
 title: Unittest
 nav_order: 2
-parent: Python testing frameworks
-grand_parent: Python testing frameworks
+parent: Getting started
+grand_parent: Test acceleration
 permalink: /test-acceleration/getting-started/python/unittest
 ---
 
