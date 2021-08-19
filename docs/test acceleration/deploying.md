@@ -76,6 +76,8 @@ To obtain more detailed debugging information, set the `YOURBASE_DEBUG` environm
 ## Disable YourBase Test Acceleration
 If for any reason, you need to disable YourBase Test Acceleration, you can simply set the environment variable `YOURBASE_DISABLE` to true:
 
-```export YOURBASE_DISABLE=true```
+```bash
+export YOURBASE_DISABLE=true
+```
 
 To uninstall the package, see uninstall instructions [Link to Uninstall]

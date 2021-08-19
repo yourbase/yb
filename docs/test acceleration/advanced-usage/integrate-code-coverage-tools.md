@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Verify results
+title: Integrate code coverage tools
 nav_order: 3
 parent: Advanced usage
 grand_parent: Test acceleration
@@ -24,7 +24,7 @@ Note: If your CI is configured to fail a build based on the percentage covered, 
 YourBase Test Acceleration is compatible with all versions of Coverage out-of-the-box. To ensure that coverage reports account for skipped tests as well:
 1. Use Coverage 5.5+ 
 2. Set the following in your `.coveragerc` file:
-```
+```python
 [run]
 relative_files = true
 ```

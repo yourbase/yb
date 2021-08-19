@@ -32,19 +32,27 @@ Make sure that, on your machine or on your virtual environment, you have:
 
 Open a new shell prompt, and checkout this sample project from git
 
-```git clone https://github.com/Unleash/unleash-client-python```
+```bash
+git clone https://github.com/Unleash/unleash-client-python
+```
 
 From your shell prompt, navigate to the directory where you checked out the project
 
-```cd unleash-client-python```
+```bash
+cd unleash-client-python
+```
  
-Run its `requirements.txt` file to install the required packages. 
+Install dependencies 
 
-```pip install -r requirements.txt```
+```bash
+pip install -r requirements.txt
+```
 
 ### Step 2: Execute a command to run all the tests of the project
 
-```pytest tests```
+```bash
+pytest tests
+```
 
 Let’s look at the output.
 
@@ -52,7 +60,9 @@ All messages that are prefixed with “[YB]” are logged by the YourBase Test A
 
 ### Step 3: Without making any code change, execute the command to run all the tests again
 
-```pytest tests```
+```bash
+pytest tests
+```
 
 Let’s look at the messages logged by YourBase Test Acceleration. One of the messages says: “[YB] No code changed. Running only new tests, if any.”
 
@@ -60,17 +70,23 @@ Since you ran the tests without changing any code, YourBase Test Acceleration sk
 
 ### Step 4: Make a code change and execute the command to run all tests again as shown below:
 
-Open ```tests/unit_tests/test_features.py``` in your text editor
+Open `tests/unit_tests/test_features.py` in your text editor
 
-```vim tests/unit_tests/test_features.py```
+```bash
+vim tests/unit_tests/test_features.py
+```
 
-Add the following print statement in the beginning of the method ```test_create_feature_true```
+Add the following print statement in the beginning of the method `test_create_feature_true`
 
-```print(“Checking YourBase Test Acceleration after a code-change...”)```
+```python
+print(“Checking YourBase Test Acceleration after a code-change...”)
+```
 
 Run the tests again using:
 
-```pytest tests```
+```bash
+pytest tests
+```
 
 Let’s look at the output again. 
 
@@ -78,7 +94,7 @@ If you modified the same function as above then your output will closely match t
 
 Look for the logs traced by YourBase Test Acceleration. You’ll see a message telling you how many functions have been altered and how many tests were affected. If you’re following the steps as is, you should see:
 
-```
+```bash
 [YB] 1 function differs from the dependency graph
 [YB] ~ tests/unit_tests/test_features.py#test_create_feature_true
 [YB] Function-level dependency graph found 1 test affected

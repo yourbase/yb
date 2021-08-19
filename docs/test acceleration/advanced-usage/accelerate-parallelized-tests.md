@@ -22,7 +22,7 @@ YourBase Test Acceleration integrates smoothly with your existing parallelizatio
 2. Set YOURBASE_COHORT_COUNT [link to References → Configuration → YOURBASE_COHORT_COUNT] to your number of cohorts / shards
 3. Set YOURBASE_ACTIVE_COHORT [link to References → Configuration → YOURBASE_ACTIVE_COHORT] to the ID of the current cohort / shard – starting from 1. For example, if you have 5 shards and are running the 4th shard, you’d set:
    
-    ```
+    ```bash
     YOURBASE_COHORT_COUNT = 5
     YOURBASE_ACTIVE_COHORT = 4
     ```

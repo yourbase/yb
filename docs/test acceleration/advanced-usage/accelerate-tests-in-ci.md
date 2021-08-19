@@ -32,7 +32,7 @@ You can configure YourBase Test Acceleration to use either the system AWS creden
 ##### Option 1: Use the system AWS credentials
 To use your systems’ AWS credentials, export the following in your environment:
 
-```
+```bash
 export AWS_ACCESS_KEY_ID=<key>
 export AWS_SECRET_ACCESS_KEY=<key>
 ```
@@ -40,7 +40,7 @@ export AWS_SECRET_ACCESS_KEY=<key>
 ##### Option 2: Use YourBase Test Acceleration-specific AWS credentials
 If you want YourBase Test Acceleration to use different credentials (or if you're setting the system AWS credentials to mock values for your tests or CI), you can set these YourBase Test Acceleration-specific environment variables instead:
 
-```
+```bash
 export YOURBASE_AWS_ACCESS_KEY_ID=<key>
 export YOURBASE_AWS_SECRET_ACCESS_KEY=<key>
 ```

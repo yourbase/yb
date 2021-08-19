@@ -73,12 +73,12 @@ It’s useful to turn this setting on when you’re testing YourBase Test Accele
 When set, this synchronizes dependency graphs generated only from clean working trees—dependency graphs generated from dirty working trees will not be synchronized as they can poison the cache. Use YOURBASE_SYNC_DIRTY [link] to override this behavior.
 
 Example usage:
-```
+```bash
 # Without a key prefix
 export YOURBASE_REMOTE_CACHE=s3://my-bucket-name
 ```
 
-```
+```bash
 # With a key prefix
 export YOURBASE_REMOTE_CACHE=s3://my-bucket-name/my/key/prefix
 ```
@@ -113,7 +113,7 @@ These environment variables are recommended for use if your system credentials a
 
 When on, YourBase Test Acceleration will report significantly more internal information to stdout, stderr, and XDG (see the file returned by this expression):
 
-```
+```bash
 echo ${XDG_STATE_HOME-~/.local/state}/yourbase/python.log
 ```
 

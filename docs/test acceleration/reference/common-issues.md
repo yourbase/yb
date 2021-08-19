@@ -25,7 +25,7 @@ YourBase Test Acceleration is designed to avoid test runs that do not need to be
 
 If you are using unittest and define your own setUp/tearDown functions, be sure they call super before performing other actions:
 
-```
+```python
 class MyTestClass:
    def setUp(self):
       super(self.__class__, self).setUp()
@@ -39,24 +39,18 @@ class MyTestClass:
 If you are not defining your own setUp and tearDown functions, you do not need to do this.
 
 ## __Sqlite3 module not found
-If you run into errors about the _sqlite3 module not being found:
+If you run into errors about the _sqlite3 module not being found, follow the below steps:
 
-1. First install sqlite3:
+1. Install <a href="https://www.sqlite.org/quickstart.html">sqlite3</a>
 
-    - For example, for Debian-based OS:
-    
-      ```sudo apt-get install libsqlite3-dev```
-    
-    - For macOS:
-    
-      ```brew install sqlite3```
+2. Rebuild and reinstall the Python version you are using. If you use `pyenv`, this will look something like:
 
-2. Then rebuild and reinstall the Python version you are using. If you use `pyenv`, this will look something like:
-
-    ```pyenv install --force <PYTHON_VERSION>```
-
-If the above steps don't work, try:
+```bash
+pyenv install --force <PYTHON_VERSION>
 ```
+
+If the above step doesn't work, try:
+```bash
 PYTHON_CONFIGURE_OPTS="--enable-loadable-sqlite-extensions"
 pyenv install --force <PYTHON_VERSION>
 ```
@@ -69,7 +63,9 @@ YourBase Test Acceleration does not currently support Apple Machines running the
 
 Python objects that opaquely wrap other objects by overriding Python builtins like __name__ and __class__ can cause tracing issues in YourBase Test Acceleration that may manifest as errors from within those proxy objects. If you experience these issues, you can set to use a slower tracing algorithm that should avoid these errors. 
 
-```export YOURBASE_TIMID=true```
+```bash
+export YOURBASE_TIMID=true
+```
 
 Tracing overhead is dramatically increased using this flag, so we don't recommend setting this if you are not experiencing issues.
 

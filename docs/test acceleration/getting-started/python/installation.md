@@ -34,7 +34,7 @@ To check if YourBase Test Acceleration is installed, run the following command i
 
 If the installation is successful, you should see an output similar to what’s shown below, having a Version key that displays a valid version of YourBase Test Acceleration.
  
-```
+```bash
 Name: yourbase
 Version: 5.2.4
 Summary: Skip tests based on tracing data
@@ -51,15 +51,19 @@ Required-by:
 ### Using poetry
 If you use poetry, you can install YourBase Test Acceleration with:
 
-```poetry add yourbase```
+```bash
+poetry add yourbase
+```
 
 To check if YourBase Test Acceleration is installed, run the following command in a shell prompt:
 
-```poetry show yourbase```
+```bash
+poetry show yourbase
+```
 
 If the installation is successful, you should see an output similar to what’s shown below, having a Version key that displays a valid version of YourBase Test Acceleration.
 
-```
+```bash
 Name: yourbase
 Version: 5.2.4
 Summary: Skip tests based on tracing data

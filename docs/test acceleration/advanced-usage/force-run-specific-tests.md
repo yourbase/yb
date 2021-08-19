@@ -19,7 +19,7 @@ This feature is supported in the following testing frameworks:
 ## pytest
 You can tell YourBase Test Acceleration to never skip a specific test using decorators.
 
-```
+```python
 import pytest
 
 @pytest.mark.do_not_accelerate
@@ -33,7 +33,8 @@ The decorator @pytest.mark.do_not_accelerate ensures that the test test_function
 ## unittest
 You can tell YourBase Test Acceleration to never skip specific tests using decorators.
 
-```import yourbase.plugins.unittest as yourbase
+```python
+import yourbase.plugins.unittest as yourbase
 
 @yourbase.do_not_accelerate
 class TestClass(unittest.TestCase):
