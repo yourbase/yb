@@ -52,7 +52,7 @@ For a more in-depth tutorial, see https://docs.yourbase.io/getting-started.html
 
 ## Documentation
 
-Documentation is available at [docs.yourbase.io](https://docs.yourbase.io/)
+Documentation is available at [docs.yourbase.io/cli](https://docs.yourbase.io/cli/)
 
 ## Contributing 
 
