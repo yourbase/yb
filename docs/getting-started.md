@@ -23,8 +23,7 @@ configuration formats like Dockerfile. It uses containers underneath and you can
 still run things on the side like MySQL, Postgres, Redis or any service from a
 container image.
 
-For more information, see the [complete YAML configuration syntax
-reference](configuration.md).
+For more information, see the [complete YAML configuration syntax reference](configuration.md).
 
 ## Run your first local build
 
