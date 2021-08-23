@@ -25,8 +25,8 @@ email: hi@yourbase.io
 #   line in _config.yml. It will appear in your document head meta (for
 #   Google search results) and in your feed.xml site description.
 baseurl: "" # the subpath of your site, e.g. /blog
-url: https://docs.yourbase.io
-domain: docs.yourbase.io
+url: https://prichhazed.github.io/yb
+domain: prichhazed.github.io
 twitter_username: YourBaseIO
 github_username:  yourbase
 matomo_url: https://web-analytics.yourbase.io/
