@@ -8,17 +8,28 @@ permalink: /test-acceleration/advanced-usage/integrate-code-coverage-tools
 ---
 
 # Integrate code coverage tools
-
 {: .no_toc }
 
+Since YourBase Test Acceleration is designed to avoid test runs that do not need to be executed, the percentage covered as reported by your code coverage tool will likely be lower than what is actually covered as a result. 
+
+This decrease in the coverage reported by your tool will affect you if your CI is configured to fail a build on the basis of code coverage percentage.
+
+The following sections lists ways to circumvent this problem.
+
+## Configure your code coverage tool
+
+You can circumvent this by making configuration changes in your code coverage tool, so that YourBase Test Acceleration can fill missing coverage data from previous runs. 
+However, this feature of YourBase Test Acceleration works only on specific versions of the supported code coverage tools.  The following sections provide details on this.
+
+
+
+---
+
+## Configure your builds
+
 YourBase Test Acceleration supports the following code coverage tools.
-- Coverage
+- TOC
 {:toc}
-
-Note that since YourBase Test Acceleration is designed to avoid test runs that do not need to be executed, the percentage covered may appear lower than what is actually covered as a result. You can circumvent this by making configuration changes in your code coverage tool, so that YourBase Test Acceleration can fill missing coverage data from previous runs. 
-However, this feature of YourBase Test Acceleration works only on specific versions of code coverage tools.  The following sections provide details on this.
-
-Note: If your CI is configured to fail a build based on the percentage covered, you may need to reconfigure it.
 
 ## Coverage
 YourBase Test Acceleration is compatible with all versions of Coverage out-of-the-box. To ensure that coverage reports account for skipped tests as well:

@@ -9,7 +9,9 @@ permalink: /test-acceleration/system-requirements
 
 # System requirements
 
-YourBase Test Acceleration library works seamlessly with the CI system of your choice and is agnostic to where you host your application—be it cloud, on-premise, or offline.
+YourBase Test Acceleration works seamlessly with the CI system of your choice and is agnostic to where you host your application—be it cloud, on-premise, or offline.
+
+---
 
 ## Supported version control tools
 The library can accelerate tests only for codebases that are version-controlled using [Git](https://git-scm.com/). 
@@ -23,7 +25,7 @@ The library can accelerate tests only for codebases that are version-controlled 
   - [pytest](https://docs.pytest.org/en/6.2.x/)
   - [unittest](https://docs.python.org/3/library/unittest.html)
 
-_Note: Any web frameworks, such as Django, that are built atop the above testing frameworks, are also supported._
+_Note: Any web frameworks, such as [Django](https://www.djangoproject.com/), that are built atop the above testing frameworks, are also supported._
 
 ## Compatible code coverage tools
 The library supports integration with the following code coverage reporting tools without changing your workflow, for example:

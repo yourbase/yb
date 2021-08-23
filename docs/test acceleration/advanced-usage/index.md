@@ -8,4 +8,4 @@ permalink: /test-acceleration/advanced-usage
 ---
 
 # Advanced usage
-This document will guide you to make use of advanced featuers of YourBase Test Acceleration.
+This document will guide you to make use of advanced features of YourBase Test Acceleration.

@@ -7,10 +7,12 @@ permalink: /test-acceleration/how-it-works
 ---
 
 # How it works
-The following documents clarify concepts, design decisions, and technical constraints in YourBase Test Acceleration. This is a great place to understand fundamental ideas and philosophy.
+The following documents clarify concepts, design decisions, and technical constraints in YourBase Test Acceleration.
+
+---
 
 ## Dependency Graph
-Learn more about the YourBase Test Acceleration Dependency Graph at https://yourbase.io/technology/dependency-graph/.
+Learn about the YourBase Test Acceleration [Dependency Graph here](https://yourbase.io/technology/dependency-graph/).
 
 ## Shared Dependency Graph
-Learn more about how to enable team-based acceleration gains with the YourBase Test Acceleration Dependency Graph at https://yourbase.io/technology/shared-graph.
+Learn about team-based acceleration gains using a [Shared Dependency Graph here](https://yourbase.io/technology/shared-graph).
