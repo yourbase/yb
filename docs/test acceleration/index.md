@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Test acceleration
-nav_order: 2
+nav_order: 1
 has_children: true
 has_toc: false
 permalink: /test-acceleration
