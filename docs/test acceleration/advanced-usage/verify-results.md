@@ -4,7 +4,7 @@ title: Verify test selection
 nav_order: 2
 parent: Advanced usage
 grand_parent: Test acceleration
-permalink: /test-acceleration/advanced-usage/verify
+permalink: /test-acceleration/verify
 ---
 
 # Verify test selection
