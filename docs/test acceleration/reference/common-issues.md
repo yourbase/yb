@@ -4,7 +4,7 @@ title: Common issues
 nav_order: 2
 parent: Reference
 grand_parent: Test acceleration
-permalink: /test-acceleration/reference/common-issues
+permalink: /test-acceleration/common-issues
 ---
 
 # Common issues

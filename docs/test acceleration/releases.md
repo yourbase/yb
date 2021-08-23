@@ -7,6 +7,6 @@ has_children: false
 permalink: /test-acceleration/releases
 ---
 
-#Releases
+# Release history
 
-See YourBase Test Acceleration release history on PyPI: https://pypi.org/project/yourbase/#history 
+See YourBase Test Acceleration [release history on its PyPI page](https://pypi.org/project/yourbase/#history). 
