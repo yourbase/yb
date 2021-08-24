@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Releases
-nav_order: 8
+nav_order: 9
 parent: Test acceleration
 has_children: false
 permalink: /test-acceleration/releases

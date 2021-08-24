@@ -117,7 +117,7 @@ Look for the logs traced by YourBase Test Acceleration. You’ll see a message t
 [YB] Function-level dependency graph found 1 test affected
 ```
 
-You can see form the logs that the existing dependency graph [link to How it works → Dependency graph section] was used to decide that only one test was affected by your code-change and that test was the only one that was run, while the remaining tests were skipped.
+You can see form the logs that the existing [dependency graph](../how-it-works.md#dependency-graph) was used to decide that only one test was affected by your code-change and that test was the only one that was run, while the remaining tests were skipped.
 
 ---
 
