@@ -24,7 +24,7 @@ func installAnt(ctx context.Context, sys Sys, spec yb.BuildpackSpec) (biome.Envi
 	}
 
 	log.Infof(ctx, "Installing Ant v%s in %s", spec.Version(), antDir)
-	downloadURL := fmt.Sprintf("https://mirrors.sonic.net/apache/ant/binaries/apache-ant-%s-bin.zip", spec.Version())
+	downloadURL := fmt.Sprintf("https://archive.apache.org/dist/ant/binaries/apache-ant-%s-bin.zip", spec.Version())
 	if err := extract(ctx, sys, antDir, downloadURL, stripTopDirectory); err != nil {
 		return biome.Environment{}, err
 	}
