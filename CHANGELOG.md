@@ -4,7 +4,19 @@ The format is based on [Keep a Changelog][], and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
-[Unreleased]: https://github.com/yourbase/yb/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/yourbase/yb/compare/v0.7.1...HEAD
+
+## [0.7.1][] - 2021-09-30
+
+Version 0.7.1 fixes an issue with the Ant buildpack.
+
+[0.7.1]: https://github.com/yourbase/yb/releases/tag/v0.7.1
+
+### Fixed
+
+-  The `ant` buildpack uses the official Apache Ant archives instead of the
+   sonic.net mirror. The Apache Ant archives hold all the releases of Ant, not
+   just the latest few versions.
 
 ## [0.7.0][] - 2021-07-06
 
