@@ -19,9 +19,6 @@ ci:
   builds:
     - name: test_build
       build_target: default
-      when: branch IS 'main' OR action IS 'pull_request'
 
     - name: test
       build_target: test
-      when: branch IS 'main' OR action IS 'pull_request'
-
