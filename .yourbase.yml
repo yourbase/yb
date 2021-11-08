@@ -19,6 +19,3 @@ ci:
   builds:
     - name: test_build
       build_target: default
-
-    - name: test
-      build_target: test
