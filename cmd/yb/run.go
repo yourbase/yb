@@ -43,7 +43,7 @@ func newRunCmd() *cobra.Command {
 	envFlagsVar(c.Flags(), &b.env)
 	netrcFlagVar(c.Flags(), &b.netrcFiles)
 	executionModeVar(c.Flags(), &b.mode)
-	c.Flags().StringVarP(&b.target, "target", "t", yb.DefaultTarget, "The target to run the command in!")
+	c.Flags().StringVarP(&b.target, "target", "t", yb.DefaultTarget, "The target to run the command in")
 	c.RegisterFlagCompletionFunc("target", func(cc *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return autocompleteTargetName(toComplete)
 	})
